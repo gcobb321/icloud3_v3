@@ -1,0 +1,270 @@
+{
+  "config": {
+    "abort": {
+      "single_instance_allowed": "iCloud3 is already installed and can not be installed again. Select CONFIGURE in the iCloud3 Integration entry to configure iCloud3",
+      "config_update_complete": "iCloud3 configuration updated successfully",
+      "already_configured": "Account is already configured",
+      "login_error": "An error occurred logging into the iCloud account. Verify the username and password.",
+      "reauth_successful": "The reauthentication has been successfully completed. Ignore the `Aborted` heading on this form.",
+      "update_cancelled": "Update Cancelled"
+    },
+    "error": {
+      "auth": "The auth token provided is not valid",
+      "invalid_path": "The path provided is not valid. Should be in the format `user/repo-name`",
+      "invalid_verification_code": "The Apple ID Verification Code is invalid",
+      "icloud_no_devices": "No devices were found in the iCloud 'Family Sharing' list",
+      "icloud_other_error": "An unknown error was encountered authenticating the iCloud account. Try again later"
+    },
+    "step": {
+      "user": {
+        "data": {
+          "continue": "Select to continue iCloud3 installation"
+        },
+        "description": "iCloud3 Integration is being set up. Select Submit and then select CONFIGURE to configure iCloud3",
+        "title": "iCloud3 Integration Installation"
+      },
+      "reauth": {
+        "data": {
+          "verification_code": "iCloud Account Verification code"
+        },
+        "description": "Enter the 6-digit verification code you just received from Apple",
+        "title": "Apple ID Verification Code"
+      }
+    }
+  },
+  "options": {
+    "abort": {
+      "no_device": "None of your devices have \"Find my iPhone\" activated",
+      "config_update_complete": "iCloud3 configuration updated successfully",
+      "already_configured": "Account is already configured",
+      "reauth_successful": "The reauthentication has been successfully completed. Ignore the `Aborted` heading on this form."
+    },
+    "error": {
+      "conf_updated": "iCloud3 Configuration was Data Updated",
+      "conf_reloaded": "iCloud3 Configuration File was Reloaded",
+      "icloud_logging_into": "Logging into iCloud Account",
+      "icloud_logged_into": "Successfully Logged into the iCloud Account",
+      "icloud_invalid_auth": "iCloud Account Login Failed, Check Username & Password",
+      "icloud_acct_not_set_up": "The iCloud Account Username/Password have not been set up",
+      "send_verification_code": "Failed to send the Apple ID Verification Code",
+      "invalid_verification_code": "The Apple ID Verification Code is invalid. Requested a new code",
+      "review_filledin_fields": "Review the 'Filled in' fields",
+      "not_numeric": "The value entered is not numeric",
+      "stat_zone_base_lat_range_error": "The value must be between -90 and 90",
+      "stat_zone_base_long_range_error": "The value must be between -180 and 180",
+      "required_field": "This parameter must be specified",
+      "required_field_device": "At least one device (Family Share List, Find-my-Friends, iOS App device must be specified",
+      "time_factor_invalid_range": "The 'travel_time_factor' must be between .1 and .9",
+      "display_text_as_no_gtsign": "The '>' between the ActualText and DisplayAsText is missing",
+      "display_text_as_no_actual": "The 'ActualText' is not specified",
+      "display_text_as_no_display_as": "The 'DisplayAsText' is not specified",
+      "not_found_directory": "The directory was not found",
+      "not_found_file": "The file was not found",
+      "duplicate_devicename": "Duplicate Device Entity Error, This name is already used"
+    },
+    "step": {
+      "menu": {
+        "data": {
+          "menu_item": "",
+          "menu_next_page_1": "MENU PAGE #1 - iCloud Account, Devices, Display Formattting, Event Log Text Replacement, General Parameters",
+          "menu_next_page_2": "MENU PAGE #2 - inZone Intervals, Waze Parameters, Stationary Zone, Sensors, System Profile",
+          "menu_control": "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        },
+        "title": "iCloud3 Update Configuration Main Menu"
+      },
+      "restart_icloud3": {
+        "data": {
+          "restart_now_later": "iCloud Account, Device and Sensor changes require restarting iCloud3"
+        },
+        "title": "Confirm Restarting iCloud3"
+      },
+      "icloud_account": {
+        "data": {
+          "username": "User Id/Email Address",
+          "password": "Password",
+          "tracking_method": "Tracking Method",
+          "icloud_acct_login": "Login into the iCloud Account Again",
+          "cancel_update": "CANCEL THE UPDATE - Return to the Main Menu"
+        },
+        "title": "iCloud Account Login Credentials"
+      },
+      "reauth": {
+        "data": {
+          "verification_code": "iCloud Account Verification code"
+        },
+        "description": "Enter the 6-digit verification code you just received from Apple",
+        "title": "Apple ID Verification Code"
+      },
+      "device_list": {
+        "data": {
+          "devices": "iCloud3 devices that will be tracked",
+          "add_device": "Add a new iCloud3 Device Tracker Entity",
+          "next_page_1": "TRACKED DEVICES #1-#5",
+          "next_page_2": "TRACKED DEVICES #6-#10",
+          "device_control": "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        },
+        "title": "iCloud3 Device Tracker Entities"
+      },
+      "device_1": {
+        "data": {
+          "ic3_devicename": "iCloud3 Device Name",
+          "name": "Friendly Name",
+          "famshr_devicename": "Family Sharing List device",
+          "fmf_email": "Find-my-Friends device",
+          "iosapp_device": "iOS App Device",
+          "cancel_update": "CANCEL THE UPDATE - Return to the Device List form"
+        },
+        "title": "Update Device Pg1 - iCloud & iOS App"
+      },
+      "device_2": {
+        "data": {
+          "ic3_devicename": "iCloud3 Device Entity Name",
+          "track_from_zones": "Zone(s) to be Tracked From",
+          "picture": "Picture File Name for Badge",
+          "device_type": "Type of Device",
+          "inzone_interval": "inZone Interval",
+          "active": "This device is 'Active' and should be tracked",
+          "cancel_update": "CANCEL THE UPDATE - Return to the Device List form"
+        },
+        "title": "Update Device Pg2 - Other Parameters"
+      },
+      "delete_device": {
+        "data": {
+          "action": "Confirm Delete Device Request"
+        },
+        "title": "Confirm Action"
+      },
+      "evlog_field_formats": {
+        "data": {
+          "display_zone_format": "Display 'Zone Name' Format",
+          "time_format": "Display 'Time' Format",
+          "cancel_update": "CANCEL THE UPDATE - Return to the Main Menu"
+        },
+        "title": "Event Log Field Formats"
+      },
+      "display_text_as": {
+        "data": {
+          "text_0": "Text Replacement Field #1",
+          "text_1": "Text Replacement Field #2",
+          "text_2": "Text Replacement Field #3",
+          "text_3": "Text Replacement Field #4",
+          "text_4": "Text Replacement Field #5",
+          "text_5": "Text Replacement Field #6",
+          "text_6": "Text Replacement Field #7",
+          "text_7": "Text Replacement Field #8",
+          "text_8": "Text Replacement Field #9",
+          "text_9": "Text Replacement Field #10",
+          "text_10": "Text Replacement Field #11",
+          "text_11": "Text Replacement Field #12",
+          "dta_next_page_1": "TEXT FIELDS #1-#5",
+          "dta_next_page_2": "TEXT FIELDS #6-#10",
+          "cancel_update": "CANCEL THE UPDATE - Return to the Main Menu"
+        },
+        "description": "Format: `ActualText > DisplayAsText`\nDelete Item: `Set Text Value to a Space`",
+        "title": "Event Log 'Display Text As'"
+      },
+      "misc_parms": {
+        "data": {
+          "unit_of_measurement": "Unit of Measurement",
+          "max_interval": "Maximun time interval between location updates",
+          "gps_accuracy_threshold": "GPS Accuracy Threshold",
+          "old_location_threshold": "Old Location Threshold",
+          "travel_time_factor": "Travel Time Multiplier used for Interval Calculation",
+          "log_level": "Log Level",
+          "cancel_update": "CANCEL THE UPDATE - Return to the Main Menu"
+        },
+        "title": "Miscellaneous Parameters"
+      },
+      "inzone": {
+        "data": {
+          "discard_poor_gps_inzone": "Discard Location Updates with Poor GPS Accuracy when in a Zone",
+          "center_in_zone": "Change Device's Location to the Zone's Center when in a Zone",
+          "inzone_interval_default": "Default inZone Interval",
+          "inzone_interval_iphone": "Default iPhone inZone Interval",
+          "inzone_interval_ipad": "Default iPad inZone Interval",
+          "inzone_interval_watch": "Default Apple Watch inZone Interval",
+          "inzone_interval_ipod": "Default iPod inZone Interval",
+          "inzone_interval_no_iosapp": "inZone Interval for Devices not using the iOS App",
+          "cancel_update": "CANCEL THE UPDATE - Return to the Main Menu"
+        },
+        "title": "inZone Parameters and Intervals"
+      },
+      "waze_1": {
+        "data": {
+          "distance_method": "How Distance to a Zone is determined",
+          "waze_region": "Waze Region - Location of the Waze Route Server",
+          "waze_min_distance": "Minimum Distance from a zone before Waze Route Service is used",
+          "waze_max_distance": "Maximum Distance from a zone to use the Waze Route Service. Calculation method will be used instead.",
+          "waze_realtime": "Determine Travel Time using Real Time Data",
+          "cancel_update": "CANCEL THE UPDATE - Return to the Main Menu"
+        },
+        "title": "Waze Pg1 - Route Service"
+      },
+      "waze_2": {
+        "data": {
+          "waze_history_database_used": "Save Waze Route Info to the Waze History Database",
+          "waze_history_max_distance": "Maximum Distance to store the Waze Route Time/Distance Data",
+          "waze_history_map_track_direction": "Travel Direction used to display Waze History Data Points on a map",
+          "cancel_update": "CANCEL THE UPDATE - Return to the Main Menu"
+        },
+        "title": "Waze Pg2 - History Database"
+      },
+      "stationary_zone": {
+        "data": {
+          "stat_zone_still_time": "Still time before placing into a Stationary Zone",
+          "stat_zone_inzone_interval": "Stationary Zone Interval",
+          "stat_zone_base_latitude": "Base Location Latitude - Home North-South Offset or GPS Latitude",
+          "stat_zone_base_longitude": "Base Location Longitude - Home East-West Offset or GPS Longitude",
+          "cancel_update": "CANCEL THE UPDATE - Return to the Main Menu"
+        },
+        "title": "Stationary Zone Parameters"
+      },
+      "sensors": {
+        "data": {
+          "name": "'_name' - Friendly Name of the Device",
+          "badge": "'_badge' - A badge showing the Zone Name or distance from the Home zone",
+          "battery": "'_battery_level' - Battery Level",
+          "battery_status": "'_battery_status' - Battery Status (Charging, Low, etc.)",
+          "trigger": "'_trigger' - Last event that triggered a location update ",
+          "interval": "'_interval' - Time between location requests",
+          "last_update": "'_last_update' - Last time the location was updated",
+          "next_update": "'_next_update' - Next time the location will be updated",
+          "last_located": "'_last_located' - Last time the was located using iCloud or iOS APP location",
+          "travel_time": "'_travel_time' - Waze Travel time to a TrackFrom zone",
+          "zone_distance": "'_zone_distance' - Distance from a TrackFrom zone that was used in the last update",
+          "waze_distance": "'_waze_distance' - Distance from a TrackFrom zone from the Waze Route Service",
+          "calc_distance": "'_calc_distance' - Distance from a TrackFrom zone (straight line) that was calculated",
+          "travel_distance": "'_travel_distance' - Distance (Waze or Calculated) from the last update",
+          "altitude": "'_altitude' - Altitude/Elevation",
+          "vertical_accuracy": "'_vertical_accuracy' - Vertical (Elevation) Accuracy",
+          "gps_accuracy": "'_gps_accuracy' - GPS acuracy of the last location coordinates",
+          "dir_of_travel": "'_dir_of_travel' - Direction of Travel (Towards, AwayFrom, inZone, etc)",
+          "zone": "'_zone' - The HA Zone Name the Device is in if it in a Zone (Example: the_shores)",
+          "zone_name": "'_zone_name' - A formatted Zone Name (Example: TheShores)",
+          "zone_title": "'_zone_title' - A formatted Zone Name (Example: The Shores)",
+          "zone_fname": "'_zone_fname' - The Zone's FriendlyName (Example: The Shores Development)",
+          "zone_timestamp": "'_zone_timestamp' - When the Device entered the Zone",
+          "last_zone": "'_last_zone' - The HA Zone Name the Device is in if it in a Zone ",
+          "last_zone_name": "'_last_zone_name' - A formatted Zone Name of the last zone the Device was in",
+          "last_zone_title": "'_last_zone_title' - A formatted Zone Name of the last zone the Device was in ",
+          "info": "'_info' - Information displayed related to location updates, data accuracy, errors, etc",
+          "poll_cnt": "'_poll_cnt' - The combined totals for iCloud locates, iOS App locates and errors",
+          "last_zone_fname": "'_last_zone_fname' - The Zone's FriendlyName of the last zone the Device was in",
+          "cancel_update": "CANCEL THE UPDATE - Return to the Main Menu"
+        },
+        "title": "Sensors that will be created by iCloud3"
+      },
+      "settings": {
+        "data": {
+          "event_log_card_directory": "Event Log Card Directory",
+          "event_log_card_program": "Event Log Card .js File Name",
+          "data_profile": "Configuration Data Profile",
+          "icloud3_enabled": "iCloud3 is Enabled",
+          "log_level": "Log Level",
+          "cancel_update": "CANCEL THE UPDATE - Return to the Main Menu"
+        },
+        "title": "System Settings"
+      }
+    }
+  }
+}
