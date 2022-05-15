@@ -1,8 +1,7 @@
 
 
 from ..global_variables  import GlobalVariables as Gb
-from ..const             import (HOME, APPLE_DEVICE_TYPES, DEVICE_TYPE_FNAME, ICLOUD,
-                                NEW_LINE, CRLF, CRLF_DOT, CRLF_CHK, UNKNOWN,
+from ..const             import (HOME, RARROW, APPLE_DEVICE_TYPES, DEVICE_TYPE_FNAME, ICLOUD,
                                 WAZE, CALC, NEW_LINE, EVLOG_ERROR, EVLOG_NOTICE, EVLOG_ALERT, EVLOG_DEBUG,
 
                                 CONFIG_IC3,
@@ -10,7 +9,7 @@ from ..const             import (HOME, APPLE_DEVICE_TYPES, DEVICE_TYPE_FNAME, IC
                                 CONF_CONFIG_IC3_FILE_NAME, CONF_EVENT_LOG_CARD_DIRECTORY,
                                 CONF_ENTITY_REGISTRY_FILE, CONF_EVENT_LOG_CARD_PROGRAM,
 
-                                CONF_USERNAME, CONF_PASSWORD, CONF_ACCOUNT_NAME, CONF_NAME,
+                                CONF_USERNAME, CONF_PASSWORD, CONF_ACCOUNT_NAME, CONF_FNAME, CONF_NAME,
                                 CONF_TRACKING_METHOD, CONF_IOSAPP_REQUEST_LOC_MAX_CNT,
                                 CONF_TRACK_DEVICES, CONF_DEVICES, CONF_UNIT_OF_MEASUREMENT,
                                 CONF_CREATE_SENSORS, CONF_EXCLUDE_SENSORS,
@@ -20,10 +19,7 @@ from ..const             import (HOME, APPLE_DEVICE_TYPES, DEVICE_TYPE_FNAME, IC
                                 CONF_STAT_ZONE_STILL_TIME, CONF_STAT_ZONE_INZONE_INTERVAL,
                                 CONF_STAT_ZONE_BASE_LATITUDE, CONF_STAT_ZONE_BASE_LONGITUDE,
 
-                                CONF_INZONE_INTERVALS, CONF_INZONE_INTERVAL_DEFAULT,
-                                CONF_INZONE_INTERVAL_IPHONE,
-                                CONF_INZONE_INTERVAL_IPAD, CONF_INZONE_INTERVAL_WATCH,
-                                CONF_INZONE_INTERVAL_IPOD, CONF_INZONE_INTERVAL_NO_IOSAPP,
+                                CONF_INZONE_INTERVALS, IPHONE, IPAD, WATCH, AIRPODS, NO_IOSAPP,
 
                                 CONF_DISPLAY_ZONE_FORMAT, CONF_CENTER_IN_ZONE,
                                 CONF_TIME_FORMAT, CONF_INTERVAL, CONF_BASE_ZONE, CONF_INZONE_INTERVAL,
@@ -33,98 +29,105 @@ from ..const             import (HOME, APPLE_DEVICE_TYPES, DEVICE_TYPE_FNAME, IC
 
                                 CONF_WAZE_REGION, CONF_WAZE_MAX_DISTANCE, CONF_WAZE_MIN_DISTANCE,
                                 CONF_WAZE_REALTIME, CONF_WAZE_HISTORY_DATABASE_USED,
-                                CONF_WAZE_HISTORY_MAX_DISTANCE, CONF_WAZE_HISTORY_MAP_TRACK_DIRECTION,
+                                CONF_WAZE_HISTORY_MAX_DISTANCE, CONF_WAZE_HISTORY_TRACK_DIRECTION,
 
                                 CONF_COMMAND, CONF_LOG_LEVEL, CONF_LEGACY_MODE,
 
                                 CONF_IC3_DEVICENAME,
                                 CONF_DEVICENAME, CONF_TRACK_FROM_ZONES, CONF_IOSAPP_SUFFIX,
                                 CONF_IOSAPP_DEVICE, CONF_FAMSHR_DEVICENAME, CONF_FMF_EMAIL,
-                                CONF_IOSAPP_ENTITY, CONF_NOIOSAPP, CONF_NO_IOSAPP,
+                                CONF_IOSAPP_ENTITY, CONF_NO_IOSAPP,
                                 CONF_IOSAPP_INSTALLED, CONF_PICTURE, CONF_EMAIL,
                                 CONF_CONFIG, CONF_SOURCE, CONF_DEVICE_TYPE,
 
-                                OPT_IOSAPP_DEVICE,
-
-                                CONF_SENSOR_NAME, CONF_SENSOR_BADGE, CONF_SENSOR_BATTERY,
-                                CONF_SENSOR_TRIGGER, CONF_SENSOR_INTERVAL, CONF_SENSOR_LAST_UPDATE,
-                                CONF_SENSOR_NEXT_UPDATE, CONF_SENSOR_LAST_LOCATED, CONF_SENSOR_TRAVEL_TIME,
-                                CONF_SENSOR_TRAVEL_TIME_MIN, CONF_SENSOR_ZONE_DISTANCE, CONF_SENSOR_WAZE_DISTANCE,
-                                CONF_SENSOR_CALC_DISTANCE, CONF_SENSOR_TRAVEL_DISTANCE, CONF_SENSOR_GPS_ACCURACY,
-                                CONF_SENSOR_DIR_OF_TRAVEL, CONF_SENSOR_ZONE, CONF_SENSOR_ZONE_NAME,
-                                CONF_SENSOR_ZONE_TITLE, CONF_SENSOR_ZONE_FNAME, CONF_SENSOR_ZONE_TIMESTAMP,
-                                CONF_SENSOR_POLL_CNT, CONF_SENSOR_INFO, CONF_SENSOR_LAST_ZONE,
-                                CONF_SENSOR_LAST_ZONE_NAME, CONF_SENSOR_LAST_ZONE_TITLE, CONF_SENSOR_LAST_ZONE_FNAME,
-                                CONF_SENSOR_BATTERY_STATUS, CONF_SENSOR_ALTITUDE, CONF_SENSOR_VERTICAL_ACCURACY,
-
-                                OPT_LOG_LEVEL, OPT_UNIT_OF_MEASUREMENT, OPT_TIME_FORMAT,
-                                OPT_DISTANCE_METHOD, OPT_DISPLAY_ZONE_FORMAT, OPT_DISPLAY_ZONE_FORMAT_EXAMPLE,
-                                OPT_WAZE_REGION,
+                                NAME, BADGE, BATTERY,
+                                TRIGGER, INTERVAL, LAST_UPDATE,
+                                NEXT_UPDATE, LAST_LOCATED, TRAVEL_TIME, DIR_OF_TRAVEL,
+                                TRAVEL_TIME_MIN, ZONE_DISTANCE, WAZE_DISTANCE,
+                                CALC_DISTANCE, TRAVEL_DISTANCE, GPS_ACCURACY,
+                                ZONE, ZONE_FNAME, ZONE_NAME,
+                                ZONE_DATETIME,
+                                POLL_COUNT, INFO,
+                                LAST_ZONE, LAST_ZONE_FNAME, LAST_ZONE_NAME,
+                                BATTERY_STATUS, ALTITUDE, VERTICAL_ACCURACY,
 
                                 DEFAULT_CONFIG_VALUES, DEFAULT_GENERAL_CONF, DEFAULT_TRACKING_CONF,
+                                DEFAULT_PROFILE_CONF, DEFAULT_DEVICE_CONF, DEFAULT_SENSORS_CONF,
                                 DEFAULT_SENSORS_CONF, CF_DEFAULT_IC3_CONF_FILE, DEFAULT_DEVICE_CONF,
+                                EVENT_LOG_CARD_WWW_DIRECTORY, EVENT_LOG_CARD_WWW_JS_PROG,
 
                                 CF_PROFILE, CF_DATA,
                                 CF_DATA_TRACKING, CF_DATA_GENERAL, CF_DATA_SENSORS,
                                 )
+# from ..config_flow      import (OPT_LOG_LEVEL, OPT_UNIT_OF_MEASUREMENT, OPT_TIME_FORMAT,
+#                                 OPT_DISTANCE_METHOD, OPT_DISPLAY_ZONE_FORMAT,
+#                                 OPT_WAZE_REGION,)
 
-CONF_DEVICENAME                 = 'device_name'
-CONF_NO_IOSAPP                  = 'no_iosapp'
-CONF_IOSAPP_INSTALLED           = 'iosapp_installed'
-CONF_IOSAPP_SUFFIX              = 'iosapp_suffix'
-CONF_IOSAPP_ENTITY              = 'iosapp_entity'
-CONF_EMAIL                      = 'email'
-CONF_CONFIG                     = 'config'
-CONF_SOURCE                     = 'source'
+CONF_DEVICENAME       = 'device_name'
+CONF_NO_IOSAPP        = 'no_iosapp'
+CONF_IOSAPP_INSTALLED = 'iosapp_installed'
+CONF_IOSAPP_SUFFIX    = 'iosapp_suffix'
+CONF_IOSAPP_ENTITY    = 'iosapp_entity'
+CONF_EMAIL            = 'email'
+CONF_CONFIG           = 'config'
+CONF_SOURCE           = 'source'
 
 VALID_CONF_DEVICES_ITEMS = [CONF_DEVICENAME, CONF_EMAIL, CONF_PICTURE, CONF_NAME,
                             CONF_INZONE_INTERVAL, 'track_from_zone', CONF_IOSAPP_SUFFIX,
-                            CONF_IOSAPP_ENTITY, CONF_IOSAPP_INSTALLED, CONF_NOIOSAPP,
+                            CONF_IOSAPP_ENTITY, CONF_IOSAPP_INSTALLED,
                             CONF_NO_IOSAPP, CONF_TRACKING_METHOD, ]
 
 SENSOR_ID_NAME_LIST = {
-        'zon': CONF_SENSOR_ZONE,
-        'lzon': CONF_SENSOR_LAST_ZONE,
+        'zon': ZONE,
+        'lzon': LAST_ZONE,
         # 'bzon': BASE_ZONE,
-        'zonn': CONF_SENSOR_ZONE_NAME,
-        'zont': CONF_SENSOR_ZONE_TITLE,
-        'zonfn': CONF_SENSOR_ZONE_FNAME,
-        'lzonn': CONF_SENSOR_LAST_ZONE_NAME,
-        'lzont': CONF_SENSOR_LAST_ZONE_TITLE,
-        'lzonfn': CONF_SENSOR_LAST_ZONE_FNAME,
-        'zonts': CONF_SENSOR_ZONE_TIMESTAMP,
-        'zdis': CONF_SENSOR_ZONE_DISTANCE,
-        'cdis': CONF_SENSOR_CALC_DISTANCE,
-        'wdis': CONF_SENSOR_WAZE_DISTANCE,
-        'tdis': CONF_SENSOR_TRAVEL_DISTANCE,
-        'ttim': CONF_SENSOR_TRAVEL_TIME,
-        'mtim': CONF_SENSOR_TRAVEL_TIME_MIN,
-        'dir': CONF_SENSOR_DIR_OF_TRAVEL,
-        'intvl':  CONF_SENSOR_INTERVAL,
-        'lloc': CONF_SENSOR_LAST_LOCATED,
-        'lupdt': CONF_SENSOR_LAST_UPDATE,
-        'nupdt': CONF_SENSOR_NEXT_UPDATE,
-        'cnt': CONF_SENSOR_POLL_CNT,
-        'info': CONF_SENSOR_INFO,
-        'trig': CONF_SENSOR_TRIGGER,
-        'bat': CONF_SENSOR_BATTERY,
-        'batstat': CONF_SENSOR_BATTERY_STATUS,
-        'alt': CONF_SENSOR_ALTITUDE,
-        'gpsacc': CONF_SENSOR_GPS_ACCURACY,
-        'vacc': CONF_SENSOR_VERTICAL_ACCURACY,
-        'badge': CONF_SENSOR_BADGE,
-        'name': CONF_SENSOR_NAME,
+        'zonn': ZONE_NAME,
+        'zont': ZONE_NAME,
+        'zonfn': ZONE_FNAME,
+        'lzonn': LAST_ZONE_NAME,
+        'lzont': LAST_ZONE_NAME,
+        'lzonfn': LAST_ZONE_FNAME,
+        'zonts': ZONE_DATETIME,
+        'zdis': ZONE_DISTANCE,
+        'cdis': CALC_DISTANCE,
+        'wdis': WAZE_DISTANCE,
+        'tdis': TRAVEL_DISTANCE,
+        'ttim': TRAVEL_TIME,
+        'mtim': TRAVEL_TIME_MIN,
+        'dir': DIR_OF_TRAVEL,
+        'intvl':  INTERVAL,
+        'lloc': LAST_LOCATED,
+        'lupdt': LAST_UPDATE,
+        'nupdt': NEXT_UPDATE,
+        'cnt': POLL_COUNT,
+        'info': INFO,
+        'trig': TRIGGER,
+        'bat': BATTERY,
+        'batstat': BATTERY_STATUS,
+        'alt': ALTITUDE,
+        'gpsacc': GPS_ACCURACY,
+        'vacc': VERTICAL_ACCURACY,
+        'badge': BADGE,
+        'name': NAME,
         }
 
-from ..helpers.base      import (instr, _traceha, log_info_msg,
-                                read_storage_icloud3_configuration_file,
-                                write_storage_icloud3_configuration_file, )
+CONF_SENSORS_DEVICE_LIST            = ['name', 'badge', 'battery', 'battery_status', 'info',]
+CONF_SENSORS_TRACKING_UPDATE_LIST   = ['interval', 'last_update', 'next_update', 'last_located']
+CONF_SENSORS_TRACKING_TIME_LIST     = ['travel_time', 'travel_time_min']
+CONF_SENSORS_TRACKING_DISTANCE_LIST = ['zone_distance', 'home_distance', 'dir_of_travel', 'travel_distance']
+CONF_SENSORS_TRACKING_BY_ZONES_LIST = []
+CONF_SENSORS_TRACKING_OTHER_LIST    = ['trigger', 'waze_distance', 'calc_distance', 'pll_count']
+CONF_SENSORS_ZONE_LIST              = ['zone', 'zone_fname', 'zone_name', 'zone_timestamp', 'last_zone']
+CONF_SENSORS_OTHER_LIST             = ['gps_accuracy', 'vertical_accuracy', 'altitude']
+
+from ..helpers.base      import (instr, _traceha, log_info_msg, )
 
 
 import os
 import json
 from   homeassistant.util    import slugify
 import homeassistant.util.yaml.loader as yaml_loader
+from .                       import start_ic3
 import logging
 _LOGGER = logging.getLogger(__name__)
 
@@ -139,7 +142,14 @@ class iCloud3V3ConfigurationConverter(object):
         self.config_parm          = DEFAULT_CONFIG_VALUES.copy()
         self.config_parm_general  = DEFAULT_GENERAL_CONF.copy()
         self.config_parm_tracking = DEFAULT_TRACKING_CONF.copy()
-        self.config_parm_sensors  = DEFAULT_SENSORS_CONF.copy()
+        self.config_parm_sensors  ={}
+
+        Gb.conf_profile   = DEFAULT_PROFILE_CONF.copy()
+        Gb.conf_tracking  = DEFAULT_TRACKING_CONF.copy()
+        Gb.conf_devices   = []
+        Gb.conf_general   = DEFAULT_GENERAL_CONF.copy()
+        Gb.conf_sensors   = DEFAULT_SENSORS_CONF.copy()
+        Gb.conf_file_data = CF_DEFAULT_IC3_CONF_FILE.copy()
 
     #######################################################################
     #
@@ -163,14 +173,12 @@ class iCloud3V3ConfigurationConverter(object):
     #
     #######################################################################
     def convert_v2_config_files_to_v3(self):
-
         log_info_msg('Converting iCloud3 configuration parameters')
         self._extract_config_parameters(Gb.config_parm_ha_config_yaml)
 
         config_ic3_records = self._get_config_ic3_records()
         self._extract_config_parameters(config_ic3_records)
         self._set_data_fields_from_config_parameter_dictionary()
-
         return
 
     #-------------------------------------------------------------------------
@@ -188,10 +196,14 @@ class iCloud3V3ConfigurationConverter(object):
         '''
 
         if CONF_DISPLAY_TEXT_AS in config_yaml_recds:
-            dta_list = config_yaml_recds[CONF_DISPLAY_TEXT_AS]
-            for i in range(10 - len(dta_list)):
-                dta_list.append('')
-            config_yaml_recds[CONF_DISPLAY_TEXT_AS] = dta_list
+            display_text_as = DEFAULT_GENERAL_CONF[CONF_DISPLAY_TEXT_AS].copy()
+            cdta_idx = 0
+            for dta_text in config_yaml_recds[CONF_DISPLAY_TEXT_AS]:
+                if dta_text.strip():
+                    display_text_as[cdta_idx] = dta_text
+                    cdta_idx += 1
+
+            config_yaml_recds[CONF_DISPLAY_TEXT_AS] = display_text_as
 
         log_info_msg(f"Converting parameters - HA configuration.yaml")
         for pname, pvalue in config_yaml_recds.items():
@@ -263,7 +275,7 @@ class iCloud3V3ConfigurationConverter(object):
             if devicename in self.devicename_list:
                 continue
             self.devicename_list.append(devicename)
-            device_fields = DEFAULT_DEVICE_CONF.copy()
+            conf_device = DEFAULT_DEVICE_CONF.copy()
 
             log_info_msg(f"Extracted device - {devicename}")
             for pname, pvalue in device.items():
@@ -271,12 +283,11 @@ class iCloud3V3ConfigurationConverter(object):
                     if pname == CONF_DEVICENAME:
                         devicename = slugify(pvalue)
 
-                        name, device_type = self._extract_name_device_type(pvalue)
-                        device_fields[CONF_IC3_DEVICENAME] = devicename
-                        device_fields[CONF_NAME]           = name
-                        device_fields[CONF_FAMSHR_DEVICENAME]  = devicename
-                        device_fields[CONF_IOSAPP_DEVICE]  = devicename
-                        device_fields[CONF_DEVICE_TYPE]    = device_type
+                        fname, device_type = self._extract_name_device_type(pvalue)
+                        conf_device[CONF_IC3_DEVICENAME]    = devicename
+                        conf_device[CONF_FNAME]             = fname
+                        conf_device[CONF_FAMSHR_DEVICENAME] = devicename
+                        conf_device[CONF_DEVICE_TYPE]       = device_type
 
                     #You can track from multiple zones, cycle through zones and check each one
                     #The value can be zone name or zone friendly name. Change to zone name.
@@ -285,28 +296,44 @@ class iCloud3V3ConfigurationConverter(object):
                                 pvalue += ',home'
                             pvalue = pvalue.replace(', ', ',').lower()
                             tfz_list = pvalue.split(',')
-                            device_fields[CONF_TRACK_FROM_ZONES] = tfz_list
-
-                    elif pname == CONF_IOSAPP_SUFFIX:
-                            device_fields[CONF_IOSAPP_DEVICE] = f"{devicename}_{pvalue}"
-                    elif pname == CONF_IOSAPP_ENTITY:
-                            device_fields[CONF_IOSAPP_DEVICE] = pvalue
+                            conf_device[CONF_TRACK_FROM_ZONES] = tfz_list
 
                     elif pname == CONF_EMAIL:
-                        device_fields[CONF_FMF_EMAIL] = pvalue
+                        conf_device[CONF_FMF_EMAIL] = pvalue
+
+                    elif pname == CONF_NAME:
+                        conf_device[CONF_FNAME] = pvalue
+
+                    elif pname == CONF_IOSAPP_SUFFIX:
+                            conf_device[CONF_IOSAPP_DEVICE] = f"{devicename}{pvalue}"
+
+                    elif pname == CONF_IOSAPP_ENTITY:
+                            conf_device[CONF_IOSAPP_DEVICE] = pvalue
+
+                    elif pname == CONF_NO_IOSAPP and pvalue:
+                        conf_device[CONF_IOSAPP_DEVICE] = 'None'
+
+                    elif pname == CONF_IOSAPP_INSTALLED and pvalue is False:
+                        conf_device[CONF_IOSAPP_DEVICE] = 'None'
+
+                    elif pname == CONF_TRACKING_METHOD:
+                        if pvalue == 'fmf':
+                            conf_device[CONF_FAMSHR_DEVICENAME] = 'None'
+                        elif pvalue == 'iosapp':
+                            conf_device[CONF_FAMSHR_DEVICENAME] = 'None'
+                            conf_device[CONF_FMF_EMAIL] = 'None'
 
                     elif pname == CONF_PICTURE:
                         pvalue = pvalue.replace('local', '').replace('www', '').replace('/', '')
-                        device_fields[CONF_PICTURE] = pvalue
-
-                    elif pname in [CONF_NOIOSAPP, CONF_NO_IOSAPP] and pvalue:
-                        device_fields[CONF_IOSAPP_DEVICE] = OPT_IOSAPP_DEVICE[1]
+                        conf_device[CONF_PICTURE] = pvalue
 
                     else:
-                        device_fields[pname] = pvalue
-            device_fields[CONF_IOSAPP_DEVICE] = OPT_IOSAPP_DEVICE[0]
-            device_fields.pop("cancel_update")
-            devices_list.append(device_fields)
+                        conf_device[pname] = pvalue
+
+
+            if "cancel_update" in conf_device:
+                conf_device.pop("cancel_update")
+            devices_list.append(conf_device)
 
         return devices_list
 
@@ -338,12 +365,14 @@ class iCloud3V3ConfigurationConverter(object):
                     for iztype, iztime in iztype_iztimes.items():
                         iztype_iztime[iztype] = iztime
 
-                self.config_parm_general[CONF_INZONE_INTERVAL_DEFAULT] = iztype_iztime.get('inzone_interval', '332 hrs')
-                self.config_parm_general[CONF_INZONE_INTERVAL_IPHONE] = iztype_iztime.get('iphone', '332 hrs')
-                self.config_parm_general[CONF_INZONE_INTERVAL_IPAD] = iztype_iztime.get('ipad', '332 hrs')
-                self.config_parm_general[CONF_INZONE_INTERVAL_WATCH] = iztype_iztime.get('watch', '3315 mins')
-                self.config_parm_general[CONF_INZONE_INTERVAL_IPOD] = iztype_iztime.get('ipod', '332 hrs')
-                self.config_parm_general[CONF_INZONE_INTERVAL_NO_IOSAPP] = iztype_iztime.get('no_iosapp', '3315 mins')
+                inzone_intervals = {}
+                inzone_intervals['default'] = iztype_iztime.get('inzone_interval', '02:00:00')
+                inzone_intervals[IPHONE]    = iztype_iztime.get(IPHONE, '02:00:00')
+                inzone_intervals[IPAD]      = iztype_iztime.get(IPAD, '02:00:00')
+                inzone_intervals[WATCH]     = iztype_iztime.get(WATCH, '00:15:00')
+                inzone_intervals[AIRPODS]   = iztype_iztime.get(AIRPODS, '00:15:00')
+                inzone_intervals[NO_IOSAPP] = iztype_iztime.get(NO_IOSAPP, '00:15:00')
+                self.config_parm_general[CONF_INZONE_INTERVALS] = inzone_intervals.copy()
 
             elif pname == 'stationary_zone_offset':
                 sz_offset = pvalue.split(',')
@@ -358,25 +387,56 @@ class iCloud3V3ConfigurationConverter(object):
         return
 
     def _set_sensors(self, pname, pvalue):
-        for sensor in self.config_parm_sensors.keys():
-            # Set all to True if excluding, False if creating
-            self.config_parm_sensors[sensor] = (pname == 'exclude_sensors')
-        _traceha(f"{self.config_parm_sensors=}")
-        if type(pvalue) == list:
-            pvalue = (",".join(pvalue))
+        device_list            = []
+        tracking_update        = []
+        tracking_time_list     = []
+        tracking_distance_list = []
+        tracking_other_list    = []
+        zone_list              = []
+        other_list             = []
 
-        sensor_list = pvalue.split(',')
-        for sensor in sensor_list:
-            sabbrev = sensor.strip()
-            if sabbrev in SENSOR_ID_NAME_LIST:
-                sname = SENSOR_ID_NAME_LIST[sabbrev]
-                # Set to True if creating, False if excluding
-                if sname in self.config_parm_sensors:
-                    self.config_parm_sensors[sname] = (pname == 'create_sensors')
-        _traceha(f"{self.config_parm_sensors=}")
+        sensor_list = []
+        pvalue = f",{pvalue.replace(' ', '')},"
+        if pname == 'exclude_sensors':
+            for sensor_abbrev, sensor in SENSOR_ID_NAME_LIST.items():
+                if instr(pvalue, f",{sensor_abbrev},") is False:
+                    sensor_list.append(sensor)
+
+        elif pname == 'create_sensors':
+            for sensor_abbrev, sensor in SENSOR_ID_NAME_LIST.items():
+                 if instr(pvalue, f",{sensor_abbrev},"):
+                    sensor_list.append(sensor)
+
+        for sname in sensor_list:
+            if sname in ['name', 'badge', 'battery', 'battery_status', 'info',]:
+                device_list.append(sname)
+            if sname in ['interval', 'last_update', 'next_update', 'last_located']:
+                tracking_update.append(sname)
+            if sname in ['travel_time', 'travel_time_min']:
+                tracking_time_list.append(sname)
+            if sname in ['zone_distance', 'home_distance', 'dir_of_travel', 'travel_distance']:
+                tracking_distance_list.append(sname)
+            if sname in ['trigger', 'waze_distance', 'calc_distance', 'pll_count']:
+                tracking_other_list.append(sname)
+            if sname in ['zone', 'zone_fname', 'zone_name', 'zone_title', 'zone_timestamp']:
+                if sname not in zone_list:
+                    zone_list.append(sname)
+            if sname in ['last_zone', 'last_zone_fname', 'last_zone_name', 'last_zone_title']:
+                if 'last_zone' not in zone_list:
+                    zone_list.append('last_zone')
+            if sname in ['gps_accuracy', 'vertical_accuracy',   'altitude']:
+                other_list.append(sname)
+
+        Gb.conf_sensors['device']            = device_list
+        Gb.conf_sensors['tracking_update']   = tracking_update
+        Gb.conf_sensors['tracking_time']     = tracking_time_list
+        Gb.conf_sensors['tracking_distance'] = tracking_distance_list
+        Gb.conf_sensors['tracking_by_zones'] = []
+        Gb.conf_sensors['tracking_other']    = tracking_other_list
+        Gb.conf_sensors['zone']              = zone_list
+        Gb.conf_sensors['other']             = other_list
 
         return
-
 
 
     #######################################################################
@@ -398,7 +458,6 @@ class iCloud3V3ConfigurationConverter(object):
 
             # See if there are any changes to the devices parameter on a restart. If nothing
             # changed, only change parameter values and bypass Stages 2, 3 & 4.
-            # Gb.config_track_devices_change_flag = False
             if self.config_track_devices_fields != self.config_track_devices_fields_last_restart:
                 self.config_track_devices_fields_last_restart = []
                 self.config_track_devices_fields_last_restart.extend(self.config_track_devices_fields)
@@ -407,7 +466,6 @@ class iCloud3V3ConfigurationConverter(object):
         except Exception as err:
             # log_exception(err)
             pass
-
 
 
     #######################################################################
@@ -426,90 +484,38 @@ class iCloud3V3ConfigurationConverter(object):
         if 'stationary_inzone_interval' in self.config_parm_general:
             self.config_parm_general[CONF_STAT_ZONE_INZONE_INTERVAL] = self.config_parm_general['stationary_inzone_interval']
 
-        _traceha(f"{self.config_parm_general=}")
-        _traceha(f"{Gb.conf_general=}")
-
-        Gb.conf_file_data = CF_DEFAULT_IC3_CONF_FILE
-        Gb.conf_profile   = Gb.conf_file_data[CF_PROFILE]
-        Gb.conf_data      = Gb.conf_file_data[CF_DATA]
-
-        Gb.conf_tracking = Gb.conf_data[CF_DATA_TRACKING]
-        Gb.conf_devices  = Gb.conf_data[CF_DATA_TRACKING][CONF_DEVICES]
-        Gb.conf_general  = Gb.conf_data[CF_DATA_GENERAL]
-        Gb.conf_sensors  = Gb.conf_data[CF_DATA_SENSORS]
-
         Gb.conf_tracking[CONF_USERNAME]                  = self.config_parm_tracking[CONF_USERNAME]
         Gb.conf_tracking[CONF_PASSWORD]                  = self.config_parm_tracking[CONF_PASSWORD]
         Gb.conf_tracking[CONF_DEVICES]                   = self.config_ic3_track_devices_fields
-        Gb.conf_devices                                  = self.config_ic3_track_devices_fields
 
-        Gb.conf_profile[CONF_EVENT_LOG_CARD_DIRECTORY]   = self.config_parm_general[CONF_EVENT_LOG_CARD_DIRECTORY]
-        Gb.conf_profile[CONF_EVENT_LOG_CARD_PROGRAM]     = self.config_parm_general[CONF_EVENT_LOG_CARD_PROGRAM]
+        Gb.conf_profile[CONF_EVENT_LOG_CARD_DIRECTORY]   = self.config_parm_general.get(CONF_EVENT_LOG_CARD_DIRECTORY, EVENT_LOG_CARD_WWW_DIRECTORY).replace('www', '').replace('/', '')
+        Gb.conf_profile[CONF_EVENT_LOG_CARD_PROGRAM]     = self.config_parm_general.get(CONF_EVENT_LOG_CARD_PROGRAM, EVENT_LOG_CARD_WWW_JS_PROG)
 
-        Gb.conf_general[CONF_UNIT_OF_MEASUREMENT]        = self._set_option_list_item(CONF_UNIT_OF_MEASUREMENT)
-        Gb.conf_general[CONF_TIME_FORMAT]                = self._set_option_list_item(CONF_TIME_FORMAT)
+        Gb.conf_general[CONF_UNIT_OF_MEASUREMENT]        = self.config_parm_general[CONF_UNIT_OF_MEASUREMENT].lower()
+        Gb.conf_general[CONF_TIME_FORMAT]                = f"{self.config_parm_general[CONF_TIME_FORMAT]}-hour"
         Gb.conf_general[CONF_TRAVEL_TIME_FACTOR]         = self.config_parm_general[CONF_TRAVEL_TIME_FACTOR]
-        Gb.conf_general[CONF_DISTANCE_METHOD]            = self._set_option_list_item(CONF_DISTANCE_METHOD)
+        Gb.conf_general[CONF_DISTANCE_METHOD]            = self.config_parm_general[CONF_DISTANCE_METHOD].lower()
         Gb.conf_general[CONF_MAX_INTERVAL]               = self.config_parm_general[CONF_MAX_INTERVAL]
         Gb.conf_general[CONF_GPS_ACCURACY_THRESHOLD]     = self.config_parm_general[CONF_GPS_ACCURACY_THRESHOLD]
         Gb.conf_general[CONF_OLD_LOCATION_THRESHOLD]     = self.config_parm_general[CONF_OLD_LOCATION_THRESHOLD]
-        Gb.conf_general[CONF_LOG_LEVEL]                  = OPT_LOG_LEVEL[0]
-        Gb.conf_general[CONF_DISPLAY_ZONE_FORMAT]        = self._set_option_list_item(CONF_DISPLAY_ZONE_FORMAT)
+        Gb.conf_general[CONF_LOG_LEVEL]                  = 'info'
+        Gb.conf_general[CONF_DISPLAY_ZONE_FORMAT]        = self.config_parm_general[CONF_DISPLAY_ZONE_FORMAT].lower()
         Gb.conf_general[CONF_CENTER_IN_ZONE]             = self.config_parm_general[CONF_CENTER_IN_ZONE]
-        Gb.conf_general[CONF_DISCARD_POOR_GPS_INZONE]    = self.config_parm_general.get(CONF_DISCARD_POOR_GPS_INZONE, False) \
-                                                            or self.config_parm_general.get(CONF_IGNORE_GPS_ACC_INZONE, False)
-        Gb.conf_general[CONF_WAZE_REGION]                = self._set_option_list_item(CONF_WAZE_REGION)
+        Gb.conf_general[CONF_DISCARD_POOR_GPS_INZONE]    = self.config_parm_general.get(CONF_DISCARD_POOR_GPS_INZONE, False)
+        Gb.conf_general[CONF_WAZE_REGION]                = self.config_parm_general[CONF_WAZE_REGION].lower()
         Gb.conf_general[CONF_WAZE_MIN_DISTANCE]          = self.config_parm_general[CONF_WAZE_MIN_DISTANCE]
         Gb.conf_general[CONF_WAZE_MAX_DISTANCE]          = self.config_parm_general[CONF_WAZE_MAX_DISTANCE]
         Gb.conf_general[CONF_WAZE_REALTIME]              = self.config_parm_general[CONF_WAZE_REALTIME]
 
         Gb.conf_general[CONF_STAT_ZONE_STILL_TIME]      = self.config_parm_general[CONF_STAT_ZONE_STILL_TIME]
-        Gb.conf_general[CONF_STAT_ZONE_BASE_LATITUDE]  = self.config_parm_general[CONF_STAT_ZONE_BASE_LATITUDE]
-        Gb.conf_general[CONF_STAT_ZONE_BASE_LONGITUDE] = self.config_parm_general[CONF_STAT_ZONE_BASE_LONGITUDE]
+        Gb.conf_general[CONF_STAT_ZONE_BASE_LATITUDE]   = self.config_parm_general[CONF_STAT_ZONE_BASE_LATITUDE]
+        Gb.conf_general[CONF_STAT_ZONE_BASE_LONGITUDE]  = self.config_parm_general[CONF_STAT_ZONE_BASE_LONGITUDE]
         Gb.conf_general[CONF_STAT_ZONE_INZONE_INTERVAL] = self.config_parm_general[CONF_STAT_ZONE_INZONE_INTERVAL]
-        Gb.conf_general[CONF_DISPLAY_TEXT_AS]            = self.config_parm_general[CONF_DISPLAY_TEXT_AS]
+        Gb.conf_general[CONF_DISPLAY_TEXT_AS]           = self.config_parm_general[CONF_DISPLAY_TEXT_AS]
 
-
-        write_storage_icloud3_configuration_file()
-        # if Gb.mode_integration:
-        # try:
-        #     with open(Gb.icloud3_config_filename, 'w') as f:
-        #         Gb.conf_profile[CONF_UPDATE_DATE] = ''
-        #         json.dump(Gb.conf_file_data, f, indent=4)
-        # except Exception as err:
-        #     _LOGGER.exception(err)
+        start_ic3.write_storage_icloud3_configuration_file()
 
         log_info_msg(f"Created iCloud3 configuration file - {Gb.icloud3_config_filename}")
-
-    #--------------------------------------------------------------------
-    def _set_option_list_item(self, pname):
-
-        pvalue =  self.config_parm_general[pname]
-        option_list = None
-        if pname == CONF_UNIT_OF_MEASUREMENT:
-            option_list = OPT_UNIT_OF_MEASUREMENT
-        elif pname == CONF_TIME_FORMAT:
-            option_list = OPT_TIME_FORMAT
-        elif pname == CONF_DISTANCE_METHOD:
-            option_list = OPT_DISTANCE_METHOD
-        elif pname == CONF_DISPLAY_ZONE_FORMAT:
-            option_list = OPT_DISPLAY_ZONE_FORMAT
-        elif pname == CONF_LOG_LEVEL:
-            option_list = OPT_LOG_LEVEL
-        elif pname == CONF_WAZE_REGION:
-            option_list = OPT_WAZE_REGION
-
-        if option_list:
-            return self._search_option_list(option_list, pvalue)
-        else:
-            return pvalue
-
-    def _search_option_list(self, option_list, pvalue):
-
-        for option in option_list:
-            if option.startswith(str(pvalue)):
-                return option
-        return option_list[0]
 
     #--------------------------------------------------------------------
     def _extract_name_device_type(self, devicename):

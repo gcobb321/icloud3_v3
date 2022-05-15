@@ -1,13 +1,14 @@
 
 
 from ..global_variables import GlobalVariables as Gb
-from ..const            import (UNKNOWN, HIGH_INTEGER, HHMMSS_ZERO, DATETIME_ZERO, DATETIME_FORMAT, )
+from ..const            import (UNKNOWN, HIGH_INTEGER, HHMMSS_ZERO, DATETIME_ZERO, DATETIME_FORMAT, WAZE_USED, )
 
 from .base              import (post_event, post_log_info_msg, internal_error_msg, )
 
 import time
-from   homeassistant.util.location import distance
+# from   homeassistant.util.location import distance
 import homeassistant.util.dt       as dt_util
+import time
 
 import logging
 _LOGGER = logging.getLogger(__name__)
@@ -26,6 +27,11 @@ def time_now_secs():
 def datetime_now():
     ''' Return now in MM/DD/YYYY hh:mm:ss format'''
     return (dt_util.now().strftime(DATETIME_FORMAT)[0:19])
+
+#--------------------------------------------------------------------
+def time_now():
+    ''' Return now in MM/DD/YYYY hh:mm:ss format'''
+    return (dt_util.now().strftime(DATETIME_FORMAT)[11:19])
 
 #--------------------------------------------------------------------
 def secs_to_time(timestamp_secs, hour_24=False):
@@ -53,7 +59,7 @@ def secs_to_time_str(secs):
         elif secs < 60:
             time_str = f"{secs:.0f} sec"
         elif secs < 3600:
-            time_str = f"{secs/60:.1f} min"
+            time_str = f"{secs/60:.0f} min"
         elif secs == 3600:
             time_str = "1 hr"
         else:
@@ -117,12 +123,41 @@ def secs_to_dhms_str(secs):
     return dhms_str
 
 #--------------------------------------------------------------------
+def waze_mins_to_time_str(waze_time_from_zone):
+    '''
+    Return:
+        Waze used:
+            The waze time string (hrs/mins) if Waze is used
+        Waze not used:
+            'N/A'
+    '''
+
+    #Display time to the nearest minute if more than 3 min away
+    if Gb.waze_status == WAZE_USED:
+        mins = waze_time_from_zone * 60
+        secs = 0
+        if mins > 180:
+            mins, secs = divmod(mins, 60)
+            mins = mins + 1 if secs > 30 else mins
+            secs = mins * 60
+
+        waze_time_str = secs_to_time_str(secs)
+
+    else:
+        waze_time_str = 'N/A'
+
+    return waze_time_str
+
+#--------------------------------------------------------------------
 def secs_since(timestamp_secs) -> int:
     return round(time.time() - timestamp_secs)
 #--------------------------------------------------------------------
 def secs_to(timestamp_secs) -> int:
     return round(timestamp_secs - time.time())
 #--------------------------------------------------------------------
+def hhmmss_to_secs(hhmmss):
+    return time_to_secs(hhmmss)
+
 def time_to_secs(hhmmss):
     """ Convert hh:mm:ss into seconds """
     try:
@@ -135,6 +170,14 @@ def time_to_secs(hhmmss):
     return secs
 
 #--------------------------------------------------------------------
+def secs_to_12hrtime(timestamp_secs, ampm=False):
+    """ Convert seconds to hh:mm:ss """
+    time_to_12hrtime(secs_to_time(timestamp_secs, ampm))
+
+#--------------------------------------------------------------------
+def hhmmss_to_12hrtime(hhmmss, ampm=False):
+    return time_to_12hrtime(hhmmss, ampm)
+
 def time_to_12hrtime(hhmmss, ampm=False):
     '''
     Change hh:mm:ss time to a 12 hour time
@@ -286,13 +329,50 @@ def datetime_to_secs(datetime, utc_local=False) -> int:
     return secs
 
 #--------------------------------------------------------------------
-def sleep_mins(sleep_minutes):
-    time.sleep(sleep_minutes)
+# def sleep_mins(sleep_minutes):
+#     time.sleep(sleep_minutes)
 
 #--------------------------------------------------------------------
 def timestamp4(timestamp_secs):
     ts_str = str(timestamp_secs).replace('.0', '')
     return str(ts_str)[-4:]
+
+#--------------------------------------------------------------------
+def secs_to_time_age_str(time_secs):
+    """ Secs to '17:36:05 (2 sec ago)' """
+    if time_secs == 0 or time_secs == HIGH_INTEGER:
+        return 'Never'
+
+    time_age_str = (f"{secs_to_time(time_secs)} "
+                    f"({secs_to_time_str(secs_since(time_secs))} ago)")
+
+    return time_age_str
+
+#--------------------------------------------------------------------
+def secs_to_12hrtime_age_str(time_secs, ampm=False):
+    """ Secs to '5:36:05p (2 sec ago)' """
+    if time_secs == 0 or time_secs == HIGH_INTEGER:
+        return 'Never'
+
+    time_age_str = (f"{time_to_12hrtime(secs_to_time(time_secs), ampm)} "
+                    f"({secs_to_time_str(secs_since(time_secs))} ago)")
+
+    return time_age_str
+
+#--------------------------------------------------------------------
+# def format_age_ts(time_secs):
+def secs_to_age_str(time_secs):
+    """ Secs to `2 sec ago`, `3 mins ago`/, 1.5 hrs ago` """
+    return f"{secs_to_time_str(secs_since(time_secs))} ago"
+
+#--------------------------------------------------------------------
+def format_age(secs):
+    """ Secs to `52.3y ago` """
+    return f"{secs_to_time_str(secs)} ago"
+
+#--------------------------------------------------------------------
+def format_date_time_now(strftime_parameters):
+    return dt_util.now().strftime(strftime_parameters)
 
 #########################################################
 #
@@ -305,8 +385,8 @@ def calculate_time_zone_offset():
     """
     try:
         local_zone_offset = dt_util.now().strftime('%z')
-        local_zone_offset_secs = int(local_zone_offset[1:3])*3600 + \
-                    int(local_zone_offset[3:])*60
+        local_zone_name   = dt_util.now().strftime('%Z')
+        local_zone_offset_secs = int(local_zone_offset[1:3])*3600 + int(local_zone_offset[3:])*60
         if local_zone_offset[:1] == "-":
             local_zone_offset_secs = -1*local_zone_offset_secs
 
@@ -320,8 +400,9 @@ def calculate_time_zone_offset():
         if (l_hhmmss == g_hhmmss):
             Gb.timestamp_local_offset_secs = local_zone_offset_secs
 
-        post_log_info_msg(f"Time Zone Offset > Local Zone {local_zone_offset[:3]}:{local_zone_offset[-2:]} hrs "
-                    f"({local_zone_offset_secs} secs)")
+        post_event(f"Local Time Zone Offset > "
+                            f"UTC{local_zone_offset[:3]}:{local_zone_offset[-2:]} hrs, "
+                            f"{local_zone_name}")
 
     except Exception as err:
         _LOGGER.exception(err)

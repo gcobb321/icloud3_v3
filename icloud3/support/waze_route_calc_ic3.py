@@ -22,7 +22,7 @@ import logging
 import requests
 import re
 
-from ..helpers.base     import (_traceha, log_exception)
+from ..helpers.base     import (_traceha, log_exception, log_error_msg, )
 
 
 class WRCError(Exception):
@@ -101,18 +101,19 @@ class WazeRouteCalculator(object):
         response.encoding = 'utf-8'
         response_json = self._check_response(response)
         if response_json:
-            if 'error' in response_json:
-                raise WRCError(response_json.get("error"))
-            else:
-                if response_json.get("alternatives"):
-                    return [alt['response'] for alt in response_json['alternatives']]
+            if 'error' not in response_json:
+                # if response_json.get("alternatives"):
+                #     return [alt['response'] for alt in response_json['alternatives']]
                 response_obj = response_json['response']
                 if isinstance(response_obj, list):
                     response_obj = response_obj[0]
 
                 return response_obj
-        else:
-            raise WRCError("empty response")
+
+        # raise WRCError("empty response")
+        error_msg = (f"Waze Server Error > No route info was returned, "
+                        f"({from_lat:0.5f}, {from_long:0.5f}) to ({to_lat:0.5f}, {to_long:0.5f})")
+        log_error_msg(error_msg)
 
     @staticmethod
     def _check_response(response):
@@ -141,20 +142,29 @@ class WazeRouteCalculator(object):
             return route_time, route_distance
 
         except Exception as err:
-            # log_exception(err)
+            log_exception(err)
             return (-1, -1)
 
-    def calc_route_info(self, from_lat, from_long, to_lat, to_long):
+    def calc_route_info(self, from_lat, from_long, to_lat, to_long, log_results_flag=True):
         """Calculate best route info."""
         try:
+            from_lat  = float(from_lat)
+            from_long = float(from_long)
+            to_lat    = float(to_lat)
+            to_long   = float(to_long)
+
             route = self.get_route(from_lat, from_long, to_lat, to_long)
-            route_time, route_distance = self._add_up_route(route['results'])
+            if route:
+                route_time, route_distance = self._add_up_route(route['results'])
 
-            self.log.info(f"Location: From-({from_lat:0.5f}, {from_long:0.5f}), To-({to_lat:0.5f}, {to_long:0.5f}), Region-{self.region}")
-            self.log.info(f"Results : Time-{route_time:0.2f}min, Distance-{route_distance:0.2f}km")
+                if log_results_flag:
+                    self.log.info(f"Location: ({from_lat:0.5f}, {from_long:0.5f}) to ({to_lat:0.5f}, {to_long:0.5f}), Region-{self.region}")
+                    self.log.info(f"Results : Time-{route_time:0.2f}min, Distance-{route_distance:0.2f}km")
 
-            return route_time, route_distance
+                return route_time, route_distance
+
+            return -1, -1
 
         except Exception as err:
-            # log_exception(err)
-            return (-1, -1)
+            log_exception(err)
+            return -1, -1

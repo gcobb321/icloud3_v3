@@ -1,13 +1,15 @@
 from ..global_variables import GlobalVariables as Gb
-from ..const            import (DATETIME_ZERO, HIGH_INTEGER, EVLOG_ALERT, EVLOG_NOTICE, CRLF_DOT, RARROW,
-                                LATITUDE, LONGITUDE, FRIENDLY_NAME,)
-from ..helpers.base     import (post_event, post_internal_error, post_monitor_msg, log_info_msg,
-                                log_exception, _trace, _traceha, )
+from ..const            import (DATETIME_ZERO, HIGH_INTEGER, EVLOG_ALERT, EVLOG_NOTICE,
+                                CRLF_DOT, RARROW, RARROW2, CHECK_MARK, HDOT, HDOT2, CRLF_CHK,
+                                LATITUDE, LONGITUDE, FRIENDLY_NAME,
+                                WAZE_LOCATION_HISTORY_DATABASE, )
+from ..helpers.base     import (broadcast_info_msg, post_event, post_internal_error, post_monitor_msg, log_info_msg,
+                                log_error_msg, log_exception, _trace, _traceha, )
 from ..helpers.time     import (datetime_now, secs_to_time_str, mins_to_time_str, )
 from ..helpers.format   import (format_dist, )
 from ..helpers.entity_io import (set_state_attributes, set_state_attributes, )
 from ..helpers.distance import (mi_to_km, )
-
+from ..support.waze_route_calc_ic3 import WRCError
 import homeassistant.util.dt as dt_util
 
 import traceback
@@ -100,25 +102,27 @@ UPDATE_LOCATION_TIME_DISTANCE = '''
 
 #<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 class WazeRouteHistory(object):
-    def __init__(self, wazehist_db_used, max_distance, map_track_direction):
+    def __init__(self, wazehist_used, max_distance, track_direction):
 
         # Flags to control db maintenance
-        self.wazehist_db_maintenance_abort_flag = False
-        self.wazehist_db_maintenance_running_flag = False
+        self.wazehist_recalculate_time_dist_abort_flag = False
+        self.wazehist_recalculate_time_dist_running_flag = False
 
-        self.use_wazehist_db_flag = wazehist_db_used
+        self.use_wazehist_flag = wazehist_used
         self.max_distance = mi_to_km(max_distance)
-        self.map_track_direction_north_south_flag = \
-                map_track_direction in ['north-south', 'north_south']
+        self.track_direction_north_south_flag = \
+                track_direction in ['north-south', 'north_south']
+        self.track_latitude  = 0      # used to update the icloud3_wazeist_track_gps sensor
+        self.track_longitude = 0
 
         self.connection = None
-        database = (f"{Gb.ha_config_directory}/waze_route_history.db")
-        post_event(f"Waze History Database > {database}")
+        wazehist_database = Gb.wazehist_database_filename
+        post_event(f"Waze Location History Database > {wazehist_database}")
 
-        self._create_connection(database)
+        self._create_connection(wazehist_database)
 
 #--------------------------------------------------------------------
-    def _create_connection(self, database):
+    def _create_connection(self, wazehist_database):
         """
         Create a database connection to the SQLite database
             specified by db_file
@@ -130,7 +134,7 @@ class WazeRouteHistory(object):
         self.cursor     = None
 
         try:
-            self.connection = sqlite3.connect(database, check_same_thread=False)
+            self.connection = sqlite3.connect(wazehist_database, check_same_thread=False)
             self.cursor     = self.connection.cursor()
 
             self._sql(CREATE_ZONES_TABLE)
@@ -182,7 +186,9 @@ class WazeRouteHistory(object):
             return True
 
         except:
-            post_internal_error(traceback.format_exc)
+            error_msg = f"Error updating Waze History Database, {sql}, {data}"
+            log_error_msg(error_msg)
+            # post_internal_error(traceback.format_exc)
             return False
 #--------------------------------------------------------------------
     def _delete_record(self, table, criteria=''):
@@ -302,7 +308,7 @@ class WazeRouteHistory(object):
 
             location_id = self._add_record(ADD_LOCATION_RECORD, location_data)
 
-            self._update_sensor_ic3_wazehist_map_gps(latitude, longitude)
+            self._update_sensor_ic3_wazehist_track(latitude, longitude)
 
             return location_id
 
@@ -340,6 +346,12 @@ class WazeRouteHistory(object):
         except:
             post_internal_error(traceback.format_exc)
 
+#--------------------------------------------------------------------
+    def compress_wazehist_database(self):
+        """ Compress the WazeHist Database """
+        self._sql("VACUUM;")
+        post_event("Waze Location History Database Compressed")
+
 ####################################################################################
 #
 #   WAZE HISTORY DATABASE MAINTENANCE SETUP
@@ -357,32 +369,29 @@ class WazeRouteHistory(object):
         '''
 
         try:
-            if self.use_wazehist_db_flag is False:
-                return
-
             # Check to see if all tracked from zones are in the zones table
-            Gb.wazehist_db_zone_id = {}
+            Gb.wazehist_zone_id = {}
             for from_zone, Zone in Gb.TrackedZones_by_zone.items():
                 criteria = (f"zone='{from_zone}'")
                 wazehist_zone_recd = self._get_record('zones', criteria)
 
                 if wazehist_zone_recd:
-                    Gb.wazehist_db_zone_id[from_zone] = wazehist_zone_recd[ZON_ID]
+                    Gb.wazehist_zone_id[from_zone] = wazehist_zone_recd[ZON_ID]
 
                     # If the zone location was changed by more than 5m, all waze distances/times
                     # need to be updated to the new location during the midnight maintenance check
                     if (abs(wazehist_zone_recd[ZON_LAT] - Zone.latitude) > 5
                             or abs(wazehist_zone_recd[ZON_LONG] - Zone.longitude) > 5):
-                        Gb.wazehist_db_zone_id[from_zone] = wazehist_zone_recd[ZON_ID] * -1
+                        Gb.wazehist_zone_id[from_zone] = wazehist_zone_recd[ZON_ID] * -1
 
-                        event_msg =(f"{EVLOG_ALERT}Waze History Database > "
+                        event_msg =(f"{EVLOG_ALERT}Waze Location History Database > "
                                     f"Zone Location Changed-{Zone.display_as} > "
                                     f"The zone location has changed by more than 5m. "
-                                    f"The Waze History will not be used for this zone "
+                                    f"The Waze Location History will not be used for this zone "
                                     f"until the history for this zone has been recalculated. "
-                                    f"(zoneId- {Gb.wazehist_db_zone_id[from_zone]})"
-                                    f"{CRLF_DOT}Select Event Log > Action > WazeHistory-DB "
-                                    f"Maintenance to do this now or,"
+                                    f"(zoneId- {Gb.wazehist_zone_id[from_zone]})"
+                                    f"{CRLF_DOT}Select `Event Log > Action > WazeHistory-"
+                                    f"Recalculate Route Time/Dist` to do this now or,"
                                     f"{CRLF_DOT}This will be done automatically tonight "
                                     f"at midnight.")
                         post_event(event_msg)
@@ -390,12 +399,12 @@ class WazeRouteHistory(object):
                 else:
                     zone_data = [from_zone, Zone.latitude, Zone.longitude]
                     zone_id   = self._add_record(ADD_ZONE_RECORD, zone_data)
-                    Gb.wazehist_db_zone_id[from_zone] = zone_id
+                    Gb.wazehist_zone_id[from_zone] = zone_id
 
-                    post_monitor_msg(   f"Waze History Database > Added zone > "
+                    post_monitor_msg(   f"Waze Location History Database > Added zone > "
                                         f"{from_zone}, zoneId-{zone_id}")
 
-                self._update_sensor_ic3_wazehist_map_gps(Zone.latitude5, Zone.longitude5)
+                self._update_sensor_ic3_wazehist_track(Zone.latitude5, Zone.longitude5)
 
         except:
             post_internal_error(traceback.format_exc)
@@ -406,7 +415,10 @@ class WazeRouteHistory(object):
 #   NOTE: RUNS EACH NIGHT AT MIDNIGHT
 #
 ####################################################################################
-    def wazehist_db_maintenance(self, all_zones_flag=False):
+    def wazehist_recalculate_time_dist_all_zones(self):
+        self.wazehist_recalculate_time_dist(all_zones_flag=True)
+
+    def wazehist_recalculate_time_dist(self, all_zones_flag=False):
         '''
         Various maintenance functions:
             1.  Recalculate the one time/distance values based on the current zone location for
@@ -416,20 +428,25 @@ class WazeRouteHistory(object):
         # Cycle through the zones. If the location change flag is set, cycle through the
         # waze history database for those zones and recalculate the time & distance.
         try:
-            if self.use_wazehist_db_flag is False:
-                return
+            Device = Gb.Devices[0]
+            records = self._get_all_records('locations')
+            total_cnt = len(records)
+
+            if self.use_wazehist_flag is False:
+                event_msg = (f"{EVLOG_NOTICE}Waze Location History is disabled in the "
+                            "iCloud3 configuration.")
+                post_event(event_msg)
 
             # Set the Abort Flag which is picked up in the update routine that is running
             # in another thread or as an asyncio task
-            if self.wazehist_db_maintenance_running_flag:
-                self.wazehist_db_maintenance_abort_flag = True
-                Gb.Devices[0].display_info_msg("Waze History DB Update Stopped")
+            if self.wazehist_recalculate_time_dist_running_flag:
+                self.wazehist_recalculate_time_dist_abort_flag = True
+                Device.display_info_msg("Waze Location History Update stopped")
                 return
 
-            self.wazehist_db_maintenance_running_flag = True
-
-            for zone, zone_id in Gb.wazehist_db_zone_id.items():
-                if self.wazehist_db_maintenance_abort_flag:
+            self.wazehist_recalculate_time_dist_running_flag = True
+            for zone, zone_id in Gb.wazehist_zone_id.items():
+                if self.wazehist_recalculate_time_dist_abort_flag:
                     break
                 elif all_zones_flag:
                     pass
@@ -452,14 +469,14 @@ class WazeRouteHistory(object):
 
                 maint_time_took = time.perf_counter() - maint_time
 
-                event_msg =(f"{EVLOG_NOTICE}Waze History Time & Distance Update Complete > "
-                            f"{zone_display_as} > "
+                event_msg =(f"{EVLOG_NOTICE}Waze Location History > Recalculate Time/Distance > Complete, "
+                            f"TrackFmZone-{zone_display_as}, "
                             f"Records-{total_cnt}, "
                             f"Updated-{update_cnt}, "
                             f"Deleted-{deleted_cnt}, "
                             f"Took-{secs_to_time_str(maint_time_took)}")
 
-                if self.wazehist_db_maintenance_abort_flag:
+                if self.wazehist_recalculate_time_dist_abort_flag:
                     event_msg = event_msg.replace('Complete', f'Stopped at #{recd_cnt}')
                     post_event(event_msg)
                     break
@@ -469,26 +486,26 @@ class WazeRouteHistory(object):
         except:
             post_internal_error(traceback.format_exc)
 
-        self._sql("VACUUM;")
+        self.compress_wazehist_database()
 
-        Gb.Devices[0].display_info_msg(f"Waze History Time & Distance Update Complete")
-        Gb.Devices[0].display_info_msg(Gb.Devices[0].format_info_text)
+        broadcast_info_msg(f"Waze History Time & Distance Update Complete")
 
-        self.wazehist_db_maintenance_running_flag = False
-        self.wazehist_db_maintenance_abort_flag   = False
+        self.wazehist_recalculate_time_dist_running_flag = False
+        self.wazehist_recalculate_time_dist_abort_flag   = False
 
 #--------------------------------------------------------------------
     def _cycle_through_wazehist_records(self, zone_id, zone_display_as, zone_from_loc):
         '''
 
         '''
+        Device = Gb.Devices[0]
         criteria = (f"zone_id={abs(zone_id)}")
         orderby  = "lat_long_key"
         records  = self._get_all_records('locations', criteria=criteria, orderby=orderby)
 
         total_cnt = len(records)
-        event_msg =(f"{EVLOG_NOTICE}Waze History Time & Distance Update Started > "
-                    f"{zone_display_as} > "
+        event_msg =(f"{EVLOG_NOTICE}Waze Location History > Recalculate Time/Distance Started, "
+                    f"TrackFmZone-{zone_display_as}, "
                     f"Records-{total_cnt}")
         post_event(event_msg)
 
@@ -499,7 +516,7 @@ class WazeRouteHistory(object):
         last_recd_loc_id       = 0
 
         for record in records:
-            if self.wazehist_db_maintenance_abort_flag:
+            if self.wazehist_recalculate_time_dist_abort_flag:
                 break
 
             recd_cnt += 1
@@ -511,14 +528,12 @@ class WazeRouteHistory(object):
                     self.update_usage_cnt(last_recd_loc_id)
                     criteria = (f"loc_id={record[LOC_ID]};")
                     self._delete_record('locations', criteria)
-                    log_msg = (f"WazeHist DB updated, (#{recd_cnt}), "
+                    log_msg = (f"Waze Location History updated, (#{recd_cnt}), "
                                 f"deleted duplicate record, "
                                 f"LocationKey-{record[LOC_LAT_LONG_KEY]}, "
                                 f"id-{record[LOC_ID]}")
                     log_info_msg(log_msg)
                     deleted_cnt += 1
-                    update_time_char = 'X'
-                    update_dist_char = 'X'
 
                 # Get new waze time & distance and update the location record
                 else:
@@ -534,23 +549,42 @@ class WazeRouteHistory(object):
                                                         record[LOC_TIME],
                                                         record[LOC_DIST])
 
+                    # There was an error getting the new Waze time/dist info
+                    if new_time == -1 or new_dist == -1:
+                        continue
+
                     if update_time_flag or update_dist_flag:
                         update_cnt += 1
+                        update_msg = f"✓.."
+                    else:
+                        update_msg = f"⊗.."
 
-                    update_time_char = 'T' if update_time_flag else '-'
-                    update_dist_char = 'D' if update_dist_flag else '-'
+                info_msg = (f"Recalc Time/Dist > {zone_display_as[:6]}, "
+                            f"{recd_cnt} of {total_cnt}, ChgCnt-{update_cnt}, "
+                            f"{update_msg}"
+                            f"Time-({record[LOC_TIME]:0.1f}{RARROW2}{new_time:0.1f}min), "
+                            f"Dist-({record[LOC_DIST]:0.1f}{RARROW2}{new_dist:0.1f}km) "
+                            "Note: Select `EventLog > Action > Recalculate Route Time/Dist` again "
+                            "to cancel")
+                Device.display_info_msg(info_msg)
 
-                Gb.Devices[0].display_info_msg(f"Waze Hist DB > {zone_display_as[:8]}, "
-                            f"#{recd_cnt}/{total_cnt}, Updated_#{update_cnt}, "
-                            f"Time({record[LOC_TIME]:0.1f}{RARROW}{new_time:0.1f}min), "
-                            f"Dist({record[LOC_DIST]:0.1f}{RARROW}{new_dist:0.1f}km) "
-                            f"{update_time_char}{update_dist_char}")
+                if (recd_cnt % 25) == 0:
+                    log_msg = (f"Waze Location History, Zone-{zone_display_as}, Recds-{total_cnt}, "
+                                f"Processed-{recd_cnt}, Updated-{update_cnt}")
+                    log_info_msg(log_msg)
 
             except:
                 post_internal_error(traceback.format_exc)
 
-            if self.wazehist_db_maintenance_abort_flag:
+            if self.wazehist_recalculate_time_dist_abort_flag:
                 break
+
+            #** 5/15/2022 Delete all records with invalid times or distances
+            self._delete_record('locations', 'time < 0 or distance < 0')
+
+        log_msg = (f"Waze Location History, Zone-{zone_display_as}, Recds-{total_cnt}, "
+                    f"Processed-{recd_cnt}, Updated-{update_cnt}")
+        log_info_msg(log_msg)
 
         return recd_cnt, total_cnt, update_cnt, deleted_cnt
 #--------------------------------------------------------------------
@@ -561,8 +595,8 @@ class WazeRouteHistory(object):
             - time difference > +- 15-sec
             - distance difference > 50m
         '''
-        if self.wazehist_db_maintenance_abort_flag:
-            return False, 0, 0
+        if self.wazehist_recalculate_time_dist_abort_flag:
+            return False, False, 0, 0
 
         wazehist_to_loc  = wazehist_to_loc.replace(':', ',')
 
@@ -571,9 +605,16 @@ class WazeRouteHistory(object):
         retry_cnt = 0
         while retry_cnt < 3:
             try:
-                Gb.Waze.WazeRouteTimeDistObj.__init__(zone_from_loc, wazehist_to_loc, Gb.Waze.waze_region)
-                new_time, new_dist = Gb.Waze.WazeRouteTimeDistObj.calc_route_info(Gb.Waze.waze_realtime)
+                # Gb.Waze.WazeRouteTimeDistObj.__init__(zone_from_loc, wazehist_to_loc, Gb.Waze.waze_region)
+                # new_time, new_dist = Gb.Waze.WazeRouteTimeDistObj.calc_route_info(Gb.Waze.waze_realtime)
 
+                from_lat, from_long = zone_from_loc.split(',')
+                to_lat  , to_long   = wazehist_to_loc.split(',')
+
+                new_time, new_dist = \
+                            Gb.Waze.WazeRouteCalc.calc_route_info   (from_lat, from_long,
+                                                                    to_lat, to_long,
+                                                                    log_results_flag=False)
                 break
 
             except WRCError as err:
@@ -582,73 +623,93 @@ class WazeRouteHistory(object):
                 log_exception(err)
                 # post_internal_error('Update WazeHist Recd', traceback.format_exc)
 
+        #** 5/15/2022 Make sure values are above 0
+        if (new_time < 0
+                or new_dist < 0):
+            return False, False, 0, 0
+
         update_time_flag = (abs(new_time - current_time) > .25)
         update_dist_flag = (abs(new_dist - current_dist) > .05)
 
-        if update_time_flag or update_dist_flag:
-            new_time = round(new_time, 2)
-            new_dist = round(new_dist, 3)
+        if (update_time_flag is False
+                and update_dist_flag is False):
+            return update_time_flag, update_dist_flag, new_time, new_dist
 
-            route_data = [new_time, new_dist, loc_id]
+        new_time = round(new_time, 2)
+        new_dist = round(new_dist, 3)
 
-            self._update_record(UPDATE_LOCATION_TIME_DISTANCE, route_data)
+        route_data = [new_time, new_dist, loc_id]
 
-            log_msg = (f"WazeHist DB updated (#{recd_cnt}), "
-                        f"Time({current_time:0.1f}{RARROW}{new_time:0.1f}min), "
-                        f"Dist({current_dist:0.1f}{RARROW}{new_dist:0.1f}km), "
-                        f"id={loc_id}")
-            log_info_msg(log_msg)
+        self._update_record(UPDATE_LOCATION_TIME_DISTANCE, route_data)
+
+        # log_msg = (f"Waze Location History updated (#{recd_cnt}), "
+        #             f"Time({current_time:0.1f}{RARROW}{new_time:0.1f}min), "
+        #             f"Dist({current_dist:0.1f}{RARROW}{new_dist:0.1f}km), "
+        #             f"id={loc_id}")
+        # log_info_msg(log_msg)
 
         return update_time_flag, update_dist_flag, new_time, new_dist
 
 ####################################################################################
 #
-#   WAZE HISTORY MAP SENSOR UPDATE, RUNS EACH NIGHT AT MIDNIGHT
+#   WAZE HISTORY TRACK SENSOR UPDATE, RUNS EACH NIGHT AT MIDNIGHT
 #
 ####################################################################################
-    def wazehist_db_update_map_gps_sensor(self):
+    def wazehist_update_track_sensor(self):
         '''
         Cycle through all recds in the locations table and fill in the latitude/longitude
-        of the sensor.icloud3_wazehist_map_gps entity. This lets you see all the locations
+        of the sensor.icloud3_wazehist_track entity. This lets you see all the locations
         in the wazehist database on a lovelace map.
         '''
-        if self.use_wazehist_db_flag is False:
-            return
 
         Device = Gb.Devices[0]
 
-        if self.map_track_direction_north_south_flag:
+        if self.track_direction_north_south_flag:
             orderby = 'latitude, longitude'
+            orderby_text = "North-South"
         else:
             orderby = 'longitude, latitude'
+            orderby_text = "East-West"
 
         records = self._get_all_records('locations', orderby=orderby)
-
         total_cnt = len(records)
-        recd_cnt = 0
-        for record in records:
-            recd_cnt += 1
-            if recd_cnt == 30:
-                break
-            Device.display_info_msg(f"Waze History Maintenance > Update Map Sensor > "
-                                    f"Records-{recd_cnt}/{total_cnt}, "
-                                    f"GPS-{record[LOC_LAT_LONG_KEY]}")
 
-            self._update_sensor_ic3_wazehist_map_gps(record[LOC_LAT], record[LOC_LONG])
+        if self.use_wazehist_flag is False:
+            event_msg = (f"{EVLOG_NOTICE}Waze Location History is disabled in the "
+                        "iCloud3 configuration.")
+            post_event(event_msg)
+        event_msg = (f"Waze Location History > Refreshing locations that can be displayed "
+                        f"in a HA Map using `sensor.icloud3_wazehist_track`, "
+                        f"RecordCnt-{total_cnt}, "
+                        f"OrderedBy-{orderby_text}")
+        post_event(event_msg)
 
-        Device.display_info_msg(Device.format_info_text)
+        try:
+            recd_cnt = 0
+            for record in records:
+                recd_cnt += 1
+                # if recd_cnt == 30:
+                #     break
+                info_msg = (f"Waze Location History > "
+                            f"Records-{recd_cnt}/{total_cnt}, "
+                            f"GPS-{record[LOC_LAT_LONG_KEY]}")
+                Device.display_info_msg(info_msg)
+
+                self._update_sensor_ic3_wazehist_track(record[LOC_LAT], record[LOC_LONG])
+
+            self._update_sensor_ic3_wazehist_track(Gb.HomeZone.latitude, Gb.HomeZone.longitude)
+
+            Device.display_info_msg(Device.format_info_msg)
+
+        except Exception as err:
+            log_exception(err)
 
 #--------------------------------------------------------------------
-    def _update_sensor_ic3_wazehist_map_gps(self, latitude, longitude):
+    def _update_sensor_ic3_wazehist_track(self, latitude, longitude):
         '''
         Update the sensor with the latitude/longitude locations
         '''
-        sensor_entity = 'sensor.icloud3_wazehist_map_gps'
-        sensor_attrs = {}
-        sensor_attrs[LATITUDE]  = latitude
-        sensor_attrs[LONGITUDE] = longitude
-        sensor_attrs[FRIENDLY_NAME] = 'WazeHist'
-
-        state_value = (f"{latitude}:{longitude}")
-
-        set_state_attributes(sensor_entity, state_value, sensor_attrs)
+        if Gb.WazeHist and Gb.WazeHistTrackSensor:
+            self.track_latitude = latitude
+            self.track_longitude = longitude
+            Gb.WazeHistTrackSensor.async_update_sensor()

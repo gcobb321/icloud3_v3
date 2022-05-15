@@ -12,7 +12,7 @@
 //  If they do not match, the one in the 'custom_components\icloud3' is copied
 //  to the 'www\custom_cards' directory.
 //
-//  Version=3.0.0 (9/19/2021)
+//  Version=3.0.10
 //
 //
 /////////////////////////////////////////////////////////////////////////////
@@ -26,7 +26,7 @@ class iCloud3EventLogCard extends HTMLElement {
     }
     //---------------------------------------------------------------------------
     setConfig(config) {
-        const version   = "3.0.1"
+        const version   = "3.0.10"
         const cardTitle = "iCloud3 Event Log v3"
 
         const root = this.shadowRoot
@@ -139,6 +139,7 @@ class iCloud3EventLogCard extends HTMLElement {
         var btnActionOptG1    = document.createElement("option")
         var btnActionOptG1Txt = document.createTextNode("Restart iCloud3")
         btnActionOptG1.setAttribute("value", "restart")
+        btnActionOptG1.setAttribute("text-align", "left")
         btnActionOptG1.classList.add("btnActionOption")
         btnActionOptG1.appendChild(btnActionOptG1Txt)
         btnAction.appendChild(btnActionOptG1)
@@ -232,7 +233,7 @@ class iCloud3EventLogCard extends HTMLElement {
         btnAction.appendChild(btnActionOptOC3)
 
         var btnActionOptOC8    = document.createElement("option")
-        var btnActionOptOC8Txt = document.createTextNode("WazeHistDB-Update Route Time/Dist")
+        var btnActionOptOC8Txt = document.createTextNode("WazeHist-Recalculate Route Time/Dist")
         btnActionOptOC8.setAttribute("value", "wazehist_maint")
         btnActionOptOC8.setAttribute("id", "optWazeHistMaint")
         btnActionOptOC8.classList.add("btnActionOption")
@@ -240,9 +241,9 @@ class iCloud3EventLogCard extends HTMLElement {
         btnAction.appendChild(btnActionOptOC8)
 
         var btnActionOptOC7    = document.createElement("option")
-        var btnActionOptOC7Txt = document.createTextNode("WazeHistDB-Load Locations for Map")
-        btnActionOptOC7.setAttribute("value", "wazehist_map_gps_sensor")
-        btnActionOptOC7.setAttribute("id", "optWazeHistMapLoc")
+        var btnActionOptOC7Txt = document.createTextNode("WazeHist-Load Track Locations for Map")
+        btnActionOptOC7.setAttribute("value", "wazehist_track")
+        btnActionOptOC7.setAttribute("id", "optWazeHistTrack")
         btnActionOptOC7.classList.add("btnActionOption")
         btnActionOptOC7.appendChild(btnActionOptOC7Txt)
         btnAction.appendChild(btnActionOptOC7)
@@ -271,6 +272,11 @@ class iCloud3EventLogCard extends HTMLElement {
         btnActionOptOC6.classList.add("btnActionOption")
         btnActionOptOC6.appendChild(btnActionOptOC6Txt)
         btnAction.appendChild(btnActionOptOC6)
+
+        var btnActionOptAbout = document.createElement("option")
+        var btnActionOptAboutTxt = document.createTextNode("----- iCloud3 Event Log v"+version+" -----")
+        btnActionOptAbout.appendChild(btnActionOptAboutTxt)
+        btnAction.appendChild(btnActionOptAbout)
         //-------------------------------------------------------------
         // SVG Icons source -- https://heroicons.com/
         const btnHelp = document.createElement('A')
@@ -714,14 +720,17 @@ class iCloud3EventLogCard extends HTMLElement {
             .btnActionOptionGroup {
                 background-color: var(--primary-background-color);
                 color: var(--primary-text-color);
+                text-align: left;
             }
             .btnActionOptionTransparent {
                 background-color: var(--primary-background-color);
                 color: var(--primary-text-color);
+                text-align: left;
             }
             .btnActionOption {
                 background-color: var(--primary-background-color);
                 color: var(--primary-text-color);
+                text-align: left;
             }
 
             /*  IPHONE IPAD Mods */
@@ -1495,20 +1504,20 @@ class iCloud3EventLogCard extends HTMLElement {
         /* Handle the button press events. Get the devicename, do an 'icloud3_update'
         event_log devicename' service call to have the event_log attribute populated.
         */
-        const root              = this.shadowRoot
-        const hass              = this._hass
-        this.namesAttr          = hass.states['sensor.icloud3_event_log'].attributes['names']
-        const namesAttr         = this.namesAttr
-        const names             = Object.values(namesAttr)
-        const devicenames       = Object.keys(namesAttr)
-        const logRecdCnt        = root.getElementById("logRecdCnt")
-        const thisButtonId      = root.getElementById("thisButtonId")
+        const root = this.shadowRoot
+        const hass = this._hass
+        this.namesAttr = hass.states['sensor.icloud3_event_log'].attributes['names']
+        const namesAttr = this.namesAttr
+        const names = Object.values(namesAttr)
+        const devicenames = Object.keys(namesAttr)
+        const logRecdCnt = root.getElementById("logRecdCnt")
+        const thisButtonId = root.getElementById("thisButtonId")
         const thisButtonPressed = root.getElementById(buttonPressId)
 
-        var lastButtonId        = this._currentButtonId()
-        var lastButtonPressed   = root.getElementById(lastButtonId)
-        var buttonPressX        = buttonPressId.substr(-1)
-        var statusName         = names[buttonPressX]+"  ("+devicenames[buttonPressX]+")"
+        var lastButtonId = this._currentButtonId()
+        var lastButtonPressed = root.getElementById(lastButtonId)
+        var buttonPressX = buttonPressId.substr(-1)
+        var statusName = names[buttonPressX] + "  (" + devicenames[buttonPressX] + ")"
 
         this._displayNameMsgL(statusName)
         thisButtonId.innerText = buttonPressId
@@ -1519,10 +1528,20 @@ class iCloud3EventLogCard extends HTMLElement {
         thisButtonPressed.classList.add('btnSelected')
         thisButtonPressed.classList.remove("btnHover")
 
-        this._hass.callService("icloud3", "action", {
-            device_name: devicenames[buttonPressX],
-            command: 'refresh_event_log'})
+        // No action call when displaying startup messages
+        var currName = names[buttonPressX]
+        if (currName.startsWith("initializing")) {
+            'pass'
+        } else if (currName.startsWith("stage")) {
+            'pass'
+        } else {
+            this._hass.callService("icloud3", "action", {
+                device_name: devicenames[buttonPressX],
+                command: 'refresh_event_log'
+            })
+        }
     }
+    //  (" + devicenames[buttonPressX],
 
 //---------------------------------------------------------------------------
     _commandButtonPress(actionButton) {

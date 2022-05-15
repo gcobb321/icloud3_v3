@@ -6,18 +6,15 @@ from ..const             import (NOT_SET, HIGH_INTEGER, NUMERIC, IOS_TRIGGERS_EX
                                 STATIONARY, STAT_ZONE_MOVE_DEVICE_INTO, STAT_ZONE_MOVE_TO_BASE,
                                 STAT_ZONE_NO_UPDATE, ENTER_ZONE, EXIT_ZONE, NOT_HOME, __init__,
                                 TRIGGER, LATITUDE, LONGITUDE, TRIGGER,
-                                GPS_ACCURACY, VERT_ACCURACY, BATTERY_LEVEL, ALTITUDE, )
+                                GPS_ACCURACY, VERT_ACCURACY, BATTERY_LEVEL, ALTITUDE, PASS_THRU_ZONE_INTERVAL_SECS, )
 
 from ..helpers.base      import (instr, is_statzone,
                                 post_event, post_error_msg, post_log_info_msg, post_monitor_msg,
                                 log_exception, _trace, _traceha, )
-from ..helpers.time      import (secs_to_time, secs_since, datetime_to_secs, )
+from ..helpers.time      import (secs_to_time, secs_since, datetime_to_secs, time_now_secs, )
 from ..helpers.format    import (format_gps, format_time_age, format_age, )
 from ..helpers.entity_io import (get_state, get_attributes, get_last_changed_time, extract_attr_value, )
 from ..support           import iosapp_interface as iosapp_interface
-
-
-
 
 
 
@@ -68,15 +65,17 @@ def check_iosapp_state_trigger_change(Device):
         dist_home = Gb.HomeZone.distance_m(Device.iosapp_data_latitude, Device.iosapp_data_longitude)
 
         # If enter/exit zone, save zone and enter/exit time
+                # and Device.iosapp_data_state != NOT_HOME
         if (Device.iosapp_data_trigger == EXIT_ZONE
-                and Device.iosapp_data_state != NOT_HOME
+                and Device.is_inzone_iosapp_state
                 and Device.iosapp_data_state_secs >= Device.iosapp_zone_exit_secs):
             Device.iosapp_zone_exit_secs = Device.iosapp_data_state_secs
             Device.iosapp_zone_exit_time = Device.iosapp_data_state_time
             Device.iosapp_zone_exit_zone = Device.iosapp_zone_enter_zone
 
+                # and Device.iosapp_data_state != NOT_HOME
         if (Device.iosapp_data_trigger == ENTER_ZONE
-                and Device.iosapp_data_state != NOT_HOME
+                and Device.is_inzone_iosapp_state
                 and Device.iosapp_data_state_secs >= Device.iosapp_zone_enter_secs):
             Device.iosapp_zone_enter_secs = Device.iosapp_data_state_secs
             Device.iosapp_zone_enter_time = Device.iosapp_data_state_time
@@ -90,10 +89,11 @@ def check_iosapp_state_trigger_change(Device):
             Device.iosapp_data_trigger_time = secs_to_time(iosapp_data_state_secs)
             Device.iosapp_data_trigger      = iosapp_data_trigger
 
+
         # dist_home = Gb.HomeZone.distance_m(Device.iosapp_data_latitude, Device.iosapp_data_longitude)
         iosapp_msg =(f"iOSApp Monitor > "
                     f"ThisTrigger-{Device.iosapp_data_trigger}@{Device.iosapp_data_trigger_time} (%tage), "
-                    f"LastTrigger-{Device.attrs[TRIGGER]}, "
+                    f"LastTrigger-{Device.sensors[TRIGGER]}, "
                     f"ThisState-{Device.iosapp_data_state}@{Device.iosapp_data_state_time} (%sage), "
                     f"GPS-{format_gps(Device.iosapp_data_latitude, Device.iosapp_data_longitude, Device.iosapp_data_gps_accuracy)}, "
                     f"LastLocTime-{Device.loc_data_time}, "
@@ -106,7 +106,6 @@ def check_iosapp_state_trigger_change(Device):
             iosapp_msg +=(f", LastZoneExit-{Device.iosapp_zone_exit_zone}@"
                             f"{Device.iosapp_zone_exit_time}")
 
-
         if iosapp_data_state_not_set_flag:
             Device.iosapp_data_change_reason = "iOSApp Initial Locate"
             Device.iosapp_data_trigger       = "iOSApp Initial Locate"
@@ -117,14 +116,24 @@ def check_iosapp_state_trigger_change(Device):
             Device.iosapp_data_reject_reason = "Stat Zone Base Location"
 
         # Reject State and trigger changes older than the current data
-        elif (Device.iosapp_data_state_secs <= Device.attrs_located_secs
-                and Device.iosapp_data_trigger_secs <= Device.attrs_located_secs):
+        elif (Device.iosapp_data_state_secs <= Device.last_attrs_update_loc_secs
+                and Device.iosapp_data_trigger_secs <= Device.last_attrs_update_loc_secs):
             Device.iosapp_data_reject_reason = "Before Last Update"
 
+        # Check just entered non-tracked zone and delay entry in case just passing thru
+        elif (Device.is_inzone_iosapp_state
+                and Device.isnot_inzone
+                and Device.iosapp_data_state not in Device.DeviceFmZones_by_zone
+                and secs_since(Device.iosapp_data_state_secs) < 60
+                and Device.passthru_zone_expire_secs == 0):
+            Device.iosapp_data_reject_reason = "Pass through zone delay"
+            Device.passthru_zone_expire_secs = Gb.this_update_secs + PASS_THRU_ZONE_INTERVAL_SECS
+
         # RegionExit trigger and the trigger changed from last poll overrules trigger change time
+                # and Device.iosapp_data_state == NOT_HOME):
         elif (Device.iosapp_data_trigger == EXIT_ZONE
-                and Device.iosapp_data_state == NOT_HOME):
-            Device.iosapp_data_reject_reason = (f"Exit Zone and not in a zone")
+                and Device.isnot_inzone_iosapp_state):
+            Device.iosapp_data_reject_reason = "Exit Zone and not in a zone"
 
         # RegionExit trigger and the trigger changed from last poll overrules trigger change time
         elif (Device.iosapp_data_trigger == EXIT_ZONE
@@ -157,16 +166,30 @@ def check_iosapp_state_trigger_change(Device):
             Device.iosapp_data_reject_reason = (f"Poor GPS Accuracy-{Device.iosapp_data_gps_accuracy}m "
                                 f"(#{Device.old_loc_poor_gps_cnt})")
 
+        if (Device.iosapp_data_reject_reason != "Before Last Update"
+                and Device.passthru_zone_expire_secs > 0):
+            _trace(Device.devicename,f"PASSTHRUTEST > "
+                f"TriggerTime-{Device.iosapp_data_trigger_time}, "
+                f"Trigger-{Device.iosapp_data_trigger}, "
+                f"inZoneiOSAppState-{Device.is_inzone_iosapp_state}, DevAway-{Device.isnot_inzone}, "
+                f"NotTfZ-{Device.iosapp_data_state not in Device.DeviceFmZones_by_zone}, "
+                f"secsSinceiosappStateChg-{secs_since(Device.iosapp_data_state_secs)}, "
+                f"rejReason-{Device.iosapp_data_reject_reason}, "
+                f"chgReason-{Device.iosapp_data_change_reason}, "
+                f"passThruExpireTime={secs_to_time(Device.passthru_zone_expire_secs)}/"
+                f"{Device.passthru_zone_expire_secs}")
+
+
         # Discard StatZone entered if StatZone was created in the last 15-secs
         if (Device.iosapp_data_trigger == ENTER_ZONE
                 and is_statzone(Device.iosapp_data_state)
-                and Device.attrs_zone == STATIONARY
+                and Device.last_attrs_update_loc_zone == STATIONARY
                 and secs_since(Device.loc_data_secs <= 15)):
             Device.iosapp_data_reject_reason = "Enter into StatZone just created"
 
         # Discard if already in the zone
         elif (Device.iosapp_data_trigger == ENTER_ZONE
-                and Device.iosapp_data_state == Device.attrs_zone):
+                and Device.iosapp_data_state == Device.last_attrs_update_loc_zone):
             Device.iosapp_data_reject_reason = "Enter Zone and already in zone"
 
         #trigger time is after last locate
@@ -177,7 +200,7 @@ def check_iosapp_state_trigger_change(Device):
 
         # TODO 8/26 <<
         # No update needed if no location changes
-        elif (Device.iosapp_data_state == Device.attrs_zone
+        elif (Device.iosapp_data_state == Device.last_attrs_update_loc_zone
                 and Device.iosapp_data_latitude == Device.loc_data_latitude
                 and Device.iosapp_data_longitude == Device.loc_data_longitude):
             Device.iosapp_data_reject_reason = "Location did not change"
@@ -206,7 +229,8 @@ def check_iosapp_state_trigger_change(Device):
         else:
             Device.iosapp_data_reject_reason = "Failed Update Tests"
 
-        Device.iosapp_data_updated_flag = (Device.iosapp_data_change_reason != "")
+        # **changed 4/28# Device.iosapp_data_updated_flag = (Device.iosapp_data_change_reason != "")
+        Device.iosapp_data_updated_flag = (Device.iosapp_data_reject_reason == "")
         iosapp_msg += (f", WillUpdate-{Device.iosapp_data_updated_flag}")
 
         if Device.iosapp_data_change_reason:
@@ -287,6 +311,17 @@ def check_if_iosapp_is_alive(Device):
     try:
         if Device.iosapp_monitor_flag is False:
             return
+
+        # Send a location request f the iosapp data is more than 1-hour old
+        if secs_since(Device.iosapp_data_secs) > 3600:
+            # If a request was sent, wait 10-minutes before sending another one
+            if (Device.iosapp_request_loc_sent_flag
+                    and secs_since(Device.iosapp_request_loc_sent_secs) > 600):
+                Device.iosapp_request_loc_sent_flag = False
+
+            iosapp_interface.request_location(Device)
+
+        return
 
         # Request the iosapp location every 6 hours
         if (Gb.this_update_time in ['23:45:00', '05:45:00', '11:45:00', '17:45:00']

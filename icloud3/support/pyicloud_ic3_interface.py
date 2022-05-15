@@ -1,8 +1,8 @@
 
 from ..global_variables import GlobalVariables as Gb
-from ..const            import (NOT_SET, HOME, HIGH_INTEGER, EVLOG_ALERT, EVLOG_ERROR, CRLF_DOT,
+from ..const            import (NOT_SET, HOME, HIGH_INTEGER, EVLOG_ALERT, EVLOG_ERROR, CRLF_DOT, CRLF,
                                 ICLOUD, DOMAIN, IOSAPP,
-                                CONF_TRACKING_METHOD, OPT_TRACKING_METHOD, OPT_TM_IOSAPP_ONLY,
+                                CONF_TRACKING_METHOD,
                                 STORAGE_DIR,
                                 LATITUDE, AUTHENTICATED, CONF_NAME, CONF_USERNAME, CONF_PASSWORD, )
 
@@ -54,7 +54,8 @@ def pyicloud_initialize_device_api():
     try:
         ##config_flow mod
         # Gb.icloud_cookies_dir  = Gb.hass.config.path(STORAGE_DIR, STORAGE_KEY_ICLOUD)
-        Gb.icloud_cookies_dir  = Gb.ha_storage_icloud3
+        Gb.icloud_cookies_dir  = Gb.hass.config.path(STORAGE_DIR, 'icloud')
+        # Gb.icloud_cookies_dir  = Gb.ha_storage_icloud3
         Gb.icloud_cookies_file = "".join([c for c in Gb.username if match(r"\w", c)])
         if not os.path.exists(Gb.icloud_cookies_dir):
             os.makedirs(Gb.icloud_cookies_dir)
@@ -84,13 +85,12 @@ def pyicloud_authenticate_account(initial_setup=False):
     '''
     try:
         # If not using the iCloud location svcs, nothing to do
-        _traceha(f"87 pyi {Gb.tracking_method_use_icloud=} {Gb.tracking_method_use_iosapp=}")
-        if Gb.tracking_method_use_icloud is False:
-            return
-        elif Gb.username == '' or Gb.password == '':
+        if (Gb.data_source_use_icloud is False
+                or Gb.username == ''
+                or Gb.password == ''):
             return
 
-        auth_start_time = time.time()
+        Gb.pyicloud_auth_started_secs = time.time()
         if Gb.PyiCloud:
             Gb.PyiCloud.authenticate(refresh_session=True, service='find')
 
@@ -100,7 +100,7 @@ def pyicloud_authenticate_account(initial_setup=False):
                                     session_directory=(f"{Gb.icloud_cookies_dir}/session"),
                                     with_family=True)
 
-        Gb.pyicloud_calls_time += (time.time() - auth_start_time)
+        Gb.pyicloud_calls_time += (time.time() - Gb.pyicloud_auth_started_secs)
         if Gb.authentication_error_retry_secs != HIGH_INTEGER:
             Gb.authenticated_time = 0
             Gb.authentication_error_retry_secs = HIGH_INTEGER
@@ -113,10 +113,15 @@ def pyicloud_authenticate_account(initial_setup=False):
 
         reset_authentication_time()
 
-    except (PyiCloudFailedLoginException, PyiCloudNoDevicesException,
-            PyiCloudAPIResponseException) as err:
+    except (PyiCloudAPIResponseException, PyiCloudFailedLoginException,
+                PyiCloudNoDevicesException) as err:
 
-        _is_authentication_2fa_code_needed()
+        event_msg =(f"iCloud3 Error > An error occurred communicating with "
+                    f"iCloud Account servers. This can be caused by:"
+                    f"{CRLF_DOT}Your network or wifi is down, or"
+                    f"{CRLF_DOT}Apple iCloud servers are down"
+                    f"{CRLF}Error-{err}")
+        post_error_msg(event_msg)
         return False
 
     except (PyiCloud2SARequiredException) as err:
@@ -139,6 +144,7 @@ def reset_authentication_time():
     if authentication_method == '':
         return
 
+    Gb.pyicloud_auth_started_secs = 0
     Gb.pyicloud_authentication_cnt += 1
     last_authenticated_time = Gb.authenticated_time
     Gb.authenticated_time   = time_now_secs()
@@ -164,10 +170,12 @@ def _is_authentication_2fa_code_needed(initial_setup=False):
     Returns False if Authentication succeeded
     '''
 
-    if Gb.PyiCloud.requires_2fa:
+    if Gb.PyiCloud is None:
+        return False
+    elif Gb.PyiCloud.requires_2fa:
         pass
     elif Gb.tracking_method_IOSAPP is False:
-        return
+        return False
     elif initial_setup:
         pass
     elif Gb.start_icloud3_inprocess_flag:
@@ -427,7 +435,8 @@ async def config_flow_pyicloud_authenticate_account(initial_setup=False):
     '''
     try:
         # If not using the iCloud location svcs, nothing to do
-        if (Gb.conf_tracking[CONF_TRACKING_METHOD] == OPT_TRACKING_METHOD[OPT_TM_IOSAPP_ONLY]) is False:
+        # if (Gb.conf_tracking[CONF_TRACKING_METHOD] == OPT_TRACKING_METHOD[OPT_TM_IOSAPP_ONLY]) is False:
+        if instr(Gb.conf_tracking[CONF_TRACKING_METHOD], ICLOUD) is False:
             return
         elif Gb.username == '' or Gb.password == '':
             return

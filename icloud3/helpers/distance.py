@@ -9,7 +9,7 @@ from ..const            import (UNKNOWN, HIGH_INTEGER, HHMMSS_ZERO, DATETIME_ZER
 
                             NEXT_UPDATE_TIME, INFO, TRACE_ICLOUD_ATTRS_BASE, TRACE_ATTRS_BASE,
                             LOCATION, ATTRIBUTES, TRIGGER, )
-from .base              import (round_to_zero, _trace, )
+from .base              import (round_to_zero, _trace, _traceha)
 #####################################################################
 #
 #   Distance conversion and formatting functions
@@ -24,20 +24,29 @@ def km_to_mi(distance):
 
         if mi == 0:
             mi = 0
-        elif mi <= 10:
-            mi = round(mi, 2)
-        elif mi <= 100:
+        elif mi < 20:
             mi = round(mi, 1)
+        # elif mi <= 100:
+        #     mi = round(mi, 1)
         else:
             mi = round(mi)
 
     except:
         mi = 0
+
     return mi
 
 def mi_to_km(distance):
     return round(float(distance) / Gb.um_km_mi_factor, 2)
 
+def km_to_mi_str(distance):
+    return f"{km_to_mi(distance)} {Gb.um}"
+#--------------------------------------------------------------------
+def m_to_ft(distance):
+    return km_to_mi(distance)
+
+def m_to_ft_str(distance):
+    return f"{m_to_ft(distance)} {Gb.um_m_ft}"
 #--------------------------------------------------------------------
 def calc_distance_km(from_lat, from_long, to_lat, to_long):
     if from_lat is None or from_long is None or to_lat is None or to_long is None:

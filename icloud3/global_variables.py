@@ -36,8 +36,8 @@ from .const          import (NOT_SET, HOME_FNAME, HOME, STORAGE_DIR, WAZE_USED, 
                             CONF_WAZE_REGION, CONF_WAZE_MAX_DISTANCE, CONF_WAZE_MIN_DISTANCE,
                             CONF_WAZE_REALTIME,
                             CONF_WAZE_HISTORY_DATABASE_USED, CONF_WAZE_HISTORY_MAX_DISTANCE ,
-                            CONF_WAZE_HISTORY_MAP_TRACK_DIRECTION,
-                            CONF_STAT_ZONE_STILL_TIME,
+                            CONF_WAZE_HISTORY_TRACK_DIRECTION,
+                            CONF_STAT_ZONE_FNAME,
                             CONF_STAT_ZONE_BASE_LATITUDE, CONF_STAT_ZONE_BASE_LONGITUDE,
                             CONF_STAT_ZONE_INZONE_INTERVAL, CONF_LOG_LEVEL,
                             CONF_IOSAPP_REQUEST_LOC_MAX_CNT,
@@ -61,18 +61,24 @@ class GlobalVariables(object):
     '''
     # Fixed variables set during iCloud3 loading that will not change
     version         = '3.0.0'
+    version_evlog   = ''
     iCloud3         = None      # iCloud3 Platform object
     hass            = None      # hass: HomeAssistant set in __init__
+    async_add_entities_sensor = None            # Initial add_entities link passed to sensor during ha startup
+    async_add_entities_device_tracker = None    # Initial add_entities link passed to device_tracker during ha startup
+    listeners       = []        # hass listeners used for device_tracker & sensor update control
     config_entry    = None      # hass.config_entry set in __init__
     OptionsFlowHandler = None   # config_flow OptionsFlowHandler
     see             = None
     EvLog           = None
+    EvLogSensor     = None
     HALogger        = None
     Sensors         = None
     iC3EntityPlatform = None    # iCloud3 Entity Platform (homeassistant.helpers.entity_component)
     PyiCloud        = None
     Waze            = None
     WazeHist        = None
+    WazeHistTrackSensor = None    # Sensor for updating the lat/long values for the WazeHist Map display
     attrs           = {}
     operating_mode  = 0        # Platform (Legacy using configuration.yaml) or Integration
     icloud3_v2_to_v3_parameters_converted = False
@@ -84,13 +90,14 @@ class GlobalVariables(object):
     ha_storage_directory      = ''      # 'config/.storage' directory
     ha_storage_icloud3        = ''      # 'config/.storage/icloud'
     icloud3_config_filename   = ''      # '.storage/icloud3.configuration' - iC3 Configuration File
+    icloud3_restore_state_filename = '' # '.storage/icloud3.restore_state'
     config_ic3_yaml_filename  = ''      # 'conf/config_ic3.yaml' (v2 config file name)
     icloud3_directory         = ''
     icloud3_filename          = ''
-    # icloud3_evlog_js_filename = ''
     ha_config_www_directory   = ''
     www_evlog_js_directory    = ''
     www_evlog_js_filename     = ''
+    wazehist_database_filename= ''      # Waze Location History sql database (.storage/icloud3.waze_route_history.db)
 
     # Platform and iCloud account parameters
     username                     = ''
@@ -113,6 +120,11 @@ class GlobalVariables(object):
     StatZones                         = []  # Stationary Zone objects
     StatZones_by_devicename           = {}  # Stationary Zone objects by devicename
     HomeZone                          = None # Home Zone object
+    DeviceTrackers_by_devicename      = {}  # HA device_tracker.[devicename] entity objects
+    Sensors_by_devicename             = {}  # HA sensor.[devicename]_[sensor_name]_[from_zone] objects
+    Sensors_by_devicename_from_zone   = {}  # HA sensor.[devicename]_[sensor_name]_[from_zone] objects
+    Sensor_EventLog                   = None    # Event Log sensor object
+
 
     PyiCloud_FamilySharing            = None # PyiCloud_ic3 object for FamilySharig used to refresh the device's location
     PyiCloud_FindMyFriends            = None # PyiCloud_ic3 object for FindMyFriends used to refresh the device's location
@@ -121,10 +133,14 @@ class GlobalVariables(object):
     PyiCloud_DevData_by_device_id_fmf = {}
 
     # System Wide variables control iCloud3 start/restart procedures
+    # entity_created_device_tracker   = False
+    # entity_created_sensor           = False
+    polling_5_sec_loop_running      = False     # Indicates the 5-sec polling loop is set up
     start_icloud3_inprocess_flag    = False
     start_icloud3_request_flag      = False
     start_icloud3_initial_load_flag = False
     any_device_being_updated_flag   = False
+    update_restore_state_file_flag  = False
     update_in_process               = False
     evlog_action_request            = ''
 
@@ -172,11 +188,17 @@ class GlobalVariables(object):
     conf_devices      = []
     conf_general      = {}
     conf_sensors      = {}
+    # conf_sensors_list = []
+
+    # restore_state file
+    restore_state_file_data = {}
+    restore_state_profile   = {}
+    restore_state_devices   = {}
 
     # This stores the type of configuration parameter change done in the config_flow module
     # It indicates the type of change and if a restart is required to load device or sensor changes.
     # Items in the set are 'tracking', 'devices', 'profile', 'sensors', 'general', 'restart'
-    config_flow_update_control = {''}
+    config_flow_parameters_updated = {''}
 
     distance_method_waze_flag       = True
     max_interval_secs               = DEFAULT_MAX_INTERVAL_SECS
@@ -196,15 +218,14 @@ class GlobalVariables(object):
     waze_realtime                   = DEFAULT_GENERAL_CONF[CONF_WAZE_REALTIME]
     waze_history_database_used      = DEFAULT_GENERAL_CONF[CONF_WAZE_HISTORY_DATABASE_USED]
     waze_history_max_distance       = DEFAULT_GENERAL_CONF[CONF_WAZE_HISTORY_MAX_DISTANCE]
-    waze_history_map_track_direction= DEFAULT_GENERAL_CONF[CONF_WAZE_HISTORY_MAP_TRACK_DIRECTION]
+    waze_history_track_direction    = DEFAULT_GENERAL_CONF[CONF_WAZE_HISTORY_TRACK_DIRECTION]
 
-    # stationary_still_time_str       = DEFAULT_GENERAL_CONF[CONF_STATIONARY_STILL_TIME]
-    stat_zone_still_time_secs        = DEFAULT_STAT_ZONE_STILL_TIME_SECS
-    # stationary_zone_offset          = DEFAULT_GENERAL_CONF[CONF_STATIONARY_ZONE_OFFSET]
-    stat_zone_base_latitude  = DEFAULT_GENERAL_CONF[CONF_STAT_ZONE_BASE_LATITUDE]
-    stat_zone_base_longitude = DEFAULT_GENERAL_CONF[CONF_STAT_ZONE_BASE_LONGITUDE]
-    # stationary_inzone_interval_str  = DEFAULT_GENERAL_CONF[CONF_STATIONARY_INZONE_INTERVAL]
-    stat_zone_inzone_interval_secs       = DEFAULT_STAT_ZONE_INZONE_INTERVAL_SECS
+    stat_zone_fname                 = DEFAULT_GENERAL_CONF[CONF_STAT_ZONE_FNAME]
+    stat_zone_base_latitude         = DEFAULT_GENERAL_CONF[CONF_STAT_ZONE_BASE_LATITUDE]
+    stat_zone_base_longitude        = DEFAULT_GENERAL_CONF[CONF_STAT_ZONE_BASE_LONGITUDE]
+    stat_zone_inzone_interval_secs  = DEFAULT_STAT_ZONE_INZONE_INTERVAL_SECS
+    stat_zone_still_time_secs       = DEFAULT_STAT_ZONE_STILL_TIME_SECS
+
     # Variables used to config the device variables when setting up
     # intervals and determining the tracking method
     inzone_interval_secs = {}
@@ -212,8 +233,8 @@ class GlobalVariables(object):
 
     # Tracking method control vaiables
     # Used to reset Gb.tracking_method after pyicloud/icloud account successful reset
-    tracking_method_use_icloud   = True     # Master icloud tracking method flag (set in config_flow icloud)
-    tracking_method_use_iosapp   = True     # Master iosapp tracking method flag (set in config_flow icloud)
+    data_source_use_icloud   = True     # Master icloud tracking method flag (set in config_flow icloud)
+    data_source_use_iosapp   = True     # Master iosapp tracking method flag (set in config_flow icloud)
     tracking_method_config_last_restart = NOT_SET
     tracking_method_config       = ''   #NOT_SET
     tracking_method              = ''    #NOT_SET   # Will be changed to IOSAPP if pyicloud errors
@@ -234,6 +255,7 @@ class GlobalVariables(object):
     pyicloud_refresh_time[FAMSHR] = 0
 
     # Pyicloud counts, times and common variables
+    pyicloud_auth_started_secs   = 0
     pyicloud_authentications_cnt = 0
     pyicloud_location_update_cnt = 0
     pyicloud_calls_time          = 0.0
@@ -246,10 +268,11 @@ class GlobalVariables(object):
     iosapp_device_verified_cnt   = 0
 
     # Waze History for DeviceFmZone
-    wazehist_db_zone_id         = {}
+    wazehist_zone_id            = {}
     waze_status                 = WAZE_USED
-    waze_manual_pause_flag      = False         # Paused using service call
-    waze_close_to_zone_pause_flag = False         # Close to home pauses Waze
+    waze_manual_pause_flag      = False             # Paused using service call
+    waze_close_to_zone_pause_flag = False           # Close to home pauses Waze
+    wazehist_recalculate_time_dist_flag = False     # Set in config_flow > Actions to schedule a db rebuild at midnight
 
     # Variables to be moved to Device object when available
     # iosapp entity data
@@ -287,6 +310,7 @@ class GlobalVariables(object):
 
     # Miscellenous variables
     broadcast_msg                  = ''
+    broadcast_info_msg             = None
 
     #<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 

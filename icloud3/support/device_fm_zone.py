@@ -16,16 +16,16 @@
 #####################################################################
 
 
-from .global_variables  import GlobalVariables as Gb
-from .const             import (HHMMSS_ZERO, NOT_SET, HOME, DATETIME_ZERO, HIGH_INTEGER,
+from ..global_variables  import GlobalVariables as Gb
+from ..const             import (HHMMSS_ZERO, NOT_SET, HOME, DATETIME_ZERO, HIGH_INTEGER,
                                 ZONE_DISTANCE, HOME_DISTANCE, DISTANCE, INTERVAL, FROM_ZONE,
                                 LAST_UPDATE_DATETIME, LAST_UPDATE_TIME, LAST_UPDATE,
                                 NEXT_UPDATE_DATETIME, NEXT_UPDATE_TIME, NEXT_UPDATE,
                                 CALC_DISTANCE, TRAVEL_DISTANCE, DIR_OF_TRAVEL,
                                 TRAVEL_TIME, TRAVEL_TIME_MIN, WAZE_DISTANCE,  )
-from .helpers.distance  import (km_to_mi, calc_distance_km, )
-from .helpers.time      import (datetime_to_12hrtime, )
-from .helpers.base      import (log_exception, post_internal_error,  _trace, _traceha, )
+from ..helpers.distance  import (km_to_mi, calc_distance_km, )
+from ..helpers.time      import (datetime_to_12hrtime, )
+from ..helpers.base      import (log_exception, post_internal_error,  _trace, _traceha, )
 
 import homeassistant.util.dt as dt_util
 import traceback
@@ -82,7 +82,7 @@ class iCloud3DeviceFmZone(object):
         self.sensors_um                    = {}
 
         self.sensors[FROM_ZONE]            = self.from_zone
-        self.sensors[INTERVAL]             = 0
+        self.sensors[INTERVAL]             = '0'
         self.sensors[NEXT_UPDATE_DATETIME] = DATETIME_ZERO
         self.sensors[NEXT_UPDATE_TIME]     = HHMMSS_ZERO
         self.sensors[NEXT_UPDATE]          = HHMMSS_ZERO

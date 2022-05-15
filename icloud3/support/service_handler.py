@@ -3,23 +3,21 @@
 #   ICLOUD SERVICE HANDLER MODULE
 #
 #########################################################
-import homeassistant.util.dt as dt_util
-from homeassistant import config_entries, data_entry_flow
-from homeassistant.data_entry_flow import FlowManager
-from homeassistant.helpers import discovery_flow
-import homeassistant.helpers.httpx_client as client
-import requests
-import webbrowser
-import asyncio
+# import homeassistant.util.dt as dt_util
+# from homeassistant import config_entries, data_entry_flow
+# from homeassistant.data_entry_flow import FlowManager
+# from homeassistant.helpers import discovery_flow
+# import homeassistant.helpers.httpx_client as client
+import homeassistant.helpers.config_validation as cv
+import voluptuous as vol
+
+# import requests
+# import webbrowser
+# import asyncio
 
 from ..global_variables import GlobalVariables as Gb
 from ..const            import (DOMAIN, HHMMSS_ZERO,
                                 WAZE, WAZE_NOT_USED, WAZE_USED, WAZE_PAUSED,
-                                # CMD_PAUSE, CMD_RESUME, CMD_REQUEST_LOCATION, CMD_ERROR, CMD_INTERVAL, CMD_WAZE,
-                                # CMD_RESET_PYICLOUD_SESSION,
-                                # CMD_EXPORT_EVENT_LOG, CMD_DISPLAY_STARTUP_EVENTS, CMD_RESET_PYICLOUD_SESSION,
-                                # CMD_LOG_LEVEL, CMD_REFRESH_EVENT_LOG, CMD_RESTART, CMD_LOG_LEVEL, CMD_FIND_DEVICE_ALERT,
-                                # CMD_WAZEHIST_DB_MAINTENANCE, CMD_WAZEHIST_DB_GPS_SENSOR_FOR_MAP, )
                                 LOCATION, HIGH_INTEGER, CONF_ZONE, NEXT_UPDATE_TIME,
                                 CONF_DEVICENAME, CONF_COMMAND, )
 
@@ -39,8 +37,8 @@ CMD_RESUME                 = 'resume'
 CMD_WAZE                   = 'waze'
 CMD_REQUEST_LOCATION       = 'location'
 CMD_EXPORT_EVENT_LOG       = 'export_event_log'
-CMD_WAZEHIST_DB_MAINTENANCE= 'wazehist_maint'
-CMD_WAZEHIST_DB_MAP_GPS_SENSOR = 'wazehist_map_gps_sensor'
+CMD_WAZEHIST_MAINTENANCE   = 'wazehist_maint'
+CMD_WAZEHIST_TRACK         = 'wazehist_track'
 CMD_DISPLAY_STARTUP_EVENTS = 'startuplog'
 CMD_RESET_PYICLOUD_SESSION = 'reset_session'
 CMD_LOG_LEVEL              = 'log_level'
@@ -56,15 +54,19 @@ GLOBAL_ACTIONS =  [CMD_EXPORT_EVENT_LOG,
                     CMD_REFRESH_EVENT_LOG,
                     CMD_RESTART,
                     CMD_LOG_LEVEL,
-                    CMD_WAZEHIST_DB_MAINTENANCE,
-                    CMD_WAZEHIST_DB_MAP_GPS_SENSOR, ]
+                    CMD_WAZEHIST_MAINTENANCE,
+                    CMD_WAZEHIST_TRACK, ]
 DEVICE_ACTIONS =  [CMD_REQUEST_LOCATION,
                     CMD_PAUSE,
                     CMD_RESUME,
                     CMD_FIND_DEVICE_ALERT, ]
 
-from   homeassistant.util.location import distance
+SERVICE_SCHEMA = vol.Schema({
+    vol.Optional(CONF_COMMAND): cv.string,
+    vol.Optional(CONF_DEVICENAME): cv.slugify,
+})
 
+from   homeassistant.util.location import distance
 
 #<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 #
@@ -89,7 +91,7 @@ def process_update_icloud3_configuration_request(call):
 
 #--------------------------------------------------------------------
 def process_restart_icloud3_service_request(call):
-    """    icloud3.restart service call request    """
+    """ icloud3.restart service call request  """
 
     Gb.start_icloud3_request_flag = True
 
@@ -101,6 +103,29 @@ def process_find_iphone_alert_service_request(call):
 
     find_iphone_alert_service_handler(devicename)
 
+
+#<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+#
+#   DEFINE THE PROCESS INVOKED BY THE HASS.SERVICES.REGISTER FOR EACH SERVICE
+#
+#<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+def register_icloud3_services():
+    ''' Register iCloud3 Service Call Handlers '''
+
+    try:
+        Gb.hass.services.register(DOMAIN, 'action',
+                    process_update_service_request, schema=SERVICE_SCHEMA)
+        # Gb.hass.services.register(DOMAIN, 'config',
+        #             process_update_icloud3_configuration_request)
+        Gb.hass.services.register(DOMAIN, 'restart',
+                    process_restart_icloud3_service_request, schema=SERVICE_SCHEMA)
+        Gb.hass.services.register(DOMAIN, 'find_iphone_alert',
+                    process_find_iphone_alert_service_request, schema=SERVICE_SCHEMA)
+
+        return True
+
+    except Exception as err:
+        log_exception(err)
 
 #<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 #
@@ -130,6 +155,10 @@ def update_service_handler(devicename=None, action=None):
     - info xxx         = the same as 'debug'
     - location         = request location update from ios app
     """
+    # Ignore Action requests during startup. They are caused by the devicename changes
+    # to the EvLog attributes indicating the startup stage.
+    if Gb.start_icloud3_inprocess_flag:
+        return
 
     post_monitor_msg(f"Service Call Action Received > {devicename}, Action-{action}")
 
@@ -161,7 +190,6 @@ def update_service_handler(devicename=None, action=None):
 
             elif action == CMD_RESUME:
                 Device.resume_tracking
-                # _handle_action_device_resume(Device)
 
             elif action == LOCATION:
                 _handle_action_device_location(Device)
@@ -178,71 +206,6 @@ def update_configuration_parameters_handler():
     post_event("Edit Configuration handler called")
 
     try:
-        # Gb.OptionsFlowHandler.async_step_init()
-        # OFH = Gb.hass.async_add_executor_job(Gb.OptionsFlowHandler)
-        # return OFH.__init__()
-        # _traceha(f"fm OFH {Gb.OptionsFlowHandler=}")
-
-        _traceha('======start=================================================')
-        # webbrowser.open('https://localhost:8123/config/integrations',
-        #             new=1, autoraise=True)
-
-
-        # handler_key = Gb.hass.config_entries._domain_index['icloud3'][0]
-        # _traceha(f"182 <><><> {handler_key=}")
-
-        # result = requests.post(
-        #     f"/api/config/config_entries/options/flow/",
-        #     data={'handler': handler_key, 'show_advanced_options': True}
-        # )
-        # POST /api/config/config_entries/options/flow > data={'handler': '8e3e178437610fb82dc85fe1727ebbb0', 'show_advanced_options': True}
-
-
-        # OptionsFlowHandler.async_create_flow(
-        #         Gb.hass,
-        #         DOMAIN,
-        #         # {'step_id': 'menu'},
-        #     )
-
-        _traceha('======start=================================================')
-        # Gb.hass.add_job(#Gb.hass.async_create_task(
-        #         # data_entry_flow/async_init handler
-        #         # config_entries.OptionsFlowManager.async_create_flow(
-        #         FlowManager.async_init(
-        #             FlowManager,
-        #             handler=f"{handler_key}",
-        #             context={'source': 'user', 'show_advanced_options': True},
-        #             data={'step_id': 'menu'}
-        #         )
-        # )
-        _traceha('======step2=================================================')
-
-        # Gb.hass.add_job(Gb.hass.async_create_task(
-        #     Gb.hass.config_entries.flow.async_init(
-        #         DOMAIN,
-        #         context={"source": config_entries.SOURCE_USER},
-        #         data={"options_flow": True, "step_id": "menu"},
-        #     )
-        # ))
-        _traceha('======end=================================================')
-
-
-        # if Gb.OptionsFlowHandler is None:
-        #     Gb.hass.add_job(
-        #         Gb.hass.config_entries.flow.async_init(
-        #                 DOMAIN,
-        #                 context={"source": 'optionsflow'},
-        #                 data={
-        #                     "step_id": 'init',
-        #                     "unique_id": Gb.config_entry.unique_id,
-        #                 },
-        #             )
-        #         )
-
-        # _traceha(f"182 ### aft {Gb.OptionsFlowHandler=}")
-        # _traceha(f"200 ### bef {Gb.OptionsFlowHandler=}")
-        # if Gb.OptionsFlowHandler:
-        #     Gb.hass.add_job(Gb.OptionsFlowHandler.async_step_init())
 
         Gb.hass.add_job(
             Gb.hass.config_entries.flow.async_init(
@@ -301,6 +264,7 @@ def find_iphone_alert_service_handler(devicename):
 #########################################################
 def _handle_global_action(global_action, action_option):
 
+    # _traceha(f'{global_action=}'')
     if global_action == CMD_RESTART:
         #preserve debug & rawdata across restarts
         Gb.log_debug_flag_restart     = Gb.log_debug_flag
@@ -328,24 +292,12 @@ def _handle_global_action(global_action, action_option):
         _handle_action_log_level(action_option)
         return
 
-    elif global_action == CMD_WAZEHIST_DB_MAINTENANCE:
-        Gb.WazeHist.wazehist_db_maintenance(all_zones_flag=True)
+    elif global_action == CMD_WAZEHIST_MAINTENANCE:
+        Gb.WazeHist.wazehist_recalculate_time_dist(all_zones_flag=True)
 
-    elif global_action == CMD_WAZEHIST_DB_MAP_GPS_SENSOR:
-        Gb.WazeHist.wazehist_db_update_map_gps_sensor()
+    elif global_action == CMD_WAZEHIST_TRACK:
+        Gb.WazeHist.wazehist_update_track_sensor()
         return
-
-    #Location level actions
-    # elif global_action == WAZE:
-    #     if Gb.waze_status == WAZE_USED:
-    #         _handle_action_waze(global_action, '')
-    #     return
-
-#--------------------------------------------------------------------
-def _handle_action_device_resume(Device):
-
-    Device.resume_tracking
-    return
 
 #--------------------------------------------------------------------
 def _handle_action_log_level(action_option):

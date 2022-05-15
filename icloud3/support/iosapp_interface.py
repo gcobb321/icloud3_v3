@@ -131,6 +131,12 @@ def request_location(Device):
     Send location request to phone. Check to see if one has been sent but not responded to
     and, if true, set interval based on the retry count.
     '''
+
+    if (Gb.data_source_use_iosapp is False
+            or Device.iosapp_monitor_flag is False
+            or Device.iosapp_request_loc_retry_cnt >= 15):
+        return
+
     devicename = Device.devicename
 
     try:

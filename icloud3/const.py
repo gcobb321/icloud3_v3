@@ -3,7 +3,12 @@
 #   Define the iCloud3 General Constants
 #
 #####################################################################
-#Symbols = ▪•●▬⊗⊘✓×ø¦ ▶◀ ►◄▲▼ ∙▪ »« oPhone=►▶
+
+
+#from ast import Interactive
+#from imp import SEARCH_ERROR
+#from turtle import distance
+
 
 DOMAIN                          = 'icloud3'
 MODE_PLATFORM                   = -1
@@ -18,13 +23,16 @@ DEFAULT_CONFIG_IC3_FILE_NAME    = 'config/config_ic3.yaml'
 
 STORAGE_DIR                     = ".storage"
 STORAGE_KEY_ENTITY_REGISTRY     = 'core.entity_registry'
-SENSOR_EVENT_LOG_ENTITY         = 'sensor.icloud3_event_log'
-EVENT_LOG_CARD_WWW_DIRECTORY    = 'www/custom_cards'
+# SENSOR_EVENT_LOG_ENTITY         = 'sensor.icloud3_event_log'
+SENSOR_EVENT_LOG_NAME           = 'icloud3_event_log'
+EVENT_LOG_CARD_WWW_DIRECTORY    = 'custom_cards'
 EVENT_LOG_CARD_WWW_JS_PROG      = 'icloud3-event-log-card.js'
+WAZE_LOCATION_HISTORY_DATABASE  = 'icloud3.waze_location_history.db'
+SENSOR_WAZEHIST_TRACK_NAME      = 'icloud3_wazehist_track'
 
 DEVICE_TRACKER                  = 'device_tracker'
 DEVICE_TRACKER_DOT              = 'device_tracker.'
-PLATFORMS                       = ['device_tracker', 'sensor']
+PLATFORMS                       = ['sensor', 'device_tracker']
 PLATFORM                        = 'device_tracker'
 SENSOR                          = 'sensor'
 ATTRIBUTES                      = 'attributes'
@@ -45,15 +53,19 @@ STATIONARY                      = 'stationary'
 STATIONARY_FNAME                = 'Stationary'
 NEAR_ZONE                       = 'near_zone'
 NEAR_ZONE_FNAME                 = 'Near Zone'
-AWAY_FROM                       = 'AwayFrom'
+AWAY_FROM                       = 'Away From'
 AWAY                            = 'Away'
-TOWARDS                         = 'Towards'
+TOWARDS                         = 'To-'
 PAUSED                          = 'PAUSED'
 PAUSED_CAPS                     = 'PAUSED'
 RESUMING                        = 'RESUMING'
 RESUMING_CAPS                   = 'RESUMING'
 NEVER                           = 'Never'
 ERROR                           = 0
+#NONE                            = 'none'
+#NONE_CAPS                       = 'None'
+#SEARCH                          = 'search'
+#SEARCH_CAPS                     = 'Search'
 VALID_DATA                      = 1
 UTC_TIME                        = True
 LOCAL_TIME                      = False
@@ -64,24 +76,43 @@ CALC                            = 'calc'
 DIST                            = 'dist'
 
 IPHONE_FNAME                    = 'iPhone'
-IPHONE                          = IPHONE_FNAME.lower()
+IPHONE                          = 'iphone'
 IPAD_FNAME                      = 'iPad'
-IPAD                            = IPAD_FNAME.lower()
+IPAD                            = 'ipad'
 IPOD_FNAME                      = 'iPod'
-IPOD                            = IPOD_FNAME.lower()
+IPOD                            = 'ipod'
 WATCH_FNAME                     = 'Watch'
-WATCH                           = WATCH_FNAME.lower()
+WATCH                           = 'watch'
 AIRPODS_FNAME                   = 'AirPods'
-AIRPODS                         = AIRPODS_FNAME.lower()
+AIRPODS                         = 'airpods'
 ICLOUD_FNAME                    = 'iCloud'
-ICLOUD                          = ICLOUD_FNAME.lower()
+ICLOUD                          = 'icloud'
+OTHER_FNAME                     = 'Other'
+OTHER                           = 'other'
 
 APPLE_DEVICE_TYPES = [
-        IPHONE, IPAD, IPOD, WATCH, ICLOUD_FNAME,
-        IPHONE_FNAME, IPAD_FNAME, IPOD_FNAME, WATCH_FNAME, ICLOUD_FNAME]
+        IPHONE, IPAD, IPOD, WATCH, ICLOUD_FNAME, AIRPODS,
+        IPHONE_FNAME, IPAD_FNAME, IPOD_FNAME, WATCH_FNAME, ICLOUD_FNAME, AIRPODS_FNAME,]
 
 APPLE_DEVICE_TYPES_FNAME = [
-        IPHONE_FNAME, IPAD_FNAME, WATCH_FNAME, IPOD_FNAME, 'Get from Default Value']
+        IPHONE_FNAME, IPAD_FNAME, WATCH_FNAME, IPOD_FNAME, AIRPODS_FNAME, OTHER_FNAME]
+
+APPLE_DEVICE_TYPE_TO_FNAME = {
+        IPHONE: IPHONE_FNAME,
+        IPAD: IPAD_FNAME,
+        IPOD: IPOD_FNAME,
+        WATCH: WATCH_FNAME,
+        AIRPODS: AIRPODS_FNAME,
+        OTHER: OTHER_FNAME,
+}
+APPLE_FNAME_TO_DEVICE_TYPE = {
+        IPHONE_FNAME: IPHONE,
+        IPAD_FNAME: IPAD,
+        IPOD_FNAME: IPOD,
+        WATCH_FNAME: WATCH,
+        AIRPODS_FNAME: AIRPODS,
+        OTHER_FNAME: OTHER,
+}
 
 # DATETIME_FORMAT                 = '%Y-%m-%d %H:%M:%S.%f'
 DATETIME_FORMAT                 = '%Y-%m-%d %H:%M:%S'
@@ -100,6 +131,7 @@ ICLOUD_DT_ENTITY = False
 ICLOUD_LOCATION_DATA_ERROR = False
 CMD_RESET_PYICLOUD_SESSION = 'reset_session'
 NEAR_DEVICE_DISTANCE       = 20
+PASS_THRU_ZONE_INTERVAL_SECS = 60       # Delay time before moving into a non-tracked zone to see if if just passing thru
 
 # used by the Gb.stationary_zone_update_control field to indicate the
 # Stat Zone should be updated when the Device location info is updated
@@ -162,20 +194,33 @@ EVLOG_ERROR       = '^5^'
 EVLOG_ALERT       = '^5^'
 EVLOG_TRACE       = '^6^'
 EVLOG_DEBUG       = '^6^'
+
+#Symbols = ▪•●▬⊗⊘✓×ø¦ ▶◀ ►◄▲▼ ∙▪ »« oPhone=►▶→⟾➤➟➜➔➤🡆🡪🡺⟹🡆➔ᐅ
+# — – ⁃ » ━▶━➤🡺 —> > > ❯↦ … 🡪ᗕ ᗒ ᐳ ─🡢 ──ᗒ 🡢 ─ᐅ ↣ ➙ →
 CRLF              = 'CRLF'
 CRLF_DOT          = 'CRLF•'
 # CRLF_DOT          = 'CRLF ▪ '
 CRLF_CHK          = 'CRLF✓'
 CRLF_X            = 'CRLF⊗ '
+CHECK_MARK        = '✓ '
+CIRCLE_X          = '⊗ '
 NBSP2             = 'NBSP2'
 NBSP4             = 'NBSP4'
 NBSP6             = 'NBSP6'
 DOT               = '• '
+DOT2              = '•'
 HDOT              = '◦ '
+HDOT2             = '◦'
 # DOT               = 'DOT'
-RARROW            = '→'
-LARROW            = '←'
-INFO_SEPARATOR    = '∻'
+RARROW            = ' → '       #U+27F6 (Long Arrow Right)  ⟹ ⟾
+RARROW2           = '→'       #U+27F6 (Long Arrow Right)  ⟹ ⟾
+LARROW            = ' <-- '       #U+27F5 (Long Arrow Left) ⟸ ⟽
+LARROW2           = '<--'       #U+27F5 (Long Arrow Left) ⟸ ⟽
+# RARROW            = ' 🡪 '       #U+27F6 (Long Arrow Right)  ⟹ ⟾
+# RARROW2           = '🡪'       #U+27F6 (Long Arrow Right)  ⟹ ⟾
+# LARROW            = ' ⟵ '       #U+27F5 (Long Arrow Left) ⟸ ⟽
+# LARROW2           = '⟵'       #U+27F5 (Long Arrow Left) ⟸ ⟽
+INFO_SEPARATOR    = '/' #'∻'
 CRLF_NBSP6_DOT    = f"{CRLF}{NBSP6}{HDOT}"
 
 #tracking_method config parameter being used
@@ -185,12 +230,18 @@ FMF               = 'fmf'       #Find My Friends
 FAMSHR            = 'famshr'    #Family Sharing
 IOSAPP            = 'iosapp'    #HA IOS App v1.5x or v2.x
 IOSAPP_FNAME      = 'iOSApp'
+NO_IOSAPP         = 'no_iosapp'
 FMF_FNAME         = 'FmF'
 FAMSHR_FNAME      = 'FamShr'
 FAMSHR_FMF        = 'famshr_fmf'
 FAMSHR_FMF_FNAME  = 'FamShr-FmF'
 TRACKING_METHOD_FNAME = {FMF: FMF_FNAME, FAMSHR: FAMSHR_FNAME, FAMSHR_FMF: FAMSHR_FMF_FNAME,
                         IOSAPP: IOSAPP_FNAME, ICLOUD: ICLOUD_FNAME}
+
+# Device tracking modes
+NORMAL            = 'normal'
+MONITOR           = 'monitor'
+INACTIVE          = 'inactive'
 
 #Zone field names
 NAME              = 'name'
@@ -219,6 +270,7 @@ DEVICE_TYPE_FNAME = {
         'phone': IPHONE_FNAME,
         IPAD: IPAD_FNAME,
         WATCH: WATCH_FNAME,
+        AIRPODS: AIRPODS_FNAME,
         IPOD: IPOD_FNAME, }
 
 #iOS App Triggers defined in /iOS/Shared/Location/LocatioTrigger.swift
@@ -300,7 +352,7 @@ CONF_USERNAME                   = 'username'
 CONF_PASSWORD                   = 'password'
 CONF_ACCOUNT_NAME               = 'account_name'
 CONF_GROUP                      = 'group'
-CONF_NAME                       = 'name'
+CONF_FNAME                       = 'fname'
 CONF_TRACKING_METHOD            = 'tracking_method'
 CONF_IOSAPP_REQUEST_LOC_MAX_CNT = 'iosapp_request_loc_max_cnt'
 CONF_TRACK_DEVICES              = 'track_devices'
@@ -332,7 +384,8 @@ CONF_WAZE_MIN_DISTANCE          = 'waze_min_distance'
 CONF_WAZE_REALTIME              = 'waze_realtime'
 CONF_WAZE_HISTORY_DATABASE_USED = 'waze_history_database_used'
 CONF_WAZE_HISTORY_MAX_DISTANCE  = 'waze_history_max_distance'
-CONF_WAZE_HISTORY_MAP_TRACK_DIRECTION= 'waze_history_map_track_direction'
+CONF_WAZE_HISTORY_TRACK_DIRECTION = 'waze_history_track_direction'
+# CONF_WAZE_HISTORY_MAP_TRACK_DIRECTION = 'waze_history_track_direction'
 CONF_DISTANCE_METHOD            = 'distance_method'
 
 CONF_COMMAND                    = 'command'
@@ -352,10 +405,11 @@ DEFAULT_USERNAME                         = ''
 DEFAULT_PASSWORD                         = ''
 DEFAULT_DEVICES                          = []
 DEFAULT_TRACK_DEVICES                    = []
-DEFAULT_TRACKING_METHOD                  = ''
+DEFAULT_DATA_SOURCE                      = 'icloud,iosapp'
 
 DEFAULT_ENTITY_REGISTRY_FILE             = ''
 DEFAULT_EVENT_LOG_CARD_DIRECTORY         = 'www/custom_cards'
+DEFAULT_EVENT_LOG_CARD_PROGRAM           = 'icloud3_event_log_card'
 DEFAULT_CREATE_SENSORS                   = []
 DEFAULT_EXCLUDE_SENSORS                  = []
 
@@ -363,16 +417,16 @@ DEFAULT_UNIT_OF_MEASUREMENT              = 'mi'
 DEFAULT_DISPLAY_TEXT_AS                  = []
 DEFAULT_TIME_FORMAT                      = 12
 DEFAULT_DISTANCE_METHOD                  = 'waze'
-DEFAULT_INZONE_INTERVAL                  = '2 hrs'
+DEFAULT_INZONE_INTERVAL                  = '02:00:00',
 DEFAULT_INZONE_INTERVAL_SECS             = 120
 DEFAULT_INZONE_INTERVALS                 = []
-DEFAULT_DISPLAY_ZONE_FORMAT              = CONF_NAME
+DEFAULT_DISPLAY_ZONE_FORMAT              = 'name'
 DEFAULT_CENTER_IN_ZONE                   = False
-DEFAULT_MAX_INTERVAL                     = '4 hrs'
+DEFAULT_MAX_INTERVAL                     = '04:00:00',
 DEFAULT_MAX_INTERVAL_SECS                = 240
 DEFAULT_TRAVEL_TIME_FACTOR               = .60
 DEFAULT_GPS_ACCURACY_THRESHOLD           = 100
-DEFAULT_OLD_LOCATION_THRESHOLD           = '3 min'
+DEFAULT_OLD_LOCATION_THRESHOLD           = '00:02:00',
 DEFAULT_IGNORE_GPS_ACC_INZONE            = ''
 DEFAULT_DISCARD_POOR_GPS_INZONE          = True
 DEFAULT_CHECK_GPS_ACC_INZONE             = True
@@ -384,13 +438,13 @@ DEFAULT_WAZE_MIN_DISTANCE                = 1
 DEFAULT_WAZE_REALTIME                    = False
 DEFAULT_WAZE_HISTORY_DATABASE_USED              = True
 DEFAULT_WAZE_HISTORY_MAX_DISTANCE        = 20
-DEFAULT_WAZE_HISTORY_MAP_TRACK_DIRECTION = 'north-south'
+DEFAULT_WAZE_HISTORY_TRACK_DIRECTION = 'north-south'
 
-DEFAULT_STATIONARY_STILL_TIME            = '8 min'
+DEFAULT_STATIONARY_STILL_TIME            = '00:08:00',
 DEFAULT_STAT_ZONE_STILL_TIME_SECS       = 480
 DEFAULT_STAT_BASE_OFFSET_LATITUDE        = 1
 DEFAULT_STAT_BASE_OFFSET_LONGITUDE       = 0
-DEFAULT_STATIONARY_INZONE_INTERVAL       = '30 min'
+DEFAULT_STATIONARY_INZONE_INTERVAL       = '00:30:00',
 DEFAULT_STAT_ZONE_INZONE_INTERVAL_SECS  = 180
 DEFAULT_STATIONARY_ZONE_OFFSET = "1,0"
 
@@ -423,7 +477,7 @@ DEFAULT_CONFIG_VALUES = {
     CONF_WAZE_REALTIME: DEFAULT_WAZE_REALTIME,
     CONF_WAZE_HISTORY_DATABASE_USED: DEFAULT_WAZE_HISTORY_DATABASE_USED,
     CONF_WAZE_HISTORY_MAX_DISTANCE: DEFAULT_WAZE_HISTORY_MAX_DISTANCE,
-    CONF_WAZE_HISTORY_MAP_TRACK_DIRECTION: DEFAULT_WAZE_HISTORY_MAP_TRACK_DIRECTION,
+    CONF_WAZE_HISTORY_TRACK_DIRECTION: DEFAULT_WAZE_HISTORY_TRACK_DIRECTION,
     CONF_STAT_ZONE_STILL_TIME: DEFAULT_STATIONARY_STILL_TIME,
     CONF_STAT_ZONE_INZONE_INTERVAL: DEFAULT_STATIONARY_INZONE_INTERVAL,
 
@@ -439,7 +493,7 @@ VALIDATE_PARAMETER_LIST = {
     CONF_DISTANCE_METHOD: ['waze', 'calc'],
     CONF_WAZE_REGION: ['US', 'NA', 'EU', 'IS', 'AU', 'us', 'na', 'eu', 'is', 'au'],
     CONF_DISPLAY_ZONE_FORMAT: ['zone', 'name', 'fname', 'title'],
-    CONF_WAZE_HISTORY_MAP_TRACK_DIRECTION: ['north-south', 'east-west', 'north_south', 'east_west']
+    CONF_WAZE_HISTORY_TRACK_DIRECTION: ['north-south', 'east-west', 'north_south', 'east_west']
 }
 VALIDATE_PARAMETER_TRUE_FALSE = [
     CONF_CENTER_IN_ZONE,
@@ -491,15 +545,17 @@ PASSIVE                    = 'passive'
 # entity attributes
 LOCATION_SOURCE            = 'location_source'
 ZONE                       = 'zone'
-ZONE_DATETIME              = 'zone_time'
+ZONE_DATETIME              = 'zone_timestamp'
 INTO_ZONE_DATETIME         = 'into_zone'
 LAST_ZONE                  = 'last_zone'
+FROM_ZONE                  = 'from_zone'
 GROUP                      = 'group'
 TIMESTAMP                  = 'timestamp'
 TIMESTAMP_SECS             = 'timestamp_secs'
 TIMESTAMP_TIME             = 'timestamp_time'
 LOCATION_TIME              = 'location_time'
 TRACKING_METHOD            = 'tracking_method'
+DATA_SOURCE                = 'data_source'
 DATETIME                   = 'date_time'
 AGE                        = 'age'
 TRIGGER                    = 'trigger'
@@ -519,10 +575,17 @@ LOW_POWER_MODE             = 'low_power_mode'
 TRACKING                   = 'tracking'
 DEVICENAME_IOSAPP          = 'iosapp_device'
 AUTHENTICATED              = 'authenticated'
-LAST_UPDATE_TIME           = 'last_update'
-UPDATE_DATETIME            = 'updated'
-NEXT_UPDATE_TIME           = 'next_update'
-LOCATED_DATETIME           = 'last_located'
+
+LAST_UPDATE                = 'last_update'
+LAST_UPDATE_TIME           = 'last_update_time'
+LAST_UPDATE_DATETIME       = 'last_update_date/time'
+NEXT_UPDATE                = 'next_update'
+NEXT_UPDATE_TIME           = 'next_update_time'
+NEXT_UPDATE_DATETIME       = 'next_update_date/time'
+LAST_LOCATED               = 'last_located'
+LAST_LOCATED_TIME          = 'last_located_time'
+LAST_LOCATED_DATETIME      = 'last_locate_date/time'
+
 INFO                       = 'info'
 GPS_ACCURACY               = 'gps_accuracy'
 GPS                        = 'gps'
@@ -583,7 +646,7 @@ TRACE_ATTRS_BASE = {
         TRAVEL_DISTANCE: 0,
         WAZE_DISTANCE: '',
         CALC_DISTANCE: 0,
-        LOCATED_DATETIME: '',
+        LAST_LOCATED_DATETIME: '',
         LAST_UPDATE_TIME: '',
         NEXT_UPDATE_TIME: '',
         POLL_COUNT: '',
@@ -596,7 +659,7 @@ TRACE_ATTRS_BASE = {
         }
 
 TRACE_ICLOUD_ATTRS_BASE = {
-        CONF_NAME: '',
+        'name': '',
         ICLOUD_DEVICE_STATUS: '',
         LATITUDE: 0,
         LONGITUDE: 0,
@@ -633,7 +696,7 @@ FMF_FAMSHR_LOCATION_FIELDS = [
         ICLOUD_BATTERY_STATUS, ]
 
 LOG_RAWDATA_FIELDS = [
-        LATITUDE,  LONGITUDE, LOCATION_SOURCE, TRACKING_METHOD,
+        LATITUDE,  LONGITUDE, LOCATION_SOURCE, TRACKING_METHOD, DATA_SOURCE,
         ZONE, ZONE_DATETIME, INTO_ZONE_DATETIME, LAST_ZONE,
         TIMESTAMP, TIMESTAMP_SECS, TIMESTAMP_TIME, LOCATION_TIME, DATETIME, AGE,
         TRIGGER, BATTERY, BATTERY_LEVEL, BATTERY_STATUS,
@@ -642,7 +705,7 @@ LOG_RAWDATA_FIELDS = [
         DEVICE_STATUS, LOW_POWER_MODE,
         TRACKING, DEVICENAME_IOSAPP,
         AUTHENTICATED,
-        LAST_UPDATE_TIME, UPDATE_DATETIME, NEXT_UPDATE_TIME, LOCATED_DATETIME,
+        LAST_UPDATE_TIME, LAST_UPDATE_DATETIME, NEXT_UPDATE_TIME, LAST_LOCATED_DATETIME,
         INFO, GPS_ACCURACY, GPS, POLL_COUNT, VERT_ACCURACY, ALTITUDE,
         ICLOUD3_VERSION,
         BADGE,
@@ -654,6 +717,7 @@ LOG_RAWDATA_FIELDS = [
         'prsId', 'batteryLevel', 'isOld', 'isInaccurate', 'phones',
         'invitationAcceptedByEmail', 'invitationFromEmail', 'invitationSentToEmail', 'data',
         ]
+
 
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 #
@@ -676,6 +740,7 @@ CONF_USERNAME                   = 'username'
 CONF_PASSWORD                   = 'password'
 CONF_DEVICES                    = 'devices'
 CONF_TRACKING_METHOD            = 'tracking_method'
+CONF_DATA_SOURCE                = 'data_source'
 CONF_VERIFICATION_CODE          = 'verification_code'
 
 #devices_schema parameters
@@ -693,6 +758,7 @@ CONF_CONFIG                     = 'config'
 CONF_SOURCE                     = 'source'
 CONF_DEVICE_TYPE                = 'device_type'
 
+
 # General Parameters
 CONF_UNIT_OF_MEASUREMENT        = 'unit_of_measurement'
 CONF_TIME_FORMAT                = 'time_format'
@@ -707,12 +773,6 @@ CONF_DISPLAY_ZONE_FORMAT        = 'display_zone_format'
 CONF_CENTER_IN_ZONE             = 'center_in_zone'
 CONF_DISCARD_POOR_GPS_INZONE    = 'discard_poor_gps_inzone'
 CONF_INZONE_INTERVALS           = 'inzone_intervals'
-CONF_INZONE_INTERVAL_DEFAULT    = 'inzone_interval_default'
-CONF_INZONE_INTERVAL_IPHONE     = 'inzone_interval_iphone'
-CONF_INZONE_INTERVAL_IPAD       = 'inzone_interval_ipad'
-CONF_INZONE_INTERVAL_WATCH      = 'inzone_interval_watch'
-CONF_INZONE_INTERVAL_IPOD       = 'inzone_interval_ipod'
-CONF_INZONE_INTERVAL_NO_IOSAPP  = 'inzone_interval_no_iosapp'
 
 # Waze Parameters
 CONF_DISTANCE_METHOD            = 'distance_method'
@@ -722,9 +782,10 @@ CONF_WAZE_MIN_DISTANCE          = 'waze_min_distance'
 CONF_WAZE_REALTIME              = 'waze_realtime'
 CONF_WAZE_HISTORY_DATABASE_USED = 'waze_history_database_used'
 CONF_WAZE_HISTORY_MAX_DISTANCE  = 'waze_history_max_distance'
-CONF_WAZE_HISTORY_MAP_TRACK_DIRECTION= 'waze_history_map_track_direction'
+CONF_WAZE_HISTORY_TRACK_DIRECTION= 'waze_history_track_direction'
 
 # Stationary Zone Parameters
+CONF_STAT_ZONE_FNAME            = 'stat_zone_fname'
 CONF_STAT_ZONE_STILL_TIME       = 'stat_zone_still_time'
 CONF_STAT_ZONE_INZONE_INTERVAL  = 'stat_zone_inzone_interval'
 CONF_STAT_ZONE_BASE_LATITUDE    = 'stat_zone_base_latitude'
@@ -736,17 +797,20 @@ CONF_DISPLAY_TEXT_AS            = 'display_text_as'
 
 #devices_schema parameters
 CONF_IC3_DEVICENAME             = 'ic3_devicename'
-CONF_NAME                       = 'name'
+CONF_FNAME                      = 'fname'
 CONF_FAMSHR_DEVICENAME          = 'famshr_devicename'
+CONF_FAMSHR_DEVICENAME2         = 'famshr_devicename2'
 CONF_FAMSHR_DEVICE_ID           = 'famshr_device_id'
 CONF_FMF_EMAIL                  = 'fmf_email'
 CONF_FMF_DEVICE_ID              = 'fmf_device_id'
 CONF_IOSAPP_DEVICE              = 'iosapp_device'
 CONF_PICTURE                    = 'picture'
+CONF_TRACKING_MODE              = 'tracking_mode'
 CONF_TRACK_FROM_ZONES           = 'track_from_zones'
+CONF_TRACKING_METHOD            = 'tracking_method'
 CONF_DEVICE_TYPE                = 'device_type'
 CONF_INZONE_INTERVAL            = 'inzone_interval'
-CONF_ACTIVE                     = 'active'
+CONF_UNIQUE_ID                  = 'unique_id'
 
 CONF_ZONE                       = 'zone'
 CONF_COMMAND                    = 'command'
@@ -759,204 +823,204 @@ CONF_INTERVAL                   = 'interval'
 VALID_CONF_DEVICES_ITEMS = [
         CONF_DEVICENAME, CONF_EMAIL, CONF_PICTURE, CONF_NAME,
         CONF_INZONE_INTERVAL, CONF_TRACK_FROM_ZONES, CONF_IOSAPP_SUFFIX,
-        CONF_IOSAPP_ENTITY, CONF_IOSAPP_INSTALLED, CONF_NOIOSAPP,
+        CONF_IOSAPP_ENTITY, CONF_IOSAPP_INSTALLED, CONF_NO_IOSAPP,
         CONF_NO_IOSAPP, CONF_TRACKING_METHOD, ]
 
 DASH_20  = '━'*20
 OPT_NONE = 0
 
-OPT_TM_ICLOUD_IOSAPP = 0
-OPT_TM_ICLOUD_ONLY   = 1
-OPT_TM_IOSAPP_ONLY   = 2
-OPT_TRACKING_METHOD = [
-        'iCloud account and iOS App are used to locate devices',
-        'iCloud only is used to locate devices, iOS App is not used',
-        'iOS App only is used to locate devices, iCloud account is not used']
-OPT_FAMSHR_DEVICENAME = [
-        'None']
-OPT_FMF_EMAIL = [
-        'None']
-OPT_IOSAPP_DEVICE = [
-        'None, iOS App is not used to locate this device',
-        'Search HA for the FamShr device']
-OPT_PICTURE = [
-        'None']
-OPT_UNIT_OF_MEASUREMENT = [
-        'mi - Imperial',
-        'km - Metric']
-OPT_TIME_FORMAT = [
-        '12-hour Time Format',
-        '24-hour Time Format']
-OPT_DISTANCE_METHOD = [
-        'Waze Route Service',
-        'Calculated Distance',
-        '.', '.', '.', '.']
-OPT_DISPLAY_ZONE_FORMAT = [
-        'Name (Example: TheShores)',
-        'Title (Example: The Shores)',
-        'Zone`s Friendly Name (Example:The Shores Development)',
-        'Zone Name (Example: the_shores)']
-OPT_DISPLAY_ZONE_FORMAT_EXAMPLE = [
-        '(Example: TheShores)',
-        '(Example: The Shores)',
-        '(Example:The Shores Development)',
-        '(Example: the_shores)']
-OPT_RESTART_NOW_LATER = [
-        'RESTART NOW - Restart iCloud3 now and use the updated configuration.',
-        'RESTART LATER - The configuration changes have been saved. Restart at a later time to apply the changes.']
-OPT_LOG_LEVEL = [
-        'Info - Log General Information',
-        'Debug - Log Tracking Monitors',
-        'Rawdata - Log data from iCloud',
-        '.', '.', '.']
-OPT_WAZE_REGION = [
-        'US - United States',
-        'EU - Europe',
-        'IL - Isreal',
-        'AU - Austrailia', '.', '.']
-OPT_WAZE_HISTORY_MAP_TRACK_DIRECTION = [
-        'North-South',
-        'East-West',
-        '.', '.', '.', '.']
-
-
 #------------------
-CONF_SENSOR_NAME = "name"
-CONF_SENSOR_BADGE = "badge"
-CONF_SENSOR_BATTERY = "battery"
-CONF_SENSOR_TRIGGER = "trigger"
-CONF_SENSOR_INTERVAL = "interval"
-CONF_SENSOR_LAST_UPDATE = "last_update"
-CONF_SENSOR_NEXT_UPDATE = "next_update"
-CONF_SENSOR_LAST_LOCATED = "last_located"
-CONF_SENSOR_TRAVEL_TIME = "travel_time"
-CONF_SENSOR_TRAVEL_TIME_MIN = "travel_time_min"
-CONF_SENSOR_ZONE_DISTANCE = "zone_distance"
-CONF_SENSOR_WAZE_DISTANCE = "waze_distance"
-CONF_SENSOR_CALC_DISTANCE = "calc_distance"
-CONF_SENSOR_TRAVEL_DISTANCE = "travel_distance"
-CONF_SENSOR_GPS_ACCURACY = "gps_accuracy"
-CONF_SENSOR_DIR_OF_TRAVEL = "dir_of_travel"
-CONF_SENSOR_ZONE = "zone"
-CONF_SENSOR_ZONE_NAME = "zone_name"
-CONF_SENSOR_ZONE_TITLE = "zone_title"
-CONF_SENSOR_ZONE_FNAME = "zone_fname"
-CONF_SENSOR_ZONE_TIMESTAMP = "zone_timestamp"
-CONF_SENSOR_POLL_CNT = "poll_cnt"
-CONF_SENSOR_INFO = "info"
-CONF_SENSOR_LAST_ZONE = "last_zone"
-CONF_SENSOR_LAST_ZONE_NAME = "last_zone_name"
-CONF_SENSOR_LAST_ZONE_TITLE = "last_zone_title"
-CONF_SENSOR_LAST_ZONE_FNAME = "last_zone_fname"
-CONF_SENSOR_BATTERY_STATUS = "battery_status"
-CONF_SENSOR_ALTITUDE = "altitude"
-CONF_SENSOR_VERTICAL_ACCURACY = "vertical_accuracy"
+CONF_SENSORS_CONTROL             = 'control'
+ICLOUD3_EVENT_LOG    = 'icloud3_event_log'
+DEVTRKR_ONLY_MONITOR = 'devtrkr_only_monitored_devices'
 
-DEFAULT_TRACKING_CONF = {
-        CONF_USERNAME: '',
-        CONF_PASSWORD: '',
-        CONF_TRACKING_METHOD: OPT_TRACKING_METHOD[0],
-        CONF_DEVICES: [],
-}
+CONF_SENSORS_DEVICE        = 'device'
+NAME           = "name"
+BADGE          = "badge"
+BATTERY        = "battery"
+BATTERY_STATUS = "battery_status"
+INFO           = "info"
 
-# Default Create Sensor Field Parameter
-DEFAULT_SENSORS_CONF = {
-        CONF_SENSOR_NAME:  True,
-        CONF_SENSOR_BADGE:  True,
-        CONF_SENSOR_BATTERY:  True,
-        CONF_SENSOR_BATTERY_STATUS:  False,
-        CONF_SENSOR_TRIGGER:  True,
-        CONF_SENSOR_INTERVAL:  True,
-        CONF_SENSOR_LAST_UPDATE:  True,
-        CONF_SENSOR_NEXT_UPDATE:  True,
-        CONF_SENSOR_LAST_LOCATED:  True,
-        CONF_SENSOR_TRAVEL_TIME:  True,
-        CONF_SENSOR_TRAVEL_TIME_MIN:  True,
-        CONF_SENSOR_TRAVEL_DISTANCE:  True,
-        CONF_SENSOR_ZONE_DISTANCE:  True,
-        CONF_SENSOR_WAZE_DISTANCE:  False,
-        CONF_SENSOR_CALC_DISTANCE:  False,
-        CONF_SENSOR_GPS_ACCURACY:  True,
-        CONF_SENSOR_DIR_OF_TRAVEL:  True,
-        CONF_SENSOR_ZONE:  False,
-        CONF_SENSOR_ZONE_NAME:  True,
-        CONF_SENSOR_ZONE_TITLE:  False,
-        CONF_SENSOR_ZONE_FNAME:  False,
-        CONF_SENSOR_ZONE_TIMESTAMP:  True,
-        CONF_SENSOR_LAST_ZONE:  False,
-        CONF_SENSOR_LAST_ZONE_NAME:  True,
-        CONF_SENSOR_LAST_ZONE_TITLE:  False,
-        CONF_SENSOR_LAST_ZONE_FNAME:  False,
-        CONF_SENSOR_ALTITUDE:  True,
-        CONF_SENSOR_VERTICAL_ACCURACY:  False,
-        CONF_SENSOR_POLL_CNT:  False,
-        CONF_SENSOR_INFO:  True,
-}
+CONF_SENSORS_TRACKING_UPDATE = 'tracking_update'
+INTERVAL         = "interval"
+LAST_LOCATED     = "last_located"
+LAST_UPDATE      = "last_update"
+NEXT_UPDATE      = "next_update"
 
-DEFAULT_DEVICE_CONF = {
-        CONF_IC3_DEVICENAME: ' ',
-        CONF_NAME: '',
-        CONF_FAMSHR_DEVICENAME: OPT_FAMSHR_DEVICENAME[0],
-        CONF_FMF_EMAIL: OPT_FMF_EMAIL[0],
-        CONF_IOSAPP_DEVICE: OPT_IOSAPP_DEVICE[0],
-        CONF_FMF_DEVICE_ID: '',
-        CONF_TRACK_FROM_ZONES: ['home'],
-        CONF_PICTURE: OPT_PICTURE[0],
-        CONF_DEVICE_TYPE: 'iPhone',
-        CONF_INZONE_INTERVAL: '2 hrs',
-        CONF_ACTIVE: True,
-        'cancel_update': False
-}
+CONF_SENSORS_TRACKING_TIME  = 'tracking_time'
+TRAVEL_TIME     = "travel_time"
+TRAVEL_TIME_MIN = "travel_time_min"
 
-DEFAULT_GENERAL_CONF = {
-        # General Configuration Parameters
-        CONF_UNIT_OF_MEASUREMENT: 'mi - Imperial',
-        CONF_TIME_FORMAT: '12-hour Time Format',
-        CONF_DISTANCE_METHOD: 'Waze Route Service',
-        CONF_TRAVEL_TIME_FACTOR: .6,
-        CONF_MAX_INTERVAL: '4 hrs',
-        CONF_GPS_ACCURACY_THRESHOLD: 100,
-        CONF_OLD_LOCATION_THRESHOLD: '3 mins',
+CONF_SENSORS_TRACKING_DISTANCE = 'tracking_distance'
+ZONE_DISTANCE      = "zone_distance"
+HOME_DISTANCE      = "home_distance"
+DIR_OF_TRAVEL      = "dir_of_travel"
+TRAVEL_DISTANCE    = "travel_distance"
 
-        # inZone Configuration Parameters
-        CONF_DISPLAY_ZONE_FORMAT: 'Name',
-        CONF_CENTER_IN_ZONE: False,
-        CONF_DISCARD_POOR_GPS_INZONE: False,
-        CONF_INZONE_INTERVAL_DEFAULT: '2 hrs',
-        CONF_INZONE_INTERVAL_IPHONE: '2 hrs',
-        CONF_INZONE_INTERVAL_IPAD: '2 hrs',
-        CONF_INZONE_INTERVAL_WATCH: '15 mins',
-        CONF_INZONE_INTERVAL_IPOD: '2 hrs',
-        CONF_INZONE_INTERVAL_NO_IOSAPP: '15 mins',
+CONF_SENSORS_TRACK_FROM_ZONES = 'track_from_zones'
+TFZ_ZONEINFO        = 'tfz_zoneinfo'
+TFZ_DISTANCE        = 'tfz_distance'
+TFZ_TRAVEL_TIME     = 'tfz_travel_time'
+TFZ_TRAVEL_TIME_MIN = 'tfz_travel_time_min'
+TFZ_DIR_OF_TRAVEL   = 'tfz_dir_of_travel'
 
-        # Waze Configuration Parameters
-        CONF_WAZE_REGION: 'US - United States',
-        CONF_WAZE_MIN_DISTANCE: 1,
-        CONF_WAZE_MAX_DISTANCE: 1000,
-        CONF_WAZE_REALTIME: False,
-        CONF_WAZE_HISTORY_DATABASE_USED: True,
-        CONF_WAZE_HISTORY_MAX_DISTANCE: 20,
-        CONF_WAZE_HISTORY_MAP_TRACK_DIRECTION: 'North-South',
+CONF_SENSORS_TRACKING_OTHER = 'tracking_other'
+TRIGGER         = "trigger"
+WAZE_DISTANCE   = "waze_distance"
+CALC_DISTANCE   = "calc_distance"
 
-        # Stationary Zone Configuration Parameters
-        CONF_STAT_ZONE_STILL_TIME: '8 mins',
-        CONF_STAT_ZONE_INZONE_INTERVAL: '30 mins',
-        CONF_STAT_ZONE_BASE_LATITUDE: 1,
-        CONF_STAT_ZONE_BASE_LONGITUDE: 0,
+DISTANCE           = 'distance'
+CONF_SENSORS_ZONE  = 'zone'
+ZONE               = "zone"
+ZONE_FNAME         = "zone_fname"
+ZONE_NAME          = "zone_name"
+# ZONE_DATETIME      = "zone_datetime"
+ZONE_DATETIME      = "zone_changed"
+LAST_ZONE          = "last_zone"
+LAST_ZONE_FNAME    = "last_zone_fname"
+LAST_ZONE_NAME     = "last_zone_name"
+# LAST_ZONE_DATETIME = "last_zone_datetime"
+LAST_ZONE_DATETIME = "last_zone_changed"
 
-        CONF_DISPLAY_TEXT_AS: ['', '', '', '', '', '', '', '', '', '', '', ''],
+CONF_SENSORS_OTHER = 'other'
+GPS_ACCURACY      = "gps_accuracy"
+ALTITUDE          = "altitude"
+VERTICAL_ACCURACY = "vertical_accuracy"
 
-        # Other Parameters
-        CONF_LOG_LEVEL: 'Info',
-}
+# SENSOR_LIST_DEVICE =    [NAME, BADGE, BATTERY, BATTERY_STATUS,
+#                         TRIGGER, INTERVAL, LAST_LOCATED,
+#                         INFO,
+#                         GPS_ACCURACY, ALTITUDE, VERTICAL_ACCURACY]
 
+# SENSOR_LIST_TRACKING =  [NEXT_UPDATE, LAST_UPDATE, LAST_LOCATED,
+#                         TRAVEL_TIME, TRAVEL_TIME_MIN, TRAVEL_DISTANCE, DIR_OF_TRAVEL,
+#                         WAZE_DISTANCE, CALC_DISTANCE, ZONE_DISTANCE, HOME_DISTANCE,
+#                         ZONE, ZONE_FNAME, ZONE_NAME, ZONE_DATETIME,
+#                         LAST_ZONE, LAST_ZONE_FNAME, LAST_ZONE_NAME,]
+# SENSOR_LIST_TRACK_FROM_ZONE = [INFO, LAST_UPDATE, NEXT_UPDATE,
+#                         TRAVEL_TIME, TRAVEL_TIME_MIN, DIR_OF_TRAVEL, ]
+# SENSOR_LIST_LOC_UPDATE =[TRIGGER, INTERVAL,
+#                         NEXT_UPDATE, LAST_UPDATE, LAST_LOCATED,
+#                         TRAVEL_TIME, TRAVEL_TIME_MIN, ]
+# SENSOR_LIST_ZONE =      [ZONE_DISTANCE, HOME_DISTANCE,
+#                         ZONE, ZONE_FNAME, ZONE_NAME, ZONE_DATETIME,
+#                         LAST_ZONE, LAST_ZONE_FNAME, LAST_ZONE_NAME, ]
+#--------------------------------------------------------
 # '.storage/icloud3.configuration' json file 'data' branch categories
+CF_PROFILE       = 'profile'
 CF_DATA          = 'data'
 CF_DATA_TRACKING = 'tracking'
 CF_DATA_DEVICES  = 'devices'
 CF_DATA_GENERAL  = 'general'
 CF_DATA_SENSORS  = 'sensors'
-CF_PROFILE       = 'profile'
+
+#--------------------------------------------------------
+DEFAULT_PROFILE_CONF = {
+        CONF_VERSION: 0,
+        CONF_UPDATE_DATE: '',
+        CONF_EVENT_LOG_CARD_DIRECTORY: EVENT_LOG_CARD_WWW_DIRECTORY,
+        CONF_EVENT_LOG_CARD_PROGRAM: EVENT_LOG_CARD_WWW_JS_PROG,
+}
+
+DEFAULT_TRACKING_CONF = {
+        CONF_USERNAME: '',
+        CONF_PASSWORD: '',
+        CONF_DATA_SOURCE: 'icloud,iosapp',
+        CONF_DEVICES: [],
+}
+
+DEFAULT_DEVICE_CONF = {
+        CONF_IC3_DEVICENAME: ' ',
+        CONF_FNAME: '',
+        CONF_TRACKING_MODE: 'normal',
+        CONF_FAMSHR_DEVICENAME: 'None',
+        CONF_FAMSHR_DEVICENAME2: 'None',
+        CONF_FMF_EMAIL: 'None',
+        CONF_IOSAPP_DEVICE: 'Search',
+        CONF_TRACK_FROM_ZONES: ['home'],
+        CONF_PICTURE: 'None',
+        CONF_DEVICE_TYPE: 'iPhone',
+        CONF_INZONE_INTERVAL: '02:00:00',
+        CONF_UNIQUE_ID: '',
+}
+
+DEFAULT_GENERAL_CONF = {
+        # General Configuration Parameters
+        CONF_UNIT_OF_MEASUREMENT: 'mi',
+        CONF_TIME_FORMAT: '12-hour',
+        CONF_DISPLAY_ZONE_FORMAT: 'name',
+        CONF_MAX_INTERVAL: '04:00:00',
+        CONF_GPS_ACCURACY_THRESHOLD: 100,
+        CONF_OLD_LOCATION_THRESHOLD: '00:03:00',
+        CONF_TRAVEL_TIME_FACTOR: .6,
+
+        # inZone Configuration Parameters
+        CONF_CENTER_IN_ZONE: False,
+        CONF_DISCARD_POOR_GPS_INZONE: False,
+        CONF_INZONE_INTERVALS: {
+                IPHONE: '02:00:00',
+                IPAD: '02:00:00',
+                WATCH: '00:15:00',
+                AIRPODS: '00:15:00',
+                NO_IOSAPP: '00:15:00',
+                OTHER: '02:00:00',
+                },
+
+        # Waze Configuration Parameters
+        CONF_DISTANCE_METHOD: 'waze',
+        CONF_WAZE_REGION: 'us',
+        CONF_WAZE_MIN_DISTANCE: 1,
+        CONF_WAZE_MAX_DISTANCE: 1000,
+        CONF_WAZE_REALTIME: False,
+        CONF_WAZE_HISTORY_DATABASE_USED: True,
+        CONF_WAZE_HISTORY_MAX_DISTANCE: 20,
+        CONF_WAZE_HISTORY_TRACK_DIRECTION: 'north_south',
+
+        # Stationary Zone Configuration Parameters
+        CONF_STAT_ZONE_FNAME: 'Stationary',
+        CONF_STAT_ZONE_STILL_TIME: '00:08:00',
+        CONF_STAT_ZONE_INZONE_INTERVAL: '00:30:00',
+        CONF_STAT_ZONE_BASE_LATITUDE: 1,
+        CONF_STAT_ZONE_BASE_LONGITUDE: 0,
+
+        CONF_DISPLAY_TEXT_AS: ['#1', '#2', '#3', '#4', '#5', '#6', '#7', '#8', '#9', '#10'],
+
+        # Other Parameters
+        CONF_LOG_LEVEL: 'info',
+}
+
+# Default Create Sensor Field Parameter
+DEFAULT_SENSORS_CONF = {
+        CONF_SENSORS_CONTROL: [
+                DEVTRKR_ONLY_MONITOR, ],
+        CONF_SENSORS_DEVICE: [
+                NAME,
+                BADGE,
+                BATTERY,
+                INFO, ],
+        CONF_SENSORS_TRACKING_UPDATE: [
+                INTERVAL,
+                LAST_LOCATED,
+                LAST_UPDATE,
+                NEXT_UPDATE, ],
+        CONF_SENSORS_TRACKING_TIME: [
+                TRAVEL_TIME, ],
+        CONF_SENSORS_TRACKING_DISTANCE: [
+                ZONE_DISTANCE,
+                DIR_OF_TRAVEL, ],
+        CONF_SENSORS_TRACK_FROM_ZONES: [
+                TFZ_ZONEINFO, ],
+        CONF_SENSORS_TRACKING_OTHER: [],
+        CONF_SENSORS_ZONE:
+                [ZONE_NAME],
+        CONF_SENSORS_OTHER: [],
+}
+
+DEFAULT_DATA_CONF =  {
+        CF_DATA_TRACKING: DEFAULT_TRACKING_CONF,
+        CF_DATA_GENERAL: DEFAULT_GENERAL_CONF,
+        CF_DATA_SENSORS: DEFAULT_SENSORS_CONF,
+}
 
 CF_DEFAULT_IC3_CONF_FILE = {
         CF_PROFILE: {
@@ -978,12 +1042,12 @@ CONF_PARAMETER_TIME_STR = [
         CONF_STAT_ZONE_STILL_TIME,
         CONF_STAT_ZONE_INZONE_INTERVAL,
         CONF_OLD_LOCATION_THRESHOLD,
-        CONF_INZONE_INTERVAL_DEFAULT,
-        CONF_INZONE_INTERVAL_IPHONE,
-        CONF_INZONE_INTERVAL_IPAD,
-        CONF_INZONE_INTERVAL_WATCH,
-        CONF_INZONE_INTERVAL_IPOD,
-        CONF_INZONE_INTERVAL_NO_IOSAPP,
+        IPHONE,
+        IPAD,
+        WATCH,
+        AIRPODS,
+        NO_IOSAPP,
+        OTHER,
 ]
 
 CONF_PARAMETER_FLOAT = [
@@ -992,7 +1056,14 @@ CONF_PARAMETER_FLOAT = [
         CONF_STAT_ZONE_BASE_LONGITUDE,
 ]
 
-
-
 CONF_ALL_FAMSHR_DEVICES = "all_famshr_devices"
 DEFAULT_ALL_FAMSHR_DEVICES = True
+
+# .storage/icloud3.restore_state file used to resore the device_trackers
+# and sensors state during start up
+RESTORE_STATE_FILE = {
+        'profile': {
+                CONF_VERSION: 0,
+                LAST_UPDATE: DATETIME_ZERO, },
+        'devices': {}
+}

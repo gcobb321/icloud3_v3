@@ -1,3 +1,4 @@
+
 '''
 Customized version of pyicloud.py to support iCloud3 Custom Component
 
@@ -25,9 +26,9 @@ VERSION = '3.0.0'
 from ..global_variables import GlobalVariables as Gb
 from ..const            import (FAMSHR, FMF, FMF_FNAME, FAMSHR_FNAME, HHMMSS_ZERO,
                                 NAME, ID, LOCATION, TIMESTAMP, ICLOUD_TIMESTAMP, LOCATION_TIME,
-                                TRACKING_METHOD, AIRPODS_FNAME, )
+                                TRACKING_METHOD, AIRPODS_FNAME, ICLOUD_HORIZONTAL_ACCURACY, )
 from ..helpers.time     import (time_now_secs, secs_to_time, msecs_to_time, )
-from ..helpers.base     import (instr, post_event, post_monitor_msg, _trace, _traceha, log_rawdata)
+from ..helpers.base     import (instr, post_event, post_monitor_msg, _trace, _traceha, log_rawdata, log_exception)
 
 from uuid       import uuid1
 from requests   import Session
@@ -48,11 +49,11 @@ HEADER_DATA = {
     "X-Apple-TwoSV-Trust-Token": "trust_token",
     "scnt": "scnt",
 }
-AUTHENTICATION_REQUIRED_450 = 450
 DEVICE_STATUS_ERROR_500 = 500
 INVALID_GLOBAL_SESSION_421 = 421
 APPLE_ID_VERIFICATION_CODE_INVALID_404 = 404
-AUTHENTICATION_REQUIRED_CODES = [421, 450, 500]
+AUTHENTICATION_NEEDED_421_450_500 = [421, 450, 500]
+AUTHENTICATION_NEEDED_450 = 450
 '''
 https://developer.apple.com/library/archive/documentation/DataManagement/Conceptual/CloudKitWebServicesReference/ErrorCodes.html#//apple_ref/doc/uid/TP40015240-CH4-SW1
 
@@ -126,7 +127,13 @@ class PyiCloudSession(Session):
         retry_cnt = kwargs.get("retry_cnt", 0)
         kwargs.pop("retry_cnt", 0)
 
-        response = super(PyiCloudSession, self).request(method, url, **kwargs)
+        try:
+
+            response = super(PyiCloudSession, self).request(method, url, **kwargs)
+
+        except Exception as err:
+            self._raise_error(-2, "Failed to establish a new connection")
+            # log_exception(err)
 
         content_type = response.headers.get("Content-Type", "").split(";")[0]
         json_mimetypes = ["application/json", "text/json"]
@@ -136,17 +143,17 @@ class PyiCloudSession(Session):
         except:
             data = None
 
-        log_msg = ( f"ResponseCode-{response.status_code}, "
-                    f"ContentType-{content_type}")
+        log_msg = ( f"ResponseCode-{response.status_code} ")
+                    # f"ContentType-{content_type}")
 
         # if (has_retried or response.status_code != 200 or not response.ok):
-        if (retry_cnt <= 3 or response.status_code != 200 or not response.ok):
+        if (retry_cnt == 3 or response.status_code != 200 or not response.ok):
             log_msg +=  (f", Headers-{response.headers}")
             self._log_debug_msg("RESPONSE", log_msg)
 
         if Gb.log_rawdata_flag:
-            log_rawdata("PyiCloud_ic3 iCloud Response", {'raw': log_msg})
-            log_rawdata("PyiCloud_ic3 iCloud Response", {'filter': data})
+            log_rawdata("PyiCloud_ic3 iCloud Response-Header", {'raw': log_msg})
+            log_rawdata("PyiCloud_ic3 iCloud Response-Data", {'filter': data})
 
         for header in HEADER_DATA:
             if response.headers.get(header):
@@ -164,19 +171,20 @@ class PyiCloudSession(Session):
         LOGGER.debug(f"Cookies saved to {self.Service.cookie_directory_filename}")
 
         if (not response.ok and (content_type not in json_mimetypes
-                or response.status_code in [421, 450, 500])):
+                or response.status_code in AUTHENTICATION_NEEDED_421_450_500)):
 
             try:
                 # Handle re-authentication for Find My iPhone
                 fmip_url = self.Service._get_webservice_url("findme")
                 # if has_retried == False and response.status_code == 450 and fmip_url in url:
                 # if has_retried is False and response.status_code in [421, 450, 500] and fmip_url in url:
-                if retry_cnt == 0 and response.status_code in [421, 450, 500] and fmip_url in url:
-                    _traceha(f"250 {response.reason=} {response.status_code=} {has_retried=} {kwargs=}")
+                if retry_cnt == 0 and response.status_code in AUTHENTICATION_NEEDED_421_450_500 and fmip_url in url:
                     LOGGER.debug("Re-authenticating Find My iPhone service")
 
                     try:
-                        self.Service.authenticate(True, "find")
+                        # If 450, authentication requires a sign in to the account
+                        service = None if response.status_code == 450 else 'find'
+                        self.Service.authenticate(True, service)
 
                     except PyiCloudAPIResponseException:
                         LOGGER.debug("Re-authentication failed")
@@ -191,18 +199,14 @@ class PyiCloudSession(Session):
 
             # if has_retried is None and response.status_code in [421, 450, 500]:
             # if has_retried is False and response.status_code in [421, 450, 500]:
-            if retry_cnt == 0 and response.status_code in [421, 450, 500]:
+            if retry_cnt == 0 and response.status_code in AUTHENTICATION_NEEDED_421_450_500:
                 self._log_debug_msg("AUTHENTICTION NEEDED, Status Code", response.status_code)
 
                 kwargs["retried"] = True
                 retry_cnt += 1
                 kwargs['retry_cnt'] = retry_cnt
-                _traceha(f"269 {response.reason=} {response.status_code=} {has_retried=} {retry_cnt=} {kwargs=}")
 
                 return self.request(method, url, **kwargs)
-
-            _traceha(f"274 {response.reason=} {response.status_code=} {has_retried=} {retry_cnt=} {kwargs=}")
-
 
             self._raise_error(response.status_code, response.reason)
 
@@ -224,7 +228,7 @@ class PyiCloudSession(Session):
             reason = reason or data.get("errorReason")
 
             if not reason and data.get("error"):
-                reason = f"297 Unknown reason, will continue {data=}"
+                reason = f"Unknown reason, will continue {data=}"
 
             code = data.get("errorCode")
             code = code or data.get("serverErrorCode")
@@ -234,31 +238,30 @@ class PyiCloudSession(Session):
         return response
 
     def _raise_error(self, code, reason):
-        _traceha(f"307 {reason=} {code=}")
         api_error = None
-        if code in ("ZONE_NOT_FOUND", "AUTHENTICATION_FAILED"):
+        if reason in ("ZONE_NOT_FOUND", "AUTHENTICATION_FAILED"):
             reason = ("Please log into https://icloud.com/ to manually "
                     "finish setting up your iCloud service")
             api_error = PyiCloudServiceNotActivatedException(reason, code)
 
-        elif code in [204, 421, 450, 500]:
-            LOGGER.info("315 Authentication needed for Account (421)")
+        elif code in AUTHENTICATION_NEEDED_421_450_500: #[204, 421, 450, 500]:
+            LOGGER.info(f"Authentication needed for Account ({code})")
             return
 
         elif code in [400, 404]:
-            reason = "Apple ID Validation Code Invalid"
+            reason = f"Apple ID Validation Code Invalid ({code})"
 
-        elif code == "ACCESS_DENIED":
+        elif reason == "ACCESS_DENIED":
             reason = (reason + ".  Please wait a few minutes then try again."
                      "The remote servers might be trying to throttle requests.")
 
-        elif (self.Service.requires_2sa
-                and reason == "Missing X-APPLE-WEBAUTH-TOKEN cookie"):
-            code = 450
+        # elif (self.Service.requires_2sa
+        #         and reason == "Missing X-APPLE-WEBAUTH-TOKEN cookie"):
+        #     code = 450
 
         api_error = PyiCloudAPIResponseException(reason, code)
-        _traceha(f"330 {api_error=} {reason=} {code=}")
-        LOGGER.error(f"330 {api_error}")
+
+        # LOGGER.error(f"{api_error}")
         raise api_error
 
     def _log_debug_msg(self, title, display_data):
@@ -389,7 +392,7 @@ class PyiCloudService(object):
         self.authenticate_method = ""
 
         # Validate token - Consider authenticated if token is valid (POST=validate)
-        if (not refresh_session
+        if (refresh_session is False
                 and self.session_data.get("session_token")
                 and 'dsid' in self.params):
             LOGGER.info("Checking session token validity")
@@ -403,7 +406,7 @@ class PyiCloudService(object):
                 msg = "Invalid authentication token, will log in from scratch."
 
         # Authenticate with Service
-        if not login_successful and service != None:
+        if login_successful is False and service != None:
             app = self.data["apps"][service]
 
             if "canLaunchWithOneFactor" in app and app["canLaunchWithOneFactor"] == True:
@@ -418,7 +421,7 @@ class PyiCloudService(object):
                     LOGGER.debug("Could not log into service. Attempting brand new login.")
 
         # Authenticate - Sign into icloud account (POST=/signin)
-        if not login_successful:
+        if login_successful is False:
             LOGGER.info(f"Authenticating account {self.user['accountName']} using Account/PasswordSignin")
 
             data = dict(self.user)
@@ -856,10 +859,10 @@ class PyiCloud_FamilySharing(object):
         )
 
         try:
-            self.response = req.json()
+            self.response = req.json() if req else  {}
 
         except Exception as err:
-            LOGGER.Exception(err)
+            # LOGGER.exception(err)
             self.response = {}
             LOGGER.debug("No data returned from fmi refresh request")
 
@@ -1213,6 +1216,7 @@ class PyiCloud_DevData(object):
     @property
     def device_id8(self):
         return self.device_id[:8]
+
     @property
     def tracking_method_FMF(self):
         return (self.tracking_method in [FMF, FMF_FNAME])
@@ -1221,6 +1225,23 @@ class PyiCloud_DevData(object):
     def tracking_method_FAMSHR(self):
         return (self.tracking_method in [FAMSHR, FAMSHR_FNAME])
 
+    #** Added 5/3/2022
+    @property
+    def gps_accuracy(self):
+        """ Get location gps accuracy or -1 if not available """
+
+        try:
+            return int(self.location[ICLOUD_HORIZONTAL_ACCURACY])
+        except:
+            return -1
+
+    #** Added 5/3/2022
+    @property
+    def gps_accuracy_msg(self):
+        """ GPS Accuracy text if available or unknown """
+        if self.gps_accuracy == -1:
+            return  'Unknown'
+        return int(self.gps_accuracy)
 
     def update(self, device_data):
         '''Update the device data.'''

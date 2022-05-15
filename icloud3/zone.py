@@ -16,7 +16,7 @@
 #####################################################################
 
 from .global_variables  import GlobalVariables as Gb
-from .const             import (STATIONARY, STATIONARY_FNAME, HOME,
+from .const             import (STATIONARY, HOME,
                                 STAT_ZONE_NO_UPDATE, STAT_ZONE_MOVE_DEVICE_INTO, STAT_ZONE_MOVE_TO_BASE,
                                 NAME, FRIENDLY_NAME, LATITUDE, LONGITUDE, ICON,
                                 RADIUS, PASSIVE, HIGH_INTEGER, )
@@ -63,17 +63,26 @@ class iCloud3Zone(object):
             ztitle = ztitle.replace(' Ipad', ' iPad')
             ztitle = ztitle.replace(' Ipod', ' iPod')
 
-        self.title     = ztitle
-        self.latitude  = zone_data.get(LATITUDE, 0)
-        self.longitude = zone_data.get(LONGITUDE, 0)
-        self.passive   = zone_data.get(PASSIVE, True)
-        self.radius    = int(zone_data.get(RADIUS, 100))
-        self.name      = ztitle.replace(" ","")
-        self.fname     = zone_data.get(FRIENDLY_NAME, ztitle)
+        self.title      = ztitle
+        self.latitude   = zone_data.get(LATITUDE, 0)
+        self.longitude  = zone_data.get(LONGITUDE, 0)
+        self.passive    = zone_data.get(PASSIVE, True)
+        self.radius     = int(zone_data.get(RADIUS, 100))
+        self.name       = ztitle.replace(" ","")
         self.dist_time_history = []        #Entries are a list - [lat, long, distance, travel time]
 
-        self.display_as = STATIONARY_FNAME if zone.find(STATIONARY) > 0 else self.name.replace("'", "`")
+        if instr(zone, STATIONARY):
+            self.fname      = Gb.stat_zone_fname
+            self.display_as = Gb.stat_zone_fname
+        else:
+            self.fname      = zone_data.get(FRIENDLY_NAME, ztitle)
+            self.display_as = self.name
+
         self.sensor_prefix = '' if self.zone == HOME else self.display_as
+
+        self.name.replace("'", "`")
+        self.fname.replace("'", "`")
+        self.display_as.replace("'", "`")
 
         if zone == HOME:
             Gb.HomeZone = self
@@ -136,8 +145,8 @@ class iCloud3StationaryZone(iCloud3Zone):
         self.base_longitude = Gb.stat_zone_base_longitude
 
         statzone_data = {LATITUDE: self.base_latitude,
-                                LONGITUDE: self.base_longitude,
-                                RADIUS: 1, PASSIVE: True}
+                         LONGITUDE: self.base_longitude,
+                         RADIUS: 1, PASSIVE: True}
 
         # Initialize Zone with location
         super().__init__(self.zone, statzone_data)

@@ -55,29 +55,23 @@ def request_icloud_data_update(Device):
         if Gb.PyiCloud is None:
             return
 
-        # Device.icloud_update_flag = True
-
         if Device.icloud_update_reason:
             Device.display_info_msg("Requesting iCloud Location Update")
 
-            # success_flag = _update_PyiCloud_DevData_data(Device)
-            Device.icloud_update_flag = _update_PyiCloud_DevData_data(Device)
+            Device.icloud_data_updated_flag = _update_PyiCloud_DevData_data(Device)
 
-            # if success_flag:
-            if Device.icloud_update_flag:
+            if Device.icloud_data_updated_flag:
                 Device.display_info_msg(Device.icloud_update_reason)
 
                 monitor_msg = (f"{Device.icloud_update_reason}, RequestedBy-{devicename}")
                 post_monitor_msg(devicename, monitor_msg)
 
             else:
-                # Device.icloud_update_flag = False
                 Device.display_info_msg("iCloud Location Data Not Available")
                 if Gb.icloud_no_data_error_cnt > 3:
                     error_msg = (f"iCloud3 Error > No Location Data Returned for {devicename}. "
                                     "iCloud may be down or there is an Authentication issue. ")
                     post_error_msg(error_msg)
-
 
     except Exception as err:
         log_exception(err)
@@ -85,8 +79,9 @@ def request_icloud_data_update(Device):
                         "Location Data. iCloud may be down or there is an internet connection "
                         f"issue. iCloud3 will try again later. ({err})")
         post_error_msg(error_msg)
-        Device.icloud_update_flag = False
+        Device.icloud_data_updated_flag = False
 
+    return Device.icloud_data_updated_flag
 #----------------------------------------------------------------------------
 def _update_PyiCloud_DevData_data(Device):
     '''
@@ -119,7 +114,9 @@ def _update_PyiCloud_DevData_data(Device):
                 update_method = FAMSHR_FNAME
                 famshr_last_loc_time = Device.PyiCloud_DevData_famshr.location_time
                 famshr_last_loc_secs = Device.PyiCloud_DevData_famshr.location_secs
-        except:
+        except Exception as err:
+            # **changed 4/24 - Added log_execption msg,
+            log_exception(err)
             famshr_last_loc_time = HHMMSS_ZERO
             famshr_last_loc_secs = 0
 
@@ -128,7 +125,10 @@ def _update_PyiCloud_DevData_data(Device):
                 update_method = FMF_FNAME
                 fmf_last_loc_time = Device.PyiCloud_DevData_fmf.location_time
                 fmf_last_loc_secs = Device.PyiCloud_DevData_fmf.location_secs
-        except:
+        except Exception as err:
+            #** changed 4/24 - Added log_execption msg, was getting error and set lastloc_time
+            # to 00:00:00 on and then looping on old iosapp data msg
+            log_exception(err)
             fmf_last_loc_time = HHMMSS_ZERO
             fmf_last_loc_secs = 0
 
@@ -173,62 +173,66 @@ def _update_PyiCloud_DevData_data(Device):
 
             # Add info for the Device that requested the update
             better_raw_data_flag = _is_pyicloud_raw_data_better(_Device, Device, PyiCloud_DevData)
-            if better_raw_data_flag:
-                trk_method_loc_time_msg = ''
 
-                try:
-                    if (_Device.device_id_famshr
-                            and famshr_last_loc_time
-                            and Gb.tracking_method_FAMSHR_used):
-                        trk_method_loc_time_msg += (f", FamShr-{famshr_last_loc_time}")
-                        if famshr_last_loc_secs != _Device.PyiCloud_DevData_famshr.location_secs:
-                            trk_method_loc_time_msg += \
-                                    (f"{RARROW}{_Device.PyiCloud_DevData_famshr.location_time}")
-                except:
-                    pass
-
-                try:
-                    if (_Device.device_id_fmf
-                            and fmf_last_loc_time
-                            and Gb.tracking_method_FMF_used):
-                        trk_method_loc_time_msg += (f", FmF-{fmf_last_loc_time}")
-                        if fmf_last_loc_secs != _Device.PyiCloud_DevData_fmf.location_secs:
-                            trk_method_loc_time_msg += \
-                                    (f"{RARROW}{_Device.PyiCloud_DevData_fmf.location_time}")
-                except:
-                    pass
-
-                if _Device.iosapp_monitor_flag:
-                    trk_method_loc_time_msg += (f", iOSApp-{_Device.iosapp_data_trigger_time}")
-
-                # iOSApp data might have just been updated. Make sure iCloud data is newer
-                if PyiCloud_DevData.location_secs >= _Device.iosapp_data_trigger_secs:
-                    _Device.update_dev_loc_data_from_raw_data(FAMSHR_FMF, PyiCloud_DevData)
-
-                else:
-                    _Device.update_dev_loc_data_from_raw_data(IOSAPP)
-
-                monitor_msg_devicename = f"{Device.devicename}, " if _Device is not Device else ""
-                event_msg =(f"Analyzed New iCloud Data ({_Device.tracking_method_fname}) > "
-                            f"{monitor_msg_devicename}"
-                            f"Selected-{_Device.dev_data_source}, "
-                            f"GPSAccuracy-{_Device.loc_data_gps_accuracy}m"
-                            f"{trk_method_loc_time_msg}")
-
+            # **changed 4/20
+            trk_method_loc_time_msg = ''
+            if better_raw_data_flag is False:
                 if _Device is Device:
-                    post_event(_Device.devicename, event_msg)
-                else:
-                    post_monitor_msg(_Device.devicename, event_msg)
-
-            elif _Device is Device:
-                event_msg =(f"Discarding New iCloud Data (Older or not Accurate) > "
+                    event_msg =(f"Discarding New iCloud Data (older or not accurate) > "
                             f"NewData-{PyiCloud_DevData.location_time} "
                             f"vs {_Device.loc_data_time}, "
-                            f"GPSAccur-"
-                            f"{PyiCloud_DevData.location.get(ICLOUD_HORIZONTAL_ACCURACY, UNKNOWN)}m "
-                            f"vs {_Device.loc_data_gps_accuracy}m, "
+                            f"GPSAccur-{PyiCloud_DevData.gps_accuracy_msg}m "
+                            f"vs {_Device.loc_data_gps_accuracy:.0f}m, "
                             f"KeepingDataFrom-{_Device.dev_data_source}")
+                    post_event(_Device.devicename, event_msg)
+                continue
+                            # f"GPSAccur-"
+                            # f"{PyiCloud_DevData.location.get(ICLOUD_HORIZONTAL_ACCURACY, UNKNOWN)}m "
+
+            try:
+                if (_Device.device_id_famshr
+                        and famshr_last_loc_time
+                        and Gb.tracking_method_FAMSHR_used):
+                    trk_method_loc_time_msg += (f", FamShr-{famshr_last_loc_time}")
+                    if famshr_last_loc_secs != _Device.PyiCloud_DevData_famshr.location_secs:
+                        trk_method_loc_time_msg += \
+                                (f"{RARROW}{_Device.PyiCloud_DevData_famshr.location_time}")
+            except:
+                pass
+
+            try:
+                if (_Device.device_id_fmf
+                        and fmf_last_loc_time
+                        and Gb.tracking_method_FMF_used):
+                    trk_method_loc_time_msg += (f", FmF-{fmf_last_loc_time}")
+                    if fmf_last_loc_secs != _Device.PyiCloud_DevData_fmf.location_secs:
+                        trk_method_loc_time_msg += \
+                                (f"{RARROW}{_Device.PyiCloud_DevData_fmf.location_time}")
+            except:
+                pass
+
+            if _Device.iosapp_monitor_flag:
+                trk_method_loc_time_msg += (f", iOSApp-{_Device.iosapp_data_trigger_time}")
+
+            # iOSApp data might have just been updated. Make sure iCloud data is newer
+            if PyiCloud_DevData.location_secs >= _Device.iosapp_data_trigger_secs:
+                _Device.update_dev_loc_data_from_raw_data(FAMSHR_FMF, PyiCloud_DevData)
+
+            else:
+                _Device.update_dev_loc_data_from_raw_data(IOSAPP)
+
+            monitor_msg_devicename = f"{Device.devicename}, " if _Device is not Device else ""
+            event_msg =(f"Analyzed New iCloud Data ({_Device.tracking_method_fname}) > "
+                        f"{monitor_msg_devicename}"
+                        f"Selected-{_Device.dev_data_source}, "
+                        f"GPSAccuracy-{_Device.loc_data_gps_accuracy}m"
+                        f"{trk_method_loc_time_msg}")
+
+            if _Device is Device:
                 post_event(_Device.devicename, event_msg)
+            else:
+                post_monitor_msg(_Device.devicename, event_msg)
+
 
         pyicloud_ic3_interface.reset_authentication_time()
 
@@ -311,10 +315,23 @@ def _get_famshr_fmf_PyiCloud_DevData_to_use(_Device):
 def _is_pyicloud_raw_data_better(_Device, Device, PyiCloud_DevData):
 
     try:
+        if PyiCloud_DevData is None:
+            return False
+        #** 5/3/2022 added gps=-1 check and commented out below if stmts
+        elif PyiCloud_DevData.gps_accuracy == -1:
+            return False
+        # elif PyiCloud_DevData.device_data is None:
+        #     return False
+        # elif LOCATION not in PyiCloud_DevData:
+        # elif LOCATION not in PyiCloud_DevData.device_data:
+
+
         device_being_updated_flag = (_Device is Device)
         new_loc_secs      = PyiCloud_DevData.location_secs
-        new_gps_accuracy  = PyiCloud_DevData.location.get(
-                                    ICLOUD_HORIZONTAL_ACCURACY, HIGH_INTEGER)
+        #** 5/3/2022 Changed to use gps_accuracy property
+        new_gps_accuracy  = PyiCloud_DevData.gps_accuracy
+        # new_gps_accuracy  = PyiCloud_DevData.location.get(
+        #                             ICLOUD_HORIZONTAL_ACCURACY, HIGH_INTEGER)
 
         # Use the data just returned if it is newer or has better accuracy than the
         # data last used. It may still be old or have poor gps accuracy. Is so,
@@ -322,7 +339,7 @@ def _is_pyicloud_raw_data_better(_Device, Device, PyiCloud_DevData):
         more_accurate_flag = False
         newer_data_flag    = False
 
-        # Is the new data later than the Device's data
+        # PyiCloud location newer than the devices location
         if new_loc_secs >= _Device.loc_data_secs:
             newer_data_flag = True
         # Is this data after the Device's old location threshold
@@ -337,6 +354,13 @@ def _is_pyicloud_raw_data_better(_Device, Device, PyiCloud_DevData):
 
         update_data_flag = False
 
+        #** 5/9/2022 Added check for passthru zone enter time
+        # Is the PyiCloud location after the pass thru zone timer expires
+        if (_Device.passthru_zone_expire_secs > 0
+                and new_loc_secs > _Device.passthru_zone_expire_secs):
+            newer_data_flag = True
+            update_data_flag = True
+
         # Discard if older and less accurate
         if newer_data_flag is False and more_accurate_flag is False:
             update_data_flag = False
@@ -344,6 +368,12 @@ def _is_pyicloud_raw_data_better(_Device, Device, PyiCloud_DevData):
         # Update if newer and more accurate
         elif newer_data_flag and more_accurate_flag:
             update_data_flag = True
+
+        #** 5/11/2022 No fmf data and old iOSapp data, was never updating
+        # Discard if older and next update time is reached
+        elif (newer_data_flag is False
+                and new_loc_secs < _Device.next_update_secs):
+            update_data_flag = False
 
         # Update if this is the Device being updated and the data is
         # better than previously saved

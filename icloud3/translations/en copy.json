@@ -77,19 +77,16 @@
       },
       "restart_icloud3": {
         "data": {
-          "restart_now_later": ""
+          "restart_now_later": "iCloud Account, Device and Sensor changes require restarting iCloud3"
         },
-        "description": "Note: Changes to tracked devices require restarting iCloud3",
         "title": "Confirm Restarting iCloud3"
       },
       "icloud_account": {
         "data": {
-          "username": "ICLOUD ACCOUNT USERNAME > User id/email address used to sign in to the iCloud Acount",
-          "password": "ICLOUD ACCOUNT PASSWORD > Password used to sign in to the iCloud Acount",
-          "data_source": "DATA SOURCE > Source of the devices location - iCloud account only, iOS App only or both iCloud account and iOS App",
+          "username": "User Id/Email Address",
+          "password": "Password",
+          "data_source": "Location data from the following sources are used to track devices",
           "opt_action": "════════════════════════════════════════"
-        },
-        "data_description": {
         },
         "title": "iCloud Account Login Credentials"
       },
@@ -107,52 +104,42 @@
         },
         "title": "iCloud3 Device Tracker Entities"
       },
-      "add_device": {
+      "device_1": {
         "data": {
-          "ic3_devicename": "ICLOUD3 DEVICE NAME > iCloud3 device_tracker entity id",
-          "fname": "FRIENDLY NAME > Friendly Name of the device - Used in the device_tracker and sensor entity friendly names",
-          "device_type": "DEVICE TYPE > Type of device - iPhone, iPad, Watch, etc.",
-          "tracking_mode": "TRACKING MODE > Normal location tracking, Monitor the location, or Inactive (not tracked)",
-          "iosapp": "iOS App is installed on the device and will be monitored",
+          "ic3_devicename": "iCloud3 Device Name",
+          "device_type": "Type of Device",
+          "tracking_mode": "Tracking Mode",
+          "tracking_method": "Tracking Method (Data Source)",
+          "famshr_devicename": "Family Sharing List device",
+          "fmf_email": "Find-my-Friends device",
+          "iosapp_device": "iOS App Device",
           "opt_action": "════════════════════════════════════════"
         },
-        "data_description": {
-        },
-        "title": "Add Tracked iCloud3 Device"
+        "title": "Update Device Page #1 - iCloud & iOS App"
       },
-      "update_device": {
+      "device_2": {
         "data": {
-          "ic3_devicename": "ICLOUD3 DEVICE NAME > iCloud3 device_tracker entity id",
-          "fname": "FRIENDLY NAME > Friendly Name of the device - Used in the device_tracker and sensor entity friendly names",
-          "device_type": "DEVICE TYPE > Type of device - iPhone, iPad, Watch, etc.",
-          "tracking_mode": "TRACKING MODE > Normal location tracking, Monitor the location, or Inactive (not tracked)",
-          "famshr_devicename": "FAMILY SHARING LIST DEVICE - Device in the iCloud Acct Family Sharing List that will be tracked",
-          "fmf_email": "FIND-MY-FRIENDS DEVICE > Device in the FindMy Devices list that will be tracked",
-          "iosapp_device": "IOS APP DEVICE > iOS App mobile_app device entity that will be monitored",
-          "track_from_zones": "TRACK-FROM-ZONES > Track the device's location from other non-Home zones",
-          "picture": "PICTURE > Display a picture of the person associated with the device (jpg/png file in the /www directory)",
-          "inzone_interval": "",
+          "ic3_devicename": "iCloud3 Device Name",
+          "fname": "Friendly Name, Sensor Entity Name Prefix",
+          "track_from_zones": "Zone(s) to be Tracked From",
+          "picture": "Picture File Name for Badge",
+          "inzone_interval": "inZone Interval",
           "opt_action": "════════════════════════════════════════"
         },
-        "data_description": {
-          "inzone_interval": "INZONE INTERVAL > Location request/Polling interval used when the device is in a zone (initialized using the device type and if the iOS Appp is installed on the device)"
-        },
-        "title": "Update Tracked iCloud3 Device"
+        "title": "Update Device Page #2 - Other Parameters"
       },
-      "delete_device": {
+      "confirm_action": {
         "data": {
-          "opt_action": "This device will no longer be tracked by iCloud3. It's device_tracker and sensor entities will be removed. Are you sure you want to do this?"
+          "opt_action": "Confirm Action Request"
         },
-        "title": "Confirm Delete Device Request"
+        "title": "Confirm Action"
       },
       "event_log_configuration": {
         "data": {
-          "display_zone_format": "ZONE NAME FORMAT > Format used to display the Zone name in the Event Log and sensors",
-          "time_format": "TIME FORMAT > Format used to display the time in the Event Log and sensors",
-          "event_log_card_directory": "ICLOUD3 EVENT LOG CARD LOVELACE RESOURCES DIRECTORY > Used by iCloud3 to monitor the installed version",
+          "display_zone_format": "Display 'Zone Name' Format",
+          "time_format": "Display 'Time' Format",
+          "event_log_card_directory": "Event Log Card Directory",
           "opt_action": "════════════════════════════════════════"
-        },
-        "data_description": {
         },
         "title": "Event Log Configuration"
       },
@@ -165,11 +152,9 @@
       },
       "display_text_as_update": {
         "data": {
-          "text_from": "ORIGINAL TEXT > Text to be replaced (example: gary_real_email@gmail.com)",
-          "text_to": "DISPLAYED TEXT > Text to be displayed (display:  gary@email.com)",
+          "text_from": "Text to be replaced",
+          "text_to": "Text to be displayed",
           "opt_action": "════════════════════════════════════════"
-        },
-        "data_description": {
         },
         "title": "Update Event Log 'Display Text As' Value"
       },
@@ -202,88 +187,72 @@
       },
       "other_parms": {
         "data": {
-          "unit_of_measurement": "UNIT OF MEASUREMENT > Display distance values in this unit of measurement on the Event Log and sensors",
-          "max_interval": "",
-          "old_location_threshold": "",
-          "log_level": "LOG LEVEL > Specifies the type of messages that are added to the HA log file.",
-          "opt_action": "════════════════════════════════════════════════════════════"
-        },
-        "data_description": {
-          "travel_time_factor": "TRAVEL TIME FACTOR > The next location request time is determined by multiplying the Waze travel time by this value, resulting in shorter intervals as the device approaches a tracked zone and longer intervals when further away",
-          "gps_accuracy_threshold": "GPS ACCURACY THRESHOLD > Locations with GPS Accuracy above this value will be discarded, a new location will be requested",
-          "max_interval": "MAXIMUM INTERVAL TIME > The maximum interval between location update requests",
-          "old_location_threshold": "OLD LOCATION THRESHOLD > Locations older than this value will be discarded, a new location will be requested"
+          "unit_of_measurement": "Unit of Measurement",
+          "max_interval": "Maximun time interval between location updates",
+          "gps_accuracy_threshold": "GPS Accuracy Threshold",
+          "old_location_threshold": "Old Location Threshold",
+          "travel_time_factor": "Travel Time Multiplier used for Interval Calculation",
+          "log_level": "Log Level",
+          "opt_action": "════════════════════════════════════════"
         },
         "title": "Miscellaneous Parameters"
       },
       "inzone_intervals": {
         "data": {
-          "iphone": "",
-          "ipad": "",
-          "watch": "",
-          "airpods": "",
-          "no_iosapp": "",
-          "other": "",
+          "default": "Default inZone Interval",
+          "iphone": "iPhone & iPod inZone Interval",
+          "ipad": "iPad inZone Interval",
+          "watch": "Apple Watch inZone Interval",
+          "airpods": "AirPods inZone Interval",
+          "no_iosapp": "inZone Interval for devices not using the iOS App",
           "discard_poor_gps_inzone": "Discard Location Updates with Poor GPS Accuracy when in a Zone",
           "center_in_zone": "Change Device's Location to the Zone's Center when in a Zone",
-          "opt_action": "════════════════════════════════════════════════════════════"
+          "opt_action": "════════════════════════════════════════"
         },
-        "data_description": {
-          "iphone": "IPHONE > iPhone & iPod default interval",
-          "ipad": "IPAD > iPad default interval",
-          "watch": "IWATCH > Apple Watch default interval",
-          "airpods": "AIRPODS > AirPods default interval",
-          "no_iosapp": "IOS APP NOT INSTALLED ON DEVICE > Assign a short interval if the iOS App is not used for location monitoring znd sone enter/exit triggers",
-          "other": "INZONE INTERVAL > Used if the device is not one of the above selections"
-        },
-        "description": "Defines the default values for the location request interval assigned to a device when it is added to iCloud3. It can be changed for each device on the Update Device form",
         "title": "inZone Parameters and Default Intervals"
       },
       "waze_1": {
         "data": {
-          "distance_method": "ZONE DISTANCE METHOD > Method used to determine the distance from the device to a tracked zone",
-          "waze_region": "ROUTE SERVER > Location of the Waze Route Server",
-          "waze_realtime": "USE REAL TIME DATA > Consider Traffic delays when determining the Waze Travel Time",
-          "opt_action": "═════════════════════════════════════════════════════"
+          "distance_method": "How Distance to a Zone is determined",
+          "waze_region": "Waze Region - Location of the Waze Route Server",
+          "waze_min_distance": "Minimum Distance from a zone before Waze Route Service is used",
+          "waze_max_distance": "Maximum Distance from a zone to use the Waze Route Service. Calculation method will be used instead.",
+          "waze_realtime": "Determine Travel Time using Real Time Data",
+          "opt_action": "════════════════════════════════════════"
         },
         "data_description": {
-          "waze_min_distance": "WAZE MINIMUM DISTANCE > Use the Waze Route Service when the calculated zone distance is greater than this value",
-          "waze_max_distance": "WAZE MAXIMUM DISTANCE > Use the Waze Route Service when the calculated zone distance is less than this value. "
+          "distance_method": "xHow Distance to a Zone is determined",
+          "waze_region": "xWaze Region - Location of the Waze Route Server",
+          "waze_min_distance": "xMinimum Distance from a zone before Waze Route Service is used",
+          "waze_max_distance": "xMaximum Distance from a zone to use the Waze Route Service. Calculation method will be used instead.",
+          "waze_realtime": "xDetermine Travel Time using Real Time Data"
         },
-        "description": "The Waze Reoute Servers can provide travel time/distance data to determine the next location request time. If Waze is not available in your area, a straight-line/calculation method can be used instead.",
-        "title": "Waze - Route Service Travel Time/Distance"
+        "description": "Please enter your IP secure information.",
+        "title": "Waze - Route Service"
       },
       "waze_2": {
         "data": {
           "waze_history_database_used": "Save Waze Route Info to the Waze History Database",
-          "waze_history_track_direction": "WAZE LOCATION MAP DISPLAY > Display the Waze location points on a map in your normally traveled direction",
-          "opt_action": "═════════════════════════════════════════════════════"
+          "waze_history_max_distance": "Maximum Distance to store the Waze Route Time/Distance Data",
+          "waze_history_track_direction": "Select how Waze History Location Tracks are displayed on a map",
+          "opt_action": "════════════════════════════════════════"
         },
-        "data_description": {
-          "waze_history_max_distance": "WAZE HISTORY DB MAXIMUM DISTANCE > Do not save the time/distance information if the zone distance is greater than this value"
-        },
-        "description": "The Waze History Data base stores `close to zone` travel time/distance information for a GPS location (100m radius). It reduces the number of internet requests to the Waze Servers after it has been in use for a while.",
         "title": "Waze - History Database"
       },
       "stationary_zone": {
         "data": {
-          "stat_zone_fname": "Stationary Zone Friendly Name",
-          "stat_zone_still_time": "",
-          "stat_zone_inzone_interval": "",
-          "stat_zone_base_latitude": "BASE LOCATION LATITUDE > Distance (km) north or south of the Home Zone or it's GPS Latitude",
-          "stat_zone_base_longitude": "BASE LOCATION LONGITUDE > Distance (km) east or west of the Home Zone or it's GPS Longitude",
-          "opt_action": "═══════════════════════════════════════════════════════════════════"
-        },
-        "data_description": {
-          "stat_zone_still_time": "STILL TIME > Time the device is in the same location before it is placed into a Stationary Zone",
-          "stat_zone_inzone_interval": "INZONE INTERVAL > Time interval between location requests when the device is in a Stationary Zone",
-          "stat_zone_base_latitude": "The Stationary Zone is moved to it's `Base Location` when it is not used by the device. This prevents the iOS App from moving the device into the Stationary Zone when it shouldn`t and helps prevent it from overlapping other zones"
+          "stat_zone_fname": "Friendly Name",
+          "stat_zone_still_time": "Still time before placing into a Stationary Zone",
+          "stat_zone_inzone_interval": "Stationary Zone Interval",
+          "stat_zone_base_latitude": "Base Location Latitude - Home North-South Offset or GPS Latitude",
+          "stat_zone_base_longitude": "Base Location Longitude - Home East-West Offset or GPS Longitude",
+          "opt_action": "════════════════════════════════════════"
         },
         "title": "Stationary Zone Parameters"
       },
       "sensors": {
         "data": {
-          "control": "MONITORED DEVICE SENSOR - Define the sensors created for a Monitored Device",
+          "control": "SENSOR CONTROL - Special methods for creating sensors",
           "device": "DEVICE SENSORS - Device status and information",
           "tracking_update": "LOCATION UPDATE SENSORS - Device location update times",
           "tracking_time": "TIME SENSORS - Device tracking timers",
@@ -295,6 +264,15 @@
           "opt_action": "════════════════════════════════════════"
         },
         "title": "Device and Tracking Sensors created by iCloud3"
+      },
+      "system_settings": {
+        "data": {
+          "event_log_card_directory": "Event Log Card Directory",
+          "event_log_card_program": "Event Log Card .js File Name",
+          "log_level": "Log Level",
+          "opt_action": "════════════════════════════════════════"
+        },
+        "title": "System Settings"
       }
     }
   }

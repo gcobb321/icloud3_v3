@@ -13,9 +13,11 @@
 from ..global_variables  import GlobalVariables as Gb
 from ..const             import (DOT, HHMMSS_ZERO, HIGH_INTEGER, STATIONARY, CRLF, CRLF_DOT, CRLF_CHK,
                                 EVLOG_ERROR,
-                                EVLOG_ALERT, EVLOG_DEBUG, EVLOG_INIT_HDR, EVLOG_TIME_RECD, HOME,
+                                EVLOG_ALERT, EVLOG_DEBUG, EVLOG_INIT_HDR, EVLOG_TIME_RECD, HOME, HOME_FNAME,
                                 EVLOG_RECDS_PER_DEVICE, EVLOG_RECDS_PER_DEVICE_ZONE,
-                                EVENT_LOG_CLEAR_SECS, EVENT_LOG_CLEAR_CNT, )
+                                EVENT_LOG_CLEAR_SECS, EVENT_LOG_CLEAR_CNT,
+
+                                ICLOUD3_EVENT_LOG, )
 
 from ..helpers.base      import instr, is_statzone, log_exception, _traceha, log_info_msg
 from ..helpers.time      import time_to_12hrtime, datetime_now
@@ -53,7 +55,6 @@ class EventLog(object):
         self.display_text_as         = {}
         self.event_log_table         = []
         self.devicename_fname        = {}
-        self.base_attrs              = ''
         self.log_table_max_items     = 999
         self.clear_secs              = HIGH_INTEGER
         self.last_devicename         = '*'
@@ -61,47 +62,42 @@ class EventLog(object):
         self.log_debug_flag          = False
         self.log_rawdata_flag        = False
 
+        self.evlog_state_attr = ''
+        self.log_attrs                    = {}
+        self.log_attrs['log_level_debug'] = ''
+        self.log_attrs['filtername']      = 'Initialize'
+        self.log_attrs['update_time']     = ''
+        self.log_attrs['names']           = {'Setup': 'Initializing iCloud3'}
+        self.log_attrs['logs']            = ''
+
 ###################################################################################
 #
 #   EVENT LOG ROUTINES
 #
 ###################################################################################
-    def setup_event_log(self):
+    def setup_event_log_trackable_device_info(self):
         '''
         Set up the name, picture and device attributes in the Event Log
         sensor. Read the sensor attributes first to see if it was set up by
         another instance of iCloud3 for a different iCloud acount.
         '''
-        try:
-            curr_base_attrs = self.hass.states.get(SENSOR_EVENT_LOG_ENTITY).attributes
-            base_attrs = {k: v for k, v in curr_base_attrs.items()}
-
-        except (KeyError, AttributeError):
-            base_attrs         = {}
-            base_attrs["logs"] = ""
-
-        except Exception as err:
-            log_exception(err)
 
         try:
             self.devicename_fname = {}
-            if len(Gb.Devices_by_devicename) > 0:
+            if Gb.Devices_by_devicename:
                 for devicename, Device in Gb.Devices_by_devicename.items():
                     self.devicename_fname[devicename] = Device.fname
             else:
                 self.devicename_fname = {'No Tracked Devices Error': ''}
 
-            self.log_table_max_items = 0
+            self.log_table_max_items = self.log_table_max_items
             for devicename, Device in Gb.Devices_by_devicename.items():
                 self.log_table_max_items += EVLOG_RECDS_PER_DEVICE + EVLOG_RECDS_PER_DEVICE_ZONE*len(Device.DeviceFmZones_by_zone)
 
-            base_attrs["names"] = self.devicename_fname
+            self.log_attrs["filtername"] = "Initialize"
+            self.log_attrs["names"] = self.devicename_fname
 
-            # self._set_state(SENSOR_EVENT_LOG_ENTITY, "Initialized", base_attrs)
-            set_state_attributes(SENSOR_EVENT_LOG_ENTITY, "Initialized", base_attrs)
-
-            self.base_attrs = {k: v for k, v in base_attrs.items() if k != "logs"}
-            self.base_attrs["logs"] = ""
+            Gb.EvLogSensor.async_update_sensor()
 
         except Exception as err:
             log_exception(err)
@@ -110,8 +106,6 @@ class EventLog(object):
 
 #------------------------------------------------------
     def post_event(self, devicename, event_text='+'):
-    #def post_event(self, device, iosapp_state, ic3_zone,
-    #                    interval, travel_time, distance, event_text):
         '''
         Add records to the Event Log table the device. If the device="*",
         the event_text is added to all deviceFNAMEs table.
@@ -138,14 +132,16 @@ class EventLog(object):
             this_update_time = time_to_12hrtime(this_update_time, ampm=True)
 
             try:
+                # Display Track-from-Zone in time field if not Home
                 if devicename != '*':
-                    Device = Gb.Devices_by_devicename[devicename]
-                    if (Device.DeviceFmZoneCurrent.zone != HOME
-                            or event_text.startswith('^t^')):
-                        this_update_time = (f"»{Device.DeviceFmZoneCurrent.zone_display_as[:6]}")
+                    Device = Gb.Devices_by_devicename.get(devicename)
+                    if Device:
+                        if (Device.DeviceFmZoneCurrent.from_zone != HOME
+                                or event_text.startswith('^t^')):
+                            this_update_time = (f"»{Device.DeviceFmZoneCurrent.from_zone_display_as[:6]}")
 
             except Exception as err:
-                # log_exception(err)
+                log_exception(err)
                 pass
 
             if (instr(type(event_text), 'dict') or instr(type(event_text), 'list')):
@@ -182,6 +178,7 @@ class EventLog(object):
             #create an event_log recd for each chunk
             if len(event_text) < char_per_line:
                 event_recd = [devicename, this_update_time, event_text]
+
                 self._insert_event_log_recd(event_recd)
 
             else:
@@ -238,8 +235,6 @@ class EventLog(object):
         '''
 
         try:
-            log_attrs = self.base_attrs.copy() if self.base_attrs else {}
-
             attr_recd  = {}
 
             log_attr_text = ""
@@ -247,18 +242,18 @@ class EventLog(object):
             if Gb.log_debug_flag:          log_attr_text += "halog,"
             if Gb.log_rawdata_flag:        log_attr_text += "rawdata,"
 
-            log_attrs["log_level_debug"] = log_attr_text
+            self.log_attrs["log_level_debug"] = log_attr_text
 
             if devicename is None:
                 return
             elif devicename == "clear_log_items":
-                log_attrs["filtername"] = "ClearLogItems"
+                self.log_attrs["filtername"] = "ClearLogItems"
             elif devicename == "*" or devicename == '':
-                log_attrs["filtername"] = "Initialize"
+                self.log_attrs["filtername"] = "Initialize"
             elif devicename not in self.devicename_fname:
-                log_attrs["filtername"] = "Unknown"
+                self.log_attrs["filtername"] = "Unknown"
             else:
-                log_attrs["filtername"] = self.devicename_fname[devicename]
+                self.log_attrs["filtername"] = self.devicename_fname[devicename]
 
             if devicename == 'clear_log_items':
                 max_recds  = EVENT_LOG_CLEAR_CNT
@@ -274,13 +269,14 @@ class EventLog(object):
             #is not displayed. Add the update time to make it unique.
             log_update_time = ( f"{dt_util.now().strftime('%a, %m/%d')}, "
                                 f"{dt_util.now().strftime(Gb.um_time_strfmt)}")
-            log_attrs["update_time"] = log_update_time
-            sensor_state = (f"{devicename}:{log_update_time}")
+            self.log_attrs["update_time"] = log_update_time
+            self.evlog_state_attr = (f"{devicename}:{log_update_time}")
 
-            attr_recd = self._update_sensor_ic3_event_log_recds(devicename, max_recds)
-            log_attrs["logs"] = attr_recd
+            self.log_attrs["logs"] = self._update_sensor_ic3_event_log_recds(devicename, max_recds)
 
-            set_state_attributes(SENSOR_EVENT_LOG_ENTITY, sensor_state, log_attrs)
+            if Gb.EvLogSensor:
+                Gb.EvLogSensor.async_update_sensor()
+
 
         except Exception as err:
             log_exception(err)
@@ -309,7 +305,6 @@ class EventLog(object):
             export_recd += self._export_ic3_event_log_reformat_recds('*', el_recds)
 
             #Prepare recds for each device. Each record is [devicename, time, text]
-            # event_msg =(f"{EVLOG_TIME_RECD}{iosapp_state},{ic3_zone},{interval},{travel_time},{distance}")
             for devicename, Device in Gb.Devices_by_devicename.items():
                 export_recd += (f"\n\n{Device.fname_devicename}\n\n")
                 export_recd += hdr_recd
@@ -318,19 +313,10 @@ class EventLog(object):
                                 if (el_recd[0] == devicename and el_recd[2] != "Device.Cnts")]
                 export_recd += self._export_ic3_event_log_reformat_recds(devicename, el_recds)
 
-            # ic3_directory = os.path.abspath(os.path.dirname(__file__))
-            # # export_filename = (f"{Gb.icloud3_dir}/~icloud3_event_log-{datetime_now().replace(' ', '_')}.txt")
-            # export_filename = (f"icloud3_event_log-{datetime_now().replace(' ', '_')}.txt")
-            # export_filename = (f"{ic3_directory.split('custom_components')[0]}/{export_filename}.txt")
-            # export_filename = export_filename.replace("//", "/")
-            # # export_filename = Gb.icloud3_dir +
-
-
-            # ic3_directory = os.path.abspath(os.path.dirname(__file__))
             # self.post_event(f"{datetime_now()=} {ic3_directory=} {Gb.icloud3_dir=}")
             datetime = datetime_now().replace('-', '.').replace(':', '.').replace(' ', '-')
-            export_filename = (f"icloud3-event-log_{datetime}.txt")
-            export_directory = (f"{Gb.icloud3_dir.split('custom_components')[0]}/{export_filename}")
+            export_filename = (f"icloud3.event-log_{datetime}.txt")
+            export_directory = (f"{Gb.ha_config_directory}/{export_filename}")
             export_directory = export_directory.replace("//", "/")
 
             export_file = open(export_directory, "w")
@@ -405,25 +391,30 @@ class EventLog(object):
     def _export_ic3_event_log_reformat_recds(self, devicename, el_records):
 
         try:
+            if el_records is None:
+                return ''
+
             record_str = ''
-            record_str2 = ''
-            last_recd_home_zone_flag = False
             inside_home_det_interval_flag = False
+            el_records.reverse()
             for record in el_records:
                 devicename = record[0]
                 time       = record[1]
                 text       = record[2]
 
                 # Time-record = {iosapp_state},{ic3_zone},{interval},{travel_time},{distance
-                if time == '»Home' and inside_home_det_interval_flag:
-                    block_char = '\t\t└─ '
-                    inside_home_det_interval_flag = False
-                elif time == '»Home' and inside_home_det_interval_flag is False:
-                    block_char = '\t\t┌─ '
+                if text.startswith('^s^'):
+                    block_char = '\t┌─ '
                     inside_home_det_interval_flag = True
-                elif time.startswith('»') and text.startswith('^'):
-                    block_char = '\t\t├─ '
-                elif time.startswith('»'):
+                elif text.startswith('^c^'):
+                    block_char = '\t└─ '
+                    inside_home_det_interval_flag = False
+                elif text.startswith('Results:'):
+                    if time.startswith('»') and time.startswith('»Home') is False:
+                        block_char = '\t\t├─ '
+                    else:
+                        block_char = '\t├─ '
+                elif inside_home_det_interval_flag and time.startswith('»'):
                     block_char = '\t\t│  '
                 elif inside_home_det_interval_flag:
                     block_char = '\t│  '
@@ -446,10 +437,10 @@ class EventLog(object):
                 while start_pos < len(text):
                     if start_pos == 0:
                         chunk = (f"{time}{block_char}{text[start_pos:end_pos]}\n")
-                    elif time.startswith('»'):
-                        chunk = (f"\t{block_char}\t\t{text[start_pos:end_pos]}\n")
+                    elif inside_home_det_interval_flag:
+                        chunk = (f"\t\t\t│\t\t{text[start_pos:end_pos]}\n")
                     else:
-                        chunk= (f"\t\t{block_char}\t\t{text[start_pos:end_pos]}\n")
+                        chunk= (f"\t\t\t\t\t{text[start_pos:end_pos]}\n")
                     record_str += chunk
                     start_pos += end_pos
                     end_pos += chunk_len

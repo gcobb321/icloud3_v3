@@ -1,13 +1,14 @@
 
 
 from ..global_variables import GlobalVariables as Gb
-from ..const            import (NOT_HOME, ICLOUD3_ERROR_MSG, EVLOG_DEBUG, EVLOG_ERROR, EVLOG_INIT_HDR,
+from ..const            import (NOT_HOME, DOT, DOMAIN, ICLOUD3_ERROR_MSG, EVLOG_DEBUG, EVLOG_ERROR, EVLOG_INIT_HDR,
                                 STATIONARY, NEW_LINE, CRLF, CRLF_DOT, DATETIME_ZERO, RARROW,
                                 NEXT_UPDATE_TIME, INTERVAL, LOCATION, ID,
                                 LOG_RAWDATA_FIELDS, LOCATION,
                                 CONF_UPDATE_DATE,
                                 CF_PROFILE, CF_DATA, CF_DATA_TRACKING, CF_DATA_DEVICES, CF_DATA_GENERAL,
                                 CF_DATA_SENSORS,
+                                CONF_IC3_DEVICENAME,
                                 LATITUDE,  LONGITUDE, LOCATION_SOURCE, TRACKING_METHOD,
                                 ZONE, ZONE_DATETIME, INTO_ZONE_DATETIME, LAST_ZONE,
                                 TIMESTAMP, TIMESTAMP_SECS, TIMESTAMP_TIME, LOCATION_TIME, DATETIME, AGE,
@@ -17,7 +18,7 @@ from ..const            import (NOT_HOME, ICLOUD3_ERROR_MSG, EVLOG_DEBUG, EVLOG_
                                 DEVICE_STATUS, LOW_POWER_MODE,
                                 TRACKING, DEVICENAME_IOSAPP,
                                 AUTHENTICATED,
-                                LAST_UPDATE_TIME, UPDATE_DATETIME, NEXT_UPDATE_TIME, LOCATED_DATETIME,
+                                LAST_UPDATE_TIME, LAST_UPDATE_DATETIME, NEXT_UPDATE_TIME, LAST_LOCATED_DATETIME, LAST_LOCATED_TIME,
                                 INFO, GPS_ACCURACY, GPS, POLL_COUNT, VERT_ACCURACY, ALTITUDE,
                                 ICLOUD3_VERSION,
                                 BADGE,
@@ -45,9 +46,11 @@ FILTER_FIELDS = [
         INTERVAL, ZONE_DISTANCE, CALC_DISTANCE, WAZE_DISTANCE,
         TRAVEL_TIME, TRAVEL_TIME_MIN, DIR_OF_TRAVEL, TRAVEL_DISTANCE,
         DEVICE_STATUS, LOW_POWER_MODE, BADGE,
-        LAST_UPDATE_TIME, UPDATE_DATETIME, NEXT_UPDATE_TIME, LOCATED_DATETIME,
+        LAST_UPDATE_TIME, LAST_UPDATE_DATETIME,
+        NEXT_UPDATE_TIME, NEXT_UPDATE_TIME,
+        LAST_LOCATED_TIME, LAST_LOCATED_DATETIME,
         INFO, GPS_ACCURACY, GPS, POLL_COUNT, VERT_ACCURACY, ALTITUDE,
-        'ResponseCode',
+        'ResponseCode', 'reason',
         'id', 'firstName', 'lastName', 'name', 'fullName', 'appleId', 'emails', 'phones',
         'deviceStatus', 'batteryLevel', 'membersInfo',
         'batteryStatus', 'deviceDisplayName', 'modelDisplayName', 'deviceClass',
@@ -141,54 +144,25 @@ def ordereddict_to_dict(odict_item):
 
     return dict_item
 
+#--------------------------------------------------------------------
+'''
+These functions are used to send a request to add and update device_tracker and
+sensor entities between iCloud and the device_tracker.py & sensor.py
+'''
+def signal_create_device_tracker_entities() :
+    return f"{DOMAIN}-create-device-tracker-enties"
+
+def signal_create_sensor_entities():
+    return f"{DOMAIN}-sensor-entities"
+
+def signal_device_update():
+    return f"{DOMAIN}-device-update"
+
 #####################################################################
 #
 #   Common Utilities
 #
 #####################################################################
-def read_storage_icloud3_configuration_file():
-    '''
-    Read the config/.storage/.icloud3.configuration file and extract the
-    data into the Global Variables
-    '''
-
-    try:
-        with open(Gb.icloud3_config_filename, 'r') as f:
-            Gb.conf_file_data = json.load(f)
-            Gb.conf_profile   = Gb.conf_file_data[CF_PROFILE]
-            Gb.conf_data      = Gb.conf_file_data[CF_DATA]
-
-            Gb.conf_tracking  = Gb.conf_data[CF_DATA_TRACKING]
-            Gb.conf_devices   = Gb.conf_data[CF_DATA_TRACKING][CF_DATA_DEVICES]
-            Gb.conf_general   = Gb.conf_data[CF_DATA_GENERAL]
-            Gb.conf_sensors   = Gb.conf_data[CF_DATA_SENSORS]
-
-        return True
-
-    except Exception as err:
-        log_exception(err)
-
-    return False
-
-#--------------------------------------------------------------------
-def write_storage_icloud3_configuration_file():
-    '''
-    Update the config/.storage/.icloud3.configuration file
-    '''
-
-    try:
-        with open(Gb.icloud3_config_filename, 'w', encoding='utf8') as f:
-            Gb.conf_profile[CONF_UPDATE_DATE] = ''
-            json.dump(Gb.conf_file_data, f, indent=4)
-
-        return True
-
-    except Exception as err:
-        log_exception(err)
-
-    return False
-
-#--------------------------------------------------------------------
 def resolve_system_event_msg(devicename, event_msg):
     if event_msg == '+':
         return ("*", devicename)
@@ -217,12 +191,31 @@ def log_filter(log_msg):
     return log_msg
 
 #--------------------------------------------------------------------
-# def display_info_msg(Device, info_msg):
-#     '''
-#     Display a status message in the Device's info sensor.
-#     '''
-#     Device.display_info_msg(info_msg)
-#     return
+def broadcast_info_msg(info_msg):
+    '''
+    Display a message in the info sensor for all devices
+    '''
+    if INFO not in Gb.conf_sensors['device']:
+        _traceha(f"NOINFO {Gb.conf_sensors['device']=}")
+        return
+
+
+    Gb.broadcast_info_msg = f"{DOT}{info_msg}"
+
+    try:
+        for conf_device in Gb.conf_devices:
+            devicename = conf_device[CONF_IC3_DEVICENAME]
+            InfoSensor = Gb.Sensors_by_devicename[devicename][INFO]
+            # _traceha(f"INFOMSG {devicename} {InfoSensor} {info_msg=} ")
+            InfoSensor.async_update_sensor()
+
+    # Catch error if the Info sensor has not been set up yet during startup
+    # or if the info sensor has not been selected in config_vlow > sensors
+    except KeyError:
+        pass
+
+
+    return
 
 #--------------------------------------------------------------------
 def post_event(devicename, event_msg='+'):
@@ -231,12 +224,15 @@ def post_event(devicename, event_msg='+'):
     the info displayed on the Event Log screen. Use the
     '_update_event_log_display' function to display the changes.
     '''
+
     devicename, event_msg = resolve_system_event_msg(devicename, event_msg)
+
     Gb.EvLog.post_event(devicename, event_msg)
 
     if Gb.log_debug_flag:
         event_msg = (f"{devicename} > {str(event_msg).replace(CRLF, '. ')}")
         log_info_msg(event_msg)
+
     elif (Gb.start_icloud3_inprocess_flag
             and event_msg.startswith(EVLOG_DEBUG) is False):
         if event_msg.startswith(EVLOG_INIT_HDR):
@@ -325,10 +321,11 @@ def log_exception(err):
 
 #--------------------------------------------------------------------
 def log_debug_msg(devicename, log_msg="+"):
-    devicename, log_msg = resolve_system_event_msg(devicename, log_msg)
-    dn_str = '' if devicename == '*' else (f"{devicename} > ")
-    log_msg = (f"{dn_str}{str(log_msg).replace(CRLF, ', ')}")
-    log_info_msg(log_msg)
+    if Gb.log_debug_flag:
+        devicename, log_msg = resolve_system_event_msg(devicename, log_msg)
+        dn_str = '' if devicename == '*' else (f"{devicename} > ")
+        log_msg = (f"{dn_str}{str(log_msg).replace(CRLF, ', ')}")
+        log_info_msg(log_msg)
 
 #--------------------------------------------------------------------
 def log_rawdata(title, rawdata):
@@ -348,10 +345,10 @@ def log_rawdata(title, rawdata):
     if rawdata is None:
         return
 
-    log_info_msg(f"{'─'*8} {title.upper()} {'─'*8}")
-
     filtered_data = {}
     rawdata_data = {}
+    log_info_msg(f"{'─'*8} {title.upper()} {'─'*8}")
+
     try:
         if 'raw' in rawdata:
             log_info_msg(rawdata)
@@ -367,26 +364,33 @@ def log_rawdata(title, rawdata):
         for data_dict in FILTER_DATA_DICTS:
             filter_results = _filter_data_dict(rawdata_data['filter'], data_dict)
             if filter_results:
-                filtered_data[f"◤◤{data_dict.upper()}◥◥ ({data_dict})"] = filter_results
+                filtered_data[f"◤{data_dict.upper()}◥ ({data_dict})"] = filter_results
 
         for data_list in FILTER_DATA_LISTS:
             if data_list in rawdata_data['filter']:
                 filter_results = _filter_data_list(rawdata_data['filter'][data_list])
                 if filter_results:
-                    filtered_data[f"◤◤{data_list.upper()}◥◥ ({data_list})"] = filter_results
+                    filtered_data[f"◤{data_list.upper()}◥ ({data_list})"] = filter_results
 
     try:
+        log_msg = None
         if filtered_data:
-            log_info_msg(f"{filtered_data}")
+            log_msg = f"{filtered_data}"
         else:
             if 'id' in rawdata_data and len(rawdata_data['id']) > 10:
                 rawdata_data['id'] = f"{rawdata_data['id'][:10]}..."
             elif 'id' in rawdata_data['filter'] and len(rawdata_data['filter']['id']) > 10:
                 rawdata_data['filter']['id'] = f"{rawdata_data['filter']['id'][:10]}..."
 
-            log_info_msg(f"{rawdata_data}")
+            if rawdata_data:
+                log_msg = f"{rawdata_data}"
+            else:
+                log_msg = f"{rawdata[:15]}"
+
     except:
         pass
+
+    log_info_msg(log_msg)
 
     return
 
