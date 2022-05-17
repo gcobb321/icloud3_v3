@@ -11,7 +11,7 @@ from ..support           import start_ic3 as start_ic3
 from ..helpers.base     import (instr, is_statzone,
                                 post_event, post_error_msg, post_log_info_msg, post_startup_event, post_monitor_msg,
                                 log_exception, log_error_msg, internal_error_msg2, _trace, _traceha, )
-from ..helpers.time     import (time_now_secs, secs_to_time, secs_to_datetime, )
+from ..helpers.time     import (time_now_secs, secs_to_time, secs_to_datetime, secs_to_time_str, )
 from ..helpers.format   import (format_age, )
 # from ..helpers.entity_io import (get_state, get_attributes, get_last_changed_time, extract_attr_value, )
 
@@ -100,7 +100,8 @@ def pyicloud_authenticate_account(initial_setup=False):
                                     session_directory=(f"{Gb.icloud_cookies_dir}/session"),
                                     with_family=True)
 
-        Gb.pyicloud_calls_time += (time.time() - Gb.pyicloud_auth_started_secs)
+        authentication_took_secs = time.time() - Gb.pyicloud_auth_started_secs
+        Gb.pyicloud_calls_time += authentication_took_secs
         if Gb.authentication_error_retry_secs != HIGH_INTEGER:
             Gb.authenticated_time = 0
             Gb.authentication_error_retry_secs = HIGH_INTEGER
@@ -111,7 +112,7 @@ def pyicloud_authenticate_account(initial_setup=False):
             Gb.PyiCloud_FindMyFriends = Gb.PyiCloud.find_my_friends_object
             _is_authentication_2fa_code_needed(initial_setup=True)
 
-        reset_authentication_time()
+        reset_authentication_time(authentication_took_secs)
 
     except (PyiCloudAPIResponseException, PyiCloudFailedLoginException,
                 PyiCloudNoDevicesException) as err:
@@ -135,7 +136,7 @@ def pyicloud_authenticate_account(initial_setup=False):
     return True
 
 #--------------------------------------------------------------------
-def reset_authentication_time():
+def reset_authentication_time(authentication_took_secs):
     '''
     If an authentication was done, update the count & time and display
     an Event Log message
@@ -157,7 +158,8 @@ def reset_authentication_time():
     else:
         event_msg += (f"{secs_to_time(last_authenticated_time)} "
                     f" ({format_age(time_now_secs() - last_authenticated_time)})")
-    event_msg += (f", Method-{authentication_method}")
+    event_msg += (f", Method-{authentication_method}, "
+                    f"Took-{secs_to_time_str(authentication_took_secs)}")
     post_log_info_msg("*", event_msg)
 
 #--------------------------------------------------------------------

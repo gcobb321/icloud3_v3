@@ -41,7 +41,7 @@ from ..helpers.base      import (instr, round_to_zero, is_inzone_zone, is_statzo
                                 post_internal_error, post_monitor_msg,
                                 log_info_msg, log_error_msg, log_exception, _trace, _traceha, )
 from ..helpers.time      import (secs_to_time, secs_to_time_str, mins_to_time_str, waze_mins_to_time_str,
-                                secs_since, time_to_12hrtime, time_str_to_secs, secs_to_datetime,
+                                secs_since, time_to_12hrtime, secs_to_12hrtime, secs_to_datetime,
                                 datetime_now, time_now, )
 from ..helpers.distance  import (km_to_mi, km_to_mi_str, calc_distance_km, )
 from ..helpers.format    import (format_dist, format_cnt, )
@@ -712,7 +712,7 @@ def pass_thru_zone_delay(Device):
             zone_display_name = 'Unknown'
         _traceha(f'{Device.iosapp_zone_enter_zone=} {Zone=} {Gb.Zones_by_zone=}')
         event_msg =(f"Delaying update > Entered zone but may be just passing through, "
-                    f"Zone-{zone_display_name} {Device.iosapp_zone_enter_zone=}, "
+                    f"Zone-{zone_display_name} {Device.iosapp_zone_enter_zone=}, {Gb.Zones_by_zone=}"
                     f"Retry at {next_updt_str} ({DeviceFmZone.interval_str})")
         post_event(Device.devicename, event_msg)
 
@@ -842,56 +842,37 @@ def _get_distance_data(Device, DeviceFmZone):
         # inzone_home_flag     = (Device.loc_data_zone == HOME)
         # was_inzone_home_flag = (Device.sensor_zone == HOME)
 
-        section = "dir_of_trav"
         dir_of_travel = '___'
 
         if is_statzone(Device.loc_data_zone):
-            sel=803
             dir_of_travel = STATIONARY
 
         # elif Device.loc_data_zone != NOT_HOME:
         elif Device.is_inzone:
-            sel=807
             dir_of_travel = 'in_zone'
 
         elif Device.sensors[ZONE] == NOT_SET:
-            sel=811
             dir_of_travel = '___'
 
         # Use last dir_of_travel if moved less than 100m
         elif abs(dist_from_zone_km - DeviceFmZone.zone_dist) <= .1:
-            sel=816
             dir_of_travel = last_dir_of_travel
 
         # Was in a zone and now not in a zone
         elif Device.was_inzone and Device.sensor_zone == NOT_HOME:
-            sel=821
             dir_of_travel = AWAY_FROM
 
         # AwayFrom if this zone distance > than the last zone distance
         elif dist_from_zone_km >= DeviceFmZone.zone_dist:
-            sel=826
             dir_of_travel = AWAY_FROM
 
         # Towards if the last zone distance > than this zone distance
         elif dist_from_zone_km < DeviceFmZone.zone_dist:
-            sel=831
             dir_of_travel = f"{TOWARDS}"#{DeviceFmZone.from_zone_play_as[:6]}"
-
-        # elif dist_from_zone_km > (last_zone_distance + .25):
-        #     dir_of_travel = AWAY_FROM
-
-        # elif last_zone_distance > (dist_from_zone_km - .25):
-        #     dir_of_travel = TOWARDS
 
         else:
             #didn't move far enough to tell current direction
-            sel=842
             dir_of_travel = last_dir_of_travel
-
-        # db=(f"DIR-OF-TRAVEL (det_intvl)-{sel=} {last_dir_of_travel}-->{dir_of_travel}, "
-                        # f"{dist_from_zone_km=} {DeviceFmZone.zone_dist=}")
-        # post_event(Device.devicename, db)
 
         if Device.loc_data_zone == NOT_HOME:
             if Device.StatZone.timer == 0:
@@ -915,8 +896,6 @@ def _get_distance_data(Device, DeviceFmZone):
                 event_msg += (f"{secs_to_time(Device.StatZone.timer)}")
                 post_monitor_msg(Device.devicename, event_msg)
 
-        section                = "Finalize"
-
         dist_from_zone_km      = round_to_zero(dist_from_zone_km)
         dist_moved_km          = round_to_zero(dist_moved_km)
         waze_dist_from_zone_km = round_to_zero(waze_dist_from_zone_km)
@@ -933,7 +912,7 @@ def _get_distance_data(Device, DeviceFmZone):
         return  distance_data
 
     except Exception as err:
-        sensor_msg = post_internal_error(section, traceback.format_exc)
+        sensor_msg = post_internal_error('dir_of_travel', traceback.format_exc)
         return (ERROR, sensor_msg)
 
 

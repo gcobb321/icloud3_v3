@@ -253,7 +253,7 @@ class iCloud3SensorBase(SensorEntity):
 
             self.Device          = Gb.Devices_by_devicename.get(devicename)
             if self.Device and from_zone:
-                self.DeviceFmZone = Gb.Device.DeviceFmZones_by_zone.get(from_zone)
+                self.DeviceFmZone = Gb.Devices.DeviceFmZones_by_zone.get(from_zone)
             else:
                 self.DeviceFmZone = None
 
@@ -703,7 +703,7 @@ class SensorInfo(iCloud3SensorBase):
             return Gb.broadcast_info_msg
 
         elif self.sensor_not_set:
-            return f"{DOT} Starting iCloud3 Device Tracker"
+            return (f"{DOT} WAITING FOR HA TO FINISH LOADING {DOT}")
 
         else:
             return self.sensor_value

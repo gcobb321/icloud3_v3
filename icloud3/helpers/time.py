@@ -96,6 +96,17 @@ def mins_to_time_str(mins):
 
     return time_str
 #--------------------------------------------------------------------
+def secs_to_hrs_mins_secs_str(secs):
+    """ Create # hrs, # mins, # secs string """
+
+    hms_str = secs_to_dhms_str(secs)
+    hms_str = hms_str.replace('s', ' secs')
+    hms_str = hms_str.replace('m', ' mins, ')
+    hms_str = hms_str.replace('h', ' hrs, ')
+
+    return hms_str
+
+#--------------------------------------------------------------------
 def secs_to_dhms_str(secs):
     """ Create the time 0w0d0h0m0s time string from seconds """
 

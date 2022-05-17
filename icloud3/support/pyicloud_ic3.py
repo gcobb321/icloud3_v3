@@ -31,7 +31,7 @@ from ..helpers.time     import (time_now_secs, secs_to_time, msecs_to_time, )
 from ..helpers.base     import (instr, post_event, post_monitor_msg, _trace, _traceha, log_rawdata, log_exception)
 
 from uuid       import uuid1
-from requests   import Session
+from requests   import Session, adapters
 from tempfile   import gettempdir
 from os         import path, mkdir
 from re         import match
@@ -105,6 +105,10 @@ class PyiCloudSession(Session):
         self.Service = Service
         Session.__init__(self)
         self.FindMyiPhone = None
+
+        #** 05/17/2022 Increase the number of connections to prevent timeouts
+        # authenticting the iCloud Account
+        adapter = adapters.HTTPAdapter(pool_connections=20, pool_maxsize=20)
 
     def request(self, method, url, **kwargs):  # pylint: disable=arguments-differ
 

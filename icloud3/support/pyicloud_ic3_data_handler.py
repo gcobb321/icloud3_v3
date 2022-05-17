@@ -234,7 +234,7 @@ def _update_PyiCloud_DevData_data(Device):
                 post_monitor_msg(_Device.devicename, event_msg)
 
 
-        pyicloud_ic3_interface.reset_authentication_time()
+        pyicloud_ic3_interface.reset_authentication_time(0)
 
         update_took_time = time_now_secs() - pyicloud_start_call_time
         Gb.pyicloud_calls_time += update_took_time
@@ -358,7 +358,7 @@ def _is_pyicloud_raw_data_better(_Device, Device, PyiCloud_DevData):
         # Is the PyiCloud location after the pass thru zone timer expires
         if (_Device.passthru_zone_expire_secs > 0
                 and new_loc_secs > _Device.passthru_zone_expire_secs):
-            newer_data_flag = True
+            newer_data_flag  = True
             update_data_flag = True
 
         # Discard if older and less accurate
