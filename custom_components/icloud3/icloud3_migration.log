@@ -1,0 +1,55 @@
+Converting parameters, Source: HA configuration.yaml
+-- {'platform': 'icloud3', 'username': 'gcobb321@gmail.com', 'password': '********'}
+-- platform: icloud3
+-- username: gcobb321@gmail.com
+-- password: Gcit3217
+Converting parameters, Source: config_ic3.yaml
+-- OrderedDict([('log_level', 'debug'), ('devices', [OrderedDict([('device_name', 'gary_iphone'), ('name', 'Gary'), ('email', 'gcobb321@gmail.com'), ('picture', 'gary.png'), ('track_from_zone', 'warehouse'), ('iosapp_installed', False), ('inzone_interval', '30 min')]), OrderedDict([('device_name', 'lillian_iphone'), ('name', 'Lillian'), ('picture', 'lillian.png'), ('iosapp_suffix', 'app'), ('email', 'lilliancobb321@gmail.com'), ('inzone_interval', '5 min')])]), ('display_text_as', ['gcobb321@gmail.com > gary_2fa@email.com', 'lilliancobb321@gmail.com > lillian_2fa@email.com', 'twitter:@lillianhc > twitter:@lill_twitter', 'gary-real-email@gmail.com > gary_secret@email.com', 'lillian-real-email@gmail.com > lillian_secret@email.com']), ('display_zone_format', 'name'), ('time_format', 12), ('unit_of_measurement', 'km'), ('stationary_inzone_interval', '6 min'), ('stationary_still_time', '3 min'), ('inzone_interval', '77 min'), ('inzone_intervals', [OrderedDict([('iphone', '30 min')]), OrderedDict([('inzone_interval', '30 min')]), OrderedDict([('no_iosapp', '15 mi')]), OrderedDict([('watch', '15 min')])]), ('max_interval', '4 hrs'), ('center_in_zone', True), ('stationary_zone_offset', '7, 8'), ('travel_time_factor', 0.6), ('gps_accuracy_threshold', 77), ('ignore_gps_accuracy_inzone', False), ('old_location_threshold', '45 secs'), ('waze_history_database_used', False), ('distance_method', 'waze'), ('waze_region', 'US'), ('waze_min_distance', 1), ('waze_max_distance', 1000), ('waze_realtime', True)])
+Converting parameters, Source: HA configuration.yaml
+-- OrderedDict([('log_level', 'debug'), ('devices', [OrderedDict([('device_name', 'gary_iphone'), ('name', 'Gary'), ('email', 'gcobb321@gmail.com'), ('picture', 'gary.png'), ('track_from_zone', 'warehouse'), ('iosapp_installed', False), ('inzone_interval', '30 min')]), OrderedDict([('device_name', 'lillian_iphone'), ('name', 'Lillian'), ('picture', 'lillian.png'), ('iosapp_suffix', 'app'), ('email', 'lilliancobb321@gmail.com'), ('inzone_interval', '5 min')])]), ('display_text_as', ['gcobb321@gmail.com > gary_2fa@email.com', 'lilliancobb321@gmail.com > lillian_2fa@email.com', 'twitter:@lillianhc > twitter:@lill_twitter', 'gary-real-email@gmail.com > gary_secret@email.com', 'lillian-real-email@gmail.com > lillian_secret@email.com', '#6', '#7', '#8', '#9', '#10']), ('display_zone_format', 'name'), ('time_format', 12), ('unit_of_measurement', 'km'), ('stationary_inzone_interval', '6 min'), ('stationary_still_time', '3 min'), ('inzone_interval', '77 min'), ('inzone_intervals', [OrderedDict([('iphone', '30 min')]), OrderedDict([('inzone_interval', '30 min')]), OrderedDict([('no_iosapp', '15 mi')]), OrderedDict([('watch', '15 min')])]), ('max_interval', '4 hrs'), ('center_in_zone', True), ('stationary_zone_offset', '7, 8'), ('travel_time_factor', 0.6), ('gps_accuracy_threshold', 77), ('ignore_gps_accuracy_inzone', False), ('old_location_threshold', '45 secs'), ('waze_history_database_used', False), ('distance_method', 'waze'), ('waze_region', 'US'), ('waze_min_distance', 1), ('waze_max_distance', 1000), ('waze_realtime', True), ('password', '********')])
+-- log_level: debug
+-- devices: [OrderedDict([('device_name', 'gary_iphone'), ('name', 'Gary'), ('email', 'gcobb321@gmail.com'), ('picture', 'gary.png'), ('track_from_zone', 'warehouse'), ('iosapp_installed', False), ('inzone_interval', '30 min')]), OrderedDict([('device_name', 'lillian_iphone'), ('name', 'Lillian'), ('picture', 'lillian.png'), ('iosapp_suffix', 'app'), ('email', 'lilliancobb321@gmail.com'), ('inzone_interval', '5 min')])]
+Extracted device: gary_iphone
+    -- device_name: gary_iphone
+    -- name: Gary
+    -- email: gcobb321@gmail.com
+    -- picture: gary.png
+    -- track_from_zone: warehouse
+    -- iosapp_installed: False
+    -- inzone_interval: 30 min
+Extracted device: lillian_iphone
+    -- device_name: lillian_iphone
+    -- name: Lillian
+    -- picture: lillian.png
+    -- iosapp_suffix: app
+    -- email: lilliancobb321@gmail.com
+    -- inzone_interval: 5 min
+-- display_text_as: ['gcobb321@gmail.com > gary_2fa@email.com', 'lilliancobb321@gmail.com > lillian_2fa@email.com', 'twitter:@lillianhc > twitter:@lill_twitter', 'gary-real-email@gmail.com > gary_secret@email.com', 'lillian-real-email@gmail.com > lillian_secret@email.com', '#6', '#7', '#8', '#9', '#10']
+-- display_zone_format: name
+-- time_format: 12
+-- unit_of_measurement: km
+-- stationary_inzone_interval: 6 min
+-- stationary_still_time: 3 min
+-- inzone_interval: 77 min
+-- inzone_intervals: [OrderedDict([('iphone', '30 min')]), OrderedDict([('inzone_interval', '30 min')]), OrderedDict([('no_iosapp', '15 mi')]), OrderedDict([('watch', '15 min')])]
+-- max_interval: 4 hrs
+-- center_in_zone: True
+-- stationary_zone_offset: 7, 8
+-- travel_time_factor: 0.6
+-- gps_accuracy_threshold: 77
+-- ignore_gps_accuracy_inzone: False
+-- old_location_threshold: 45 secs
+-- waze_history_database_used: False
+-- distance_method: waze
+-- waze_region: US
+-- waze_min_distance: 1
+-- waze_max_distance: 1000
+-- waze_realtime: True
+Migrating Converted Parameters
+ -- Source: {'unit_of_measurement': 'km', 'time_format': 12, 'display_zone_format': 'name', 'max_interval': '4 hrs', 'offline_interval': '00:20:00', 'iosapp_alive_interval': '01:00:00', 'old_location_threshold': '45 secs', 'gps_accuracy_threshold': 77, 'travel_time_factor': 0.6, 'tfz_tracking_max_distance': 8, 'passthru_zone_time': '00:01:00', 'track_from_base_zone': 'home', 'track_from_home_zone': True, 'center_in_zone': True, 'discard_poor_gps_inzone': False, 'inzone_intervals': [OrderedDict([('iphone', '30 min')]), OrderedDict([('inzone_interval', '30 min')]), OrderedDict([('no_iosapp', '15 mi')]), OrderedDict([('watch', '15 min')])], 'waze_used': True, 'waze_region': 'US', 'waze_min_distance': 1, 'waze_max_distance': 1000, 'waze_realtime': True, 'waze_history_database_used': False, 'waze_history_max_distance': 20, 'waze_history_track_direction': 'north_south', 'stat_zone_fname': 'Stationary', 'stat_zone_still_time': '3 min', 'stat_zone_inzone_interval': '6 min', 'stat_zone_base_latitude': 7.0, 'stat_zone_base_longitude': 8.0, 'display_text_as': ['gcobb321@gmail.com > gary_2fa@email.com', 'lilliancobb321@gmail.com > lillian_2fa@email.com', 'twitter:@lillianhc > twitter:@lill_twitter', 'gary-real-email@gmail.com > gary_secret@email.com', 'lillian-real-email@gmail.com > lillian_secret@email.com', '#6', '#7', '#8', '#9', '#10'], 'log_level': 'debug'}
+Created iCloud3 configuration file: /config/.storage/icloud3/configuration
+Migration Complete, Writing Configuration File
+  -- Profile: {'version': 0, 'config_update_date': '', 'event_log_card_directory': 'www/custom_cards', 'event_log_card_program': 'icloud3-event-log-card.js'}
+  -- Tracking: {'username': 'gcobb321@gmail.com', 'password': '********', 'encode_password': True, 'icloud_server_endpoint_suffix': '', 'data_source': 'icloud,iosapp', 'devices': [{'ic3_devicename': 'gary_iphone', 'fname': 'Gary', 'tracking_mode': 'track', 'famshr_devicename': 'gary_iphone', 'famshr_device_id': '', 'raw_model': '', 'model': '', 'model_display_name': '', 'famshr_devicename2': 'None', 'famshr_device_id2': '', 'raw_model2': '', 'model2': '', 'model_display_name2': '', 'fmf_email': 'gcobb321@gmail.com', 'fmf_device_id': '', 'iosapp_device': 'None', 'iosapp_device2': 'None', 'track_from_base_zone': 'home', 'track_from_zones': ['warehouse', 'home'], 'picture': 'www/gary.png', 'device_type': 'iphone', 'inzone_interval': '00:30:00', 'evlog_display_order': 0, 'unique_id': ''}, {'ic3_devicename': 'lillian_iphone', 'fname': 'Lillian', 'tracking_mode': 'track', 'famshr_devicename': 'lillian_iphone', 'famshr_device_id': '', 'raw_model': '', 'model': '', 'model_display_name': '', 'famshr_devicename2': 'None', 'famshr_device_id2': '', 'raw_model2': '', 'model2': '', 'model_display_name2': '', 'fmf_email': 'lilliancobb321@gmail.com', 'fmf_device_id': '', 'iosapp_device': 'lillian_iphone_app', 'iosapp_device2': 'None', 'track_from_base_zone': 'home', 'track_from_zones': ['home'], 'picture': 'www/lillian.png', 'device_type': 'iphone', 'inzone_interval': '00:05:00', 'evlog_display_order': 0, 'unique_id': ''}]}
+  -- General: {'unit_of_measurement': 'km', 'time_format': '12-hour', 'display_zone_format': 'name', 'max_interval': '04:00:00', 'offline_interval': '00:20:00', 'iosapp_alive_interval': '01:00:00', 'old_location_threshold': '00:00:45', 'gps_accuracy_threshold': 77, 'travel_time_factor': 0.6, 'tfz_tracking_max_distance': 8, 'passthru_zone_time': '00:01:00', 'track_from_base_zone': 'home', 'track_from_home_zone': True, 'center_in_zone': True, 'discard_poor_gps_inzone': False, 'inzone_intervals': {'iphone': '02:00:00', 'ipad': '02:00:00', 'watch': '00:15:00', 'airpods': '00:15:00', 'no_iosapp': '00:15:00', 'other': '02:00:00'}, 'waze_used': True, 'waze_region': 'us', 'waze_min_distance': 1, 'waze_max_distance': 1000, 'waze_realtime': True, 'waze_history_database_used': True, 'waze_history_max_distance': 20, 'waze_history_track_direction': 'north_south', 'stat_zone_fname': 'Stationary', 'stat_zone_still_time': '00:03:00', 'stat_zone_inzone_interval': '00:06:00', 'stat_zone_base_latitude': 7.0, 'stat_zone_base_longitude': 8.0, 'display_text_as': ['gcobb321@gmail.com > gary_2fa@email.com', 'lilliancobb321@gmail.com > lillian_2fa@email.com', 'twitter:@lillianhc > twitter:@lill_twitter', 'gary-real-email@gmail.com > gary_secret@email.com', 'lillian-real-email@gmail.com > lillian_secret@email.com', '#6', '#7', '#8', '#9', '#10'], 'log_level': 'debug'}
+  -- Sensors: {'monitored_devices': ['md_badge', 'md_battery'], 'device': ['name', 'badge', 'battery', 'info'], 'tracking_update': ['interval', 'last_located', 'last_update', 'next_update'], 'tracking_time': ['travel_distance', 'travel_time'], 'tracking_distance': ['home_distance', 'zone_distance', 'dir_of_travel'], 'track_from_zones': ['tfz_zone_info'], 'tracking_other': [], 'zone': ['zone_name'], 'other': []}
