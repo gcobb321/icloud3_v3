@@ -145,11 +145,17 @@
         },
         "title": "Update Tracked iCloud3 Device"
       },
-      "delete_device": {
+      "delete_device_confirm": {
         "data": {
           "opt_action": "This device will no longer be tracked by iCloud3. It's device_tracker and sensor entities will be removed. Are you sure you want to do this?"
         },
         "title": "Confirm Delete Device Request"
+      },
+      "erase_all_devices_confirm": {
+        "data": {
+          "opt_action": "This will erase all iCloud3 tracked devices. The device_tracker and sensor entities will be removed. Are you sure you want to do this?"
+        },
+        "title": "Confirm Erase All Devices Request"
       },
       "event_log_configuration": {
         "data": {
@@ -190,9 +196,10 @@
           "action_reauth": "◈ ENTER APPLE ID VERIFICATION CODE > Enter the Apple 6-digit Verification Code",
           "action_reset_icloud": "◈ RESET AND REAUTHENTICATE ACCOUNT > Request New Auth Code",
           "action_divider3": "━━━━━━━━━━━━ OTHER COMMANDS ━━━━━━━━━━━━ ",
+          "action_evlog_export": "◈ EXPORT EVENT LOG > Export Event Log data",
           "action_waze_db_recalc": "◈ WAZE HIST DATABASE > Recalc time/distance data at midnight",
           "action_waze_db_track": "◈ WAZE HIST MAP TRACK > Load route locations for map display",
-          "action_evlog_export": "◈ EXPORT EVENT LOG > Export Event Log data",
+          "action_erase_all_devices": "◈ ERASE ALL DEVICES > Reinitialize the iCloud3 Device List",
           "action_divider4": "═══════════════════════════════════════════════ ",
           "action_exit": "◈ MAIN MENU > Return to the Main Menu"
         },

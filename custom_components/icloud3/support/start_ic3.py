@@ -355,11 +355,6 @@ def set_icloud_username_password():
 #------------------------------------------------------------------------------
 def initialize_PyiCloud():
     Gb.PyiCloud = None
-    # Gb.PyiCloud.FamilySharing            = None # PyiCloud_ic3 object for FamilySharig used to refresh the device's location
-    # Gb.PyiCloud.FindMyFriends            = None # PyiCloud_ic3 object for FindMyFriends used to refresh the device's location
-    # Gb.PyiCloud.RawData_by_device_id     = {}   # Device data for tracked devices, updated in Pyicloud famshr.refresh_client
-    # Gb.PyiCloud.RawData_by_device_id_famshr = {}
-    # Gb.PyiCloud.RawData_by_device_id_fmf = {}
 
 #------------------------------------------------------------------------------
 def set_tracking_method(tracking_method):
@@ -634,7 +629,7 @@ def check_ic3_event_log_file_version():
                         f"{CRLF}"
                         f"{CRLF_DOT}Old Version.. - v{www_version_text}"
                         f"{CRLF_DOT}New Version - v{ic3_version_text}"
-                        f"{CRLF_DOT}Copied From - .../icloud3/event_log/")
+                        f"{CRLF_DOT}Copied From - .../icloud3/event_log_card/")
             post_event(event_msg)
 
             Gb.info_notification = (f"Event Log Card updated to v{ic3_version_text}. "
@@ -718,8 +713,9 @@ def _copy_image_files_to_www_directory(www_evlog_directory):
     '''
     try:
         image_extensions = ['png', 'jpg', 'jpeg']
-        image_filenames = [f'{Gb.icloud3_directory}/event_log/{x}'
-                                    for x in os.listdir(f"{Gb.icloud3_directory}/event_log/")
+        ## 12/17/2022 (beta 1) - Evlog diretory name was event_log istead of event_log_card
+        image_filenames = [f'{Gb.icloud3_directory}/event_log_cad/{x}'
+                                    for x in os.listdir(f"{Gb.icloud3_directory}/event_log_card/")
                                     if instr(x, '.') and x.rsplit('.', 1)[1] in image_extensions]
 
         for image_filename in image_filenames:
@@ -1294,7 +1290,12 @@ def get_famshr_devices(PyiCloud):
     device_model_info_by_fname= {}  # raw_model;model;model_display_name
                                     # iPhone15,2;iPhone;iPhone 14 Pro
 
-    if PyiCloud.RawData_by_device_id is None:
+    # 12/17/2022 (beta 1) - Added check for setting PyiCloud
+    if PyiCloud is None: PyiCloud = Gb.PyiCloud
+
+    # 12/17 (beta 1) - Added check for no FamShr items
+    if (PyiCloud.FamilySharing is None
+            or PyiCloud.RawData_by_device_id is None):
         return [device_id_by_device_fname,
                 device_fname_by_device_id,
                 device_info_device_fname,
@@ -1312,7 +1313,9 @@ def get_famshr_devices(PyiCloud):
                             if _RawData.name.replace("\xa0", " ").replace("’", "'") in conf_famshr_devicenames])
 
     if pyicloud_famshr_device_cnt < conf_famshr_device_cnt:
-        Gb.PyiCloud.FindMyFriends.refresh_client()
+        # 12/17 (beta 1)-Fix problem calling the wrong method. Should be Famshr, was FmF
+        PyiCloud.FamilySharing.refresh_client()
+        # Gb.PyiCloud.FindMyFriends.refresh_client()
         event_msg = (   f"Refreshing iCloud FamShr Data > Not all devices were returned during initialization, "
                         f"iCloud3 FamShr Cnt-{conf_famshr_device_cnt}, "
                         f"Returned-{pyicloud_famshr_device_cnt}")

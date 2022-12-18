@@ -340,33 +340,37 @@ class PyiCloudService():
         except:
             self._initialize_variables()
 
-        if called_from == 'config_flow':
-            Gb.PyiCloud = self
-        else:
-            Gb.PyiCloud_config_flow = self
 
         if self.init_stage['setup_session'] is False:
-            self.init_stage['setup_session'] = True
             self._setup_password_filter(password)
             self._setup_cookie_files(cookie_directory)
             self._setup_PyiCloudSession(session_directory)
+            self.init_stage['setup_session'] = True
+
+            if called_from == 'config_flow':
+                Gb.PyiCloud_config_flow = self
+            else:
+                Gb.PyiCloud = self
 
         if self.init_stage['authenticate'] is False:
-            self.init_stage['authenticate'] = True
             self.authenticate()
+            self.init_stage['authenticate'] = True
             post_monitor_msg(f"AUTHENTICATE PyiCloud, -{obscure_field(apple_id)}, {called_from}")
 
         if self.init_stage['setup_famshr'] is False:
-            self.init_stage['setup_famshr'] = True
             self.create_FamilySharing_object()
+            self.init_stage['setup_famshr'] = True
             post_monitor_msg(f"CREATED PyiCloud FamShr, {obscure_field(apple_id)}, {called_from}")
 
         if self.init_stage['setup_fmf'] is False:
-            self.init_stage['setup_fmf'] = True
             self.create_FindMyFriends_object()
+            self.init_stage['setup_fmf'] = True
             post_monitor_msg(f"CREATED PyiCloud FmF, {obscure_field(apple_id)}, {called_from}")
 
         self.init_stage['complete'] = True
+
+#----------------------------------------------------------------------------
+
 
 #----------------------------------------------------------------------------
     def _initialize_variables(self):

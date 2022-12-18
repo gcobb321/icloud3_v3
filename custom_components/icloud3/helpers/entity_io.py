@@ -134,10 +134,13 @@ def get_entity_registry_data(platform=None, domain=None) -> list:
                 raw_model = 'Unknown'
                 try:
                     device_reg_data = device_reg.async_get(device_id)
-                    raw_model = device_reg_data.model
+                    # 12/18 (beta 1)-Check to see if in device_reg
+                    if device_reg_data:
+                        raw_model = device_reg_data.model
 
                 except Exception as err:
-                    log_exception(err)
+                    # 12/18 (beta 1)-Don't display error msg if no device_reg data
+                    # log_exception(err)
                     pass
 
                 dev_trkr_entity_data[RAW_MODEL] = raw_model

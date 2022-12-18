@@ -186,10 +186,10 @@ class EventLog(object):
             except:
                 pass
 
-            this_update_time = dt_util.now().strftime('%H:%M:%S')
-            this_update_time = time_to_12hrtime(this_update_time)
-
             try:
+                this_update_time = dt_util.now().strftime('%H:%M:%S')
+                this_update_time = time_to_12hrtime(this_update_time)
+
                 # Display Track-from-Zone in time field if not Home
                 if devicename.startswith('*') is False:
                     Device = Gb.Devices_by_devicename.get(devicename)
@@ -535,7 +535,8 @@ class EventLog(object):
                                 f"Deleted-{delete_cnt} "
                                 f"(DevInfo-{delete_reg_cnt}, "
                                 f"Monitor-{delete_mon_cnt})")
-                self.post_event(event_msg)
+                log_info_msg(event_msg)
+                # self.post_event(event_msg)
 
         except Exception as err:
             log_exception(err)

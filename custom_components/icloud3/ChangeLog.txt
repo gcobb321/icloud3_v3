@@ -1,0 +1,23 @@
+Beta 1-12/17
+------------
+1.  Do not display an error messgage when trying to get the model of a device if t is
+    not in the HA device registry. (entity_io:137)
+2.  Fix a problem checking if info for all of configured devices that had been set
+    up had been returned from iCloud account during startup. If not, the FmF devices
+    were being refreshed when it should be refreshing the FamShr devices. (start_ic3:1315)
+3.  Fixed an error copying the Event Log image sample files to the custom cards directory.
+    It was copyingthe files from 'event_log' instead of 'event_log_card'. (start_ic3:722)
+4.  Added 'Erase All Devices' to the Configuration > Action menu that will reinitialize the
+    iCloud3 Devices List.
+5.  The Time Format (12/24-hour) was converted incorrectly. It was creating '12/24-hour-hour'
+    This has been fixed and the invalid parameter in the configuration file was corrrected.
+6.  Fixed a problem where a check was being made to see if 2fa authentication was needed when
+    the connection to the iCloud Location Services had not been completed, causing a problem
+    with the parameter migration (icloud_main:732).
+7.  Reformatted the items written to the icloud3_migration.log file for clarity.
+8.  Fixed a problem shrinking the Event Log (event_log:538 recursion error).
+9.  Fixed a problem when Family Sharing info from iCloud Location Services had not completely
+    loaded during initialization and was generating an error during the retry operation (start_ic3:1113).
+10. Fixed a problem, hopefully, that was generating the HA Blocking error when starting up the iCloud
+    Location Services interface. This was also occurring (sometimes) when logging into a new the iCloud
+    account from the Configurator.

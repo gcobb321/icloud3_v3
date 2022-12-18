@@ -110,7 +110,7 @@ def stage_2_prepare_configuration():
             configuration_needed_msg = 'DEVICES MUST BE SET UP TO ENABLE TRACKING'
 
         if configuration_needed_msg:
-            event_msg =(f"{EVLOG_ALERT}Alert > {CRLF}{configuration_needed_msg}{CRLF}"
+            event_msg =(f"{EVLOG_ALERT}Alert > {configuration_needed_msg}{CRLF}"
                         f"{CRLF}1. Select {SETTINGS_INTEGRATIONS_MSG}"
                         f"{CRLF}2. Select `+Add Integration` to add the iCloud3 integration if it is not dislayed. Then search "
                         f"for `iCloud3`, select it and complete the installation."
@@ -119,9 +119,9 @@ def stage_2_prepare_configuration():
                         f"{CRLF}5. Exit the configurator and `Restart iCloud3`")
             post_event(event_msg)
 
-            Gb.start_icloud3_inprocess_flag = False
+            #Gb.start_icloud3_inprocess_flag = False
 
-            post_event(f"{EVLOG_IC3_STARTING}iCloud3 Initialization Terminated")
+            #post_event(f"{EVLOG_IC3_STARTING}iCloud3 Initialization Terminated")
             Gb.EvLog.update_event_log_display("")
 
     except Exception as err:
@@ -182,13 +182,28 @@ def stage_4_setup_tracking_methods(retry=False):
 
             # PyiCloud setup was not completed, continue
             elif Gb.username and Gb.password:
-                if Gb.PyiCloud.init_stage['setup_fmf'] is False:
-                    init_stage_msg = 'FmF Service'
-                if Gb.PyiCloud.init_stage['setup_famshr'] is False:
-                    init_stage_msg = 'FamShr Service'
-                if Gb.PyiCloud.init_stage['authenticate'] is False:
-                    init_stage_msg = 'Authentication'
-                post_event(f"iCloud Location Services Interface > Continuing-{init_stage_msg}")
+                if Gb.PyiCloud:
+                    post_monitor_msg(f"PyiCloud Service Stage > {Gb.PyiCloud.init_stage}")
+
+                # 12/17/2022 (beta 1) - Force Create of FamShr & FmF is wasn't completed initially
+                init_stage_msg = 'Initial'
+                if Gb.PyiCloud is not None:
+                    try:
+                        # Check to see if this exists, if not, start all over
+                        webservices_url = Gb.PyiCloud._get_webservice_url("findme")
+                    except AttributeError:
+                        Gb.PyiCloud.init_stage['authenticate'] = False
+                        Gb.PyiCloud.init_stage['setup_famshr'] = False
+                        Gb.PyiCloud.init_stage['setup_fmf']    = False
+
+                        if Gb.PyiCloud.init_stage['setup_fmf'] is False:
+                            init_stage_msg = 'FmF Service'
+                        if Gb.PyiCloud.init_stage['setup_famshr'] is False:
+                            init_stage_msg = 'FamShr Service'
+                        if Gb.PyiCloud.init_stage['authenticate'] is False:
+                            init_stage_msg = 'Authentication'
+                        post_event(f"iCloud Location Services Interface > Continuing-{init_stage_msg}")
+
                 pyicloud_ic3_interface.create_PyiCloud_service(called_from='start_ic3')
 
             # Missing username/password, PyiCloud can not be started

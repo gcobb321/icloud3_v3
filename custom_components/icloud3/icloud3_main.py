@@ -412,7 +412,7 @@ class iCloud3:
                             f"({Device.dev_data_battery_source})")
                 post_event(Device.devicename, event_msg)
                 log_debug_msg(Device.devicename, event_msg)
-            
+
         except Exception as err:
             log_exception(err)
 
@@ -729,7 +729,9 @@ class iCloud3:
 
                 self._post_after_update_monitor_msg(Device)
 
-                if (update_requested_by == ICLOUD_FNAME and Gb.PyiCloud.requires_2fa):
+                if Gb.PyiCloud is None:
+                    pass
+                elif (update_requested_by == ICLOUD_FNAME and Gb.PyiCloud.requires_2fa):
                     alert_msg = f"{EVLOG_ALERT}Alert > iCloud account authentication is needed"
                     post_event(devicename, alert_msg)
                     Gb.EvLog.clear_alert_events()

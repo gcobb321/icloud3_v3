@@ -149,6 +149,8 @@ OPT_ACTION_KEY_TEXT = {
         'delete_device': 'DELETE DEVICE > Delete the selected device from the tracked device list',
         'delete_device_yes': 'YES > Delete this device from the iCloud3 tracked devices list',
         'delete_device_no': 'NO > Do not delete this device',
+        'erase_all_devices_yes': 'YES > Erase all devices from the iCloud3 tracked devices list',
+        'erase_all_devices_no': 'NO > Do not erase all devices',
         'clear_text_as': 'CLEAR > Remove `Display Test As` entry',
         'exit': 'EXIT > Exit the iCloud3 Configurator',
         'return': 'RETURN > Return to the Main Menu',
@@ -175,8 +177,10 @@ DEVICE_LIST_CONTROL_NO_ADD = [
         OPT_ACTION_KEY_TEXT['return']]
 DELETE_DEVICE_CONFIRM_ACTION = [
         OPT_ACTION_KEY_TEXT['delete_device_yes'],
-        OPT_ACTION_KEY_TEXT['delete_device_no'],
-]
+        OPT_ACTION_KEY_TEXT['delete_device_no'],]
+ERASE_ALL_DEVICES_CONFIRM_ACTION = [
+        OPT_ACTION_KEY_TEXT['erase_all_devices_yes'],
+        OPT_ACTION_KEY_TEXT['erase_all_devices_no'],]
 
 OPT_DATA_SOURCE_KEY_TEXT = {
         'icloud,iosapp': 'ICLOUD & IOSAPP - iCloud account and iOS App are used for location data',
@@ -216,7 +220,7 @@ OPT_DISPLAY_ZONE_FORMAT_KEY_TEXT = {
         'title': 'Reformat the Zone entity_id (`the_shores` → `The Shores`)'
         }
 OPT_RESTART_NOW_LATER_KEY_TEXT = {
-       'ha': 'RESTART HOME ASSISTANT - Restart HA & iCloud3 now to finish the iCloud3 v2 to v3 migration.',
+        'ha': 'RESTART HOME ASSISTANT - Restart HA & iCloud3 now to finish the iCloud3 v2 to v3 migration.',
         'now': 'RESTART NOW - Restart iCloud3 now to load the updated configuration.',
         'later': 'RESTART LATER - The configuration changes have been saved. Load the updated configuration the next time iCloud3 is started.'
         }
@@ -508,6 +512,9 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         '''Main Menu displays different screens for parameter entry'''
         Gb.config_flow_flag = True
 
+        if self.PyiCloud is None and Gb.PyiCloud is not None:
+            self.PyiCloud = Gb.PyiCloud
+
         user_input = self._check_if_from_svc_call(user_input)
 
         self.step_id = 'menu'
@@ -532,6 +539,10 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                     self.v2v3_migrated_flag = (Gb.conf_profile[CONF_VERSION] == 0)
                     Gb.conf_profile[CONF_VERSION] = 1
                     config_file.write_storage_icloud3_configuration_file()
+
+                if self.PyiCloud is not None and self.PyiCloud is not Gb.PyiCloud:
+                    self.config_flow_updated_parms.update(['restart'])
+                    Gb.PyiCloud = self.PyiCloud
 
                 if 'restart' in self.config_flow_updated_parms:
                     self.step_id = 'restart_icloud3'
@@ -603,9 +614,10 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 if (self.PyiCloud is not None
                         and (self.username != Gb.username
                                 or self.password != Gb.password)):
-                    Gb.PyiCloud                 = self.PyiCloud
-                    Gb.username                 = self.username
-                    Gb.password                 = self.password
+                    Gb.PyiCloud = self.PyiCloud
+                    Gb.username = self.username
+                    Gb.password = self.password
+
 
             elif user_input['restart_now_later'].startswith('RESTART HOME ASSISTANT'):
                 await Gb.hass.services.async_call(  "homeassistant", "restart")
@@ -884,6 +896,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 #                  ACTION MENU HANDLER
 #
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+    #12/17/2022 (beta 1) - Added Erase All Devices Action command
 
     async def async_step_action_menu(self, user_input=None, errors=None):
         self.step_id = 'action_menu'
@@ -892,7 +905,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                     menu_options = ['action_divider1', 'action_restart', 'action_pause', 'action_resume',
                                     'action_divider2', 'action_reauth', 'action_reset_icloud',
                                     'action_divider3', 'action_evlog_export',
-                                    'action_waze_db_recalc', 'action_waze_db_track',
+                                    'action_waze_db_recalc', 'action_waze_db_track', 'action_erase_all_devices',
                                     'action_divider4', 'action_exit'],
                     )
 #-------------------------------------------------------------------------------------------
@@ -961,6 +974,12 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         Gb.EvLog.export_event_log()
         self.menu_msg = 'action_completed'
         return await self.async_step_menu()
+
+#-------------------------------------------------------------------------------------------
+    async def async_step_action_erase_all_devices(self, user_input=None, errors=None):
+        # Gb.EvLog.export_event_log()
+        # self.menu_msg = 'action_completed'
+        return await self.async_step_erase_all_devices_confirm()
 
 #-------------------------------------------------------------------------------------------
     async def async_step_action_divider1(self, user_input=None, errors=None):
@@ -1499,6 +1518,9 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         self.add_device_flag = False
         user_input, action_item = self._action_text_to_item(user_input)
 
+        if self.PyiCloud is None and Gb.PyiCloud is not None:
+            self.PyiCloud = Gb.PyiCloud
+
         if (self.PyiCloud is None
                 and ICLOUD in Gb.conf_tracking[CONF_DATA_SOURCE]
                 and Gb.conf_tracking[CONF_USERNAME]
@@ -1535,7 +1557,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             elif action_item == 'delete_device':
                 self.sensor_entity_attrs_changed['delete_device'] = True
                 self._get_conf_device_selected(user_input)
-                return await self.async_step_delete_device()
+                return await self.async_step_delete_device_confirm()
 
             elif action_item == 'update_device':
                 self.sensor_entity_attrs_changed['update_device'] = True
@@ -1592,14 +1614,14 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         return True
 
 #-------------------------------------------------------------------------------------------
-    async def async_step_delete_device(self, user_input=None, errors=None):
+    async def async_step_delete_device_confirm(self, user_input=None, errors=None):
         '''
         Delete the device from the tracking devices list and adjust the device index
         if necessary
 
         Display a confirmation form and then delete the device
         '''
-        self.step_id = 'delete_device'
+        self.step_id = 'delete_device_confirm'
         self.errors = errors or {}
         self.errors_user_input = {}
         user_input, action_item = self._action_text_to_item(user_input)
@@ -1613,7 +1635,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             return await self.async_step_device_list()
 
         return self.async_show_form(step_id=self.step_id,
-                        data_schema=self.form_schema('delete_device'),
+                        data_schema=self.form_schema('delete_device_confirm'),
                         errors=self.errors,
                         last_step=False)
 
@@ -1640,6 +1662,17 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             self.conf_device_selected_idx = device_cnt
         if self.conf_device_selected_idx < 5:
             self.device_list_page_no = 0
+
+#-------------------------------------------------------------------------------------------
+    def _process_erase_all_devices_request(self):
+        """ Erase all ic3 devices, Delete the device_tracker entity and associated ic3 configuration """
+
+        for form_devices_list_index, devicename in enumerate(self.form_devices_list_devicename):
+            self.conf_device_selected     = Gb.conf_devices[form_devices_list_index]
+            self.conf_device_selected_idx = form_devices_list_index
+
+            self._process_delete_device_request()
+
 
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 #
@@ -1981,6 +2014,32 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 and new_devicename not in Gb.DeviceTrackers_by_devicename):
             self._create_device_tracker_and_sensor_entities(new_devicename, self.conf_device_selected)
         # self.conf_device_selected[CONF_TRACKING_MODE] = new_tracking_mode
+
+#-------------------------------------------------
+    async def async_step_erase_all_devices_confirm(self, user_input=None, errors=None):
+        '''
+        Erase all of the iCloud3 devices.
+
+        Display a confirmation form and then delete the device
+        '''
+        self.step_id = 'erase_all_devices_confirm'
+        self.errors = errors or {}
+        self.errors_user_input = {}
+        user_input, action_item = self._action_text_to_item(user_input)
+
+        if user_input is not None:
+            if action_item == 'erase_all_devices_yes':
+                self._process_erase_all_devices_request()
+
+                self.config_flow_updated_parms.update(['tracking', 'restart'])
+
+                self.menu_msg = 'action_completed'
+            return await self.async_step_menu()
+
+        return self.async_show_form(step_id=self.step_id,
+                        data_schema=self.form_schema('erase_all_devices_confirm'),
+                        errors=self.errors,
+                        last_step=False)
 
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 #
@@ -3123,11 +3182,21 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                         })
 
         #------------------------------------------------------------------------
-        elif step_id == 'delete_device':
+        elif step_id == 'delete_device_confirm':
             self.opt_actions = DELETE_DEVICE_CONFIRM_ACTION.copy()
             schema = vol.Schema({
                         vol.Required('opt_action',
                                     default=self._action_default_text('delete_device_no')):
+                                    selector.SelectSelector(
+                                        selector.SelectSelectorConfig(options=self.opt_actions)),
+                        })
+
+        #------------------------------------------------------------------------
+        elif step_id == 'erase_all_devices_confirm':
+            self.opt_actions = ERASE_ALL_DEVICES_CONFIRM_ACTION.copy()
+            schema = vol.Schema({
+                        vol.Required('opt_action',
+                                    default=self._action_default_text('erase_all_devices_no')):
                                     selector.SelectSelector(
                                         selector.SelectSelectorConfig(options=self.opt_actions)),
                         })

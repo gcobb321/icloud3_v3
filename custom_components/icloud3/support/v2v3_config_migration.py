@@ -109,8 +109,8 @@ CONF_SENSORS_ZONE_LIST              = ['zone', 'zone_fname', 'zone_name', 'zone_
 CONF_SENSORS_OTHER_LIST             = ['gps_accuracy', 'vertical_accuracy', 'altitude']
 
 from ..helpers.common       import (instr, )
-from ..helpers.messaging    import (_traceha, log_info_msg, log_warning_msg)
-from ..helpers.time_util    import (time_str_to_secs, secs_to_hhmmss, )
+from ..helpers.messaging    import (_traceha, log_info_msg, log_warning_msg, log_exception, )
+from ..helpers.time_util    import (time_str_to_secs, secs_to_hhmmss, datetime_now, )
 from .                      import config_file
 
 import os
@@ -140,14 +140,11 @@ class iCloud3_v2v3ConfigMigration(object):
         Gb.conf_sensors   = DEFAULT_SENSORS_CONF.copy()
         Gb.conf_file_data = CF_DEFAULT_IC3_CONF_FILE.copy()
 
-        self.log_filename_name  = f"{Gb.icloud3_directory}/icloud3_migration.log"
-        self.migration_log_file = open(self.log_filename_name, 'w', encoding='utf8')
-
-        # self.write_migration_log_msg(f"Migrate Initialize - Profile-{Gb.conf_profile}")
-        # self.write_migration_log_msg(f"Migrate Initialize - Tracking-{Gb.conf_tracking}")
-        # self.write_migration_log_msg(f"Migrate Initialize - General-{Gb.conf_general}")
-        # self.write_migration_log_msg(f"Migrate Initialize - Sensors-{Gb.conf_sensors}")
-        # self.write_migration_log_msg(f"Migrate Initialize - {Gb.conf_file_data=}")
+        try:
+            self.log_filename_name  = f"{Gb.icloud3_directory}/icloud3_migration.log"
+            self.migration_log_file = open(self.log_filename_name, 'w', encoding='utf8')
+        except Exception as err:
+            log_exception(err)
 
     #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     #
@@ -171,6 +168,7 @@ class iCloud3_v2v3ConfigMigration(object):
     #
     #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     def convert_v2_config_files_to_v3(self):
+        self.write_migration_log_msg(f"\nMigration Started, {datetime_now()}\n")
         log_warning_msg('iCloud3 - Migrating Configuration Parameters')
         self._extract_config_parameters(Gb.ha_config_yaml_icloud3_platform)
 
@@ -178,17 +176,29 @@ class iCloud3_v2v3ConfigMigration(object):
         self._extract_config_parameters(config_ic3_records)
         self._set_data_fields_from_config_parameter_dictionary()
 
-        self.write_migration_log_msg("Migration Complete, Writing Configuration File")
-        self.write_migration_log_msg(f"  -- Profile: {Gb.conf_profile}")
-        temp_tracking_recds = Gb.conf_tracking.copy()
-        temp_tracking_recds[CONF_PASSWORD] = '********'
-        self.write_migration_log_msg(f"  -- Tracking: {temp_tracking_recds}")
-        self.write_migration_log_msg(f"  -- General: {Gb.conf_general}")
-        self.write_migration_log_msg(f"  -- Sensors: {Gb.conf_sensors}")
+        try:
+            self.write_migration_log_msg("\nMigration Complete, Writing Configuration File")
+            self.write_migration_config_items('Profile', Gb.conf_profile)
+            self.write_migration_config_items('Tracking', Gb.conf_tracking)
+            self.write_migration_config_items('General', Gb.conf_general)
+            self.write_migration_config_items('Sensors', Gb.conf_sensors)
+
+
+            # self.write_migration_log_msg("\nMigration Complete, Writing Configuration File")
+            # self.write_migration_log_msg(f"  -- Profile: {Gb.conf_profile}")
+            # temp_tracking_recds = Gb.conf_tracking.copy()
+            # temp_tracking_recds[CONF_PASSWORD] = '********'
+            # self.write_migration_log_msg(f"  -- Tracking: {temp_tracking_recds}")
+            # self.write_migration_log_msg(f"  -- General: {Gb.conf_general}")
+            # self.write_migration_log_msg(f"  -- Sensors: {Gb.conf_sensors}")
+
+        except Exception as err:
+            self.log_exception(err)
+
         log_warning_msg('iCloud3 - Migration Complete')
 
-        event_msg = (f"iCloud3 parameters were converted from v2 to v3. Log file "
-                      f"{self.log_filename_name} was created")
+        # event_msg = (   f"iCloud3 parameters were converted from v2 to v3. Log file "
+        #                 f"{self.log_filename_name} was created")
 
         config_file.write_storage_icloud3_configuration_file()
         self.migration_log_file.close()
@@ -220,13 +230,17 @@ class iCloud3_v2v3ConfigMigration(object):
 
             config_yaml_recds[CONF_DISPLAY_TEXT_AS] = display_text_as
 
-        self.write_migration_log_msg(f"Converting parameters, Source: HA configuration.yaml")
-        temp_config_yaml_recds = config_yaml_recds.copy()
-        temp_config_yaml_recds[CONF_PASSWORD] = '********'
-        self.write_migration_log_msg(f"-- {temp_config_yaml_recds}")
+        self.write_migration_log_msg(f"\nExtracting parameters")
+        # temp_config_yaml_recds = config_yaml_recds.copy()
+        # temp_config_yaml_recds[CONF_PASSWORD] = '********'
+        #self.write_migration_log_msg(f"-- {temp_config_yaml_recds}")
 
         for pname, pvalue in config_yaml_recds.items():
-            self.write_migration_log_msg(f"-- {pname}: {pvalue}")
+            if pname == CONF_PASSWORD:
+                self.write_migration_log_msg(f"-- {pname}: ********")
+            else:
+                self.write_migration_log_msg(f"-- {pname}: {pvalue}")
+
             if pname == CONF_DEVICES:
                 pvalue = json.loads(json.dumps(pvalue))
                 self.config_ic3_track_devices_fields.extend(\
@@ -269,7 +283,7 @@ class iCloud3_v2v3ConfigMigration(object):
             Gb.config_ic3_yaml_filename = config_ic3_filename
             config_yaml_recds = yaml_loader.load_yaml(config_ic3_filename)
 
-            self.write_migration_log_msg(f"-- {config_yaml_recds}")
+            # self.write_migration_log_msg(f"-- {config_yaml_recds}")
 
         except Exception as err:
             self.log_exception(err)
@@ -475,6 +489,40 @@ class iCloud3_v2v3ConfigMigration(object):
         '''
         self.migration_log_file.write(f"{msg}\n")
 
+    #--------------------------------------------------------------------
+    def write_migration_config_items(self, dict_title, dict_items):
+        '''
+        Cycle through the dictionary. Write each item to the migration log
+        '''
+        self.write_migration_log_msg(f"{dict_title}")
+
+        for pname, pvalue in dict_items.items():
+            if type(pvalue) is list:
+                self.write_migration_config_list_items(pname, pvalue)
+                continue
+
+            if pvalue == '':
+                continue
+
+            if pname == CONF_PASSWORD:
+                self.write_migration_log_msg(f"  -- {pname}: ********")
+            else:
+                self.write_migration_log_msg(f"  -- {pname}: {pvalue}")
+
+    #--------------------------------------------------------------------
+    def write_migration_config_list_items(self, pname, pvalues):
+        '''
+        Cycle through the dictionary. Write each item to the migration log
+        '''
+        if pvalues == []:
+            self.write_migration_log_msg(f"  -- {pname}: {pvalues}")
+
+        elif type(pvalues[0]) is dict:
+            for pvalue in pvalues:
+                self.write_migration_config_items(pname.title(), pvalue)
+        else:
+            self.write_migration_log_msg(f"  -- {pname}: {pvalues}")
+
     #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     #
     #   INITIALIZE THE GLOBAL VARIABLES WITH THE CONFIGURATION FILE PARAMETER
@@ -485,9 +533,6 @@ class iCloud3_v2v3ConfigMigration(object):
         '''
         Set the iCloud3 variables from the configuration parameters
         '''
-        self.write_migration_log_msg(f"Migrating Converted Parameters")
-        self.write_migration_log_msg(f" -- Source: {self.config_parm_general}")
-
         Gb.conf_profile[CONF_VERSION]                    = 0
         Gb.conf_profile[CONF_EVLOG_CARD_DIRECTORY]       = self.config_parm_general.get(CONF_EVLOG_CARD_DIRECTORY, V2_EVLOG_CARD_WWW_DIRECTORY)
         if instr(Gb.conf_profile[CONF_EVLOG_CARD_DIRECTORY], 'www') is False:
@@ -499,7 +544,8 @@ class iCloud3_v2v3ConfigMigration(object):
         Gb.conf_tracking[CONF_DEVICES]                   = self.config_ic3_track_devices_fields
 
         Gb.conf_general[CONF_UNIT_OF_MEASUREMENT]        = self.config_parm_general[CONF_UNIT_OF_MEASUREMENT].lower()
-        Gb.conf_general[CONF_TIME_FORMAT]                = f"{self.config_parm_general[CONF_TIME_FORMAT]}-hour"
+        #12/17/2022 (beta 1) - The time format was being converted to 12_hour_hour instead of 12_hour
+        Gb.conf_general[CONF_TIME_FORMAT]                = (f"{self.config_parm_general[CONF_TIME_FORMAT]}-hour").replace('-hour-hour', '-hour')
         Gb.conf_general[CONF_TRAVEL_TIME_FACTOR]         = self.config_parm_general[CONF_TRAVEL_TIME_FACTOR]
         Gb.conf_general[CONF_MAX_INTERVAL]               = secs_to_hhmmss(time_str_to_secs(self.config_parm_general[CONF_MAX_INTERVAL]))
         Gb.conf_general[CONF_GPS_ACCURACY_THRESHOLD]     = self.config_parm_general[CONF_GPS_ACCURACY_THRESHOLD]
@@ -529,7 +575,7 @@ class iCloud3_v2v3ConfigMigration(object):
         Gb.conf_general[CONF_STAT_ZONE_BASE_LONGITUDE]  = self.config_parm_general[CONF_STAT_ZONE_BASE_LONGITUDE]
         Gb.conf_general[CONF_DISPLAY_TEXT_AS]           = self.config_parm_general[CONF_DISPLAY_TEXT_AS]
 
-        self.write_migration_log_msg(f"Created iCloud3 configuration file: {Gb.icloud3_config_filename}")
+        self.write_migration_log_msg(f"/nCreated iCloud3 configuration file: {Gb.icloud3_config_filename}")
 
     #--------------------------------------------------------------------
     def _extract_name_device_type(self, devicename):
@@ -545,7 +591,6 @@ class iCloud3_v2v3ConfigMigration(object):
                 elif instr(devicename, ic3dev_type):
                     fnamew = devicename.replace(ic3dev_type, "")
                     fname  = fnamew.replace("_", "").replace("-", "").title().strip()
-                    # device_type = DEVICE_TYPE_FNAME.get(ic3dev_type, ic3dev_type)
                     device_type = ic3dev_type
                     break
 

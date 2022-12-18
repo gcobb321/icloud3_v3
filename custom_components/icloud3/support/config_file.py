@@ -13,7 +13,7 @@ from ..const                import (
                                     )
 
 from ..support              import start_ic3
-from ..helpers.common       import (ordereddict_to_dict, )
+from ..helpers.common       import (instr, ordereddict_to_dict, )
 from ..helpers.messaging    import (log_exception, _trace, _traceha, )
 from ..helpers.time_util    import (datetime_now, )
 
@@ -84,6 +84,7 @@ def load_icloud3_ha_config_yaml(ha_config_yaml):
 
 
     Gb.ha_config_yaml_icloud3_platform = {}
+    # _traceha(f"{ha_config_yaml=} ")
     if ha_config_yaml == '':
         return
 
@@ -96,6 +97,8 @@ def load_icloud3_ha_config_yaml(ha_config_yaml):
             break
 
     Gb.ha_config_yaml_icloud3_platform = ordereddict_to_dict(ic3_ha_config_yaml)
+    # _traceha(f"{ic3_ha_config_yaml=} ")
+    # _traceha(f"{Gb.ha_config_yaml_icloud3_platform=} ")
 
 #--------------------------------------------------------------------
 def build_initial_config_file_structure():
@@ -130,6 +133,7 @@ def build_initial_config_file_structure():
     if Gb.location_info['country_code'].lower() in APPLE_SPECIAL_ICLOUD_SERVER_COUNTRY_CODE:
         Gb.conf_tracking[CONF_ICLOUD_SERVER_ENDPOINT_SUFFIX] = Gb.location_info['country_code'].lower()
 
+    # Verify general parameters and make any necessary corrections
     try:
         if Gb.config and Gb.config.units['name'] != 'Imperial':
             Gb.conf_data['general'][CONF_UNIT_OF_MEASUREMENT] = 'km'
@@ -137,6 +141,8 @@ def build_initial_config_file_structure():
         elif Gb.location_info['use_metric']:
             Gb.conf_data['general'][CONF_UNIT_OF_MEASUREMENT] = 'km'
             Gb.conf_data['general'][CONF_TIME_FORMAT] = '24-hour'
+        if instr(Gb.conf_data['general'][CONF_TIME_FORMAT], '-hour-hour'):
+            Gb.conf_data['general'][CONF_TIME_FORMAT].replace('-hour-hour', '-hour')
     except:
         pass
 
