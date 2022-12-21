@@ -996,7 +996,9 @@ class PyiCloud_FamilySharing():
                 if device_id not in self.devices_without_location_data:
                     self.devices_without_location_data.append(device_id)
                     monitor_msg = ( f"NO LOCATION FamShr PyiCloudData-"
-                                    f"{device_name}")
+                                    f"{device_name}/{device_id[:8]}, "
+                                    f"{device_info['modelDisplayName']} "
+                                    f"({device_info['rawDeviceModel']})")
                     if Gb.EvLog:
                         post_monitor_msg(monitor_msg)
                     else:
@@ -1017,7 +1019,7 @@ class PyiCloud_FamilySharing():
 
                     log_rawdata(f"FamShr PyiCloud Device Data - <{device_name}/{_RawData.devicename}>", _RawData.device_data)
 
-                    monitor_msg = ( f"UPDATED FamShr PyiCloudData, "
+                    monitor_msg = ( f"UPDATED FamShr PyiCloudData-"
                                     f"{_RawData.devicename}, "
                                     f"{_RawData.location_time}/"
                                     f"{_RawData.gps_accuracy}m"
@@ -1037,7 +1039,7 @@ class PyiCloud_FamilySharing():
 
                 log_rawdata(f"FamShr PyiCloud Device Data - <{device_name}>", _RawData.device_data)
 
-                monitor_msg = (f"ADDED FamShr PyiCloudDevice-, {device_name}/{device_id[:10]}")
+                monitor_msg = (f"ADDED FamShr PyiCloudDevice-{device_name}/{device_id[:8]}")
 
             if monitor_msg:
                 if Gb.EvLog:
@@ -1212,7 +1214,7 @@ class PyiCloud_FindMyFriends():
 
                     log_rawdata(f"FmF PyiCloud Device Data - <{_RawData.devicename}>", _RawData.device_data)
 
-                    monitor_msg = (f"ADDED FmF PyiCloudDevice, ({device_id[:8]})")
+                    monitor_msg = (f"ADDED FmF PyiCloudDevice-{device_name}/{device_id[:8]}")
 
                     if (LOCATION not in device_info
                             or device_info[LOCATION] == {}

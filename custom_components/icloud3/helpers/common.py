@@ -118,9 +118,12 @@ def obscure_field(field):
         return ''
 
     if instr(field, '@'):
-        email_name, email_domain = field.split('@')
-        obscure_field =(f"{email_name[0:2]}{'.'*(len(email_name)-2)}{email_name[-2:]}@"
-                        f"{email_domain[0:2]}{'.'*(len(email_domain)-2)}{email_domain[-2:]}")
+        # 12/19/2022 (beta 3)-An error was generated if there was more than 1 @-sign in the email field
+        field_parts   = field.split('@')
+        email_name    = field_parts[0]
+        email_domain  = field_parts[1]
+        obscure_field = (   f"{email_name[0:2]}{'.'*(len(email_name)-2)}{email_name[-2:]}@"
+                            f"{email_domain[0:2]}{'.'*(len(email_domain)-2)}{email_domain[-2:]}")
         return obscure_field
 
     obscure_field = (f"{field[0:2]}{'.'*(len(field)-2)}{field[-2:]}")

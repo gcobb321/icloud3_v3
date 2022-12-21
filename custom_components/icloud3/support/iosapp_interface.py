@@ -32,7 +32,7 @@ PUSH_URL = "https://ios-push.home-assistant.io/push"
 def get_entity_registry_mobile_app_devices():
     iosapp_id_by_iosapp_devicename      = {}
     iosapp_devicename_by_iosapp_id      = {}
-    device_info_iosapp_devicename       = {}
+    device_info_by_iosapp_devicename       = {}
     device_model_info_by_iosapp_devicename = {} # raw_model;model;model_display_name
                                                 # iPhone15,2;iPhone;iPhone 14 Pro
     last_updt_trig_by_iosapp_devicename = {}
@@ -80,8 +80,13 @@ def get_entity_registry_mobile_app_devices():
                 disisabled_prefix = '' if dev_trkr_entity['disabled_by'] is None else 'DISABLED'
                 iosapp_id_by_iosapp_devicename[iosapp_devicename]            = f"{disisabled_prefix}{dev_trkr_entity['device_id']}"
                 iosapp_devicename_by_iosapp_id[dev_trkr_entity['device_id']] = iosapp_devicename
-                device_info_iosapp_devicename[iosapp_devicename]             = f"{dev_trkr_entity['original_name']} ({raw_model})"
-                device_model_info_by_iosapp_devicename[iosapp_devicename]    = f"{raw_model};;"    # iPhone15,2;iPhone;iPhone 14 Pro
+                # if dev_trkr_entity['name'] is None:
+                #     device_info_by_iosapp_devicename[iosapp_devicename]   = f"{dev_trkr_entity['original_name']} ({raw_model})"
+                # else:    
+                #     device_info_by_iosapp_devicename[iosapp_devicename]   = f"{dev_trkr_entity['name']} ({raw_model})"
+                iosapp_fname = dev_trkr_entity['name'] or dev_trkr_entity['original_name']
+                device_info_by_iosapp_devicename[iosapp_devicename]       = f"{iosapp_fname} ({raw_model})"
+                device_model_info_by_iosapp_devicename[iosapp_devicename] = f"{raw_model};;"    # iPhone15,2;iPhone;iPhone 14 Pro
 
             for sensor in last_updt_trigger_sensors:
                 iosapp_devicename = iosapp_devicename_by_iosapp_id[sensor['device_id']]
@@ -102,7 +107,7 @@ def get_entity_registry_mobile_app_devices():
 
     return [iosapp_id_by_iosapp_devicename,
             iosapp_devicename_by_iosapp_id,
-            device_info_iosapp_devicename,
+            device_info_by_iosapp_devicename,
             device_model_info_by_iosapp_devicename,
             last_updt_trig_by_iosapp_devicename,
             notify_iosapp_devicenames,

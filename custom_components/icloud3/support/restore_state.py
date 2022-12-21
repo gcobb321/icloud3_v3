@@ -4,7 +4,7 @@ from ..global_variables     import GlobalVariables as Gb
 from ..const                import (RESTORE_STATE_FILE, )
 
 from ..helpers.common       import (instr, )
-from ..helpers.messaging    import (log_exception, _trace, _traceha, )
+from ..helpers.messaging    import (log_info_msg, log_debug_msg, log_exception, _trace, _traceha, )
 from ..helpers.time_util    import (datetime_now, )
 
 import os
@@ -28,7 +28,7 @@ def load_storage_icloud3_restore_state_file():
         success = read_storage_icloud3_restore_state_file()
 
         if success is False:
-            _LOGGER.info(f"Invalid icloud3.restore_state File-{Gb.icloud3_restore_state_filename}")
+            log_info_msg(f"Invalid icloud3.restore_state File-{Gb.icloud3_restore_state_filename}")
             build_initial_restore_state_file_structure()
             write_storage_icloud3_restore_state_file()
             read_storage_icloud3_restore_state_file()
@@ -60,7 +60,7 @@ def build_initial_restore_state_file_structure():
         .
     '''
 
-    _LOGGER.info(f"Creating iCloud3 Restore State File - {Gb.icloud3_restore_state_filename}")
+    log_info_msg(f"Creating iCloud3 Restore State File - {Gb.icloud3_restore_state_filename}")
     Gb.restore_state_file_data = RESTORE_STATE_FILE.copy()
     Gb.restore_state_profile = Gb.restore_state_file_data['profile']
     Gb.restore_state_devices = Gb.restore_state_file_data['devices']

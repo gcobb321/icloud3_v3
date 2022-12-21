@@ -982,14 +982,17 @@ def create_Devices_object():
                 event_msg += f"{CRLF_NBSP6_DOT}Track from Zones: {', '.join(Device.track_from_zones)}"
             post_event(event_msg)
 
-            # Get the ha device_registry device_id
-            Device.ha_device_id = device_tracker_entity_data[f"{DEVICE_TRACKER_DOT}{devicename}"]['device_id']
+            try:
+                # 12/19/2022 (beta 3)-Added the try/except to not generate an error if the device was not in the registry
+                # Get the ha device_registry device_id
+                Device.ha_device_id = device_tracker_entity_data[f"{DEVICE_TRACKER_DOT}{devicename}"]['device_id']
+            except:
+                pass
 
             # Initialize device_tracker entity to display before PyiCloud starts up
             Device.write_ha_device_tracker_state()
 
     except Exception as err:
-        log_exception(err)
         log_exception(err)
 
     return
@@ -1037,9 +1040,21 @@ def setup_tracked_devices_for_famshr(PyiCloud=None):
         update_conf_file_flag = False
         sorted_device_id_by_device_fname = OrderedDict(sorted(device_id_by_device_fname.items()))
         for famshr_device_fname, device_id in sorted_device_id_by_device_fname.items():
-            # Example device_info: Gary-iPhone (iPhone 14 Pro (iPhone15,2)
-            device_fname, device_desc, device_raw_model = \
-                            device_info_by_device_fname[famshr_device_fname].split(' (')
+            try:
+                # Example device_info: Gary-iPhone (iPhone 14 Pro (iPhone15,2)
+                device_fname = famshr_device_fname
+                device_desc  = device_raw_model = 'Unknown'
+                device_info_parts = device_info_by_device_fname[famshr_device_fname].split(' (')
+                device_fname      = device_info_parts[0]
+                device_desc       = device_info_parts[1]
+                device_raw_model  = device_info_parts[2]
+            except:
+                log_debug_msg(  f"Error extracting device info, "
+                                f"source-{device_info_parts}, "
+                                f"fname-{device_fname}, "
+                                f"desc-{device_desc}, "
+                                f"raw_model-{device_raw_model}")
+                pass
 
             broadcast_info_msg(f"Set up FamShr Device > {device_fname}")
 
@@ -1283,11 +1298,11 @@ def get_famshr_devices(PyiCloud):
     Cycle through famshr data and get devices that can be tracked for the
     icloud device selection list
     '''
-    device_id_by_device_fname = {}  # Example: n6ofM9CX4j...
-    device_fname_by_device_id = {}  # Example: Gary-iPhone14
-    device_info_device_fname  = {}  # Example: Gary-iPhone14 > Phone 14 Pro/iPhone
-    dup_device_fname_cnt      = {}  # Used to create a suffix for duplicate devicenames
-    device_model_info_by_fname= {}  # raw_model;model;model_display_name
+    device_id_by_device_fname   = {}  # Example: n6ofM9CX4j...
+    device_fname_by_device_id   = {}  # Example: Gary-iPhone14
+    device_info_by_device_fname = {}  # Example: Gary-iPhone (iPhone 14 Pro (iPhone15,2)
+    dup_device_fname_cnt        = {}  # Used to create a suffix for duplicate devicenames
+    device_model_info_by_fname  = {}  # raw_model;model;model_display_name
                                     # iPhone15,2;iPhone;iPhone 14 Pro
 
     # 12/17/2022 (beta 1) - Added check for setting PyiCloud
@@ -1298,7 +1313,7 @@ def get_famshr_devices(PyiCloud):
             or PyiCloud.RawData_by_device_id is None):
         return [device_id_by_device_fname,
                 device_fname_by_device_id,
-                device_info_device_fname,
+                device_info_by_device_fname,
                 device_model_info_by_fname]
 
     # Preliminary check to make sure all the conf_famshr_devicename specified have been
@@ -1338,14 +1353,14 @@ def get_famshr_devices(PyiCloud):
                     dup_device_fname                            = f"{device_fname}{'*'*dup_device_fname_cnt[device_fname]}"
                     device_id_by_device_fname[dup_device_fname] = device_id_by_device_fname[device_fname]
                     device_fname_by_device_id[device_id]        = dup_device_fname
-                    device_info_device_fname[dup_device_fname]  = device_info_device_fname[device_fname]
+                    device_info_by_device_fname[dup_device_fname] = device_info_by_device_fname[device_fname]
                     dup_device_fname_cnt[device_fname]          += 1
 
             device_id_by_device_fname[device_fname] = device_id
             device_fname_by_device_id[device_id]    = device_fname
 
             desc = _RawData.device_identifier.replace("’", "'")
-            device_info_device_fname[device_fname]  = f"{device_fname} ({desc})"
+            device_info_by_device_fname[device_fname]  = f"{device_fname} ({desc})"
 
             device_model_info_by_fname[device_fname]  = \
                         (   f"{_RawData.device_data['rawDeviceModel']};"        # iPhone15,2
@@ -1359,7 +1374,7 @@ def get_famshr_devices(PyiCloud):
 
     return [device_id_by_device_fname,
             device_fname_by_device_id,
-            device_info_device_fname,
+            device_info_by_device_fname,
             device_model_info_by_fname]
 
 #----------------------------------------------------------------------
@@ -1480,7 +1495,7 @@ def set_device_tracking_method_famshr_fmf(PyiCloud=None):
 
         info_msg = (f"PyiCloud Devices > ")
         for _device_id, _RawData in PyiCloud.RawData_by_device_id.items():
-            info_msg += (f"{_RawData.tracking_method}, ({_device_id[:8]}), ")
+            info_msg += (f"{_RawData.name}/{_device_id[:8]}-{_RawData.tracking_method}, ")
         post_monitor_msg(info_msg)
 
     except Exception as err:
@@ -1557,7 +1572,7 @@ def setup_tracked_devices_for_iosapp():
     devices_desc = iosapp_interface.get_entity_registry_mobile_app_devices()
     iosapp_id_by_iosapp_devicename      = devices_desc[0]
     iosapp_devicename_by_iosapp_id      = devices_desc[1]
-    device_info_iosapp_devicename       = devices_desc[2]
+    device_info_by_iosapp_devicename    = devices_desc[2]
     device_model_info_by_iosapp_devicename = devices_desc[3]
     last_updt_trig_by_iosapp_devicename = devices_desc[4]
     notify_iosapp_devicenames           = devices_desc[5]
@@ -1625,6 +1640,10 @@ def setup_tracked_devices_for_iosapp():
         Gb.iosapp_device_verified_cnt += 1
         if Device.tracking_method_FAMSHR_FMF is False:
             Device.tracking_method = IOSAPP
+        try:    
+            iosapp_fname = device_info_by_iosapp_devicename[iosapp_devicename].rsplit('(')[0]
+        except:
+            iosapp_fname = f"{iosapp_devicename.replace('_', ' ').title()}(?)"
 
         # Set raw_model that will get picked up by device_tracker and set in the device registry if it is still
         # at it's default value. Normally, raw_model is set when setting up FamShr if that is available, FmF does not
@@ -1646,8 +1665,10 @@ def setup_tracked_devices_for_iosapp():
         Device.iosapp_entity[BATTERY_LEVEL]  = f"sensor.{battery_level_sensors_by_iosapp_devicename.get(iosapp_devicename)}"
         Device.iosapp_entity[BATTERY_STATUS] = f"sensor.{battery_state_sensors_by_iosapp_devicename.get(iosapp_devicename)}"
 
-        tracked_msg += (f"{CRLF_CHK}{iosapp_devicename}{RARROW}{devicename}, "
-                        f"{Device.fname_devtype}")
+        tracked_msg += (f"{CRLF_CHK}{iosapp_fname} ({iosapp_devicename}){RARROW}{devicename} "
+                        f"({Device.raw_model})")
+        # tracked_msg += (f"{CRLF_CHK}{iosapp_devicename}{RARROW}{devicename}, "
+        #                 f"{Device.fname_devtype}")
 
         # Remove the iosapp device from the list since we know it is tracked
         if iosapp_devicename in not_monitored_iosapp_devices:
@@ -1657,12 +1678,17 @@ def setup_tracked_devices_for_iosapp():
 
     # Devices in the list were not matched with an iCloud3 device or are disabled
     for iosapp_devicename, iosapp_id in not_monitored_iosapp_devices.items():
+        try:    
+            iosapp_fname = device_info_by_iosapp_devicename[iosapp_devicename].rsplit('(')[0]
+        except:
+            iosapp_fname = f"{iosapp_devicename.replace('_', ' ').title()}(?)"
+
         if iosapp_id_by_iosapp_devicename[iosapp_devicename].startswith('DISABLED'):
-            tracked_msg += (f"{CRLF_X}{iosapp_devicename}{RARROW}DISABLED, "
-                            f"{device_info_iosapp_devicename[iosapp_devicename]}")
+            tracked_msg += (f"{CRLF_X}{iosapp_fname} ({iosapp_devicename}){RARROW}DISABLED, "
+                            f"{device_info_by_iosapp_devicename[iosapp_devicename]}")
         else:
-            tracked_msg += (f"{CRLF_DOT}{iosapp_devicename}{RARROW}Not Monitored, "
-                            f"{device_info_iosapp_devicename[iosapp_devicename]}")
+            tracked_msg += (f"{CRLF_DOT}{iosapp_fname} ({iosapp_devicename}){RARROW}Not Monitored, "
+                            f"{device_info_by_iosapp_devicename[iosapp_devicename]}")
     post_event(tracked_msg)
 
     return

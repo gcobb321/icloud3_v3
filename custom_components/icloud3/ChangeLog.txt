@@ -1,5 +1,5 @@
-Beta 1-12/17
-------------
+Beta 2 - 12/17/2022
+-------------------
 1.  Do not display an error messgage when trying to get the model of a device if t is
     not in the HA device registry. (entity_io:137)
 2.  Fix a problem checking if info for all of configured devices that had been set
@@ -21,3 +21,25 @@ Beta 1-12/17
 10. Fixed a problem, hopefully, that was generating the HA Blocking error when starting up the iCloud
     Location Services interface. This was also occurring (sometimes) when logging into a new the iCloud
     account from the Configurator.
+
+Beta 3 - 12/21/2022
+-------------------
+1.  Fixed a problem where the Configurator > Sensors would generate an 'Unknown Error Ocurred'
+    error message. This was caused by an invalid sensor field name ('tracking_from_zones')
+    in the configuration file.
+2.  Fixed a problem on the Configurator > Sensors screen dealing with an invalid 'battery_status'
+    error message.
+3.  Fixed a problem where error messages were displayed getting device info from the HA device
+    registry when the device was not in the registry.
+4.  Fixed a problem displaying the obscured email address if there was more than one @-sign
+    in the address.
+5.  Added 'Reinitialize All Devices' to the Configurator > iCloud3 Devices screen. With it,
+    you can remove all devices from iCloud3 or reset the selections for the iCloud FamShr & FmF
+    and the iOS App parameters to `None`. This will clear any errors due to device migration errors.
+6.  Setting up the log_level (info, debug, rawdata) a lot earlier. It is now setup when HA loads iCloud3
+    instead of later. Debug and RawData information should now be written to the HA Log file
+    (home-assistant.log) when the iCloud Account connection is first established.
+7.  Moved `Event Log Configuration` option to Menu Page 1 and moved `Display Text As` option to Menu
+    Page 2. Also added the `Log Level` parameter to the Event Log Configuration screen. This
+    will reduce the steps needed to change the Log Level parameter when debug/rawdata logging
+    is desired. ---> YOU MAY NEED TO REFRESH YOUR BROWSER WITH THE CONFIGURATOR OPEN <---

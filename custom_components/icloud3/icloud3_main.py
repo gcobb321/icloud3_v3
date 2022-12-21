@@ -82,9 +82,9 @@ class iCloud3:
     def __init__(self):
 
         Gb.hass_configurator_request_id = {}
-        Gb.version                = VERSION
+        Gb.version                         = VERSION
 
-        Gb.polling_5_sec_loop_running   = False
+        Gb.polling_5_sec_loop_running      = False
         self.pyicloud_refresh_time         = {}     # Last time Pyicloud was refreshed for the trk method
         self.pyicloud_refresh_time[FMF]    = 0
         self.pyicloud_refresh_time[FAMSHR] = 0

@@ -61,7 +61,7 @@ def broadcast_info_msg(info_msg):
     Display a message in the info sensor for all devices
     '''
     if INFO not in Gb.conf_sensors['device']:
-        _traceha(f"NOINFO {Gb.conf_sensors['device']=}")
+        _traceha(f"NOINFO {Gb.conf_sensors['device']=} {INFO=}")
         return
 
 

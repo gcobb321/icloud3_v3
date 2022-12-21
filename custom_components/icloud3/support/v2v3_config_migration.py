@@ -452,7 +452,7 @@ class iCloud3_v2v3ConfigMigration(object):
                     sensor_list.append(sensor)
 
         for sname in sensor_list:
-            if sname in ['name', 'badge', 'battery', 'battery_status', 'info',]:
+            if sname in ['name', 'badge', 'battery', 'info',]:
                 device_list.append(sname)
             if sname in ['interval', 'last_update', 'next_update', 'last_located']:
                 tracking_update.append(sname)
@@ -475,7 +475,6 @@ class iCloud3_v2v3ConfigMigration(object):
         Gb.conf_sensors['tracking_update']   = tracking_update
         Gb.conf_sensors['tracking_time']     = tracking_time_list
         Gb.conf_sensors['tracking_distance'] = tracking_distance_list
-        Gb.conf_sensors['tracking_by_zones'] = []
         Gb.conf_sensors['tracking_other']    = tracking_other_list
         Gb.conf_sensors['zone']              = zone_list
         Gb.conf_sensors['other']             = other_list

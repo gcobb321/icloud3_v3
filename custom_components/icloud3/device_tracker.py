@@ -372,7 +372,8 @@ class iCloud3_DeviceTracker(TrackerEntity):
     def update_entity_attribute(self, new_fname=None):
         """ Update entity definition attributes """
 
-        if new_fname is None:
+        if (new_fname is None
+                or self.Device.ha_device_id == ''):
             return
 
         self.device_fname = new_fname

@@ -130,16 +130,16 @@ def get_entity_registry_data(platform=None, domain=None) -> list:
         if platform == 'mobile_app' or domain == 'device_tracker':
             device_reg = device_registry.async_get(Gb.hass)
             for dev_trkr_entity, dev_trkr_entity_data in platform_entity_data.items():
-                device_id = dev_trkr_entity_data['device_id']
                 raw_model = 'Unknown'
                 try:
+                    # 12/18/2022 (beta 1)-Check to see if in device_reg
+                    device_id = dev_trkr_entity_data['device_id']
                     device_reg_data = device_reg.async_get(device_id)
-                    # 12/18 (beta 1)-Check to see if in device_reg
                     if device_reg_data:
                         raw_model = device_reg_data.model
 
                 except Exception as err:
-                    # 12/18 (beta 1)-Don't display error msg if no device_reg data
+                    # 12/18/2022 (beta 1)-Don't display error msg if no device_reg data
                     # log_exception(err)
                     pass
 

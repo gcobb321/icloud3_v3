@@ -57,6 +57,7 @@ from .const             import (DOMAIN,
                                 CONF_PARAMETER_TIME_STR, CONF_PARAMETER_FLOAT,
                                 CF_PROFILE, CF_DATA_TRACKING, CF_DATA_GENERAL,
                                 DEFAULT_DEVICE_CONF, DEFAULT_GENERAL_CONF,
+                                DEFAULT_DEVICE_REINITIALIZE_CONF,
                                 )
 from .const_sensor      import (SENSOR_GROUPS )
 from .helpers.common    import (instr, isnumber, obscure_field, zone_fname, )
@@ -118,11 +119,11 @@ MENU_KEY_TEXT_PAGE_0 = [
     MENU_KEY_TEXT['icloud_account'],
     MENU_KEY_TEXT['device_list'],
     MENU_KEY_TEXT['sensors'],
-    MENU_KEY_TEXT['display_text_as'],
+    MENU_KEY_TEXT['event_log_configuration'],
     MENU_KEY_TEXT['action_menu'],
     ]
 MENU_KEY_TEXT_PAGE_1 = [
-    MENU_KEY_TEXT['event_log_configuration'],
+    MENU_KEY_TEXT['display_text_as'],
     MENU_KEY_TEXT['waze'],
     MENU_KEY_TEXT['inzone_intervals'],
     MENU_KEY_TEXT['special_zones'],
@@ -149,8 +150,10 @@ OPT_ACTION_KEY_TEXT = {
         'delete_device': 'DELETE DEVICE > Delete the selected device from the tracked device list',
         'delete_device_yes': 'YES > Delete this device from the iCloud3 tracked devices list',
         'delete_device_no': 'NO > Do not delete this device',
-        'erase_all_devices_yes': 'YES > Erase all devices from the iCloud3 tracked devices list',
-        'erase_all_devices_no': 'NO > Do not erase all devices',
+        'reinitialize_devices': 'REINITIALIZE ALL DEVICES - Reset the iCloud/iOSAppp Seletion fields, Remove all iCloud3 Devices',
+        'reinitialize_devices_reset': 'RESET ICLOUD/IOS APP DEVICES FIELDS > Set the FamShr, FmF, iOS App and track_from_zone parameters to `None` for all devices',
+        'reinitialize_devices_remove': 'REMOVE ALL DEVICES > Erase all devices from the iCloud3 tracked devices list',
+        'reinitialize_devices_cancel': 'CANCEL > Return to the Device List screen',
         'clear_text_as': 'CLEAR > Remove `Display Test As` entry',
         'exit': 'EXIT > Exit the iCloud3 Configurator',
         'return': 'RETURN > Return to the Main Menu',
@@ -170,6 +173,7 @@ DEVICE_LIST_CONTROL = [
         OPT_ACTION_KEY_TEXT['update_device'],
         OPT_ACTION_KEY_TEXT['add_device'],
         OPT_ACTION_KEY_TEXT['delete_device'],
+        OPT_ACTION_KEY_TEXT['reinitialize_devices'],
         OPT_ACTION_KEY_TEXT['return']]
 DEVICE_LIST_CONTROL_NO_ADD = [
         OPT_ACTION_KEY_TEXT['update_device'],
@@ -178,9 +182,10 @@ DEVICE_LIST_CONTROL_NO_ADD = [
 DELETE_DEVICE_CONFIRM_ACTION = [
         OPT_ACTION_KEY_TEXT['delete_device_yes'],
         OPT_ACTION_KEY_TEXT['delete_device_no'],]
-ERASE_ALL_DEVICES_CONFIRM_ACTION = [
-        OPT_ACTION_KEY_TEXT['erase_all_devices_yes'],
-        OPT_ACTION_KEY_TEXT['erase_all_devices_no'],]
+REINITIALIZE_ALL_DEVICES = [
+        OPT_ACTION_KEY_TEXT['reinitialize_devices_reset'],
+        OPT_ACTION_KEY_TEXT['reinitialize_devices_remove'],
+        OPT_ACTION_KEY_TEXT['reinitialize_devices_cancel'],]
 
 OPT_DATA_SOURCE_KEY_TEXT = {
         'icloud,iosapp': 'ICLOUD & IOSAPP - iCloud account and iOS App are used for location data',
@@ -979,7 +984,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
     async def async_step_action_erase_all_devices(self, user_input=None, errors=None):
         # Gb.EvLog.export_event_log()
         # self.menu_msg = 'action_completed'
-        return await self.async_step_erase_all_devices_confirm()
+        return await self.async_step_reinitialize_all_devices()
 
 #-------------------------------------------------------------------------------------------
     async def async_step_action_divider1(self, user_input=None, errors=None):
@@ -1071,6 +1076,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         user_input = self._option_text_to_parm(user_input, CONF_DISPLAY_ZONE_FORMAT, OPT_DISPLAY_ZONE_FORMAT_KEY_TEXT)
         user_input = self._option_text_to_parm(user_input, CONF_UNIT_OF_MEASUREMENT, OPT_UNIT_OF_MEASUREMENT_KEY_TEXT)
         user_input = self._option_text_to_parm(user_input, CONF_TIME_FORMAT, OPT_TIME_FORMAT_KEY_TEXT)
+        user_input = self._option_text_to_parm(user_input, CONF_LOG_LEVEL, OPT_LOG_LEVEL_KEY_TEXT)
         user_input = self._strip_special_text_from_user_input(user_input)
 
         return user_input
@@ -1559,6 +1565,10 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 self._get_conf_device_selected(user_input)
                 return await self.async_step_delete_device_confirm()
 
+            elif action_item == 'reinitialize_devices':
+                self.sensor_entity_attrs_changed = {}
+                return await self.async_step_reinitialize_all_devices()
+
             elif action_item == 'update_device':
                 self.sensor_entity_attrs_changed['update_device'] = True
                 self._get_conf_device_selected(user_input)
@@ -1664,14 +1674,34 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             self.device_list_page_no = 0
 
 #-------------------------------------------------------------------------------------------
-    def _process_erase_all_devices_request(self):
-        """ Erase all ic3 devices, Delete the device_tracker entity and associated ic3 configuration """
+    def _reinitialize_devices_reset(self):
+        """
+        Reset the FamShr, FmF, iOS App, track_from_zone fields to their initiial values.
+        Keep the devicename,, friendly name, picture and other fields
+        """
 
-        for form_devices_list_index, devicename in enumerate(self.form_devices_list_devicename):
-            self.conf_device_selected     = Gb.conf_devices[form_devices_list_index]
-            self.conf_device_selected_idx = form_devices_list_index
+        for conf_device in Gb.conf_devices:
+            conf_device.update(DEFAULT_DEVICE_REINITIALIZE_CONF)
 
-            self._process_delete_device_request()
+        config_file.write_storage_icloud3_configuration_file()
+
+#-------------------------------------------------------------------------------------------
+    def _reinitialize_devices_remove(self):
+        """
+        Erase all ic3 devices,
+        Delete the device_tracker entity and associated ic3 configuration
+        """
+
+        for conf_device in Gb.conf_devices:
+            devicename = conf_device[CONF_IC3_DEVICENAME]
+            self._remove_device_tracker_entity(devicename)
+
+        Gb.conf_devices = []
+        self.form_devices_list_all = []
+        self.device_list_page_no = 0
+        self.conf_device_selected_idx = 0
+
+        config_file.write_storage_icloud3_configuration_file()
 
 
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -2016,28 +2046,34 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         # self.conf_device_selected[CONF_TRACKING_MODE] = new_tracking_mode
 
 #-------------------------------------------------
-    async def async_step_erase_all_devices_confirm(self, user_input=None, errors=None):
+    async def async_step_reinitialize_all_devices(self, user_input=None, errors=None):
         '''
         Erase all of the iCloud3 devices.
 
         Display a confirmation form and then delete the device
         '''
-        self.step_id = 'erase_all_devices_confirm'
+        self.step_id = 'reinitialize_all_devices'
         self.errors = errors or {}
         self.errors_user_input = {}
         user_input, action_item = self._action_text_to_item(user_input)
 
         if user_input is not None:
-            if action_item == 'erase_all_devices_yes':
-                self._process_erase_all_devices_request()
+            if action_item.endswith('cancel'):
+                return await self.async_step_device_list()
 
-                self.config_flow_updated_parms.update(['tracking', 'restart'])
+            if action_item.endswith('remove'):
+                self._reinitialize_devices_remove()
 
-                self.menu_msg = 'action_completed'
-            return await self.async_step_menu()
+            elif action_item.endswith('reset'):
+                self._reinitialize_devices_reset()
+
+            self.config_flow_updated_parms.update(['tracking', 'restart'])
+            self.menu_msg = 'action_completed'
+
+            return await self.async_step_device_list()
 
         return self.async_show_form(step_id=self.step_id,
-                        data_schema=self.form_schema('erase_all_devices_confirm'),
+                        data_schema=self.form_schema('reinitialize_all_devices'),
                         errors=self.errors,
                         last_step=False)
 
@@ -3192,11 +3228,11 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                         })
 
         #------------------------------------------------------------------------
-        elif step_id == 'erase_all_devices_confirm':
-            self.opt_actions = ERASE_ALL_DEVICES_CONFIRM_ACTION.copy()
+        elif step_id == 'reinitialize_all_devices':
+            self.opt_actions = REINITIALIZE_ALL_DEVICES.copy()
             schema = vol.Schema({
                         vol.Required('opt_action',
-                                    default=self._action_default_text('erase_all_devices_no')):
+                                    default=self._action_default_text('cancel')):
                                     selector.SelectSelector(
                                         selector.SelectSelectorConfig(options=self.opt_actions)),
                         })
@@ -3204,6 +3240,11 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         #------------------------------------------------------------------------
         elif step_id == 'event_log_configuration':
             schema = vol.Schema({
+                        vol.Required(CONF_LOG_LEVEL,
+                                    default=self._option_parm_to_text(CONF_LOG_LEVEL, OPT_LOG_LEVEL_KEY_TEXT)):
+                                    selector.SelectSelector(
+                                        selector.SelectSelectorConfig(
+                                                options=dict_value_to_list(OPT_LOG_LEVEL_KEY_TEXT), mode='dropdown')),
                         vol.Required(CONF_DISPLAY_ZONE_FORMAT,
                                     default=self._option_parm_to_text(CONF_DISPLAY_ZONE_FORMAT, OPT_DISPLAY_ZONE_FORMAT_KEY_TEXT)):
                                     selector.SelectSelector(

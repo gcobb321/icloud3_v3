@@ -20,8 +20,8 @@ DEFAULT_CONFIG_IC3_FILE_NAME    = 'config/config_ic3.yaml'
 STORAGE_DIR                     = ".storage"
 STORAGE_KEY_ENTITY_REGISTRY     = 'core.entity_registry'
 SENSOR_EVENT_LOG_NAME           = 'icloud3_event_log'
-EVLOG_CARD_WWW_DIRECTORY    = 'www/icloud3'
-EVLOG_CARD_WWW_JS_PROG      = 'icloud3-event-log-card.js'
+EVLOG_CARD_WWW_DIRECTORY        = 'www/icloud3'
+EVLOG_CARD_WWW_JS_PROG          = 'icloud3-event-log-card.js'
 WAZE_LOCATION_HISTORY_DATABASE  = 'icloud3.waze_location_history.db'
 SENSOR_WAZEHIST_TRACK_NAME      = 'icloud3_wazehist_track'
 
@@ -566,9 +566,10 @@ STORAGE_VERSION = 1
 
 # Platform
 CONF_VERSION                    = 'version'
+CONF_IC3_VERSION                = 'ic3_version'
 CONF_UPDATE_DATE                = 'config_update_date'
-CONF_EVLOG_CARD_DIRECTORY   = 'event_log_card_directory'
-CONF_EVLOG_CARD_PROGRAM     = 'event_log_card_program'
+CONF_EVLOG_CARD_DIRECTORY       = 'event_log_card_directory'
+CONF_EVLOG_CARD_PROGRAM         = 'event_log_card_program'
 
 # Account, Devices, Tracking Parameters
 CONF_USERNAME                   = 'username'
@@ -667,22 +668,22 @@ CONF_INTERVAL                   = 'interval'
 
 CONF_SENSORS_MONITORED_DEVICES = 'monitored_devices'
 
-CONF_SENSORS_DEVICE = 'device'
-NAME                = "name"
-BADGE               = "badge"
-BATTERY             = "battery"
-BATTERY_STATUS      = "battery_status"
-INFO                = "info"
+CONF_SENSORS_DEVICE            = 'device'
+NAME                           = "name"
+BADGE                          = "badge"
+BATTERY                        = "battery"
+BATTERY_STATUS                 = "battery_status"
+INFO                           = "info"
 
-CONF_SENSORS_TRACKING_UPDATE = 'tracking_update'
-INTERVAL                     = "interval"
-LAST_LOCATED                 = "last_located"
-LAST_UPDATE                  = "last_update"
-NEXT_UPDATE                  = "next_update"
+CONF_SENSORS_TRACKING_UPDATE   = 'tracking_update'
+INTERVAL                       = "interval"
+LAST_LOCATED                   = "last_located"
+LAST_UPDATE                    = "last_update"
+NEXT_UPDATE                    = "next_update"
 
-CONF_SENSORS_TRACKING_TIME = 'tracking_time'
-TRAVEL_TIME                = "travel_time"
-TRAVEL_TIME_MIN            = "travel_time_min"
+CONF_SENSORS_TRACKING_TIME     = 'tracking_time'
+TRAVEL_TIME                    = "travel_time"
+TRAVEL_TIME_MIN                = "travel_time_min"
 
 CONF_SENSORS_TRACKING_DISTANCE = 'tracking_distance'
 ZONE_DISTANCE                  = "zone_distance"
@@ -732,6 +733,7 @@ CF_DATA_SENSORS  = 'sensors'
 #--------------------------------------------------------
 DEFAULT_PROFILE_CONF = {
         CONF_VERSION: -1,
+        CONF_IC3_VERSION: VERSION,
         CONF_UPDATE_DATE: '',
         CONF_EVLOG_CARD_DIRECTORY: EVLOG_CARD_WWW_DIRECTORY,
         CONF_EVLOG_CARD_PROGRAM: EVLOG_CARD_WWW_JS_PROG,
@@ -749,6 +751,11 @@ DEFAULT_TRACKING_CONF = {
 DEFAULT_DEVICE_CONF = {
         CONF_IC3_DEVICENAME: ' ',
         CONF_FNAME: '',
+        CONF_PICTURE: 'None',
+        CONF_EVLOG_DISPLAY_ORDER: 0,
+        CONF_UNIQUE_ID: '',
+        CONF_DEVICE_TYPE: 'iPhone',
+        CONF_INZONE_INTERVAL: '02:00:00',
         CONF_TRACKING_MODE: TRACK_DEVICE,
         CONF_FAMSHR_DEVICENAME: 'None',
         CONF_FAMSHR_DEVICE_ID: '',
@@ -766,12 +773,18 @@ DEFAULT_DEVICE_CONF = {
         CONF_IOSAPP_DEVICE2: 'None',
         CONF_TRACK_FROM_BASE_ZONE: HOME,
         CONF_TRACK_FROM_ZONES: [HOME],
-        CONF_PICTURE: 'None',
-        CONF_DEVICE_TYPE: 'iPhone',
-        CONF_INZONE_INTERVAL: '02:00:00',
-        CONF_EVLOG_DISPLAY_ORDER: 0,
-        CONF_UNIQUE_ID: '',
 }
+
+# Used in conf_flow to reinialize the Configuration Devices
+# Reset the FamShe FmF iOS App track_from_zone fields
+DEFAULT_DEVICE_REINITIALIZE_CONF = DEFAULT_DEVICE_CONF.copy()
+DEFAULT_DEVICE_REINITIALIZE_CONF.pop(CONF_IC3_DEVICENAME, None)
+DEFAULT_DEVICE_REINITIALIZE_CONF.pop(CONF_FNAME, None)
+DEFAULT_DEVICE_REINITIALIZE_CONF.pop(CONF_PICTURE, None)
+DEFAULT_DEVICE_REINITIALIZE_CONF.pop(CONF_EVLOG_DISPLAY_ORDER, None)
+DEFAULT_DEVICE_REINITIALIZE_CONF.pop(CONF_DEVICE_TYPE, None)
+DEFAULT_DEVICE_REINITIALIZE_CONF.pop(CONF_UNIQUE_ID, None)
+
 
 DEFAULT_GENERAL_CONF = {
         # General Configuration Parameters
@@ -851,8 +864,8 @@ DEFAULT_SENSORS_CONF = {
         CONF_SENSORS_TRACK_FROM_ZONES: [
                 TFZ_ZONE_INFO, ],
         CONF_SENSORS_TRACKING_OTHER: [],
-        CONF_SENSORS_ZONE:
-                [ZONE_NAME],
+        CONF_SENSORS_ZONE: [
+                ZONE_NAME],
         CONF_SENSORS_OTHER: [],
 }
 

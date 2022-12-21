@@ -3,13 +3,14 @@ from ..global_variables     import GlobalVariables as Gb
 from ..const                import (
                                     APPLE_SPECIAL_ICLOUD_SERVER_COUNTRY_CODE,
                                     RARROW,
-                                    CONF_EVLOG_CARD_DIRECTORY, CONF_EVLOG_CARD_PROGRAM,
+                                    CONF_IC3_VERSION, VERSION, CONF_EVLOG_CARD_DIRECTORY, CONF_EVLOG_CARD_PROGRAM,
                                     CONF_UPDATE_DATE, CONF_PASSWORD, CONF_ICLOUD_SERVER_ENDPOINT_SUFFIX,
                                     CONF_UNIT_OF_MEASUREMENT, CONF_TIME_FORMAT, CONF_LOG_LEVEL,
                                     CF_DEFAULT_IC3_CONF_FILE,
                                     DEFAULT_PROFILE_CONF, DEFAULT_TRACKING_CONF, DEFAULT_GENERAL_CONF,
                                     DEFAULT_SENSORS_CONF,
                                     HOME_DISTANCE, CONF_SENSORS_TRACKING_DISTANCE,
+                                    CONF_SENSORS_DEVICE, BATTERY_STATUS,
                                     )
 
 from ..support              import start_ic3
@@ -130,19 +131,20 @@ def build_initial_config_file_structure():
     Gb.conf_file_data['profile']    = Gb.conf_profile
     Gb.conf_file_data['data']       = Gb.conf_data
 
-    if Gb.location_info['country_code'].lower() in APPLE_SPECIAL_ICLOUD_SERVER_COUNTRY_CODE:
-        Gb.conf_tracking[CONF_ICLOUD_SERVER_ENDPOINT_SUFFIX] = Gb.location_info['country_code'].lower()
 
     # Verify general parameters and make any necessary corrections
     try:
+        if Gb.location_info['country_code'].lower() in APPLE_SPECIAL_ICLOUD_SERVER_COUNTRY_CODE:
+            Gb.conf_tracking[CONF_ICLOUD_SERVER_ENDPOINT_SUFFIX] = Gb.location_info['country_code'].lower()
+
         if Gb.config and Gb.config.units['name'] != 'Imperial':
             Gb.conf_data['general'][CONF_UNIT_OF_MEASUREMENT] = 'km'
             Gb.conf_data['general'][CONF_TIME_FORMAT] = '24-hour'
+
         elif Gb.location_info['use_metric']:
             Gb.conf_data['general'][CONF_UNIT_OF_MEASUREMENT] = 'km'
             Gb.conf_data['general'][CONF_TIME_FORMAT] = '24-hour'
-        if instr(Gb.conf_data['general'][CONF_TIME_FORMAT], '-hour-hour'):
-            Gb.conf_data['general'][CONF_TIME_FORMAT].replace('-hour-hour', '-hour')
+
     except:
         pass
 
@@ -170,8 +172,11 @@ def read_storage_icloud3_configuration_file(filename_suffix=''):
             Gb.conf_devices   = Gb.conf_data['tracking']['devices']
             Gb.conf_general   = Gb.conf_data['general']
             Gb.conf_sensors   = Gb.conf_data['sensors']
+            Gb.log_level      = Gb.conf_general[CONF_LOG_LEVEL]
 
             Gb.conf_tracking[CONF_PASSWORD] = decode_password(Gb.conf_tracking[CONF_PASSWORD])
+
+            config_file_special_maintenance()
 
         return True
 
@@ -179,6 +184,36 @@ def read_storage_icloud3_configuration_file(filename_suffix=''):
         log_exception(err)
 
     return False
+
+#--------------------------------------------------------------------
+def config_file_special_maintenance():
+    '''
+    Fix configuration file errors or add any new fields
+    '''
+
+    update_config_file_flag = False
+
+    # v3.0.0 beta 1 - Fix time format from migration
+    if instr(Gb.conf_data['general'][CONF_TIME_FORMAT], '-hour-hour'):
+        Gb.conf_data['general'][CONF_TIME_FORMAT].replace('-hour-hour', '-hour')
+        update_config_file_flag = True
+
+    # v3.0.0 beta 3 - remove tracking_from_zone item from sensors list which shouldn't have been added
+    if BATTERY_STATUS in Gb.conf_sensors[CONF_SENSORS_DEVICE]:
+        Gb.conf_sensors[CONF_SENSORS_DEVICE].pop(BATTERY_STATUS, None)
+        update_config_file_flag = True
+
+    if 'tracking_by_zones' in Gb.conf_sensors:
+        Gb.conf_sensors.pop('tracking_by_zones', None)
+        update_config_file_flag = True
+
+    if (CONF_IC3_VERSION not in Gb.conf_profile
+            or Gb.conf_profile[CONF_IC3_VERSION] == VERSION):
+        Gb.conf_profile[CONF_IC3_VERSION] = VERSION
+        update_config_file_flag = True
+
+    if update_config_file_flag:
+        write_storage_icloud3_configuration_file()
 
 #--------------------------------------------------------------------
 def write_storage_icloud3_configuration_file(filename_suffix=''):

@@ -343,7 +343,7 @@ class EventLog(object):
             log_update_time =   (f"{dt_util.now().strftime('%a, %m/%d')}, "
                                 f"{dt_util.now().strftime(Gb.um_time_strfmt)}")
             hdr_recd    = (f"Time\t\t   Event\n{'-'*120}\n")
-            export_recd = (f"iCloud3 Event Log\n\n"
+            export_recd = (f"iCloud3 Event Log v{Gb.version}\n\n"
                             f"Log Update Time: {log_update_time}\n"
                             f"Tracked Devices:\n")
 

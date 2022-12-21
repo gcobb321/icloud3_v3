@@ -151,14 +151,15 @@
         },
         "title": "Confirm Delete Device Request"
       },
-      "erase_all_devices_confirm": {
+      "reinitialize_devices": {
         "data": {
-          "opt_action": "This will erase all iCloud3 tracked devices. The device_tracker and sensor entities will be removed. Are you sure you want to do this?"
+          "opt_action": "This will reinitialize the location data source fields or erase all iCloud3 tracked devices. The device_tracker and sensor entities will be updated or removed. Are you sure you want to do this?"
         },
-        "title": "Confirm Erase All Devices Request"
+        "title": "Confirm Reinitialize Devices Request"
       },
       "event_log_configuration": {
         "data": {
+          "log_level": "LOG LEVEL - The type of messages that are added to the HA log file by iCloud3",
           "display_zone_format": "ZONE NAME FORMAT - Format used to display the Zone name in sensors and the Event Log",
           "time_format": "TIME FORMAT - Time format for sensors and the Event Log",
           "unit_of_measurement": "UNIT OF MEASUREMENT - Distance format for sensors and the Event Log",
