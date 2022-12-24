@@ -309,7 +309,7 @@ def stage_7_initial_locate():
     and those devices will be updated.
     '''
 
-    Gb.trace_prefix = 'STAGE 7 > '
+    Gb.trace_prefix = 'INITLOC > '
     post_event("Requesting Initial Locate")
     event_msg =(f"{EVLOG_IC3_STARTING}Initializing iCloud3 v{Gb.version} > Complete")
     post_event(event_msg)

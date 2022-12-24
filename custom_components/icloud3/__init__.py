@@ -36,6 +36,8 @@ from .icloud3_main                  import iCloud3
 import logging
 # _LOGGER = logging.getLogger(__name__)
 Gb.HALogger = logging.getLogger(f"icloud3")
+# Gb.HALogger = logging.basicConfig(filename='icloud3.log', filemode='w')
+
 successful_startup = True
 
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>><><><><><><><><><>

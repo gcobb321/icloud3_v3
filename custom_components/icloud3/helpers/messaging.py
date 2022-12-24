@@ -2,10 +2,10 @@
 
 from ..global_variables import GlobalVariables as Gb
 from ..const            import (DOT, ICLOUD3_ERROR_MSG, EVLOG_DEBUG, EVLOG_ERROR, EVLOG_INIT_HDR, EVLOG_MONITOR,
-                                CRLF, CRLF_DOT, DATETIME_ZERO, NBSP6,
+                                IC3LOGGER_FILENAME,
+                                CRLF, CRLF_DOT, DATETIME_ZERO, NBSP6, DATETIME_FORMAT,
                                 NEXT_UPDATE_TIME, INTERVAL,
-                                CONF_IC3_DEVICENAME,
-                                LATITUDE,  LONGITUDE, LOCATION_SOURCE, TRACKING_METHOD,
+                                CONF_IC3_DEVICENAME, CONF_FNAME, LATITUDE,  LONGITUDE, LOCATION_SOURCE, TRACKING_METHOD,
                                 ZONE, ZONE_DATETIME, INTO_ZONE_DATETIME, LAST_ZONE,
                                 TIMESTAMP, TIMESTAMP_SECS, TIMESTAMP_TIME, LOCATION_TIME, DATETIME, AGE,
                                 TRIGGER, BATTERY, BATTERY_LEVEL, BATTERY_STATUS,
@@ -18,9 +18,13 @@ from ..const            import (DOT, ICLOUD3_ERROR_MSG, EVLOG_DEBUG, EVLOG_ERROR
                                 ICLOUD3_VERSION,
                                 BADGE,
                                 )
+#from .time_util import (secs_to_time, )
+import homeassistant.util.dt as dt_util
 
 import os
+import time
 from inspect import getframeinfo, stack
+import traceback
 
 FILTER_DATA_DICTS = ['data', 'userInfo', 'dsid', 'dsInfo', 'webservices', 'locations',]
 FILTER_DATA_LISTS = ['devices', 'content', 'followers', 'following', 'contactDetails',]
@@ -147,6 +151,8 @@ def post_monitor_msg(devicename, event_msg='+'):
     devicename, event_msg = resolve_system_event_msg(devicename, event_msg)
     post_event(devicename, f"{EVLOG_MONITOR}{event_msg}")
 
+    write_ic3_debug_log_recd(f"{devicename} >{event_msg}")
+
 #-------------------------------------------------------------------------------------------
 def resolve_system_event_msg(devicename, event_msg):
     if event_msg == '+':
@@ -166,6 +172,69 @@ def resolve_log_msg_module_name(module_name, log_msg):
 #   LOG MESSAGE ROUTINES
 #
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+def open_ic3_debug_log_file(reopen=False):
+    '''
+    Open the icloud3-debug.log file
+
+    args:
+        reopen  True - Open the file in append mode
+                False - Create a new file
+    '''
+    if Gb.iC3DebugLogFile:
+        return
+
+    filemode = 'a' if reopen else 'w'
+    ic3_debug_log_filename = Gb.hass.config.path(IC3LOGGER_FILENAME)
+    Gb.iC3DebugLogFile = open(ic3_debug_log_filename, filemode, encoding='utf8')
+    Gb.iC3_debug_log_file_last_write_secs = 0
+
+    if reopen is False:
+        write_ic3_debug_log_recd(f"iCloud3 v{Gb.version}, "
+                                f"Debug Log File: {dt_util.now().strftime(DATETIME_FORMAT)[0:19]}\n")
+
+        write_ic3_debug_log_recd(f"\nGeneral Configuration:\n")
+        write_ic3_debug_log_recd(f"\t{Gb.conf_general}\n")
+
+        for conf_device in Gb.conf_devices:
+            write_ic3_debug_log_recd (f"\t{DOT}{conf_device[CONF_FNAME], conf_device[CONF_IC3_DEVICENAME]} >\n"
+                                f"\t\t\t{conf_device}\n")
+
+
+#------------------------------------------------------------------------------
+def close_ic3_debug_log_file(reopen=False):
+    '''
+    Close the icloud3-debug.log file is it is open
+    '''
+    if Gb.iC3DebugLogFile is None:
+        return
+
+    if reopen is False:
+        log_info_msg(f"\n")
+        log_info_msg(f"iCloud3 v{Gb.version}, Closing Debug Log File")
+
+    Gb.iC3DebugLogFile.close()
+    Gb.iC3DebugLogFile = None
+
+#------------------------------------------------------------------------------
+def close_reopen_ic3_debug_log_file():
+    log_info_msg(f"Commit Log File Records")#, LastUpdate-{secs_to_time(Gb.iC3_debug_log_file_last_write_secs)}")
+    close_ic3_debug_log_file(reopen=True)
+    open_ic3_debug_log_file(reopen=True)
+
+#------------------------------------------------------------------------------
+def write_ic3_debug_log_recd(recd):
+
+    try:
+        if Gb.iC3DebugLogFile:
+            date_time_now = dt_util.now().strftime(DATETIME_FORMAT)[0:19]
+            Gb.iC3DebugLogFile.write(f"{date_time_now} {recd}\n")
+
+            Gb.iC3_debug_log_file_last_write_secs = int(time.time())
+
+    except Exception as err:
+        Gb.HALogger.exception(err)
+
+#--------------------------------------------------------------------
 def log_filter(log_msg):
     try:
         if type(log_msg) is str:
@@ -188,19 +257,27 @@ def log_info_msg(module_name, log_msg='+'):
 
     Gb.HALogger.info(log_filter(f'{_called_from()}{log_msg}'))
 
+    write_ic3_debug_log_recd(log_filter(f'{_called_from()}{log_msg}'))
+
 #--------------------------------------------------------------------
 def log_warning_msg(module_name, log_msg='+'):
     log_msg = resolve_log_msg_module_name(module_name, log_msg)
     Gb.HALogger.warning(log_filter(f'{_called_from()}{log_msg}'))
+
+    write_ic3_debug_log_recd(log_filter(f'{_called_from()}{log_msg}'))
 
 #--------------------------------------------------------------------
 def log_error_msg(module_name, log_msg='+'):
     log_msg = resolve_log_msg_module_name(module_name, log_msg)
     Gb.HALogger.error(log_filter(f'{_called_from()}{log_msg}'))
 
+    write_ic3_debug_log_recd(log_filter(f'{_called_from()}{log_msg}'))
+
 #--------------------------------------------------------------------
 def log_exception(err):
     Gb.HALogger.exception(err)
+
+    write_ic3_debug_log_recd(traceback.format_exc())
 
 #--------------------------------------------------------------------
 def log_debug_msg(devicename, log_msg="+"):
@@ -210,6 +287,7 @@ def log_debug_msg(devicename, log_msg="+"):
         log_msg = (f"{Gb.trace_prefix}{dn_str}{str(log_msg).replace(CRLF, ', ')}")
         Gb.HALogger.info(log_filter(f'{_called_from()}{log_msg}'))
 
+        write_ic3_debug_log_recd(log_filter(f'{_called_from()}{log_msg}'))
 #--------------------------------------------------------------------
 def log_start_finish_update_banner(start_finish_char, devicename,
             method, update_reason):

@@ -1512,7 +1512,9 @@ class iCloud3_Device(TrackerEntity):
                 self.sensors[LAST_ZONE]      = self.sensors[ZONE]
                 self.sensors[ZONE_DATETIME]  = self.zone_change_datetime
             self.sensors[ZONE]               = self.loc_data_zone
-            self.sensors[DEVTRK_STATE_VALUE] = self.loc_data_zone_fname
+            # v3.9.9-beta 3-Do not capitalize state value
+            # self.sensors[DEVTRK_STATE_VALUE] = self.loc_data_zone_fname
+            self.sensors[DEVTRK_STATE_VALUE] = self.loc_data_zone
 
             if self.sensors[FROM_ZONE] != HOME:
                 self.sensors_um[ZONE_DISTANCE] = (f"{Gb.um} "

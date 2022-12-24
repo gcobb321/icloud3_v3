@@ -2025,11 +2025,18 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             DeviceTracker = Gb.DeviceTrackers_by_devicename[devicename]
             DeviceTracker.update_entity_attribute(new_fname=self.conf_device_selected[CONF_FNAME])
 
-            for sensor, Sensor in Gb.Sensors_by_devicename[devicename].items():
-                Sensor.update_entity_attribute(new_fname=self.conf_device_selected[CONF_FNAME])
-
-            for sensor, Sensor in Gb.Sensors_by_devicename_from_zone[devicename].items():
-                Sensor.update_entity_attribute(new_fname=self.conf_device_selected[CONF_FNAME])
+            try:
+                for sensor, Sensor in Gb.Sensors_by_devicename[devicename].items():
+                    Sensor.update_entity_attribute(new_fname=self.conf_device_selected[CONF_FNAME])
+            except:
+                pass
+            
+            # v3.0.0-beta3-Added check to see if device has tfz sensors
+            try:
+                for sensor, Sensor in Gb.Sensors_by_devicename_from_zone[devicename].items():
+                    Sensor.update_entity_attribute(new_fname=self.conf_device_selected[CONF_FNAME])
+            except:
+                pass
 
         # devicename was changed - delete device_tracker and all sensors for devicename and add them for new_devicename
         if devicename != new_devicename:
@@ -3009,12 +3016,14 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         #------------------------------------------------------------------------
         elif step_id == 'restart_icloud3':
             # If migrated, must restart ha to relead everything, otherwise, just restart ic3
-            if self.v2v3_migrated_flag:
-                OPT_RESTART_NOW_LATER_KEY_TEXT.pop('now', None)
-                restart_default='ha'
-            else:
-                OPT_RESTART_NOW_LATER_KEY_TEXT.pop('ha', None)
-                restart_default='now'
+            # if self.v2v3_migrated_flag:
+            #     OPT_RESTART_NOW_LATER_KEY_TEXT.pop('now', None)
+            #     restart_default='ha'
+            # else:
+            #     OPT_RESTART_NOW_LATER_KEY_TEXT.pop('ha', None)
+            #     restart_default='now'
+            restart_default='now'
+            OPT_RESTART_NOW_LATER_KEY_TEXT.pop('ha', None)
             restart_now_later_option_list = []
             restart_now_later_option_list.extend(OPT_RESTART_NOW_LATER_KEY_TEXT.values())
 

@@ -6,7 +6,8 @@ from ..const                import (
                                     CONF_IC3_VERSION, VERSION, CONF_EVLOG_CARD_DIRECTORY, CONF_EVLOG_CARD_PROGRAM,
                                     CONF_UPDATE_DATE, CONF_PASSWORD, CONF_ICLOUD_SERVER_ENDPOINT_SUFFIX,
                                     CONF_UNIT_OF_MEASUREMENT, CONF_TIME_FORMAT, CONF_LOG_LEVEL,
-                                    CF_DEFAULT_IC3_CONF_FILE,
+                                    CONF_FAMSHR_DEVICENAME2, CONF_FAMSHR_DEVICE_ID2, 
+                                    CONF_RAW_MODEL2, CONF_MODEL2, CONF_MODEL_DISPLAY_NAME2, CONF_IOSAPP_DEVICE2,                                    CF_DEFAULT_IC3_CONF_FILE,
                                     DEFAULT_PROFILE_CONF, DEFAULT_TRACKING_CONF, DEFAULT_GENERAL_CONF,
                                     DEFAULT_SENSORS_CONF,
                                     HOME_DISTANCE, CONF_SENSORS_TRACKING_DISTANCE,
@@ -206,6 +207,16 @@ def config_file_special_maintenance():
     if 'tracking_by_zones' in Gb.conf_sensors:
         Gb.conf_sensors.pop('tracking_by_zones', None)
         update_config_file_flag = True
+
+    for conf_device in Gb.conf_devices:
+        if CONF_FAMSHR_DEVICENAME2 in conf_device:
+            conf_device.pop(CONF_FAMSHR_DEVICENAME2, None)
+            conf_device.pop(CONF_FAMSHR_DEVICE_ID2, None)
+            conf_device.pop(CONF_RAW_MODEL2, None)
+            conf_device.pop(CONF_MODEL2, None)
+            conf_device.pop(CONF_MODEL_DISPLAY_NAME2, None)
+            conf_device.pop(CONF_IOSAPP_DEVICE2, None)
+            update_config_file_flag = True
 
     if (CONF_IC3_VERSION not in Gb.conf_profile
             or Gb.conf_profile[CONF_IC3_VERSION] == VERSION):

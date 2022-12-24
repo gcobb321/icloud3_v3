@@ -24,6 +24,7 @@ EVLOG_CARD_WWW_DIRECTORY        = 'www/icloud3'
 EVLOG_CARD_WWW_JS_PROG          = 'icloud3-event-log-card.js'
 WAZE_LOCATION_HISTORY_DATABASE  = 'icloud3.waze_location_history.db'
 SENSOR_WAZEHIST_TRACK_NAME      = 'icloud3_wazehist_track'
+IC3LOGGER_FILENAME              = 'icloud3-debug.log'
 
 DEVICE_TRACKER                  = 'device_tracker'
 DEVICE_TRACKER_DOT              = 'device_tracker.'
@@ -112,7 +113,6 @@ DEVICE_TYPE_ICONS = {
         OTHER: 'mdi:laptop'
 }
 
-# DATETIME_FORMAT                 = '%Y-%m-%d %H:%M:%S.%f'
 DATETIME_FORMAT                 = '%Y-%m-%d %H:%M:%S'
 DATETIME_ZERO                   = '0000-00-00 00:00:00'
 HHMMSS_ZERO                     = '00:00:00'
@@ -211,20 +211,23 @@ CIRCLE_LETTERS_DARK =  {'a':'🅐', 'b':'🅑', 'c':'🅒', 'd':'🅓', 'e':'�
                         'q':'🅞', 'p':'🅟', 'q':'🅠', 'r':'🅡', 's':'🅢', 't':'🅣', 'u':'🅤',
                         'v':'🅥', 'w':'🅦', 'x':'🅧', 'y':'🅨', 'z':'🅩', 'other': '✪'}
 #dark_circled_letters = "Ⓐ Ⓑ Ⓒ Ⓓ Ⓔ Ⓕ Ⓖ Ⓗ Ⓘ Ⓙ Ⓚ Ⓛ Ⓜ Ⓝ Ⓞ Ⓟ Ⓠ Ⓡ Ⓢ Ⓣ Ⓤ Ⓥ Ⓦ Ⓧ Ⓨ Ⓩ"
-CRLF              = 'CRLF'
-CRLF_DOT          = 'CRLF•'
-CRLF_CHK          = 'CRLF✓'
-CRLF_X            = 'CRLF⊗ '
-CHECK_MARK        = '✓ '
-CIRCLE_X          = '⊗ '
-NBSP2             = 'NBSP2'
-NBSP4             = 'NBSP4'
-NBSP6             = 'NBSP6'
-DOT               = '• '
+NBSP              = '&nbsp;'
+NBSP2             = '&nbsp;&nbsp;'
+NBSP3             = '&nbsp;&nbsp;&nbsp;'
+NBSP4             = '&nbsp;&nbsp;&nbsp;&nbsp;'
+NBSP6             = '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'
+CRLF              = '<br>'
+CHECK_MARK        = '✓&nbsp;'
+CIRCLE_X          = '✪&nbsp;'
+DOT               = '•&nbsp;'
 DOT2              = '•'
-HDOT              = '◦ '
+HDOT              = '◦&nbsp;'
 HDOT2             = '◦'
-CRLF_NBSP6_DOT    = f"{CRLF}{NBSP6}{HDOT}"
+CRLF_DOT          = f'{CRLF}{NBSP2}{DOT}{NBSP}'
+CRLF_CHK          = f'{CRLF}{NBSP2}{CHECK_MARK}'
+CRLF_X            = f'{CRLF}&nbsp;{CIRCLE_X}'
+CRLF_NBSP6_DOT    = f"{CRLF}{NBSP3}{HDOT}"
+CRLF_NBSP6_X      = f"{CRLF}{NBSP3}{CIRCLE_X}"
 
 BLANK_SENSOR_FIELD = '———'
 RARROW            = ' → '       #U+27F6 (Long Arrow Right)  ⟹ ⟾
@@ -762,15 +765,15 @@ DEFAULT_DEVICE_CONF = {
         CONF_RAW_MODEL : '',
         CONF_MODEL: '',
         CONF_MODEL_DISPLAY_NAME: '',
-        CONF_FAMSHR_DEVICENAME2: 'None',
-        CONF_FAMSHR_DEVICE_ID2: '',
-        CONF_RAW_MODEL2: '',
-        CONF_MODEL2: '',
-        CONF_MODEL_DISPLAY_NAME2: '',
+        #CONF_FAMSHR_DEVICENAME2: 'None',
+        #CONF_FAMSHR_DEVICE_ID2: '',
+        #CONF_RAW_MODEL2: '',
+        #CONF_MODEL2: '',
+        #CONF_MODEL_DISPLAY_NAME2: '',
         CONF_FMF_EMAIL: 'None',
         CONF_FMF_DEVICE_ID: '',
         CONF_IOSAPP_DEVICE: 'None',
-        CONF_IOSAPP_DEVICE2: 'None',
+        #CONF_IOSAPP_DEVICE2: 'None',
         CONF_TRACK_FROM_BASE_ZONE: HOME,
         CONF_TRACK_FROM_ZONES: [HOME],
 }

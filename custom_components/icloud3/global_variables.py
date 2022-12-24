@@ -97,6 +97,7 @@ class GlobalVariables(object):
     EvLog           = None
     EvLogSensor     = None
     HALogger        = None
+    iC3DebugLogFile = None
     Sensors         = None
     iC3EntityPlatform = None    # iCloud3 Entity Platform (homeassistant.helpers.entity_component)
     PyiCloud        = None

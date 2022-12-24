@@ -67,7 +67,7 @@ from .helpers.common    import (instr, is_inzone_zone, is_statzone, isnot_inzone
 from .helpers.messaging import (broadcast_info_msg,
                                 post_event, post_error_msg, post_monitor_msg, post_internal_error,
                                 log_info_msg, log_exception, log_start_finish_update_banner,
-                                log_debug_msg, _trace, _traceha, )
+                                log_debug_msg, close_reopen_ic3_debug_log_file, _trace, _traceha, )
 from .helpers.time_util import (time_now_secs, secs_to_time,  secs_to, secs_since,
                                 secs_to_time, secs_to_time_str,
                                 datetime_now,  calculate_time_zone_offset,
@@ -444,8 +444,13 @@ class iCloud3:
         Various functions that are run based on the time-of-day
         '''
 
+        time_now_mmss = Gb.this_update_time[-5:]
+        time_now_ss   = Gb.this_update_time[-2:]
+        time_now_mm   = Gb.this_update_time[3:5] if time_now_ss == '00' else ''
+
         # Every hour
-        if Gb.this_update_time.endswith(':00:00'):
+        # if Gb.this_update_time.endswith(':00:00'):
+        if time_now_mmss == '00:00':
             self._timer_tasks_every_hour()
 
         # At midnight
@@ -459,17 +464,26 @@ class iCloud3:
         if (Gb.this_update_secs >= Gb.EvLog.clear_secs):
                 # and Gb.log_debug_flag is False):
             #_trace uncomment the above line after testing
-            #db
             Gb.EvLog.update_event_log_display('clear_log_items')
 
         # Every minute
-        if Gb.this_update_time.endswith(':00'):
+        if time_now_ss == '00':
+        # if Gb.this_update_time.endswith(':00'):
             for Device in Gb.Devices_by_devicename.values():
                 Device.display_info_msg(Device.format_info_msg)
 
+        # Every 5-minutes
+        if time_now_mm[1:2] in ['0', '5']:
+            # Close and reopen icloud3_debug.log file so all records are written
+            # if last record was written oer 5-minutes ago
+            if (Gb.iC3_debug_log_file_last_write_secs > 0
+                    and secs_since(Gb.iC3_debug_log_file_last_write_secs > 300)):
+                close_reopen_ic3_debug_log_file()
+
         # Every 1/2-hour
-        if (Gb.this_update_time.endswith('00:00')
-                or Gb.this_update_time.endswith('30:00')):
+        if time_now_mm in ['00', '30']:
+        # if (Gb.this_update_time.endswith('00:00')
+        #         or Gb.this_update_time.endswith('30:00')):
             for devicename, Device in Gb.Devices_by_devicename.items():
                 if Device.dist_apart_msg:
                     event_msg = f"Nearby Devices (<{NEAR_DEVICE_DISTANCE}m) > {Device.dist_apart_msg}"

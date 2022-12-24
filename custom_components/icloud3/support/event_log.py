@@ -336,7 +336,7 @@ class EventLog(object):
 #------------------------------------------------------
     def export_event_log(self):
         '''
-        Export Event Log to 'config/icloud_event_log.txt'.
+        Export Event Log to 'config/icloud_event_log-[time].log'.
         '''
 
         try:
@@ -347,21 +347,21 @@ class EventLog(object):
                             f"Log Update Time: {log_update_time}\n"
                             f"Tracked Devices:\n")
 
+            export_recd += f"\nGeneral Configuration:\n"
+            export_recd += f"\t{Gb.conf_general}\n"
+
             for devicename, Device in Gb.Devices_by_devicename.items():
                 export_recd += (f"\t{DOT}{Device.fname_devicename} >\n"
                                 f"\t\t\t{Device.conf_device}\n")
 
-            export_recd += f"\nGeneral Configuration:\n"
-            export_recd += f"\t{Gb.conf_general}\n"
-
-            #Prepare Global '*' records. Reverse the list elements using [::-1] and make a string of the results
+            # Prepare Global '*' records. Reverse the list elements using [::-1] and make a string of the results
             export_recd += f"\n\n{'_'*120}\n"
             export_recd += (f"System Events:\n\n")
             export_recd += hdr_recd
             el_recds     = [el_recd for el_recd in self.evlog_table if el_recd[ELR_DEVICENAME].startswith("*")]
             export_recd += self._export_ic3_event_log_reformat_recds('*', el_recds)
 
-            #Prepare recds for each device. Each record is [devicename, time, text]
+            # Prepare recds for each device. Each record is [devicename, time, text]
             for devicename, Device in Gb.Devices_by_devicename.items():
                 export_recd += f"{'_'*120}\n"
                 export_recd += (f"{Device.fname_devicename}:\n\n")
@@ -373,7 +373,7 @@ class EventLog(object):
                 export_recd += self._export_ic3_event_log_reformat_recds(devicename, el_recds)
 
             datetime = datetime_now().replace('-', '.').replace(':', '.').replace(' ', '-')
-            export_filename = (f"icloud3.event-log_{datetime}.txt")
+            export_filename = (f"icloud3-event-log_{datetime}.log")
             export_directory = (f"{Gb.ha_config_directory}/{export_filename}")
             export_directory = export_directory.replace("//", "/")
 

@@ -147,7 +147,6 @@ class PyiCloudSession(Session):
 
         try:
 
-
             response = Session.request(self, method, url, **kwargs)
 
 

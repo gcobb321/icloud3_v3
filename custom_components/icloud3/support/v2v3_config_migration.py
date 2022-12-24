@@ -9,7 +9,7 @@ from ..const            import (
                                 NO_IOSAPP,
                                 NAME,
                                 NAME, BADGE,
-                                TRIGGER,
+                                TRIGGER, INACTIVE_DEVICE,
                                 ZONE, ZONE_DATETIME, LAST_ZONE,
                                 INTERVAL,
                                 BATTERY, BATTERY_STATUS,
@@ -24,7 +24,7 @@ from ..const            import (
                                 CONF_CONFIG_IC3_FILE_NAME,
                                 CONF_VERSION, CONF_EVLOG_CARD_DIRECTORY, CONF_EVLOG_CARD_PROGRAM,
                                 CONF_USERNAME, CONF_PASSWORD, CONF_DEVICES, CONF_TRACKING_METHOD,
-                                CONF_DEVICENAME, CONF_TRACK_FROM_ZONES,
+                                CONF_DEVICENAME, CONF_TRACK_FROM_ZONES, CONF_TRACKING_MODE,
                                 CONF_IOSAPP_SUFFIX, CONF_IOSAPP_ENTITY, CONF_NO_IOSAPP, CONF_IOSAPP_INSTALLED,
                                 CONF_PICTURE, CONF_EMAIL, CONF_DEVICE_TYPE, CONF_INZONE_INTERVALS,
                                 CONF_UNIT_OF_MEASUREMENT, CONF_TIME_FORMAT, CONF_MAX_INTERVAL, CONF_OFFLINE_INTERVAL,
@@ -141,7 +141,7 @@ class iCloud3_v2v3ConfigMigration(object):
         Gb.conf_file_data = CF_DEFAULT_IC3_CONF_FILE.copy()
 
         try:
-            self.log_filename_name  = f"{Gb.icloud3_directory}/icloud3_migration.log"
+            self.log_filename_name  = Gb.hass.config.path("icloud3-migration.log")
             self.migration_log_file = open(self.log_filename_name, 'w', encoding='utf8')
         except Exception as err:
             log_exception(err)
@@ -301,7 +301,7 @@ class iCloud3_v2v3ConfigMigration(object):
         Returns:    The dictionary with the fields associated with all of the devices
         '''
         devices_list = []
-
+        initial_track_device_set = False
         for device in conf_devices_parameter:
             devicename = slugify(device[CONF_DEVICENAME])
             if devicename in self.devicename_list:
@@ -309,6 +309,10 @@ class iCloud3_v2v3ConfigMigration(object):
             self.devicename_list.append(devicename)
             conf_device = DEFAULT_DEVICE_CONF.copy()
             conf_device[CONF_IOSAPP_DEVICE] = f"Search: {devicename}"
+
+            if initial_track_device_set is False:
+                initial_track_device_set = True
+                conf_device[CONF_TRACKING_MODE]= INACTIVE_DEVICE
 
             self.write_migration_log_msg(f"Extracted device: {devicename}")
             for pname, pvalue in device.items():

@@ -132,7 +132,8 @@ def get_mobile_app_notifications():
                 notify_iosapp_devicenames.append(notify_service)
 
     except Exception as err:
-        log_exception(err)
+        log_info_msg("iOS App Notify Service has not been set up yet. iCloud3 will retry later.")
+        # log_exception(err)
         pass
 
     return notify_iosapp_devicenames
