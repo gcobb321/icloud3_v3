@@ -116,8 +116,10 @@ class EventLog(object):
             self.evlog_table_max_cnt = EVLOG_TABLE_MAX_CNT_ZONE*tfz_cnt
 
             if self.devicename_by_fnames == {}:
-                self.evlog_attrs["user_message"] = 'No Devices have been configured'
                 self.user_message_alert_flag = True
+                self.evlog_attrs["user_message"] = 'No Devices have been configured'
+                self.devicename_by_fnames["nodevices"] = 'No Devices have been configured'
+                self.fname_selected = "NoDevices"
 
             elif self.devicename == '':
                 self.devicename = next(iter(self.devicename_by_fnames))
@@ -318,6 +320,11 @@ class EventLog(object):
             elif devicename in ['', '*', '**', 'Initialize']:
                 self.evlog_attrs['run_mode'] = 'Initialize'
 
+            # elif devicename in ['NoDevices', 'nodevices']:
+            #     self.evlog_attrs['run_mode']   = 'Display'
+            #     self.evlog_attrs['devicename'] = self.devicename = devicename
+            #     self.evlog_attrs['fname']      = 'NoDevices'
+
             else:
                 self.evlog_attrs['run_mode']   = 'Display'
                 self.evlog_attrs['devicename'] = self.devicename = devicename
@@ -493,6 +500,9 @@ class EventLog(object):
             - shrink_cnt: The total number of records to be deleted.
         '''
         try:
+            if Gb.Devices == []:
+                return
+
             self.devicename_cnts = {}
             delete_cnt = 0
             delete_reg_cnt = 0
@@ -601,8 +611,8 @@ class EventLog(object):
                 return [el_recd[1:3] for el_recd in self.evlog_table_startup
                                         if el_recd[ELR_TEXT].startswith(EVLOG_MONITOR) is False]
 
-        Device = Gb.Devices_by_devicename.get(devicename)
-        el_devicename_check = ['*', '**', devicename]
+        # Device = Gb.Devices_by_devicename.get(devicename)
+        el_devicename_check = ['*', '**', 'nodevices', devicename]
 
         # Select devicename recds, keep time & test elements, drop devicename
         try:
@@ -669,8 +679,9 @@ class EventLog(object):
                             f"Interval-{item[ELR_TEXT]}, "
                             f"TravelTime-{item[3]}, Distance-{item[4]}")
 
-                text = text.replace("'", "")
-                text = text.replace(CRLF, ", ").replace(CRLF_DOT, ", ").replace(CRLF_CHK, ", ")
+                text = text.replace("'", "").replace('&nbsp;', ' ').replace('<br>', ', ')
+                text = text.replace(",  ", ",").replace('  ', ' ')
+                # text = text.replace(CRLF, ", ").replace(CRLF_DOT, ", ").replace(CRLF_CHK, ", ")
                 if text.startswith('^'):
                         text = text[3:]
 

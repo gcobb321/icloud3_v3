@@ -50,4 +50,5 @@ Beta 3 - 12/21/2022
     instead of the HA log file. A new file is created every time HA starts.
 11. The file extension for the Event Log file was changed from '.txt' to '.log'. The file name is now
     'icloud3-event-log_[time].log'.
+12. Fixed problem displaying the Event Log when no devices had been configured.
 
