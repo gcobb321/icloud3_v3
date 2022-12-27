@@ -58,7 +58,7 @@ from ..support              import iosapp_data_handler
 from ..support              import service_handler
 from ..support              import config_file
 from ..helpers              import entity_io
-from ..helpers.common       import (instr, format_gps, circle_letter, zone_fname, )
+from ..helpers.common       import (instr, format_gps, circle_letter, zone_fname, list_to_str, )
 from ..helpers.messaging    import (broadcast_info_msg,
                                     post_event, post_error_msg, post_monitor_msg,
                                     log_info_msg, log_debug_msg, log_warning_msg, log_rawdata, log_exception,
@@ -331,6 +331,7 @@ def ha_startup_completed(dummy_parameter):
     setup_notify_service_name_for_iosapp_devices(post_event_msg=True)
 
 def ha_stopping(dummy_parameter):
+    post_event("HA Shutting Down")
     close_ic3_debug_log_file()
 
 #------------------------------------------------------------------------------
@@ -440,7 +441,7 @@ def set_evlog_table_max_cnt():
 #      debug+eventlog   - Add debug items to HA log file and ic3 event log
 #
 #------------------------------------------------------------------------------
-def set_log_level(log_level):
+def set_log_level(log_level, new_debug_log=False):
 
     log_level = log_level.lower()
     #Save log_level flags across restarts via Event Log > Actions
@@ -459,12 +460,6 @@ def set_log_level(log_level):
 
     if Gb.log_rawdata_flag: Gb.log_debug_flag = True
     Gb.evlog_trk_monitors_flag = Gb.evlog_trk_monitors_flag or instr(log_level, 'eventlog')
-
-    if Gb.log_debug_flag or Gb.log_rawdata_flag:
-        open_ic3_debug_log_file()
-
-    elif Gb.iC3DebugLogFile is not None:
-        close_ic3_debug_log_file()
 
 #------------------------------------------------------------------------------
 #
@@ -1152,12 +1147,15 @@ def setup_tracked_devices_for_famshr(PyiCloud=None):
                 Gb.famshr_device_verified_cnt += 1
 
                 crlf_mark = CRLF_CHK
+
             elif (instr(exception_msg, "INACTIVE")
                     or instr(exception_msg, "TRACKING DISABLED")
                     or instr(exception_msg, "NO LOCATION")):
                 crlf_mark = CRLF_X
+
             else:
                 crlf_mark = CRLF_DOT
+
             event_msg += (  f"{crlf_mark}"
                             f"{famshr_device_fname}{RARROW}{devicename}, "
                             f"{device_desc} ({device_raw_model}"
@@ -1873,6 +1871,23 @@ def setup_trackable_devices():
         Device.initialize_usage_counters()
 
         post_event(event_msg)
+
+#------------------------------------------------------------------------------
+def display_inactive_devices():
+    '''
+    Display a list of the Inactive devices in the Event Log
+    '''
+
+    inactive_devices =[(f"{conf_device[CONF_IC3_DEVICENAME]} ("
+                        f"{conf_device[CONF_FNAME]}/{conf_device[CONF_DEVICE_TYPE]})")
+                                    for conf_device in Gb.conf_devices
+                                    if conf_device[CONF_TRACKING_MODE] == INACTIVE_DEVICE]
+
+    if inactive_devices == []:
+        return
+    event_msg = f"Inactive/Untracked Devices > "
+    event_msg+= list_to_str(inactive_devices, separator=CRLF_X)
+    post_event(event_msg)
 
 #------------------------------------------------------------------------------
 def create_Device_StationaryZone_object(Device):

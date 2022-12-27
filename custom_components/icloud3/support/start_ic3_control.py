@@ -266,9 +266,10 @@ def stage_5_configure_tracked_devices():
         start_ic3.remove_unverified_untrackable_devices()
         start_ic3.identify_tracked_monitored_devices()
         Gb.EvLog.setup_event_log_trackable_device_info()
-        Gb.EvLog.update_event_log_display("")
 
         start_ic3.setup_trackable_devices()
+        start_ic3.display_inactive_devices()
+        Gb.EvLog.update_event_log_display("")
         start_ic3.display_object_lists()
 
     except Exception as err:
@@ -286,6 +287,7 @@ def stage_6_initialization_complete():
     broadcast_info_msg(stage_title)
 
     start_ic3.display_platform_operating_mode_msg()
+    Gb.EvLog.display_user_message('')
 
     if Gb.log_debug_flag is False:
         Gb.startup_log_msgs = (NEW_LINE + '-'*55 +
@@ -294,7 +296,8 @@ def stage_6_initialization_complete():
         log_info_msg(Gb.startup_log_msgs)
     Gb.startup_log_msgs = ''
 
-    Gb.EvLog.display_user_message('')
+    start_ic3.display_object_lists()
+
 
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 def stage_7_initial_locate():

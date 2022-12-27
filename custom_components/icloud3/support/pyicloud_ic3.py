@@ -140,10 +140,9 @@ class PyiCloudSession(Session):
         retry_cnt = kwargs.get("retry_cnt", 0)
         kwargs.pop("retry_cnt", 0)
 
-        log_msg = (f"{secs_to_time(time_now_secs())}, {method}, {url}, {kwargs}")
-        self._log_debug_msg("144 REQUEST", log_msg)
-        # log_pyicloud_rawdata("PyiCloud_ic3 iCloud Request", log_msg)
-        log_rawdata("PyiCloud_ic3 iCloud Request", {'raw': log_msg})
+        if Gb.log_rawdata_flag:
+            log_msg = (f"{secs_to_time(time_now_secs())}, {method}, {url}, {kwargs}")
+            log_rawdata("PyiCloud_ic3 iCloud Request", {'raw': log_msg})
 
         try:
 
@@ -162,15 +161,15 @@ class PyiCloudSession(Session):
         except:
             data = None
 
-        log_msg = ( f"ResponseCode-{response.status_code} ")
+        if Gb.log_rawdata_flag:
+            log_msg = ( f"ResponseCode-{response.status_code} ")
 
-        if (retry_cnt == 3 or response.status_code != 200 or response.ok is False):
-            log_msg +=  (f", ResponseOK-{response.ok}, Headers-{response.headers}")
-            self._log_debug_msg("171 RESPONSE", log_msg)
+            if (retry_cnt == 3 or response.status_code != 200 or response.ok is False):
+                log_msg +=  (f", ResponseOK-{response.ok}, Headers-{response.headers}")
 
-        log_rawdata("PyiCloud_ic3 iCloud Response-Header", {'raw': log_msg})
-        log_rawdata("PyiCloud_ic3 iCloud Response-Data", {'filter': data})
-        # log_rawdata("PyiCloud_ic3 iCloud Response-Data", {'raw': data})
+            log_rawdata("PyiCloud_ic3 iCloud Response-Header", {'raw': log_msg})
+            log_rawdata("PyiCloud_ic3 iCloud Response-Data", {'filter': data})
+            # log_rawdata("PyiCloud_ic3 iCloud Response-Data", {'raw': data})
 
         for header in HEADER_DATA:
             if response.headers.get(header):
@@ -199,7 +198,7 @@ class PyiCloudSession(Session):
                         self.Service.authenticate(True, service)
 
                     except PyiCloudAPIResponseException:
-                        log_debug_msg("204 Re-authentication failed")
+                        log_debug_msg("Re-authentication failed")
 
                     kwargs["retried"] = True
                     retry_cnt += 1
@@ -210,7 +209,7 @@ class PyiCloudSession(Session):
                 pass
 
             if retry_cnt == 0 and response.status_code in AUTHENTICATION_NEEDED_421_450_500:
-                self._log_debug_msg("215 AUTHENTICTION NEEDED, Status Code", response.status_code)
+                self._log_debug_msg("AUTHENTICTION NEEDED, Status Code", response.status_code)
 
                 kwargs["retried"] = True
                 retry_cnt += 1

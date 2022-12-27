@@ -66,6 +66,7 @@ from .support           import determine_interval as det_interval
 from .helpers.common    import (instr, is_inzone_zone, is_statzone, isnot_inzone_zone, )
 from .helpers.messaging import (broadcast_info_msg,
                                 post_event, post_error_msg, post_monitor_msg, post_internal_error,
+                                open_ic3_debug_log_file,
                                 log_info_msg, log_exception, log_start_finish_update_banner,
                                 log_debug_msg, close_reopen_ic3_debug_log_file, _trace, _traceha, )
 from .helpers.time_util import (time_now_secs, secs_to_time,  secs_to, secs_since,
@@ -145,6 +146,7 @@ class iCloud3:
             start_ic3_control.stage_5_configure_tracked_devices()
             start_ic3_control.stage_6_initialization_complete()
             start_ic3_control.stage_7_initial_locate()
+            close_reopen_ic3_debug_log_file()
 
             Gb.trace_prefix = ''
             Gb.initial_locate_complete_flag = False
@@ -449,7 +451,6 @@ class iCloud3:
         time_now_mm   = Gb.this_update_time[3:5] if time_now_ss == '00' else ''
 
         # Every hour
-        # if Gb.this_update_time.endswith(':00:00'):
         if time_now_mmss == '00:00':
             self._timer_tasks_every_hour()
 
@@ -462,28 +463,22 @@ class iCloud3:
             calculate_time_zone_offset()
 
         if (Gb.this_update_secs >= Gb.EvLog.clear_secs):
-                # and Gb.log_debug_flag is False):
-            #_trace uncomment the above line after testing
             Gb.EvLog.update_event_log_display('clear_log_items')
 
         # Every minute
         if time_now_ss == '00':
-        # if Gb.this_update_time.endswith(':00'):
             for Device in Gb.Devices_by_devicename.values():
                 Device.display_info_msg(Device.format_info_msg)
 
-        # Every 5-minutes
-        if time_now_mm[1:2] in ['0', '5']:
-            # Close and reopen icloud3_debug.log file so all records are written
-            # if last record was written oer 5-minutes ago
-            if (Gb.iC3_debug_log_file_last_write_secs > 0
-                    and secs_since(Gb.iC3_debug_log_file_last_write_secs > 300)):
+        # Every 15-minutes
+        if time_now_mm in ['00', '15', '30', '45']:
+            # Close and reopen icloud3-debug.log file so all records are written
+            # if last record was written within the last 15-minutes
+            if Gb.ic3_debug_log_update_flag:
                 close_reopen_ic3_debug_log_file()
 
         # Every 1/2-hour
         if time_now_mm in ['00', '30']:
-        # if (Gb.this_update_time.endswith('00:00')
-        #         or Gb.this_update_time.endswith('30:00')):
             for devicename, Device in Gb.Devices_by_devicename.items():
                 if Device.dist_apart_msg:
                     event_msg = f"Nearby Devices (<{NEAR_DEVICE_DISTANCE}m) > {Device.dist_apart_msg}"
@@ -1388,6 +1383,13 @@ class iCloud3:
             Gb.wazehist_recalculate_time_dist_flag = False
             Gb.WazeHist.wazehist_recalculate_time_dist_all_zones()
 
+        # Close the current debug log file. Open a new file if still logging
+        if Gb.iC3DebugLogFile:
+            Gb.iC3DebugLogFile.close()
+            Gb.iC3DebugLogFile = None
+            Gb.ic3_debug_log_update_flag = False
+            if Gb.log_debug_flag:
+                open_ic3_debug_log_file(new_debug_log=True)
 
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 #

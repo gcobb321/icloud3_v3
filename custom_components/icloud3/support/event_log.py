@@ -427,7 +427,7 @@ class EventLog(object):
             self.user_message_alert_flag = True
 
         self.user_message = user_message
-
+        self.evlog_attrs['logs'] = self._filtered_evlog_recds('', HIGH_INTEGER)
         self.update_evlog_sensor()
 
 #------------------------------------------------------

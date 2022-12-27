@@ -157,15 +157,8 @@ class GlobalVariables(object):
     Sensor_EventLog                   = None    # Event Log sensor object
     ha_device_id_by_devicename        = {}  # HA device_registry device_id
 
-    # PyiCloud_FamilySharing            = None # PyiCloud_ic3 object for FamilySharig used to refresh the device's location
-    # PyiCloud_FindMyFriends            = None # PyiCloud_ic3 object for FindMyFriends used to refresh the device's location
-    # PyiCloud_RawData_by_device_id     = {}   # Device data for tracked devices, updated in Pyicloud famshr.refresh_client
-    # PyiCloud_RawData_by_device_id_famshr = {}
-    # PyiCloud_RawData_by_device_id_fmf = {}
 
     # System Wide variables control iCloud3 start/restart procedures
-    # entity_created_device_tracker   = False
-    # entity_created_sensor           = False
     polling_5_sec_loop_running      = False     # Indicates the 5-sec polling loop is set up
     start_icloud3_inprocess_flag    = False
     start_icloud3_request_flag      = False
@@ -184,6 +177,9 @@ class GlobalVariables(object):
     log_debug_flag_restart       = None
     log_rawdata_flag_restart     = None
     evlog_trk_monitors_flag      = False
+    ic3_debug_log_file_last_write_secs = 0
+    ic3_debug_log_update_flag    = False
+    ic3_debug_log_new_file_secs  = 0
     info_notification            = ''
     ha_notification              = {}
     trace_prefix                 = ''

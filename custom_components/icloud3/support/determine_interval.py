@@ -540,18 +540,23 @@ def post_results_message_to_event_log(Device, DeviceFmZone):
         event_msg +=    f"Method-{DeviceFmZone.interval_method}, "
     post_event(Device.devicename, event_msg[:-2])
 
-    if Device.is_tracked and Gb.log_debug_flag is False:
+    # if Device.is_tracked and Gb.log_debug_flag is False:
+    if Device.is_tracked:
         log_msg = ( f"Tracking Results: From-{DeviceFmZone.from_zone_display_as} > "
-                    f"NextUpdt-{DeviceFmZone.next_update_time}, "
+                    f"iOSAppZone-{Device.iosapp_data_state}, "
+                    f"iC3Zone-{Device.loc_data_zone}, "
                     f"Interval-{DeviceFmZone.interval_str}, "
                     f"TravTime-{DeviceFmZone.last_tavel_time}, "
                     f"Dist-{km_to_mi(DeviceFmZone.zone_dist)} {Gb.um}, "
+                    f"NextUpdt-{DeviceFmZone.next_update_time}, "
                     f"MaxDist-{km_to_mi(DeviceFmZone.max_dist_km)} {Gb.um}, "
                     f"Dir-{DeviceFmZone.dir_of_travel}, "
                     f"Moved-{format_dist_km(Device.StatZone.moved_dist)}, "
                     f"Battery-{Device.dev_data_battery_level}%, "
                     f"Method-{DeviceFmZone.interval_method}")
         log_info_msg(Device.devicename, log_msg)
+        # log_debug_msg(Device.devicename, log_msg)
+        _traceha(f"559 test traceha>> {Device.devicename=} {log_msg=}")
 
 #--------------------------------------------------------------------------------
 def post_zone_time_dist_event_msg(Device, DeviceFmZone):

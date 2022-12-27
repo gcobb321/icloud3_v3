@@ -12,16 +12,18 @@ from ..const                import (DOMAIN,
                                     HHMMSS_ZERO, HIGH_INTEGER,
                                     CMD_RESET_PYICLOUD_SESSION,
                                     LOCATION,
-                                    CONF_DEVICENAME,
-                                    CONF_ZONE, CONF_COMMAND,
+                                    CONF_DEVICENAME, CONF_ZONE, CONF_COMMAND, CONF_LOG_LEVEL,
                                     )
 
 from ..support              import iosapp_interface
+from ..support              import config_file
 from ..helpers.common       import (instr, )
 from ..helpers.messaging    import (post_event, post_error_msg, post_monitor_msg,
-                                    log_debug_msg, log_exception,
+                                    write_ic3_debug_log_recd,
+                                    log_info_msg, log_debug_msg, log_exception,
+                                    open_ic3_debug_log_file, close_ic3_debug_log_file,
                                     _trace, _traceha, )
-from ..helpers.time_util    import (time_to_secs, time_str_to_secs, datetime_now, )
+from ..helpers.time_util    import (secs_to_time, time_str_to_secs, datetime_now, secs_since, )
 
 # EvLog Action Commands
 CMD_ERROR                  = 'error'
@@ -345,24 +347,45 @@ def _handle_global_action(global_action, action_option):
 #--------------------------------------------------------------------
 def _handle_action_log_level(action_option):
     if instr(action_option, 'debug'):
-        Gb.log_debug_flag = (not Gb.log_debug_flag)
+        new_log_debug_flag   = (not Gb.log_debug_flag)
+        new_log_rawdata_flag = False
 
     if instr(action_option, 'rawdata'):
-        Gb.log_rawdata_flag = (not Gb.log_rawdata_flag)
-        if Gb.log_rawdata_flag:
+        new_log_debug_flag = new_log_rawdata_flag = (not Gb.log_rawdata_flag)
+        if new_log_rawdata_flag:
             Gb.log_rawdata_flag_restart = True
 
     if instr(action_option, 'eventlog'):
         Gb.evlog_trk_monitors_flag = (not Gb.evlog_trk_monitors_flag)
 
     event_msg = ""
-    if Gb.evlog_trk_monitors_flag:     event_msg += "Event Log Details: On, "
-    if Gb.log_debug_flag:              event_msg += "Debug: On, "
-    if Gb.log_rawdata_flag:            event_msg += "Rawdata: On, "
+    if Gb.evlog_trk_monitors_flag: event_msg += "Event Log Details: On, "
+    if new_log_debug_flag:         event_msg += "Debug: On, "
+    if new_log_rawdata_flag:       event_msg += "Rawdata: On, "
 
     event_msg = "Logging: Off" if event_msg == "" else event_msg
     event_msg =(f"Log Level State > {event_msg}")
     post_event(event_msg)
+
+    if (new_log_debug_flag is False
+            and Gb.conf_general[CONF_LOG_LEVEL] != 'info'):
+        Gb.conf_general[CONF_LOG_LEVEL] = 'info'
+        config_file.write_storage_icloud3_configuration_file()
+
+    if new_log_debug_flag:
+        # Create a new debug.log file if the current one was created over 24-hours ago
+        new_debug_log = (Gb.ic3_debug_log_new_file_secs == 0
+                            or secs_since(Gb.ic3_debug_log_new_file_secs) > 80000)
+
+        open_ic3_debug_log_file(new_debug_log=new_debug_log)
+        write_ic3_debug_log_recd(f"\n{'-'*25} Opened by Event Log > Actions {'-'*25}")
+
+    elif Gb.iC3DebugLogFile is not None:
+        write_ic3_debug_log_recd(f"{'-'*25} Closed by Event Log > Actions {'-'*25}\n")
+        close_ic3_debug_log_file()
+
+    Gb.log_debug_flag   = new_log_debug_flag
+    Gb.log_rawdata_flag = new_log_rawdata_flag
 
 #--------------------------------------------------------------------
 def _handle_action_device_location(Device):

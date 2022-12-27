@@ -1,7 +1,7 @@
 
 
 from ..global_variables import GlobalVariables as Gb
-from ..const            import (NOT_HOME, STATIONARY, CIRCLE_LETTERS_DARK, UNKNOWN, CRLF_DOT, )
+from ..const            import (NOT_HOME, STATIONARY, CIRCLE_LETTERS_DARK, UNKNOWN, CRLF_DOT, CRLF, )
 from collections        import OrderedDict
 
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -22,6 +22,22 @@ def combine_lists(parm_lists):
 
     return new_list
 
+#--------------------------------------------------------------------
+def list_to_str(list_value, separator=None):
+    '''
+    Convert list values into a string
+
+    list_valt - list to be converted
+    separator - Strig valut that separates each item (default = ', ')
+    '''
+    separator_str = separator if separator else ', '
+    list_str = separator_str.join(list_value)
+
+    if separator.startswith(CRLF):
+        return f"{separator_str}{list_str}"
+    else: 
+        return list_str
+    
 #--------------------------------------------------------------------
 def instr(string, substring):
     '''

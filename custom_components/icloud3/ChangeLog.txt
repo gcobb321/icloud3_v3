@@ -1,3 +1,66 @@
+Beta 4 - 12/17/2022
+-------------------
+1.  Inactive/Untracked devices are listed at the end of the Startup Event Log messages.
+2.  Fixed some problems displaying the EVent Log when there were no devices to track.
+3.  Fixed problem dealing with Gb.ic3_debug_log_write_secs variable not found.
+4.  Fixed problem where the Event Log records were not displayed in a timely manner when starting.
+5.  The tracking results written to the Log file now include the zone, distance and time values.
+6.  Reworked the icloud3-debug.log file:
+        - A new file is created when:
+            - HA/iCloud3 starts and the Log Level is debug or rawdata or
+            - Starting Debug Logging from Event Log > Actions or
+            - At midnight when debug logging is on and the file is more thn 20-hours old.
+        - Otherwise debug records are added to the existing Debug Log file.
+        - If the Log Level is debug or rawdata in the Configurator > Event Log parameters and
+          Stop Debug Logging was selected on Event Log > Actions, the configuration will be changed
+          to 'info' (no debug logging).
+        - If the configuration is set to 'info' (no debug logging) and it is started on Event Log > Actions,
+          the configuration is not updated and the debug logging will remain on until midnight, the next
+          iCloud3 restart or when it is turned off.
+
+
+QUESTION: Currently the Exported Event Log file contains the date/time indicating when it was created.
+          This creates a new file for every export.
+                Example: 'icloud3-event-log_2022-12-26 18:00:00.log'
+          Another option is to not have the date/time in the file name so a new Export overrites the last one.
+                Example: 'icloud3-event-log.log'
+
+          Does anyone have an opinion on this.
+
+
+------------------------------------------------------------------------------------------------
+Beta 3 - 12/24/2022
+-------------------
+1.  Fixed a problem where the Configurator > Sensors would generate an 'Unknown Error Ocurred'
+    error message. This was caused by an invalid sensor field name ('tracking_from_zones')
+    in the configuration file.
+2.  Fixed a problem on the Configurator > Sensors screen dealing with an invalid 'battery_status'
+    error message.
+3.  Fixed a problem where error messages were displayed getting device info from the HA device
+    registry when the device was not in the registry.
+4.  Fixed a problem displaying the obscured email address if there was more than one @-sign
+    in the address.
+5.  Added 'Reinitialize All Devices' to the Configurator > iCloud3 Devices screen. With it,
+    you can remove all devices from iCloud3 or reset the selections for the iCloud FamShr & FmF
+    and the iOS App parameters to `None`. This will clear any errors due to device migration errors.
+6.  Setting up the log_level (info, debug, rawdata) a lot earlier. It is now setup when HA loads iCloud3
+    instead of later. Debug and RawData information should now be written to the HA Log file
+    (home-assistant.log) when the iCloud Account connection is first established.
+7.  Moved `Event Log Configuration` option to Menu Page 1 and moved `Display Text As` option to Menu
+    Page 2. Also added the `Log Level` parameter to the Event Log Configuration screen. This
+    will reduce the steps needed to change the Log Level parameter when debug/rawdata logging
+    is desired. ---> YOU MAY NEED TO REFRESH YOUR BROWSER WITH THE CONFIGURATOR OPEN <---
+8.  Fixed problem changing the devices Friendly Name that would generate an error message deleting
+    tracking_from_zone sensors when they had not been created.
+9.  The device_tracker state value is now lower-case.
+10. Log level debug and rawdata records are now written to the '/config/icloud3_debug.log' file
+    instead of the HA log file. A new file is created every time HA starts.
+11. The file extension for the Event Log file was changed from '.txt' to '.log'. The file name is now
+    'icloud3-event-log_[time].log'.
+12. Fixed problem displaying the Event Log when no devices had been configured.
+
+
+------------------------------------------------------------------------------------------------
 Beta 2 - 12/17/2022
 -------------------
 1.  Do not display an error messgage when trying to get the model of a device if t is
@@ -21,34 +84,3 @@ Beta 2 - 12/17/2022
 10. Fixed a problem, hopefully, that was generating the HA Blocking error when starting up the iCloud
     Location Services interface. This was also occurring (sometimes) when logging into a new the iCloud
     account from the Configurator.
-
-Beta 3 - 12/21/2022
--------------------
-1.  Fixed a problem where the Configurator > Sensors would generate an 'Unknown Error Ocurred'
-    error message. This was caused by an invalid sensor field name ('tracking_from_zones')
-    in the configuration file.
-2.  Fixed a problem on the Configurator > Sensors screen dealing with an invalid 'battery_status'
-    error message.
-3.  Fixed a problem where error messages were displayed getting device info from the HA device
-    registry when the device was not in the registry.
-4.  Fixed a problem displaying the obscured email address if there was more than one @-sign
-    in the address.
-5.  Added 'Reinitialize All Devices' to the Configurator > iCloud3 Devices screen. With it,
-    you can remove all devices from iCloud3 or reset the selections for the iCloud FamShr & FmF
-    and the iOS App parameters to `None`. This will clear any errors due to device migration errors.
-6.  Setting up the log_level (info, debug, rawdata) a lot earlier. It is now setup when HA loads iCloud3
-    instead of later. Debug and RawData information should now be written to the HA Log file
-    (home-assistant.log) when the iCloud Account connection is first established.
-7.  Moved `Event Log Configuration` option to Menu Page 1 and moved `Display Text As` option to Menu
-    Page 2. Also added the `Log Level` parameter to the Event Log Configuration screen. This
-    will reduce the steps needed to change the Log Level parameter when debug/rawdata logging
-    is desired. ---> YOU MAY NEED TO REFRESH YOUR BROWSER WITH THE CONFIGURATOR OPEN <---
-8.  Fixed problem changing the devices Friendly Name that would generate an error message deleting
-    tracking_from_zone sensors when they had not been created. 
-9.  The device_tracker state value is now lower-case.
-10. Log level debug and rawdata records are now written to the '/config/icloud3_debug.log' file
-    instead of the HA log file. A new file is created every time HA starts.
-11. The file extension for the Event Log file was changed from '.txt' to '.log'. The file name is now
-    'icloud3-event-log_[time].log'.
-12. Fixed problem displaying the Event Log when no devices had been configured.
-

@@ -23,7 +23,8 @@ from .const import (DOMAIN, PLATFORMS, MODE_PLATFORM, MODE_INTEGRATION, CONF_VER
 
 from .global_variables              import GlobalVariables as Gb
 from .helpers.common                import (instr, )
-from .helpers.messaging             import (_traceha, log_info_msg, log_debug_msg, log_warning_msg, log_error_msg, log_exception)
+from .helpers.messaging             import (_traceha, open_ic3_debug_log_file,
+                                            log_info_msg, log_debug_msg, log_error_msg, log_exception)
 from .support.v2v3_config_migration import iCloud3_v2v3ConfigMigration
 from .support                       import start_ic3
 from .support                       import config_file
@@ -116,7 +117,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
         start_ic3.initialize_directory_filenames()
         config_file.load_storage_icloud3_configuration_file()
         start_ic3.set_icloud_username_password()
+
         start_ic3.set_log_level(Gb.log_level)
+        if Gb.log_debug_flag:
+            open_ic3_debug_log_file(new_debug_log=True)
+
         restore_state.load_storage_icloud3_restore_state_file()
         hass.config_entries.async_setup_platforms(entry, PLATFORMS)
 
