@@ -553,10 +553,12 @@ def post_results_message_to_event_log(Device, DeviceFmZone):
                     f"Dir-{DeviceFmZone.dir_of_travel}, "
                     f"Moved-{format_dist_km(Device.StatZone.moved_dist)}, "
                     f"Battery-{Device.dev_data_battery_level}%, "
+                    f"LastDataUpdate-{secs_to_time(Device.last_data_update_secs)}, "
+                    f"LastEvLogMsg-{secs_to_time(Device.last_evlog_msg_secs)}, "
                     f"Method-{DeviceFmZone.interval_method}")
         log_info_msg(Device.devicename, log_msg)
-        # log_debug_msg(Device.devicename, log_msg)
-        _traceha(f"559 test traceha>> {Device.devicename=} {log_msg=}")
+
+        # _traceha(f"559 test traceha>> {Device.devicename=} {log_msg=} {secs_to_time(Device.last_data_update_secs)=}")
 
 #--------------------------------------------------------------------------------
 def post_zone_time_dist_event_msg(Device, DeviceFmZone):

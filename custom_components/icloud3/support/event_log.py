@@ -196,6 +196,7 @@ class EventLog(object):
                 if devicename.startswith('*') is False:
                     Device = Gb.Devices_by_devicename.get(devicename)
                     if Device:
+                        Device.last_evlog_msg_secs = time_now_secs()
                         if (Device.DeviceFmZoneCurrent.from_zone != HOME
                                 or event_text.startswith(EVLOG_TIME_RECD)):
                             this_update_time = (f"»{Device.DeviceFmZoneCurrent.from_zone_display_as[:6]}")
@@ -276,7 +277,7 @@ class EventLog(object):
             log_exception(err)
 
 #=========================================================================
-    def update_event_log_display(self, devicename=None):
+    def update_event_log_display(self, devicename=None, show_one_screen=False):
         '''
         Extract the records from the event log table, select the items to
         be displayed based on the log_level_debug and devicename filters and
@@ -292,7 +293,7 @@ class EventLog(object):
                 - Devicename of the selected device to be displayed
                 - 'startup_log' > Display system events ('*' events)
                 - 'clear_log_items' - Shrink the Event Log 'log' items so the
-                        icloud3_event_log entity is at a minimm sie
+                        icloud3_event_log entity is at a minimm size
 
         '''
 
@@ -309,7 +310,7 @@ class EventLog(object):
 
             max_recds = HIGH_INTEGER
             self.clear_secs = time_now_secs() + EVENT_LOG_CLEAR_SECS
-            if devicename == 'clear_log_items':
+            if show_one_screen or devicename == 'clear_log_items':
                 max_recds  = EVENT_LOG_CLEAR_CNT
                 self.clear_secs = HIGH_INTEGER
                 devicename = self.devicename
@@ -319,11 +320,6 @@ class EventLog(object):
 
             elif devicename in ['', '*', '**', 'Initialize']:
                 self.evlog_attrs['run_mode'] = 'Initialize'
-
-            # elif devicename in ['NoDevices', 'nodevices']:
-            #     self.evlog_attrs['run_mode']   = 'Display'
-            #     self.evlog_attrs['devicename'] = self.devicename = devicename
-            #     self.evlog_attrs['fname']      = 'NoDevices'
 
             else:
                 self.evlog_attrs['run_mode']   = 'Display'
@@ -336,6 +332,7 @@ class EventLog(object):
             self.update_evlog_sensor()
 
             self.last_refresh_devicename = devicename
+            self.last_refresh_secs       = time_now_secs()
 
         except Exception as err:
             log_exception(err)
@@ -405,7 +402,7 @@ class EventLog(object):
 #------------------------------------------------------
     @staticmethod
     def log_update_time():
-        return (f"{dt_util.now().strftime('%a, %m/%d')}, "
+        return (f"{dt_util.now().strftime('%a,  %m/%d')}, "
                 f"{dt_util.now().strftime(Gb.um_time_strfmt)}."
                 f"{dt_util.now().strftime('%f')}")
 
@@ -460,20 +457,13 @@ class EventLog(object):
                 log_warning_msg(f"INVALID EVLOG RECD (EMPTY TEXT)-{event_recd}")
                 return
 
-            #self.evlog_table_max_cnt = 150#800
             evl_table_recd_cnt = len(self.evlog_table)
-            # if evl_table_recd_cnt >= self.evlog_table_max_cnt:
-            #     evl_table_recd_cnt = \
-            #                 len([r  for r in self.evlog_table
-            #                         if r[ELR_TEXT].startswith(EVLOG_MONITOR) is False])
             if evl_table_recd_cnt >= self.evlog_table_max_cnt:
                 self.devicename_cnts = {}
                 for elr_recd in self.evlog_table:
                     self._update_evlog_table_device_cnt(elr_recd)
 
                 self._shrink_evlog_table(500)
-
-            ### event_recd[ELR_TEXT] += f", {evl_table_recd_cnt}"
 
         except Exception as err:
             log_exception(err)
@@ -536,7 +526,6 @@ class EventLog(object):
             if len(self.evlog_table) > evlog_table_target_cnt:
                 delete_cnt += len(self.evlog_table) - evlog_table_target_cnt
                 del self.evlog_table[evlog_table_target_cnt:]
-                #self.post_event(f"SHRINK FORCED-- {delete_cnt=} recd_cnt={len(self.evlog_table)}")
 
             if delete_cnt > 0:
                 event_msg = (   f"{EVLOG_MONITOR}Event Log Table Size Reduced > "
@@ -546,7 +535,6 @@ class EventLog(object):
                                 f"(DevInfo-{delete_reg_cnt}, "
                                 f"Monitor-{delete_mon_cnt})")
                 log_info_msg(event_msg)
-                # self.post_event(event_msg)
 
         except Exception as err:
             log_exception(err)
@@ -681,7 +669,6 @@ class EventLog(object):
 
                 text = text.replace("'", "").replace('&nbsp;', ' ').replace('<br>', ', ')
                 text = text.replace(",  ", ",").replace('  ', ' ')
-                # text = text.replace(CRLF, ", ").replace(CRLF_DOT, ", ").replace(CRLF_CHK, ", ")
                 if text.startswith('^'):
                         text = text[3:]
 

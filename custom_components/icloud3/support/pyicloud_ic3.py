@@ -1310,10 +1310,7 @@ class PyiCloud_FindMyFriends():
 
     def __repr__(self):
         try:
-            #if self.device_identifier:
             return (f"<PyiCloud.FindMyFriends: {self.PyiCloud.apple_id}>")
-            #else:
-            #    return (f"<PyiCloud.FindMyFriends: NotSetUp-1>")
         except:
             return (f"<PyiCloud.FindMyFriends: NotSetUp>")
 

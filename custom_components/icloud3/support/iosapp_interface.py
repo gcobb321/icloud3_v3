@@ -7,7 +7,7 @@ from ..const                import (NOTIFY,
                                     )
 from ..helpers.common       import (instr, )
 from ..helpers.messaging    import (post_event, post_error_msg,
-                                    log_exception, log_rawdata, _trace, _traceha, )
+                                    log_info_msg, log_exception, log_rawdata, _trace, _traceha, )
 from ..helpers.time_util    import (secs_to_time, secs_since, secs_to_time, secs_to_time_age_str, )
 from homeassistant.helpers  import entity_registry as er, device_registry as dr
 
@@ -32,9 +32,9 @@ PUSH_URL = "https://ios-push.home-assistant.io/push"
 def get_entity_registry_mobile_app_devices():
     iosapp_id_by_iosapp_devicename      = {}
     iosapp_devicename_by_iosapp_id      = {}
-    device_info_by_iosapp_devicename       = {}
-    device_model_info_by_iosapp_devicename = {} # raw_model;model;model_display_name
-                                                # iPhone15,2;iPhone;iPhone 14 Pro
+    device_info_by_iosapp_devicename    = {}
+    device_model_info_by_iosapp_devicename = {} # [raw_model, model, model_display_name]
+                                                # ['iPhone15,2', 'iPhone', 'iPhone 14 Pro']
     last_updt_trig_by_iosapp_devicename = {}
     notify_iosapp_devicenames           = []
     battery_level_sensors_by_iosapp_devicename = {}
@@ -80,13 +80,10 @@ def get_entity_registry_mobile_app_devices():
                 disisabled_prefix = '' if dev_trkr_entity['disabled_by'] is None else 'DISABLED'
                 iosapp_id_by_iosapp_devicename[iosapp_devicename]            = f"{disisabled_prefix}{dev_trkr_entity['device_id']}"
                 iosapp_devicename_by_iosapp_id[dev_trkr_entity['device_id']] = iosapp_devicename
-                # if dev_trkr_entity['name'] is None:
-                #     device_info_by_iosapp_devicename[iosapp_devicename]   = f"{dev_trkr_entity['original_name']} ({raw_model})"
-                # else:    
-                #     device_info_by_iosapp_devicename[iosapp_devicename]   = f"{dev_trkr_entity['name']} ({raw_model})"
+
                 iosapp_fname = dev_trkr_entity['name'] or dev_trkr_entity['original_name']
                 device_info_by_iosapp_devicename[iosapp_devicename]       = f"{iosapp_fname} ({raw_model})"
-                device_model_info_by_iosapp_devicename[iosapp_devicename] = f"{raw_model};;"    # iPhone15,2;iPhone;iPhone 14 Pro
+                device_model_info_by_iosapp_devicename[iosapp_devicename] = [raw_model,'','']    # iPhone15,2;iPhone;iPhone 14 Pro
 
             for sensor in last_updt_trigger_sensors:
                 iosapp_devicename = iosapp_devicename_by_iosapp_id[sensor['device_id']]
@@ -100,7 +97,7 @@ def get_entity_registry_mobile_app_devices():
                 iosapp_devicename = iosapp_devicename_by_iosapp_id[sensor['device_id']]
                 battery_state_sensors_by_iosapp_devicename[iosapp_devicename] = sensor['entity_id'].replace('sensor.', '')
 
-        notify_iosapp_devicenames = get_mobile_app_notifications()
+        #notify_iosapp_devicenames = get_mobile_app_notifications()
 
     except Exception as err:
         log_exception(err)
@@ -132,7 +129,7 @@ def get_mobile_app_notifications():
                 notify_iosapp_devicenames.append(notify_service)
 
     except Exception as err:
-        log_info_msg("iOS App Notify Service has not been set up yet. iCloud3 will retry later.")
+        #log_info_msg("iOS App Notify Service has not been set up yet. iCloud3 will retry later.")
         # log_exception(err)
         pass
 

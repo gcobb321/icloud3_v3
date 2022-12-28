@@ -1026,7 +1026,7 @@ def setup_tracked_devices_for_famshr(PyiCloud=None):
     device_id_by_device_fname   = devices_desc[0]   # Example: n6ofM9CX4j...
     device_fname_by_device_id   = devices_desc[1]   # Example: Gary-iPhone14
     device_info_by_device_fname = devices_desc[2]   # Example: Gary-iPhone14 > Phone 14 Pro/iPhone
-    device_model_info_by_fname  = devices_desc[3]   # raw_model;model;model_display_name
+    device_model_info_by_fname  = devices_desc[3]   # [raw_model,model,model_display_name]
                                                     # iPhone15,2;iPhone;iPhone 14 Pro
 
     Gb.famshr_device_verified_cnt = 0
@@ -1083,7 +1083,8 @@ def setup_tracked_devices_for_famshr(PyiCloud=None):
 
                     # Get the model info from PyiCloud data and update it if necessary
                     raw_model, model, model_display_name = \
-                                    device_model_info_by_fname[famshr_device_fname].split(';')
+                                    device_model_info_by_fname[famshr_device_fname]
+
                     if (device[CONF_RAW_MODEL] != raw_model
                             or device[CONF_MODEL] != model
                             or device[CONF_MODEL_DISPLAY_NAME] != model_display_name):
@@ -1315,8 +1316,8 @@ def get_famshr_devices(PyiCloud):
     device_fname_by_device_id   = {}  # Example: Gary-iPhone14
     device_info_by_device_fname = {}  # Example: Gary-iPhone (iPhone 14 Pro (iPhone15,2)
     dup_device_fname_cnt        = {}  # Used to create a suffix for duplicate devicenames
-    device_model_info_by_fname  = {}  # raw_model;model;model_display_name
-                                    # iPhone15,2;iPhone;iPhone 14 Pro
+    device_model_info_by_fname  = {}  # [raw_model,model,model_display_name]
+                                      # ['iPhone15,2', 'iPhone', 'iPhone 14 Pro']
 
     # 12/17/2022 (beta 1) - Added check for setting PyiCloud
     if PyiCloud is None: PyiCloud = Gb.PyiCloud
@@ -1375,10 +1376,12 @@ def get_famshr_devices(PyiCloud):
             desc = _RawData.device_identifier.replace("’", "'")
             device_info_by_device_fname[device_fname]  = f"{device_fname} ({desc})"
 
+            display_name = _RawData.device_data['deviceDisplayName'].split(' (')[0]
+            display_name = display_name.replace('Series ', '')
             device_model_info_by_fname[device_fname]  = \
-                        (   f"{_RawData.device_data['rawDeviceModel']};"        # iPhone15,2
-                            f"{_RawData.device_data['modelDisplayName']};"      # iPhone
-                            f"{_RawData.device_data['deviceDisplayName']}")     # iPhone 14 Pro
+                        [   _RawData.device_data['rawDeviceModel'],        # iPhone15,2
+                            _RawData.device_data['modelDisplayName'],      # iPhone
+                            display_name]     # iPhone 14 Pro
 
         except Exception as err:
             log_exception(err)
@@ -1583,12 +1586,12 @@ def setup_tracked_devices_for_iosapp():
     Devices being tracked and match them up. Anything left over at the end is not matched and not monitored.
     '''
     devices_desc = iosapp_interface.get_entity_registry_mobile_app_devices()
-    iosapp_id_by_iosapp_devicename      = devices_desc[0]
-    iosapp_devicename_by_iosapp_id      = devices_desc[1]
-    device_info_by_iosapp_devicename    = devices_desc[2]
-    device_model_info_by_iosapp_devicename = devices_desc[3]
-    last_updt_trig_by_iosapp_devicename = devices_desc[4]
-    notify_iosapp_devicenames           = devices_desc[5]
+    iosapp_id_by_iosapp_devicename             = devices_desc[0]
+    iosapp_devicename_by_iosapp_id             = devices_desc[1]
+    device_info_by_iosapp_devicename           = devices_desc[2]
+    device_model_info_by_iosapp_devicename     = devices_desc[3]
+    last_updt_trig_by_iosapp_devicename        = devices_desc[4]
+    notify_iosapp_devicenames                  = devices_desc[5]
     battery_level_sensors_by_iosapp_devicename = devices_desc[6]
     battery_state_sensors_by_iosapp_devicename = devices_desc[7]
 
@@ -1663,7 +1666,7 @@ def setup_tracked_devices_for_iosapp():
         # set raw_model since it is only shared via an email addres or phone number. This will also be saved in the
         # iCloud3 configuration file.
         if Device.raw_model.lower() == Device.device_type:
-            raw_model, model, model_display_name = device_model_info_by_iosapp_devicename[iosapp_devicename].split(';')
+            raw_model, model, model_display_name = device_model_info_by_iosapp_devicename[iosapp_devicename]
             Device.raw_model = raw_model # iPhone15,2
 
             for conf_device in Gb.conf_devices:
@@ -1680,8 +1683,6 @@ def setup_tracked_devices_for_iosapp():
 
         tracked_msg += (f"{CRLF_CHK}{iosapp_fname} ({iosapp_devicename}){RARROW}{devicename} "
                         f"({Device.raw_model})")
-        # tracked_msg += (f"{CRLF_CHK}{iosapp_devicename}{RARROW}{devicename}, "
-        #                 f"{Device.fname_devtype}")
 
         # Remove the iosapp device from the list since we know it is tracked
         if iosapp_devicename in not_monitored_iosapp_devices:

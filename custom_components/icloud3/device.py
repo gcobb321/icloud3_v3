@@ -107,7 +107,8 @@ class iCloud3_Device(TrackerEntity):
         self.tracking_method              = None
         self.tracking_status              = TRACKING_NORMAL
         self.tracking_mode                = TRACK_DEVICE      #normal, monitor, inactive
-        self.update_timer                 = 0
+        self.last_data_update_secs        = 0
+        self.last_evlog_msg_secs          = 0
         self.dist_from_zone_km_small_move_total = 0
         self.device_tracker_entity_ic3    = (f"{DEVICE_TRACKER}.{self.devicename}")
         self.zone_change_datetime         = DATETIME_ZERO
@@ -1343,7 +1344,7 @@ class iCloud3_Device(TrackerEntity):
                 or self.iosapp_data_secs == 0):
             return
 
-        self.update_timer = time_now_secs()
+        self.last_data_update_secs = time_now_secs()
 
         self.dev_data_source            = IOSAPP_FNAME
         self.dev_data_fname             = self.fname
@@ -1386,7 +1387,7 @@ class iCloud3_Device(TrackerEntity):
                 or (RawData.location_secs <= self.loc_data_secs and self.loc_data_secs > 0)):
             return
 
-        self.update_timer = time_now_secs()
+        self.last_data_update_secs = time_now_secs()
 
         location                       = RawData.device_data[LOCATION]
         location_secs                  = RawData.location_secs

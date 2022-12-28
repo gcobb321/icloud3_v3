@@ -240,6 +240,11 @@ class iCloud3:
             if Device.isnot_data_source_NOT_SET:
                 self._main_5sec_loop_update_monitored_devices(Device)
 
+        # Update the EvLog display if the displayed device was updated after
+        # the last EvLog refresh
+        if Device :=  Gb.Devices_by_devicename.get(Gb.EvLog.devicename):
+            if Device.last_evlog_msg_secs > Gb.EvLog.last_refresh_secs:
+                Gb.EvLog.update_event_log_display(devicename=Gb.EvLog.devicename, show_one_screen=True)
 
         Gb.trace_prefix = ''
         Gb.any_device_was_updated_reason = ''
@@ -392,7 +397,6 @@ class iCloud3:
             Gb.device_update_in_process_flag = True
             self._update_monitored_devices(Device)
 
-            #restore_state.write_storage_icloud3_restore_state_file()
             Device.update_in_process_flag  = False
             Gb.device_update_in_process_flag = False
 
@@ -463,7 +467,8 @@ class iCloud3:
             calculate_time_zone_offset()
 
         if (Gb.this_update_secs >= Gb.EvLog.clear_secs):
-            Gb.EvLog.update_event_log_display('clear_log_items')
+            Gb.EvLog.update_event_log_display(show_one_screen=True)
+            # Gb.EvLog.update_event_log_display('clear_log_items')
 
         # Every minute
         if time_now_ss == '00':
@@ -586,7 +591,6 @@ class iCloud3:
                             Do not update another device that now has poor location
                             gps after all the results have been determined if
                             their update time has not been reached.
-
         """
 
         update_reason = Device.icloud_update_reason
@@ -596,7 +600,7 @@ class iCloud3:
         if Gb.any_device_was_updated_reason == '':
             Gb.any_device_was_updated_reason = f'{Device.icloud_update_reason}, {Device.fname_devtype}'
 
-        Device.update_timer                 = time_now_secs()
+        # Device.last_data_update_secs      = time_now_secs()
         Device.icloud_update_retry_flag     = False
         Device.iosapp_request_loc_last_secs = 0
 
@@ -729,12 +733,9 @@ class iCloud3:
                                 f"Date source - {Device.dev_data_source}")
                     post_event(devicename, event_msg)
 
-                #self._update_restore_state_values(Device)
                 Device.write_ha_sensors_state()
                 Device.write_ha_device_from_zone_sensors_state()
                 Device.write_ha_device_tracker_state()
-                #restore_state.write_storage_icloud3_restore_state_file()
-                #self._update_restore_state_values(Device)
 
                 self._post_after_update_monitor_msg(Device)
 
@@ -755,11 +756,9 @@ class iCloud3:
                 # with good data (hopefully). Update interval, next_update_time values and sensors with the time
                 det_interval.determine_interval_after_error(Device, counter=OLD_LOC_POOR_GPS_CNT)
 
-                #self._update_restore_state_values(Device)
                 Device.write_ha_sensors_state()
                 Device.write_ha_device_from_zone_sensors_state()
                 Device.write_ha_device_tracker_state()
-                #restore_state.write_storage_icloud3_restore_state_file()
 
             # Refresh the EvLog if this is an initial locate
             if (Gb.initial_locate_complete_flag == False
@@ -1027,7 +1026,6 @@ class iCloud3:
             if Device.StatZone.move_limit_exceeded:
                 Device.StatZone.reset_timer_time
 
-            # elif (Device.StatZone.not_inzone
             elif (Device.isnot_inzone_stationary
                     or (is_statzone(Device.iosapp_data_state)
                         and Device.loc_data_zone == NOT_SET)):
@@ -1098,7 +1096,6 @@ class iCloud3:
                 # if (distance_apart > NEAR_DEVICE_DISTANCE - gps_accuracy_adjustment
                 if (distance_apart > NEAR_DEVICE_DISTANCE
                         or gps_accuracy_factor > NEAR_DEVICE_DISTANCE
-                        # or min(Device.loc_data_gps_accuracy, _Device.loc_data_gps_accuracy) > NEAR_DEVICE_DISTANCE
                         or Device.is_inzone_stationary
                         or _Device.is_inzone_stationary):
                     nearby_symbol = '⊗'

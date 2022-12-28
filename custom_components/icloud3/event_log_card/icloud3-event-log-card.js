@@ -22,7 +22,7 @@ class iCloud3EventLogCard extends HTMLElement {
     }
     //---------------------------------------------------------------------------
     setConfig(config) {
-        const version = "3.0.0"
+        const version = "3.0.1"
         const cardTitle = "iCloud3 Event Log v3"
 
         const root = this.shadowRoot
@@ -505,7 +505,7 @@ class iCloud3EventLogCard extends HTMLElement {
                 /*border: 1px solid dodgerblue;*/
             }
             #statusName {
-                /*width: 50%;*/
+                width: 55%;
                 color: firebrick;
                 float: left;
                 font-size: 14px;
@@ -1357,7 +1357,7 @@ class iCloud3EventLogCard extends HTMLElement {
                     classSpecialTextColor = ' specColor6'
                 } else if (initializationRecdFound == false) {
                     classErrorMsg = ' errorMsg'
-                    alertErrorMsg = ".Alert at " + tTime + " ... (Refresh to Clear Alert Notification)"
+                    alertErrorMsg = ".Alert at " + tTime + " ... (Refresh to Clear Alerts Messages)"
                 } else {
                     classSpecialTextColor = ' specColor6'
                 }
@@ -1382,27 +1382,27 @@ class iCloud3EventLogCard extends HTMLElement {
             }
 
             //Change CRLF in the text string to HTML >b> for a new line
-            while (tText.indexOf("CRLF•") >= 0) {
-                tText = tText.replace("CRLF•", "<br>&nbsp;&nbsp;•&nbsp;&nbsp;")
-            }
-            while (tText.indexOf("DOT") >= 0) {
-                tText = tText.replace("DOT", "•&nbsp;&nbsp;")
-            }
-            while (tText.indexOf("CRLF✓") >= 0) {
-                tText = tText.replace("CRLF✓", "<br>&nbsp;✓&nbsp;")
-            }
-            while (tText.indexOf("CRLF") >= 0) {
-                tText = tText.replace("CRLF", "<br>")
-            }
-            while (tText.indexOf("NBSP2") >= 0) {
-                tText = tText.replace("NBSP2", "&nbsp;&nbsp;")
-            }
-            while (tText.indexOf("NBSP4") >= 0) {
-                tText = tText.replace("NBSP4", "&nbsp;&nbsp;&nbsp;&nbsp;")
-            }
-            while (tText.indexOf("NBSP6") >= 0) {
-                tText = tText.replace("NBSP6", "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;")
-            }
+            // while (tText.indexOf("CRLF•") >= 0) {
+            //     tText = tText.replace("CRLF•", "<br>&nbsp;&nbsp;•&nbsp;&nbsp;")
+            // }
+            // while (tText.indexOf("DOT") >= 0) {
+            //     tText = tText.replace("DOT", "•&nbsp;&nbsp;")
+            // }
+            // while (tText.indexOf("CRLF✓") >= 0) {
+            //     tText = tText.replace("CRLF✓", "<br>&nbsp;✓&nbsp;")
+            // }
+            // while (tText.indexOf("CRLF") >= 0) {
+            //     tText = tText.replace("CRLF", "<br>")
+            // }
+            // while (tText.indexOf("NBSP2") >= 0) {
+            //     tText = tText.replace("NBSP2", "&nbsp;&nbsp;")
+            // }
+            // while (tText.indexOf("NBSP4") >= 0) {
+            //     tText = tText.replace("NBSP4", "&nbsp;&nbsp;&nbsp;&nbsp;")
+            // }
+            // while (tText.indexOf("NBSP6") >= 0) {
+            //     tText = tText.replace("NBSP6", "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;")
+            // }
 
             //If displaying a table, the State & Interval can contain column titles
             var classTable = ''
@@ -1516,6 +1516,7 @@ class iCloud3EventLogCard extends HTMLElement {
         const optHalog      = root.getElementById("optHalog")
         const optRawdata    = root.getElementById("optRawdata")
         const optStartuplog = root.getElementById("optStartuplog")
+        const statusName    = root.getElementById("statusName")
 
         if (logLevelDebug.indexOf("evlog") >= 0) {
             optEvlog.text = "Hide Tracking Monitors"
@@ -1535,7 +1536,9 @@ class iCloud3EventLogCard extends HTMLElement {
             optRawdata.text = "Start Rawdata Logging"
         }
 
-        if (alertErrorMsg != "") {
+        if (statusName.classList.contains('errorAlertMsg')) {
+            'pass'
+        } else if (alertErrorMsg != "") {
             this._displayDevicenameMsgL(alertErrorMsg)
             alertErrorMsg = ''
         } else {
@@ -1932,16 +1935,16 @@ class iCloud3EventLogCard extends HTMLElement {
         if (this._isUserMessageDisplayed()) {
             msg = 'Click the message or click Refresh to redisplay the device names'
             this._classListRemove('statusName', 'errorAlertMsg')
-            statusName.style.setProperty('width', '98%')
+            statusName.style.setProperty('width', '100%')
             statusName.style.setProperty('color', 'green')
             statusTime.innerText = ''
         } else if (msg.startsWith(".Alert")) {
             this._classListAdd('statusName', 'errorAlertMsg')
-            statusName.style.setProperty('width', '98%')
+            statusName.style.setProperty('width', '100%')
             statusName.style.setProperty('color', 'white')
             statusTime.innerText = ''
         } else {
-            statusName.style.setProperty('width', '40%')
+            statusName.style.setProperty('width', '55%')
             statusName.style.setProperty('color', 'firebrick')
             this._displayTimeMsgR('')
         }
@@ -1973,7 +1976,7 @@ class iCloud3EventLogCard extends HTMLElement {
             msg = updateTime
         } else {
             this._classListRemove('statusName', 'errorAlertMsg')
-            statusName.style.setProperty('width', '40%')
+            statusName.style.setProperty('width', '55%')
             statusName.style.setProperty('color', 'firebrick')
         }
         if (msg == "") {
@@ -1989,7 +1992,7 @@ class iCloud3EventLogCard extends HTMLElement {
         const infoText     = root.getElementById("infoText")
         const aboutVersion = root.getElementById("aboutVersion")
 
-        if (msg == 'xxVersion') {
+        if (msg == 'Version') {
             msg = 'EvLog v' + aboutVersion.innerText
             this._classListAdd('infoText', 'lightgray')
             this._classListRemove('infoText', 'primarycolor')

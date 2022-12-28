@@ -170,6 +170,7 @@ class GlobalVariables(object):
     update_in_process               = False
     evlog_action_request            = ''
 
+
     # Debug and trace flags
     log_debug_flag               = False
     log_rawdata_flag             = False

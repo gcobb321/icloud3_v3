@@ -1936,7 +1936,8 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 
         conf_famshr_device_fname = user_input[CONF_FAMSHR_DEVICENAME]     #.split(" >")[0].strip()
         if conf_famshr_device_fname != 'None':
-            raw_model, model, model_display_name = self.device_model_info_by_fname[conf_famshr_device_fname].split(';')
+            # raw_model, model, model_display_name = self.device_model_info_by_fname[conf_famshr_device_fname].split(';')
+            raw_model, model, model_display_name = self.device_model_info_by_fname[conf_famshr_device_fname]
             if (user_input.get(CONF_RAW_MODEL) != raw_model
                         or user_input[CONF_MODEL] != model
                         or user_input[CONF_MODEL_DISPLAY_NAME] != model_display_name):
@@ -2030,7 +2031,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                     Sensor.update_entity_attribute(new_fname=self.conf_device_selected[CONF_FNAME])
             except:
                 pass
-            
+
             # v3.0.0-beta3-Added check to see if device has tfz sensors
             try:
                 for sensor, Sensor in Gb.Sensors_by_devicename_from_zone[devicename].items():
