@@ -19,7 +19,7 @@ import voluptuous as vol
 import os
 
 from .const import (DOMAIN, PLATFORMS, MODE_PLATFORM, MODE_INTEGRATION, CONF_VERSION,
-                    EVLOG_IC3_STARTING, VERSION, )
+                    EVLOG_IC3_STARTING, VERSION, EVLOG_IC3_STAGE_HDR, )
 
 from .global_variables              import GlobalVariables as Gb
 from .helpers.common                import (instr, )
@@ -180,24 +180,26 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     Gb.iCloud3  = iCloud3()
 
     # These will run concurrently while HA is starting everything else
-    log_debug_msg('START HA startup/stop listeners')
+    Gb.EvLog.post_event('Start HA Startup/Stop Listeners')
     hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STARTED, start_ic3.ha_startup_completed)
     hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STOP, start_ic3.ha_stopping)
 
-    log_debug_msg('START iCloud3 Services Executor Job')
+    Gb.EvLog.post_event('Start iCloud3 Services Executor Job')
     hass.async_add_executor_job(service_handler.register_icloud3_services)
 
     if Gb.data_source_use_icloud:
-        log_debug_msg('START iCloud Account Connection (PyiCloud3) Executor Job')
+        Gb.EvLog.post_event('Start iCloud Account Connection Executor Job')
         hass.async_add_executor_job(pyicloud_ic3_interface.create_PyiCloud_service_executor_job)
 
     if hass.state == CoreState.running:
-        log_debug_msg('START iCloud3 Initial Load Executor Job (CoreStateRunning)')
+        Gb.EvLog.post_event('Start iCloud3 Initial Load Executor Job')
         start_icloud3()
     else:
         # This is fired from sensor.py and device_tracker.py when all the sensors
         # and device_trackers have been set up
         hass.bus.async_listen_once('start_icloud3', start_icloud3)
+
+    Gb.EvLog.post_event(f"{EVLOG_IC3_STAGE_HDR}Stage 0 > Set Up iCloud3 Support Environment")
 
     return True
 

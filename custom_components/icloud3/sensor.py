@@ -1114,7 +1114,9 @@ class Sensor_EventLog(Support_SensorBase):
             time_suffix = (f"{dt_util.now().strftime('%a, %m/%d')}, "
                             f"{dt_util.now().strftime(Gb.um_time_strfmt)}."
                             f"{dt_util.now().strftime('%f')}")
+
             return (f"{Gb.EvLog.evlog_sensor_state_value}:{time_suffix}")
+
         except Exception as err:
             log_exception(err)
             return 'Unavailable'
@@ -1133,7 +1135,7 @@ class Sensor_EventLog(Support_SensorBase):
                 'update_time': log_update_time,
                 'popup_message': 'Starting',
                 'names': {'Loading': 'Initializing iCloud3'},
-                'logs': '',
+                'logs': [],
                 'platform': Gb.operating_mode}
 
 

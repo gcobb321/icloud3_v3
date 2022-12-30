@@ -716,7 +716,7 @@ def _copy_image_files_to_www_directory(www_evlog_directory):
     try:
         image_extensions = ['png', 'jpg', 'jpeg']
         ## 12/17/2022 (beta 1) - Evlog diretory name was event_log istead of event_log_card
-        image_filenames = [f'{Gb.icloud3_directory}/event_log_cad/{x}'
+        image_filenames = [f'{Gb.icloud3_directory}/event_log_card/{x}'
                                     for x in os.listdir(f"{Gb.icloud3_directory}/event_log_card/")
                                     if instr(x, '.') and x.rsplit('.', 1)[1] in image_extensions]
 

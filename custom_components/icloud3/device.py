@@ -1203,12 +1203,6 @@ class iCloud3_Device(TrackerEntity):
                 or self.loc_data_secs > self.last_update_loc_secs):
             return False
 
-        if True is False:
-            db=(f"OLDRECD LocDataSecs-{secs_to_time_age_str(self.loc_data_secs)}, "
-                f"LastUpdateSece-{secs_to_time_age_str(self.last_update_loc_secs)}, "
-                f"OldCnt-{self.old_loc_poor_gps_cnt}")
-            #post_event(self.devicename, db)
-            pass
         try:
             interval, error_cnt, max_error_cnt = det_interval.get_error_retry_interval(self)
             det_interval.update_all_device_fm_zone_sensors_interval(self, interval)
@@ -1497,7 +1491,7 @@ class iCloud3_Device(TrackerEntity):
             self.sensors[MAX_DISTANCE]         = self.DeviceFmZoneTracked.sensors[MAX_DISTANCE]
             self.sensors[WAZE_DISTANCE]        = self.DeviceFmZoneTracked.sensors[WAZE_DISTANCE]
             self.sensors[CALC_DISTANCE]        = self.DeviceFmZoneTracked.sensors[CALC_DISTANCE]
-            self.sensors[MOVED_DISTANCE]      = self.DeviceFmZoneTracked.sensors[MOVED_DISTANCE]
+            self.sensors[MOVED_DISTANCE]       = self.DeviceFmZoneTracked.sensors[MOVED_DISTANCE]
             self.sensors[HOME_DISTANCE]        = self.DeviceFmZoneHome.sensors[ZONE_DISTANCE]
 
             # If moving towards a tracked from zone, change the direction to 'To-[zonename]'

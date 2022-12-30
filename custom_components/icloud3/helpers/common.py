@@ -35,9 +35,9 @@ def list_to_str(list_value, separator=None):
 
     if separator.startswith(CRLF):
         return f"{separator_str}{list_str}"
-    else: 
+    else:
         return list_str
-    
+
 #--------------------------------------------------------------------
 def instr(string, substring):
     '''
@@ -138,11 +138,14 @@ def obscure_field(field):
         field_parts   = field.split('@')
         email_name    = field_parts[0]
         email_domain  = field_parts[1]
-        obscure_field = (   f"{email_name[0:2]}{'.'*(len(email_name)-2)}{email_name[-2:]}@"
-                            f"{email_domain[0:2]}{'.'*(len(email_domain)-2)}{email_domain[-2:]}")
+        obscure_field = (   f"{email_name[0:2]}{'.'*(len(email_name)-2)}@"
+                            f"{email_domain[0:2]}{'.'*(len(email_domain)-2)}")
+        # obscure_field = (   f"{email_name[0:2]}{'.'*(len(email_name)-2)}{email_name[-2:]}@"
+        #                     f"{email_domain[0:2]}{'.'*(len(email_domain)-2)}{email_domain[-2:]}")
         return obscure_field
 
-    obscure_field = (f"{field[0:2]}{'.'*(len(field)-2)}{field[-2:]}")
+    obscure_field = (f"{field[0:2]}{'.'*(len(field)-2)}")
+    # obscure_field = (f"{field[0:2]}{'.'*(len(field)-2)}{field[-2:]}")
     return obscure_field
 
 #--------------------------------------------------------------------

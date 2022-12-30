@@ -83,7 +83,7 @@ class EventLog(object):
         self.evlog_attrs["devicename"]      = ''
         self.evlog_attrs["fname"]           = ''
         self.evlog_attrs["fnames"]          = {'Setup': 'Initializing iCloud3'}
-        self.evlog_attrs["logs"]            = ''
+        self.evlog_attrs["logs"]            = []
 
         self.devicename_cnts = {}
 
@@ -277,7 +277,7 @@ class EventLog(object):
             log_exception(err)
 
 #=========================================================================
-    def update_event_log_display(self, devicename=None, show_one_screen=False):
+    def update_event_log_display(self, devicename='', show_one_screen=False):
         '''
         Extract the records from the event log table, select the items to
         be displayed based on the log_level_debug and devicename filters and
@@ -296,6 +296,8 @@ class EventLog(object):
                         icloud3_event_log entity is at a minimm size
 
         '''
+        if devicename == '':
+            devicename = self.devicename
 
         try:
             log_attr_text = ""
@@ -305,12 +307,11 @@ class EventLog(object):
 
             self.evlog_attrs['log_level_debug'] = log_attr_text
 
-            if devicename is None:
-                return
-
+            # if devicename is None:
+            #     return
             max_recds = HIGH_INTEGER
             self.clear_secs = time_now_secs() + EVENT_LOG_CLEAR_SECS
-            if show_one_screen or devicename == 'clear_log_items':
+            if show_one_screen:# or devicename == 'clear_log_items':
                 max_recds  = EVENT_LOG_CLEAR_CNT
                 self.clear_secs = HIGH_INTEGER
                 devicename = self.devicename
@@ -424,7 +425,7 @@ class EventLog(object):
             self.user_message_alert_flag = True
 
         self.user_message = user_message
-        self.evlog_attrs['logs'] = self._filtered_evlog_recds('', HIGH_INTEGER)
+        self.evlog_attrs['logs'] = self._filtered_evlog_recds(self.devicename, HIGH_INTEGER)
         self.update_evlog_sensor()
 
 #------------------------------------------------------
@@ -563,12 +564,14 @@ class EventLog(object):
             self.post_event(alert_recd)
 
 #------------------------------------------------------
-    def _filtered_evlog_recds(self, devicename, max_recds=HIGH_INTEGER, selected_devicename=None):
+    def _filtered_evlog_recds(self, devicename='', max_recds=HIGH_INTEGER, selected_devicename=None):
         '''
         Extract the filtered records from the evlog_tables and prepare them
         for display
         '''
 
+        if devicename == '':
+            devicename = self.devicename
         time_text_recds = self._extract_filtered_evlog_recds(devicename)
 
         if max_recds < HIGH_INTEGER:

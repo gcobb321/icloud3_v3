@@ -305,7 +305,10 @@ def _handle_global_action(global_action, action_option):
         Gb.log_rawdata_flag_restart   = Gb.log_rawdata_flag
         Gb.start_icloud3_request_flag = True
         Gb.EvLog.display_user_message('iCloud3 is Restarting', clear_alert=True)
-
+        if Gb.log_debug_flag:
+            close_ic3_debug_log_file()
+            open_ic3_debug_log_file(new_debug_log=True)
+            write_ic3_debug_log_recd(f"\n{'-'*25} Opened by Event Log > Actions > Restart {'-'*25}")
         return
 
     elif global_action == CMD_EXPORT_EVENT_LOG:

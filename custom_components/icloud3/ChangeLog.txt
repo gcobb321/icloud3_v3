@@ -1,3 +1,19 @@
+Beta 6 - 12/30/2022
+~~~~~~~~~~~~~~~~~~~~
+1.  Corrected a mispelled directory name used for installing sample device images (ipad.png, watch.png).
+    The image directory nane was 'event_log_cad'. It should be 'event_log_card'.
+2.  A new icloud3-debug.log file will now be created when restarting iCloud3 from the Event Log or when
+    HA was started and the log level is debug. New records will be added to the existing log file when
+    debug is started from Event Log > Actions and the log file is less than 20-hours old.
+3.  Fixed a problem where location data from iCloud FamShr/FmF was not always being rejected due to poor
+    gps_accuracy. This could lead to location & zone errors until the next locate was processed.
+4.  Improved the performance displaying the results of the Initial Device Locate results in the Event Log.
+5.  The Event Log for the selected devices is automatically refreshed when new information is added. The
+    number of items was increased from 15 to 50 so more events are displayed without refreshing.
+6.  Added a prefilter to the rawdata debug log to make sure usernames & passwords are not displayed.
+7.  Some internal code cleanup and minor tweaking.
+
+
 Beta 5 - 12/28/2022
 ~~~~~~~~~~~~~~~~~~~~
 1.  Fixed a 'log_info_msg' not defined error message in the routine that identifies the notify

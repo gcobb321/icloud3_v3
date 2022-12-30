@@ -43,11 +43,10 @@ def stage_1_setup_variables():
         Gb.all_tracking_paused_flag     = False
         Gb.config_track_devices_change_flag = False
 
-        post_event( f"{EVLOG_IC3_STARTING}Initializing iCloud3 v{Gb.version} > "
-                    f"{dt_util.now().strftime('%A, %b %d')}")
-
         if Gb.initial_icloud3_loading_flag is False:
-            Gb.EvLog.update_event_log_display("")
+            post_event( f"{EVLOG_IC3_STARTING}Restarting iCloud3 v{Gb.version} > "
+                        f"{dt_util.now().strftime('%A, %b %d')}")
+            # Gb.EvLog.update_event_log_display("")
             start_ic3.reinitialize_config_parameters()
             start_ic3.initialize_global_variables()
             start_ic3.set_global_variables_from_conf_parameters()
@@ -119,9 +118,6 @@ def stage_2_prepare_configuration():
                         f"{CRLF}5. Exit the configurator and `Restart iCloud3`")
             post_event(event_msg)
 
-            #Gb.start_icloud3_inprocess_flag = False
-
-            #post_event(f"{EVLOG_IC3_STARTING}iCloud3 Initialization Terminated")
             Gb.EvLog.update_event_log_display("")
 
     except Exception as err:
@@ -330,9 +326,7 @@ def stage_7_initial_locate():
             continue
 
         Device.update_sensors_flag = True
-        Gb.iCloud3.process_updated_location_data(Device, ICLOUD_FNAME)
-        Device.icloud_initial_locate_done = True
 
-        if evlog_results_displayed is False:
-            evlog_results_displayed = True
-            Gb.EvLog.update_event_log_display(Device.devicename)
+        Gb.iCloud3.process_updated_location_data(Device, ICLOUD_FNAME)
+
+        Device.icloud_initial_locate_done = True

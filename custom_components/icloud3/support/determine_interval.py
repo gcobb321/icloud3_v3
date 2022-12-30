@@ -487,12 +487,12 @@ def determine_interval(Device, DeviceFmZone):
     if waze_dist_from_zone_km > DeviceFmZone.max_dist_km:
         DeviceFmZone.max_dist_km = waze_dist_from_zone_km
 
-    sensors[DISTANCE]        = km_to_mi_str(dist_from_zone_km)
-    sensors[MAX_DISTANCE]    = km_to_mi_str(DeviceFmZone.max_dist_km)
-    sensors[ZONE_DISTANCE]   = km_to_mi_str(dist_from_zone_km)
-    sensors[CALC_DISTANCE]   = km_to_mi_str(calc_dist_from_zone_km)
+    sensors[DISTANCE]       = km_to_mi_str(dist_from_zone_km)
+    sensors[MAX_DISTANCE]   = km_to_mi_str(DeviceFmZone.max_dist_km)
+    sensors[ZONE_DISTANCE]  = km_to_mi_str(dist_from_zone_km)
+    sensors[CALC_DISTANCE]  = km_to_mi_str(calc_dist_from_zone_km)
     sensors[MOVED_DISTANCE] = km_to_mi_str(dist_moved_km)
-    sensors[DIR_OF_TRAVEL]   = dir_of_travel
+    sensors[DIR_OF_TRAVEL]  = dir_of_travel
 
     if Device.is_inzone:
         sensors[ZONE_INFO] = f"@{Device.loc_data_zone_fname}"

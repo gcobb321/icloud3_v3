@@ -138,7 +138,7 @@ STAT_ZONE_MOVE_TO_BASE     = 1
 EVLOG_TABLE_MAX_CNT_BASE = 1000         # Used to calculate the max recds to store
 EVLOG_TABLE_MAX_CNT_ZONE = 750          # Used to calculate the max recds to store
 EVENT_LOG_CLEAR_SECS     = 900          # Clear event log data interval
-EVENT_LOG_CLEAR_CNT      = 30           # Number of recds to display when clearing event log
+EVENT_LOG_CLEAR_CNT      = 50           # Number of recds to display when clearing event log
 ICLOUD3_ERROR_MSG        = "ICLOUD3 ERROR-SEE EVENT LOG"
 
 #Devicename config parameter file extraction

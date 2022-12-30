@@ -333,6 +333,8 @@ def update_device_with_latest_raw_data(Device, all_devices=False):
             if is_PyiCloud_RawData_data_useable(Device, results_msg_flag=False) is False:
                 if _Device is Device:
                     if (_Device.is_offline
+                            # Beta 6-Added _RawData.gps_accuracy test
+                            or _RawData.gps_accuracy > Gb.gps_accuracy_threshold
                             or (_Device.is_location_good
                                 and _Device.is_data_source_FAMSHR_FMF
                                 and _Device.loc_data_time > _RawData.location_time

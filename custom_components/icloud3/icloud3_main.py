@@ -15,8 +15,6 @@ Special Note: I want to thank Walt Howd, (iCloud2 fame) who inspired me to
 Thanks to all
 """
 
-VERSION = '3.0.0'
-
 
 import os
 import time
@@ -243,8 +241,11 @@ class iCloud3:
         # Update the EvLog display if the displayed device was updated after
         # the last EvLog refresh
         if Device :=  Gb.Devices_by_devicename.get(Gb.EvLog.devicename):
+            show_one_screen = (len(Gb.EvLog.evlog_table) > 300
+                                    and Gb.log_debug_flag is False)
             if Device.last_evlog_msg_secs > Gb.EvLog.last_refresh_secs:
-                Gb.EvLog.update_event_log_display(devicename=Gb.EvLog.devicename, show_one_screen=True)
+                Gb.EvLog.update_event_log_display(devicename=Device.devicename,
+                                                    show_one_screen=show_one_screen)
 
         Gb.trace_prefix = ''
         Gb.any_device_was_updated_reason = ''
@@ -468,7 +469,6 @@ class iCloud3:
 
         if (Gb.this_update_secs >= Gb.EvLog.clear_secs):
             Gb.EvLog.update_event_log_display(show_one_screen=True)
-            # Gb.EvLog.update_event_log_display('clear_log_items')
 
         # Every minute
         if time_now_ss == '00':

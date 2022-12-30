@@ -24,7 +24,7 @@ VERSION = '3.0.0'
 
 
 from ..global_variables     import GlobalVariables as Gb
-from ..const                import (AIRPODS_FNAME,
+from ..const                import (AIRPODS_FNAME, CONF_PASSWORD,
                                     APPLE_SPECIAL_ICLOUD_SERVER_COUNTRY_CODE,
                                     HHMMSS_ZERO,
                                     FMF, FAMSHR,
@@ -141,7 +141,7 @@ class PyiCloudSession(Session):
         kwargs.pop("retry_cnt", 0)
 
         if Gb.log_rawdata_flag:
-            log_msg = (f"{secs_to_time(time_now_secs())}, {method}, {url}, {kwargs}")
+            log_msg = (f"{secs_to_time(time_now_secs())}, {method}, {url}, {self.prefilter_rawdata(kwargs)}")
             log_rawdata("PyiCloud_ic3 iCloud Request", {'raw': log_msg})
 
         try:
@@ -166,9 +166,8 @@ class PyiCloudSession(Session):
 
             if (retry_cnt == 3 or response.status_code != 200 or response.ok is False):
                 log_msg +=  (f", ResponseOK-{response.ok}, Headers-{response.headers}")
-
-            log_rawdata("PyiCloud_ic3 iCloud Response-Header", {'raw': log_msg})
-            log_rawdata("PyiCloud_ic3 iCloud Response-Data", {'filter': data})
+            #log_rawdata("PyiCloud_ic3 iCloud Response-Header", {'raw': log_msg})
+            log_rawdata("PyiCloud_ic3 iCloud Response-Data", {'filter': self.prefilter_rawdata(data)})
             # log_rawdata("PyiCloud_ic3 iCloud Response-Data", {'raw': data})
 
         for header in HEADER_DATA:
@@ -246,6 +245,7 @@ class PyiCloudSession(Session):
 
         return response
 
+#------------------------------------------------------------------
     def _raise_error(self, code, reason):
         api_error = None
         if reason in ("ZONE_NOT_FOUND", "AUTHENTICATION_FAILED"):
@@ -269,12 +269,41 @@ class PyiCloudSession(Session):
         # log_error_msg(f"{api_error}")
         raise api_error
 
+#------------------------------------------------------------------
     def _log_debug_msg(self, title, display_data):
         ''' Display debug data fields '''
         try:
             log_debug_msg(f"{title} -- {display_data}")
         except:
             log_debug_msg(f"{title} -- None")
+
+#------------------------------------------------------------------
+    @staticmethod
+    def prefilter_rawdata(kwargs_json):
+        '''
+        Obscure account name and password in rawdata
+        '''
+
+        if kwargs_json is None:
+            return None
+
+        try:
+            # if 'data' not in kwargs_json:
+            #     return kwargs_json
+
+            kwargs_dict = json.loads(kwargs_json['data'])
+            if 'password' in kwargs_dict:       kwargs_dict['password']       = obscure_field(kwargs_dict['password'])
+            if 'accountName' in kwargs_dict:    kwargs_dict['accountName']    = obscure_field(kwargs_dict['accountName'])
+            if 'trustTokens' in kwargs_dict:    kwargs_dict['trustTokens']    = '... ...'
+            if 'trustToken' in kwargs_dict:     kwargs_dict['trustToken']     = '... ...'
+            if 'dsWebAuthToken' in kwargs_dict: kwargs_dict['dsWebAuthToken'] = '... ...'
+            kwargs_json = json.dumps(kwargs_dict)
+
+        except Exception as err:
+            #log_exception(err)
+            pass
+
+        return kwargs_json
 
 #------------------------------------------------------------------
     async def _async_session_request(self, method, url, **kwargs):
@@ -1462,9 +1491,6 @@ class PyiCloud_RawData():
     def set_located_time(self):
 
         try:
-            # if (LOCATION not in self.device_data
-            #         or self.device_data[LOCATION] == {}
-            #         or self.device_data[LOCATION] is None):
             if self.is_location_data_available is False:
                 self.device_data[LOCATION] = {self.timestamp_field: 1000}
 
