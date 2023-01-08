@@ -22,7 +22,7 @@ class iCloud3EventLogCard extends HTMLElement {
     }
     //---------------------------------------------------------------------------
     setConfig(config) {
-        const version = "3.0.1"
+        const version = "3.0.2"
         const cardTitle = "iCloud3 Event Log v3"
 
         const root = this.shadowRoot
@@ -252,7 +252,7 @@ class iCloud3EventLogCard extends HTMLElement {
         btnAction.appendChild(btnActionOptOC7)
 
         var btnActionOptOC4 = document.createElement("option")
-        var btnActionOptOC4Txt = document.createTextNode("Start HA Debug Logging")
+        var btnActionOptOC4Txt = document.createTextNode("Start iCloud3 Debug Logging")
         btnActionOptOC4.setAttribute("value", "dev-log_level: debug")
         btnActionOptOC4.setAttribute("id", "optHalog")
         btnActionOptOC4.classList.add("btnActionOption")
@@ -716,6 +716,9 @@ class iCloud3EventLogCard extends HTMLElement {
             .btnNotSelected {
                 color: var(--primary-text-color);
                 background-color: rgba(var(--rgb-primary-text-color), 0.04);
+                /*color: darkred;*/
+                /*background-color: #ffffe6;*/
+
             }
             .btnUserMessage {
                 color: white;
@@ -1382,9 +1385,22 @@ class iCloud3EventLogCard extends HTMLElement {
             }
 
             //Change CRLF in the text string to HTML >b> for a new line
-            // while (tText.indexOf("CRLF•") >= 0) {
-            //     tText = tText.replace("CRLF•", "<br>&nbsp;&nbsp;•&nbsp;&nbsp;")
+            // while (tText.indexOf("⣇") >= 0) {
+            //     tText = tText.replace("⣇", "<br>")
             // }
+            // while (tText.indexOf("⠈") >= 0) {
+            //     tText = tText.replace("⠈", "&nbsp;")
+            // }
+
+            // Uncompress evlog recd special characters. This is also in event_log.py
+            // and used for the event-log.log and the debug.log files
+            tText = tText.replace(/⣇/g, "<br>")
+            tText = tText.replace(/⠈/g, "&nbsp;")
+            tText = tText.replace(/⠉/g, "&nbsp;&nbsp;")
+            tText = tText.replace(/⠋/g, "&nbsp;&nbsp;&nbsp;")
+            tText = tText.replace(/⠛/g, "&nbsp;&nbsp;&nbsp;&nbsp;")
+            tText = tText.replace(/⠟/g, "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;")
+            tText = tText.replace(/⠿/g, "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;")
             // while (tText.indexOf("DOT") >= 0) {
             //     tText = tText.replace("DOT", "•&nbsp;&nbsp;")
             // }
@@ -1524,10 +1540,10 @@ class iCloud3EventLogCard extends HTMLElement {
             optEvlog.text = "Show Tracking Monitors"
         }
         if (logLevelDebug.indexOf("halog") >= 0) {
-            optHalog.text = "Stop HA Debug Logging"
+            optHalog.text = "Stop iCloud3 Debug Logging"
             infoTimeText = "Debug, " + updateTime
         } else {
-            optHalog.text = "Start HA Debug Logging"
+            optHalog.text = "Start iCloud3 Debug Logging"
         }
         if (logLevelDebug.indexOf("rawdata") >= 0) {
             optRawdata.text = "Stop Rawdata Logging"

@@ -21,27 +21,28 @@ from .const             import (DOMAIN, VERSION,
                                 SENSOR_WAZEHIST_TRACK_NAME,
                                 HOME,  NOT_SET, NOT_SET_FNAME,
                                 DATETIME_ZERO, HHMMSS_ZERO,
-                                BLANK_SENSOR_FIELD,
-                                DOT,
+                                BLANK_SENSOR_FIELD, DOT, UM_FNAME,
                                 TRACK_DEVICE, MONITOR_DEVICE, INACTIVE_DEVICE,
-                                NAME, FNAME,
-                                BADGE,
+                                DISTANCE_TO_OTHER_DEVICES,
+                                NAME, FNAME, BADGE,
                                 ZONE, ZONE_INFO,
                                 BATTERY, BATTERY_STATUS,
                                 ZONE_DISTANCE,
+                                DISTANCE_TO_OTHER_DEVICES_DATETIME,
                                 CONF_TRACK_FROM_ZONES,
                                 CONF_IC3_DEVICENAME, CONF_MODEL, CONF_RAW_MODEL, CONF_FNAME,
                                 CONF_TRACKING_MODE,
                                 )
 from .const_sensor      import (SENSOR_DEFINITION, SENSOR_GROUPS,
                                 SENSOR_FNAME, SENSOR_TYPE, SENSOR_ICON,
-                                SENSOR_ATTRS, SENSOR_DEFAULT, )
+                                SENSOR_ATTRS, SENSOR_DEFAULT, SENSOR_LIST_DISTANCE, )
 
 from .helpers.common    import (instr, )
 from .helpers.messaging import (log_info_msg, log_debug_msg, log_error_msg, log_exception,
                                 _trace, _traceha, )
 from .helpers.time_util import (time_to_12hrtime, time_remove_am_pm, secs_to_time_str, mins_to_time_str,
                                 time_now_secs, )
+from .helpers.dist_util import (km_to_mi, )
 from .helpers           import entity_io
 from .support           import start_ic3
 
@@ -378,6 +379,7 @@ class SensorBase(SensorEntity):
             self._on_remove         = [self.after_removal_cleanup]
             self.entity_removed_flag = False
 
+            self.sensor_base     = sensor_base
             self.sensor_type     = self._get_sensor_definition(sensor_base, SENSOR_TYPE).replace(' ', '')
             self.sensor_fname    = (f"{conf_device[FNAME]} "
                                     f"{self._get_sensor_definition(sensor_base, SENSOR_FNAME)}"
@@ -441,7 +443,6 @@ class SensorBase(SensorEntity):
     def device_info(self) -> DeviceInfo:
         """Return information about the device """
         return DeviceInfo(  identifiers  = {(DOMAIN, self.devicename)},
-                            #via_device   = self.device_id,
                             manufacturer = "Apple",
                             model        = self.conf_device[CONF_RAW_MODEL],
                             name         = f"{self.conf_device[CONF_FNAME]} ({self.devicename})",
@@ -458,19 +459,41 @@ class SensorBase(SensorEntity):
         Get the extra attributes for the sensor defined in the
         SENSOR_DEFINITION dictionary
         '''
-        sensors     = self._get_sensor_definition(sensor, SENSOR_ATTRS)
         extra_attrs = {'data_source': 'iCloud3'}
 
-        for _sensor in sensors:
-            sensor_value = self._get_sensor_value(_sensor)
+        if instr(self.sensor_type, 'distance'):
+            extra_attrs["Units"] = UM_FNAME.get(Gb.um, Gb.um)
 
+        for _sensor in self._get_sensor_definition(sensor, SENSOR_ATTRS):
+            sensor_value = self._get_sensor_value(_sensor)
             extra_attrs[_sensor] = sensor_value
 
-        # Add distance this device is to other devices to the attributes
-        if self.Device and sensor == ZONE_DISTANCE:
-            for devicename, dist_apart_msg in self.Device.dist_apart_msg_by_devicename.items():
-                if _Device := Gb.Devices_by_devicename.get(devicename):
-                    extra_attrs[_Device.fname_devtype] = dist_apart_msg
+        if (self.Device is None or sensor not in SENSOR_LIST_DISTANCE):
+            return extra_attrs
+
+        # Add distance apart from this device other devices to the attributes
+        # {devicename: [distance_m, gps_accuracy_factor, display_text]}
+        extra_attrs["Distance To Devices Determined"] = self.Device.sensors[DISTANCE_TO_OTHER_DEVICES_DATETIME]
+        for devicename, dist_to_other_devices in self.Device.sensors[DISTANCE_TO_OTHER_DEVICES].items():
+            Device = Gb.Devices_by_devicename[devicename]
+            extra_attrs[f"Device Info.: {Device.fname_devtype}"] = dist_to_other_devices[2]
+
+        for devicename, dist_to_other_devices in self.Device.sensors[DISTANCE_TO_OTHER_DEVICES].items():
+            dist_m = dist_to_other_devices[0]
+            devicename_utf8 = devicename.replace('_', '-')
+            extra_attrs[f"DistTo (m)..: {devicename_utf8}"] = dist_m
+
+        if Gb.um == 'km':
+            for devicename, dist_to_other_devices in self.Device.sensors[DISTANCE_TO_OTHER_DEVICES].items():
+                dist_km = dist_to_other_devices[0] / 1000
+                devicename_utf8 = devicename.replace('_', '-')
+                extra_attrs[f"DistTo (km): {devicename_utf8}"] = dist_km
+        else:
+            for devicename, dist_to_other_devices in self.Device.sensors[DISTANCE_TO_OTHER_DEVICES].items():
+                dist_km = dist_to_other_devices[0] / 1000
+                dist_mi = km_to_mi(dist_km)
+                devicename_utf8 = devicename.replace('_', '-')
+                extra_attrs[f"DistTo (mi).: {devicename_utf8}"] = dist_mi
 
         return extra_attrs
 

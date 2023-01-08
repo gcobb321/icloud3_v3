@@ -5,18 +5,22 @@ from ..const                import (
                                     RARROW,
                                     CONF_IC3_VERSION, VERSION, CONF_EVLOG_CARD_DIRECTORY, CONF_EVLOG_CARD_PROGRAM,
                                     CONF_UPDATE_DATE, CONF_PASSWORD, CONF_ICLOUD_SERVER_ENDPOINT_SUFFIX,
+                                    CONF_DEVICES, CONF_SETUP_ICLOUD_SESSION_EARLY,
                                     CONF_UNIT_OF_MEASUREMENT, CONF_TIME_FORMAT, CONF_LOG_LEVEL,
-                                    CONF_FAMSHR_DEVICENAME2, CONF_FAMSHR_DEVICE_ID2, 
-                                    CONF_RAW_MODEL2, CONF_MODEL2, CONF_MODEL_DISPLAY_NAME2, CONF_IOSAPP_DEVICE2,                                    CF_DEFAULT_IC3_CONF_FILE,
+                                    CONF_FAMSHR_DEVICENAME2, CONF_FAMSHR_DEVICE_ID2,
+                                    CONF_RAW_MODEL2, CONF_MODEL2, CONF_MODEL_DISPLAY_NAME2, CONF_IOSAPP_DEVICE2,
+                                    CF_DEFAULT_IC3_CONF_FILE,
                                     DEFAULT_PROFILE_CONF, DEFAULT_TRACKING_CONF, DEFAULT_GENERAL_CONF,
                                     DEFAULT_SENSORS_CONF,
                                     HOME_DISTANCE, CONF_SENSORS_TRACKING_DISTANCE,
                                     CONF_SENSORS_DEVICE, BATTERY_STATUS,
+                                    CONF_WAZE_USED, CONF_WAZE_REGION, CONF_DISTANCE_METHOD,
                                     )
 
 from ..support              import start_ic3
+from ..support              import waze
 from ..helpers.common       import (instr, ordereddict_to_dict, )
-from ..helpers.messaging    import (log_exception, _trace, _traceha, )
+from ..helpers.messaging    import (log_exception, _trace, _traceha, close_reopen_ic3_debug_log_file, )
 from ..helpers.time_util    import (datetime_now, )
 
 import os
@@ -26,6 +30,8 @@ import base64
 import logging
 # _LOGGER = logging.getLogger(__name__)
 _LOGGER = logging.getLogger(f"icloud3")
+
+
 #-------------------------------------------------------------------------------------------
 def load_storage_icloud3_configuration_file():
 
@@ -139,12 +145,16 @@ def build_initial_config_file_structure():
             Gb.conf_tracking[CONF_ICLOUD_SERVER_ENDPOINT_SUFFIX] = Gb.location_info['country_code'].lower()
 
         if Gb.config and Gb.config.units['name'] != 'Imperial':
-            Gb.conf_data['general'][CONF_UNIT_OF_MEASUREMENT] = 'km'
-            Gb.conf_data['general'][CONF_TIME_FORMAT] = '24-hour'
+            Gb.conf_general[CONF_UNIT_OF_MEASUREMENT] = 'km'
+            Gb.conf_general[CONF_TIME_FORMAT] = '24-hour'
 
         elif Gb.location_info['use_metric']:
-            Gb.conf_data['general'][CONF_UNIT_OF_MEASUREMENT] = 'km'
-            Gb.conf_data['general'][CONF_TIME_FORMAT] = '24-hour'
+            Gb.conf_general[CONF_UNIT_OF_MEASUREMENT] = 'km'
+            Gb.conf_general[CONF_TIME_FORMAT] = '24-hour'
+
+        waze_region_code = waze.waze_region_by_country_code()
+        Gb.conf_general[CONF_WAZE_REGION] = waze_region_code.lower()
+        Gb.conf_general[CONF_WAZE_USED]   = (waze_region_code != '??')
 
     except:
         pass
@@ -223,8 +233,23 @@ def config_file_special_maintenance():
         Gb.conf_profile[CONF_IC3_VERSION] = VERSION
         update_config_file_flag = True
 
+    if CONF_SETUP_ICLOUD_SESSION_EARLY not in Gb.conf_tracking:
+        _insert_into_conf_tracking(CONF_SETUP_ICLOUD_SESSION_EARLY, True)
+        update_config_file_flag = True
+        # Gb.conf_tracking.insert(3, [CONF_SETUP_ICLOUD_SESSION_EARLY]) = True
+
     if update_config_file_flag:
         write_storage_icloud3_configuration_file()
+
+#--------------------------------------------------------------------
+def _insert_into_conf_tracking(new_item, initial_value):
+    '''
+    Add item to conf_travking before the devices element
+    '''
+    pos = list(Gb.conf_tracking.keys()).index(CONF_DEVICES) - 1
+    items = list(Gb.conf_tracking.items())
+    items.insert(pos, (new_item, initial_value ))
+    Gb.conf_tracking = dict(items)
 
 #--------------------------------------------------------------------
 def write_storage_icloud3_configuration_file(filename_suffix=''):
@@ -237,7 +262,6 @@ def write_storage_icloud3_configuration_file(filename_suffix=''):
     '''
 
     try:
-
         filename = f"{Gb.icloud3_config_filename}{filename_suffix}"
         with open(filename, 'w', encoding='utf8') as f:
             Gb.conf_profile[CONF_UPDATE_DATE] = datetime_now()
@@ -256,6 +280,9 @@ def write_storage_icloud3_configuration_file(filename_suffix=''):
             json.dump(Gb.conf_file_data, f, indent=4, ensure_ascii=False)
 
             Gb.conf_tracking[CONF_PASSWORD] = decoded_password
+
+        if Gb.iC3DebugLogFile:
+            close_reopen_ic3_debug_log_file()
 
         return True
 

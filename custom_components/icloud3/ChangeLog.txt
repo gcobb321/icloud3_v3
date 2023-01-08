@@ -1,3 +1,27 @@
+Beta 7 - 1/8/2023
+~~~~~~~~~~~~~~~~~~~~
+1.  Fixed a problem connecting to the iCloud Account when there was a delay establishing the
+    initial connection. This was causing authentication delays and eventually creating an HA
+    error about I/O being done outside of the Event Loop. Also added a configuration item to
+    delay setting up the iCloud connection untill later in the iCloud start up process.
+2.  Removed the unit of measure (mi, km) from the distance sensor distance related attributes.
+    They are now numeric values, making it much simpler to use in automation triggers and conditions.
+3.  Fixed a problem where the Max Distance attribute in the distance sensors was being set when the
+    location was old or the gps accuracy was poor. An additional check was added to only set the
+    max_distance when the interval is >= 1-minute
+4.  Added the distance to other devices to _zone_distance sensor and _home_distance sensors. It
+    displays the distance in meters and miles or kilometers. Each device has it's own attribute
+    that is available in automations and scripts. Since the underscore ('_') can not be displayed
+    in an attribute (HA limitation), the underscores ('_'s) have been converted to dashes ('-'s).
+5.  Modified the way nearby device information is reported and used to make it more reliable and
+    easier to display in the Event Log.
+6.  Fixed a problem where iCloud3 would hang if the Waze Region code was not appropriate for your
+    location. Also, the HA location country code is used to determine the correct Waze Region when
+    the conversion is done or iCloud3 is being installed for the first time.
+7.  Fixed a few problems with the icloud3-debug.log where debug logging would be stopped when it
+    shouldn't have and where the file would not always be created when iCloud3 started. Also reduced
+    time ensuring records are written to the file from 15-minutes to 1-minute
+
 Beta 6 - 12/30/2022
 ~~~~~~~~~~~~~~~~~~~~
 1.  Corrected a mispelled directory name used for installing sample device images (ipad.png, watch.png).

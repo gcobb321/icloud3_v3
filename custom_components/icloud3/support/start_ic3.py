@@ -8,7 +8,7 @@ from ..const            import (
                                 HOME, STATIONARY,
                                 ERROR,
                                 CALC,
-                                STATE_TO_ZONE_BASE,
+                                STATE_TO_ZONE_BASE, CMD_RESET_PYICLOUD_SESSION,
                                 EVLOG_INIT_HDR, EVLOG_ALERT, EVLOG_IC3_STARTING, EVLOG_HIGHLIGHT,
                                 EVLOG_TABLE_MAX_CNT_BASE, EVLOG_TABLE_MAX_CNT_ZONE,
                                 CRLF, CRLF_DOT, CRLF_CHK, CRLF_NBSP6_DOT, DOT, DOT2, CRLF_X, CRLF_NBSP6_X,
@@ -512,6 +512,9 @@ def process_conf_flow_parameter_updates():
         check_ic3_event_log_file_version()
         Gb.hass.loop.create_task(update_lovelace_resource_event_log_js_entry())
         Gb.EvLog.setup_event_log_trackable_device_info()
+
+    if 'reauth' in Gb.config_flow_updated_parms:
+        Gb.evlog_action_request = CMD_RESET_PYICLOUD_SESSION
 
     if 'waze' in Gb.config_flow_updated_parms:
         set_waze_conf_parameters()
@@ -1856,6 +1859,11 @@ def setup_trackable_devices():
                 event_msg += f"{CRLF_DOT}Notifications: {Device.iosapp_entity[NOTIFY].replace('sensor.', '')}"
             else:
                 event_msg += f"{CRLF_DOT}Notifications: WAITING FOR NOTIFY SERVICE TO START"
+
+        # Initialize distance_to_other_devices, add other devicenames to this Device's field
+        for _devicename, _Device in Gb.Devices_by_devicename.items():
+            if devicename != _devicename:
+                Device.dist_to_other_devices[_devicename] = [0, 0, '0m/±0m']
 
         # Display all sensor entities early. Value displaye will be '---'
         create_Device_StationaryZone_object(Device)

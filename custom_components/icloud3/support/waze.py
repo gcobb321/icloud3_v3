@@ -22,6 +22,39 @@ from ..helpers.dist_util    import (mi_to_km,  format_dist_km, )
 import traceback
 import time
 
+WAZE_STATUS_FNAME ={WAZE_USED: 'Waze-Used',
+                    WAZE_NOT_USED: 'Waze-Not Used',
+                    WAZE_PAUSED: 'Waze-Paused',
+                    WAZE_OUT_OF_RANGE: 'Waze-Out of Range',
+                    WAZE_NO_DATA: 'Waze-No Data'}
+
+WAZE_REGION_COUNTRY_CODES = {
+                    'EU':  ['AL', 'AD', 'AT', 'BY', 'BE', 'BA', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FO', 'FI',
+                            'FR', 'DE', 'GI', 'GR', 'HU', 'IS', 'IE', 'IM', 'IT', 'RS', 'LV', 'LI', 'LT', 'LU',
+                            'MK', 'MT', 'MD', 'MC', 'ME', 'NL', 'NO', 'PL', 'PT', 'RO', 'RU', 'SM', 'RS', 'SK',
+                            'SI', 'ES', 'SE', 'CH', 'UA', 'GB', 'VA', 'RS', ],
+                    'AU':  ['AS', 'AU', 'NZ', 'CK', 'TL', 'FM', 'FJ', 'PF', 'GU', 'KI', 'MP', 'MH', 'UM', 'NR',
+                            'NC', 'NZ', 'NU', 'NF', 'PW', 'PG', 'MP', 'WS', 'SB', 'TK', 'TO', 'TV', 'VU', 'UM',
+                            'WF', ],
+                    'NA':  ['AI', 'AG', 'AW', 'BS', 'BB', 'BZ', 'BM', 'BQ', 'VG', 'CA', 'KY', 'CR', 'CU', 'CW',
+                            'DM', 'DO', 'SV', 'GL', 'GD', 'GP', 'GT', 'HT', 'HN', 'JM', 'MQ', 'MX', 'PM', 'MS',
+                            'CW', 'KN', 'NI', 'PA', 'PR', 'BQ', 'SX', 'KN', 'LC', 'PM', 'VC', 'TT', 'TC', 'VI', ],
+                    'US':  ['US', ],
+                    'IL':  ['IL', ]}
+                    # 'SA':  ['AR', 'BO', 'BR', 'CL', 'CO', 'EC', 'FK', 'GF', 'GY', 'GY', 'PY', 'PE', 'SR', 'UY',
+                            # 'VE', ],
+
+#-------------------------------------------------------------------------------------------
+def waze_region_by_country_code():
+    '''
+    Determine the region code using the country code in the HA location_info data
+    '''
+    for waze_region_code, country_codes in WAZE_REGION_COUNTRY_CODES.items():
+        if Gb.location_info['country_code'].upper() in country_codes:
+            return waze_region_code
+    return '??'
+
+
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 class Waze(object):
     def __init__(self, distance_method_waze_flag, waze_min_distance, waze_max_distance,
@@ -80,6 +113,11 @@ class Waze(object):
     @property
     def is_status_OUT_OF_RANGE(self):
         return self.waze_status == WAZE_OUT_OF_RANGE
+
+    @property
+    def waze_status_fname(self):
+        return WAZE_STATUS_FNAME.get(self.waze_status, 'Waze-Unknown')
+
 
 ########################################################
 #
@@ -246,7 +284,7 @@ class Waze(object):
                             DeviceFmZone.waze_results
 
             location_id = -2
-            waze_source_msg = "From Previous Waze Location Info "
+            waze_source_msg = "Using Previous Waze Location Info "
 
         elif check_hist_db is False or Gb.WazeHist.use_wazehist_flag is False:
             location_id = 0
@@ -264,7 +302,7 @@ class Waze(object):
                     and route_time > 0
                     and route_dist_km > 0):
                 Gb.WazeHist.update_usage_cnt(location_id)
-                waze_source_msg = f"From Route History Database, Recd-{location_id} "
+                waze_source_msg = f"Using Route History Database, Recd-{location_id} "
 
             else:
                 # Zone's location changed in WazeHist or invalid data. Get from Waze later
@@ -310,6 +348,7 @@ class Waze(object):
                     route_time, route_dist_km = \
                             self.WazeRouteCalc.calc_route_info(from_lat, from_long, to_lat, to_long)
 
+                    retry_cnt += 1
                     if route_time < 0:
                         continue
 
@@ -321,9 +360,7 @@ class Waze(object):
 
                     return (WAZE_USED, route_time, route_dist_km)
 
-
-                except WRCError as err:
-                    retry_cnt += 1
+                except Exception as err:
                     if retry_cnt > 3:
                         log_msg = (f"Waze Server Error (#{retry_cnt}), Retrying, Type-{err}")
                         log_info_msg(log_msg)
@@ -332,7 +369,7 @@ class Waze(object):
             # log_exception(err)
             self._set_waze_not_available_error(err)
 
-        self._set_waze_not_available_error("No data returned")
+        self._set_waze_not_available_error(f"No data returned")
 
         return (WAZE_NO_DATA, 0, 0)
 
@@ -349,10 +386,10 @@ class Waze(object):
                 and instr(err, "Max retries exceeded")
                 and instr(err, "TIMEOUT")):
             self.waze_status = WAZE_NOT_USED
-            err = "Connection error accessing www.waze.com. Waze is not available at this time. "
-        else:
-            log_msg = (f"{EVLOG_ALERT}Alert > Waze Connection Error > {err}. "
-                        "Distance will be calculated, Travel Time not available")
+            err = "A problem occurred connecting to `www.waze.com`. Waze is not available at this time"
+
+        log_msg = (f"{EVLOG_ALERT}Alert > Waze Connection Error, Region-{self.waze_region} > {err}. "
+                    "The route distance will be calculated, Travel Time is not available.")
         post_event(log_msg)
 
 #--------------------------------------------------------------------

@@ -22,6 +22,7 @@ from ..helpers.messaging    import (post_event, post_error_msg, post_monitor_msg
                                     write_ic3_debug_log_recd,
                                     log_info_msg, log_debug_msg, log_exception,
                                     open_ic3_debug_log_file, close_ic3_debug_log_file,
+                                    close_reopen_ic3_debug_log_file,
                                     _trace, _traceha, )
 from ..helpers.time_util    import (secs_to_time, time_str_to_secs, datetime_now, secs_since, )
 
@@ -322,11 +323,12 @@ def _handle_global_action(global_action, action_option):
         return
 
     elif global_action == CMD_RESET_PYICLOUD_SESSION:
+        # This will be handled in the 5-second ic3 loop
         Gb.evlog_action_request = CMD_RESET_PYICLOUD_SESSION
         return
 
     elif global_action == CMD_LOG_LEVEL:
-        _handle_action_log_level(action_option)
+        handle_action_log_level(action_option)
         return
 
     elif global_action == CMD_WAZEHIST_MAINTENANCE:
@@ -348,7 +350,11 @@ def _handle_global_action(global_action, action_option):
         return
 
 #--------------------------------------------------------------------
-def _handle_action_log_level(action_option):
+def handle_action_log_level(action_option, change_conf_log_level=True):
+
+    new_log_debug_flag   = Gb.log_debug_flag
+    new_log_rawdata_flag = Gb.log_rawdata_flag
+
     if instr(action_option, 'debug'):
         new_log_debug_flag   = (not Gb.log_debug_flag)
         new_log_rawdata_flag = False
@@ -370,7 +376,8 @@ def _handle_action_log_level(action_option):
     event_msg =(f"Log Level State > {event_msg}")
     post_event(event_msg)
 
-    if (new_log_debug_flag is False
+    if (change_conf_log_level
+            and new_log_debug_flag is False
             and Gb.conf_general[CONF_LOG_LEVEL] != 'info'):
         Gb.conf_general[CONF_LOG_LEVEL] = 'info'
         config_file.write_storage_icloud3_configuration_file()
@@ -389,6 +396,10 @@ def _handle_action_log_level(action_option):
 
     Gb.log_debug_flag   = new_log_debug_flag
     Gb.log_rawdata_flag = new_log_rawdata_flag
+
+#--------------------------------------------------------------------
+def close_reopen_ic3_debug_log_file():
+    close_reopen_ic3_debug_log_file()
 
 #--------------------------------------------------------------------
 def _handle_action_device_location(Device):

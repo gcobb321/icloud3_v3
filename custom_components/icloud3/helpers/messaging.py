@@ -233,15 +233,23 @@ def close_ic3_debug_log_file(new_debug_log=False):
     Gb.ic3_debug_log_update_flag = False
 
 #------------------------------------------------------------------------------
-def close_reopen_ic3_debug_log_file():
-    write_ic3_debug_log_recd(f"Commit Log File Records")
+def close_reopen_ic3_debug_log_file(closed_by=None):
+    '''
+    Close and reopen the debug log file to commit the newly written records
+    '''
+    if Gb.ic3_debug_log_update_flag:
+        return
+
+    if closed_by:
+        write_ic3_debug_log_recd(f"Commit Log File Records, RequestedBy-{closed_by}")
+
     close_ic3_debug_log_file()
     open_ic3_debug_log_file()
 
 #------------------------------------------------------------------------------
 def write_ic3_debug_log_recd(recd):
 
-    if Gb.log_debug_flag is None:
+    if Gb.log_debug_flag is False:
         return
 
     if Gb.iC3DebugLogFile is None:
@@ -261,13 +269,14 @@ def _debug_recd_filter(recd):
     Filter out EVLOG_XXX control fields
     '''
 
+    if Gb.EvLog:
+        recd = Gb.EvLog.uncompress_evlog_recd_special_characters(recd)
+
     if recd.startswith('^'): recd = recd[3:]
     extra_tabs = '\t\t\t' if recd.startswith('STAGE') else ''
     recd = recd.replace(EVLOG_MONITOR, '')
     recd = recd.replace(NBSP, '')
     recd = recd.replace('* >', '').replace(CRLF, f"\n{DEBUG_LOG_LINE_TABS}{extra_tabs}")
-
-    # recd = recd.replace('* >', '').replace(CRLF, '\n\t\t\t\t\t\t\t\t\t\t')
 
     if recd.find('^') == -1: return recd.strip()
 
@@ -320,12 +329,16 @@ def log_info_msg(module_name, log_msg='+'):
 #--------------------------------------------------------------------
 def log_warning_msg(module_name, log_msg='+'):
     log_msg = resolve_log_msg_module_name(module_name, log_msg)
-    write_ic3_debug_log_recd(log_filter(log_msg))
+    log_msg = log_filter(log_msg)
+    Gb.HALogger.warning(log_msg)
+    write_ic3_debug_log_recd(log_msg)
 
 #--------------------------------------------------------------------
 def log_error_msg(module_name, log_msg='+'):
     log_msg = resolve_log_msg_module_name(module_name, log_msg)
-    write_ic3_debug_log_recd(log_filter(log_msg))
+    log_msg = log_filter(log_msg)
+    Gb.HALogger.error(log_msg)
+    write_ic3_debug_log_recd(log_msg)
 
 #--------------------------------------------------------------------
 def log_exception(err):
@@ -386,15 +399,6 @@ def log_rawdata(title, rawdata, log_rawdata_flag=False):
 
     try:
         if 'raw' in rawdata or log_rawdata_flag:
-            # try:
-            #     # Remove username & password from data returned from iCloud
-            #     if CONF_USERNAME in rawdata['raw']['data']:
-            #         rawdata['raw']['data'][CONF_USERNAME] = obscure_field(rawdata['raw']['data'][CONF_USERNAME])
-            #     if CONF_PASSWORD in rawdata_data['raw']['data']:
-            #         rawdata['raw']['data'][CONF_PASSWORD] = obscure_field(rawdata['raw']['data'][CONF_PASSWORD])
-            # except:
-            #     pass
-
             log_debug_msg(f"{'─'*8} {title.upper()} {'─'*8}")
             log_debug_msg(rawdata)
             return
@@ -426,15 +430,6 @@ def log_rawdata(title, rawdata, log_rawdata_flag=False):
                 rawdata_data['id'] = f"{rawdata_data['id'][:10]}..."
             elif 'id' in rawdata_data['filter'] and len(rawdata_data['filter']['id']) > 10:
                 rawdata_data['filter']['id'] = f"{rawdata_data['filter']['id'][:10]}..."
-
-            # try:
-            #     # Remove username & password from data returned from iCloud
-            #     if CONF_USERNAME in rawdata_data['data']:
-            #         rawdata_data['data'][CONF_USERNAME] = obscure_field(rawdata_data['data'][CONF_USERNAME])
-            #     if CONF_PASSWORD in rawdata_data['data']:
-            #         rawdata_data['data'][CONF_PASSWORD] = obscure_field(rawdata_data['data'][CONF_PASSWORD])
-            # except:
-            #     pass
 
             if rawdata_data:
                 log_msg = f"{rawdata_data}"
@@ -597,21 +592,24 @@ def _traceha(log_text, v1='+++', v2='', v3='', v4='', v5=''):
     '''
     Display a message or variable in the HA log file
     '''
+    try:
+        if v1 == '+++':
+            log_msg = ''
+        else:
+            log_msg = (f"|{v1}|-|{v2}|-|{v3}|-|{v4}|-|{v5}|")
 
-    if v1 == '+++':
-        log_msg = ''
-    else:
-        log_msg = (f"|{v1}|-|{v2}|-|{v3}|-|{v4}|-|{v5}|")
+        if log_text in Gb.Devices_by_devicename:
+            trace_msg = (f"{Gb.trace_prefix}{log_text} ::: TRACE ::: {log_msg}")
+        else:
+            trace_msg = (f"{Gb.trace_prefix} ::: TRACE ::: {log_text}, {log_msg}")
 
-    if log_text in Gb.Devices_by_devicename:
-        trace_msg = (f"{Gb.trace_prefix}{log_text} ::: TRACE ::: {log_msg}")
-    else:
-        trace_msg = (f"{Gb.trace_prefix} ::: TRACE ::: {log_text}, {log_msg}")
+        if Gb.iC3DebugLogFile:
+            write_ic3_debug_log_recd(trace_msg)
+        else:
+            Gb.HALogger.info(trace_msg)
 
-    if Gb.iC3DebugLogFile:
-        write_ic3_debug_log_recd(trace_msg)
-    else:
-        Gb.HALogger.info(trace_msg)
+    except Exception as err:
+        log_exception(err)
 
 #--------------------------------------------------------------------
 def _called_from():

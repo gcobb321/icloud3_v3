@@ -2,7 +2,7 @@
 from ..global_variables     import GlobalVariables as Gb
 from ..const                import (HOME, NOT_SET, HHMMSS_ZERO,
                                     EVLOG_ALERT,
-                                    CRLF,
+                                    CRLF, CRLF_DOT,
                                     TOWARDS,
                                     FMF, FAMSHR,
                                     FMF_FNAME, FAMSHR_FNAME, IOSAPP,
@@ -18,7 +18,7 @@ from ..helpers.messaging    import (post_event, post_error_msg, post_monitor_msg
                                     log_exception, log_start_finish_update_banner, log_rawdata,
                                     _trace, _traceha, )
 from ..helpers.time_util    import (time_now_secs, secs_to_time, secs_since, secs_to, )
-from .pyicloud_ic3          import (PyiCloudAPIResponseException, PyiCloud2SARequiredException, )
+from .pyicloud_ic3          import (PyiCloudAPIResponseException, PyiCloud2FARequiredException, )
 
 
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -209,8 +209,8 @@ def update_PyiCloud_RawData_data(Device, results_msg_flag=True):
         if Device.device_id_famshr is None and Device.device_id_fmf is None:
             return False
 
-        if pyicloud_ic3_interface.is_authentication_2fa_code_needed():
-            if pyicloud_ic3_interface.authenticate_icloud_account() is False:
+        if pyicloud_ic3_interface.is_authentication_2fa_code_needed(Gb.PyiCloud):
+            if pyicloud_ic3_interface.authenticate_icloud_account(Gb.PyiCloud, called_from='data_handler') is False:
                 return False
 
         if is_PyiCloud_RawData_data_useable(Device, results_msg_flag=False):
@@ -267,13 +267,16 @@ def update_PyiCloud_RawData_data(Device, results_msg_flag=True):
 
         return True
 
-    except (PyiCloud2SARequiredException, PyiCloudAPIResponseException) as err:
+    except (PyiCloud2FARequiredException, PyiCloudAPIResponseException) as err:
         Device.icloud_acct_error_flag      = True
         Device.icloud_devdata_useable_flag = False
 
         error_msg = (f"{EVLOG_ALERT}iCloud Location Request Error > An error occured refreshing "
-                        f"the iCloud Location Data. iCloud may be down or there is an "
-                        f"internet connection issue. iCloud3 will try again later. ({err})")
+                        f"the iCloud Location Data. "
+                        f"{CRLF_DOT}iCloud may be down, or"
+                        f"{CRLF_DOT}iCloud Account needs to be reauthorized, or"
+                        f"{CRLF_DOT}There may be an internet connection issue"
+                        f"{CRLF}iCloud3 will try to access the iCloud Account again later. ({err})")
         post_event(Device.devicename, error_msg)
         post_error_msg(error_msg)
 
@@ -346,7 +349,8 @@ def update_device_with_latest_raw_data(Device, all_devices=False):
                         post_event(_Device.devicename, event_msg)
 
             if (_RawData is None
-                    or _RawData.location_secs == 0 and _Device.iosapp_data_secs == 0):
+                    or _RawData.location_secs == 0 and _Device.iosapp_data_secs == 0
+                    or _RawData.gps_accuracy > Gb.gps_accuracy_threshold):
                 pass
 
             # Move the newest data from PyiCloud_RawData or the iOSApp data to the _Device's data fields
@@ -414,7 +418,7 @@ def update_device_with_latest_raw_data(Device, all_devices=False):
         # if all_devices:
         #     log_start_finish_update_banner('finish', Device.devicename, 'Update All Devices from RawData-iOSApp', '')
 
-        pyicloud_ic3_interface.reset_authentication_time(0)
+        pyicloud_ic3_interface.reset_authentication_time(Gb.PyiCloud, 0)
         Gb.trace_prefix = save_trace_prefix
 
         return True

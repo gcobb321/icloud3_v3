@@ -22,12 +22,13 @@ from .const             import (DOMAIN,
                                 ICLOUD, OTHER, HOME,
                                 DEVICE_TYPES, DEVICE_TYPE_FNAME, DEVICE_TRACKER_DOT,
                                 HHMMSS_ZERO, RARROW,
+                                EVLOG_IC3_STARTING,
                                 IOSAPP, NO_IOSAPP,
                                 TRACK_DEVICE, MONITOR_DEVICE, INACTIVE_DEVICE,
                                 NAME,  FRIENDLY_NAME, BATTERY,
                                 ZONE, HOME_DISTANCE,
                                 CONF_VERSION, CONF_EVLOG_CARD_DIRECTORY,
-                                CONF_USERNAME, CONF_PASSWORD, CONF_DEVICES,
+                                CONF_USERNAME, CONF_PASSWORD, CONF_DEVICES, CONF_SETUP_ICLOUD_SESSION_EARLY,
                                 CONF_DATA_SOURCE, CONF_VERIFICATION_CODE,
                                 CONF_TRACK_FROM_ZONES, CONF_TRACK_FROM_BASE_ZONE, CONF_TRACK_FROM_HOME_ZONE,
                                 CONF_NO_IOSAPP,
@@ -61,12 +62,13 @@ from .const             import (DOMAIN,
                                 )
 from .const_sensor      import (SENSOR_GROUPS )
 from .helpers.common    import (instr, isnumber, obscure_field, zone_fname, )
-from .helpers.messaging import (log_exception, _traceha, _trace, post_event, )
+from .helpers.messaging import (log_exception, _traceha, _trace, post_event, close_reopen_ic3_debug_log_file, )
 from .helpers           import entity_io
 from .                  import sensor as ic3_sensor
 from .                  import device_tracker as ic3_device_tracker
 from .support           import start_ic3
 from .support           import config_file
+from .support           import service_handler
 from .support           import pyicloud_ic3_interface
 from .support.pyicloud_ic3  import (PyiCloudService, PyiCloudException, PyiCloudFailedLoginException,
                                     PyiCloudServiceNotActivatedException, PyiCloudNoDevicesException, )
@@ -108,11 +110,11 @@ MENU_KEY_TEXT = {
         'waze': 'WAZE ROUTE DISTANCE & TIME, WAZE HISTORY DATABASE > Route Server Location, Min/Max Intervals, Waze History Database Parameters and Controls',
         'special_zones': 'SPECIAL ZONES - Pass Through Zone, Track From Zone, Stationary Zone',
         'sensors': 'SENSORS > Sensors created by iCloud3',
-        'next_page_0': 'NEXT PAGE 1 > ● Location Data Source & iCloud Account. ● iCloud3 Devices. ● Sensors. ● Display Text As. ● Action Commands',
-        'next_page_1': 'NEXT PAGE 2 > ● Event Log Configuration. ● Waze Route Time & Dist. ● inZone Intervals. ● Special Zones. ● Other Parameters',
+        'next_page_0': 'NEXT PAGE 1 > Location Data Source & iCloud Account ᗕᗒ iCloud3 Devices ᗕᗒ Sensors ᗕᗒ Display Text As ᗕᗒ Action Commands',
+        'next_page_1': 'NEXT PAGE 2 > Event Log Configuration ᗕᗒ Waze Route Time & Dist ᗕᗒ inZone Intervals ᗕᗒ Special Zones ᗕᗒ Other Parameters',
         'select': 'SELECT > Select the parameter update form',
-        'action_menu': 'ACTION COMMANDS > ● Restart/Pause/Resume Polling. ● Enter Apple ID Verif Code. \
-                            ● Reset and Reauthenticate Account. ● Export Event Log ● Waze Utilities',
+        'actions': 'ACTION COMMANDS > Restart/Pause/Resume Polling ᗕᗒ EDebug Logging ᗕᗒ Export Event Log ᗕᗒ Waze Utilities',
+
         'exit': 'EXIT AND RESTART ICLOUD3'
 }
 MENU_KEY_TEXT_PAGE_0 = [
@@ -120,7 +122,7 @@ MENU_KEY_TEXT_PAGE_0 = [
     MENU_KEY_TEXT['device_list'],
     MENU_KEY_TEXT['sensors'],
     MENU_KEY_TEXT['event_log_configuration'],
-    MENU_KEY_TEXT['action_menu'],
+    MENU_KEY_TEXT['actions'],
     ]
 MENU_KEY_TEXT_PAGE_1 = [
     MENU_KEY_TEXT['display_text_as'],
@@ -135,119 +137,128 @@ menu_action = [
     MENU_KEY_TEXT['exit']
     ]
 
-OPT_ACTION_KEY_TEXT = {
+OPT_ACTION_ITEMS_KEY_TEXT = {
         'select_form': 'SELECT > Select the parameter update form',
         'update_device': 'UPDATE DEVICE > Update the selected device',
         'select_text_as': 'SELECT > Update selected `Display Text As` field',
         'log_in_icloud_acct': 'LOGIN > Log into the iCloud Account',
-        'enter_verification_code': 'ENTER VERIFICATION CODE - Enter the 6-digit Apple Verification Code',
-        'show_username_password': 'SHOW/HIDE USERNAME/PASSWORD - Show or hide the Username and Password',
-        'next_page': 'NEXT PAGE > Save changes ● Display the next page',
+        'enter_verification_code': 'ENTER VERIFICATION CODE > Enter the 6-digit Verification Code',
+        "icloud_acct_reauth": "RESET AND REAUTHENTICATE ACCOUNT > Request a new Verification Code",
+        'show_username_password': 'SHOW/HIDE USERNAME/PASSWORD > Show or hide the Username and Password',
+        'next_page': 'NEXT PAGE > Save changes ᗕᗒ Display the next page',
         'next_page_info': 'NEXT PAGE > ^info_field^',
         'next_page_device': 'NEXT PAGE > Friendly Name, Track-from-Zones, Other Setup Fields',
         'next_page_waze': 'NEXT PAGE > Waze History Database parameters',
         'add_device': 'ADD DEVICE > Add a device to be tracked by iCloud3',
-        'delete_device': 'DELETE DEVICE > Delete the selected device from the tracked device list',
-        'delete_device_yes': 'YES > Delete this device from the iCloud3 tracked devices list',
-        'delete_device_no': 'NO > Do not delete this device',
-        'reinitialize_devices': 'REINITIALIZE ALL DEVICES - Reset the iCloud/iOSAppp Seletion fields, Remove all iCloud3 Devices',
-        'reinitialize_devices_reset': 'RESET ICLOUD/IOS APP DEVICES FIELDS > Set the FamShr, FmF, iOS App and track_from_zone parameters to `None` for all devices',
-        'reinitialize_devices_remove': 'REMOVE ALL DEVICES > Erase all devices from the iCloud3 tracked devices list',
-        'reinitialize_devices_cancel': 'CANCEL > Return to the Device List screen',
+        'delete_device': 'DELETE DEVICE(S), OTHER DEVICE MAINTENANCE > Delete the device(s) from the tracked device list, clear the FamShr/FmF/iOS App selection fields',
+        'delete_this_device': 'DELETE THIS DEVICE > Delete this device from the iCloud3 tracked devices list',
+        'delete_all_devices': 'DELETE ALL DEVICES > Delete all devices from the iCloud3 tracked devices list',
+        'delete_icloud_iosapp_info': 'CLEAR FAMSHR/FMF/IOSAPP INFO - Reset the FamShr/FmF/iOS App seletion fields on all devices',
+        'delete_device_cancel': 'CANCEL > Return to the Device List screen',
         'clear_text_as': 'CLEAR > Remove `Display Test As` entry',
         'exit': 'EXIT > Exit the iCloud3 Configurator',
         'return': 'RETURN > Return to the Main Menu',
-        'save': 'SAVE > Update Configuration File ● Return to the menu screen',
-        'cancel': 'RETURN > Return to the Main Menu. Cancel any changes not already saved'
+        'save': 'SAVE > Update Configuration File ᗕᗒ Return to the menu screen',
+        'cancel': 'RETURN > Return to the Main Menu. Cancel any changes not already saved',
+        "divider1": "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ ",
+        "divider2": "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ ",
+        "divider3": "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ "
         }
-UPDATE_CONTROL = 'action_item'
-UPDATE_CONTROL_BASE = [
-    OPT_ACTION_KEY_TEXT['save'],
-    OPT_ACTION_KEY_TEXT['cancel']]
+OPT_ACTION_ITEMS_KEY_BY_TEXT = {text: key for key, text in OPT_ACTION_ITEMS_KEY_TEXT.items()}
+
+OPT_ACTION_BASE = [
+        OPT_ACTION_ITEMS_KEY_TEXT['save'],
+        OPT_ACTION_ITEMS_KEY_TEXT['cancel']]
 
 OPT_LIST_KEY_TEXT_NONE      = {'None': 'None'}
 OPT_PICTURE_TEXT            = ['None']
 UNKNOWN_DEVICE_TEXT         = '  >=== UNKNOWN DEVICE ==='
 
-DEVICE_LIST_CONTROL = [
-        OPT_ACTION_KEY_TEXT['update_device'],
-        OPT_ACTION_KEY_TEXT['add_device'],
-        OPT_ACTION_KEY_TEXT['delete_device'],
-        OPT_ACTION_KEY_TEXT['reinitialize_devices'],
-        OPT_ACTION_KEY_TEXT['return']]
-DEVICE_LIST_CONTROL_NO_ADD = [
-        OPT_ACTION_KEY_TEXT['update_device'],
-        OPT_ACTION_KEY_TEXT['delete_device'],
-        OPT_ACTION_KEY_TEXT['return']]
-DELETE_DEVICE_CONFIRM_ACTION = [
-        OPT_ACTION_KEY_TEXT['delete_device_yes'],
-        OPT_ACTION_KEY_TEXT['delete_device_no'],]
-REINITIALIZE_ALL_DEVICES = [
-        OPT_ACTION_KEY_TEXT['reinitialize_devices_reset'],
-        OPT_ACTION_KEY_TEXT['reinitialize_devices_remove'],
-        OPT_ACTION_KEY_TEXT['reinitialize_devices_cancel'],]
+ICLOUD_ACCOUNT_ACTIONS = [
+        OPT_ACTION_ITEMS_KEY_TEXT['log_in_icloud_acct'],
+        OPT_ACTION_ITEMS_KEY_TEXT['enter_verification_code'],
+        OPT_ACTION_ITEMS_KEY_TEXT['icloud_acct_reauth'],
+        OPT_ACTION_ITEMS_KEY_TEXT['divider1'],
+        OPT_ACTION_ITEMS_KEY_TEXT['show_username_password']]
+DEVICE_LIST_ACTIONS = [
+        OPT_ACTION_ITEMS_KEY_TEXT['update_device'],
+        OPT_ACTION_ITEMS_KEY_TEXT['add_device'],
+        OPT_ACTION_ITEMS_KEY_TEXT['delete_device'],
+        OPT_ACTION_ITEMS_KEY_TEXT['return']]
+DEVICE_LIST_ACTIONS_NO_ADD = [
+        OPT_ACTION_ITEMS_KEY_TEXT['update_device'],
+        OPT_ACTION_ITEMS_KEY_TEXT['delete_device'],
+        OPT_ACTION_ITEMS_KEY_TEXT['return']]
+DELETE_DEVICE_ACTIONS = [
+        OPT_ACTION_ITEMS_KEY_TEXT['delete_this_device'],
+        OPT_ACTION_ITEMS_KEY_TEXT['delete_all_devices'],
+        OPT_ACTION_ITEMS_KEY_TEXT['delete_icloud_iosapp_info'],
+        OPT_ACTION_ITEMS_KEY_TEXT['delete_device_cancel']]
 
-OPT_DATA_SOURCE_KEY_TEXT = {
+DATA_SOURCE_ITEMS_KEY_TEXT = {
         'icloud,iosapp': 'ICLOUD & IOSAPP - iCloud account and iOS App are used for location data',
         'icloud': 'ICLOUD ONLY - iOS App is not monitored on any tracked device',
         'iosapp': 'IOS APP ONLY - iCloud account is not used for location data on any tracked device'
         }
-OPT_ICLOUD_SERVER_ENDPOINT_SUFFIX_KEY_TEXT = {
+ICLOUD_SERVER_ENDPOINT_SUFFIX_ITEMS_KEY_TEXT = {
         'none': 'Use normal Apple iCloud Servers',
         'cn': 'China - Use Apple iCloud Servers located in China'
         }
-OPT_IOSAPP_DEVICE_SEARCH_TEXT = 'Scan for mobile app device_tracker > '
-OPT_IOSAPP_DEVICE_NONE_KEY_TEXT = {
+IOSAPP_DEVICE_SEARCH_TEXT = 'Scan for mobile app device_tracker > '
+IOSAPP_DEVICE_NONE_ITEMS_KEY_TEXT = {
         'None': 'None > The iOS App is not installed on this device',
         }
-OPT_TRACKING_MODE_KEY_TEXT = {
+TRACKING_MODE_ITEMS_KEY_TEXT = {
         'track': 'Track - Request Location and track the device',
         'monitor': 'Monitor - Report location only when another tracked device is updated',
         'inactive': 'INACTIVE - Device is inactive and will not be tracked'
         }
-OPT_TRACKING_METHOD_KEY_TEXT = {
+TRACKING_METHOD_ITEMS_KEY_TEXT = {
         'famshr': 'FamShr - iCloud Account Family Sharing List members',
         'fmf': 'FmF - Find My App Find-my-Friends location data',
         'iosapp': 'iOS App Only - Do not request location data from the iCloud Account'
         }
-OPT_UNIT_OF_MEASUREMENT_KEY_TEXT = {
+UNIT_OF_MEASUREMENT_ITEMS_KEY_TEXT = {
         'mi': 'Imperial (mi, ft)',
         'km': 'Metric (km, m)'
         }
-OPT_TIME_FORMAT_KEY_TEXT = {
+TIME_FORMAT_ITEMS_KEY_TEXT = {
         '12-hour': '12-hour Time Format (9:05:30a, 4:40:15p)',
         '24-hour': '24-hour Time Format (9:05:30, 16:40:15)'
         }
-OPT_DISPLAY_ZONE_FORMAT_KEY_TEXT = {
+DISPLAY_ZONE_FORMAT_ITEMS_KEY_TEXT = {
         'fname': 'Zone Name from the HA Zones Configuration Screen',
         'zone': 'Actual HA Zone Entity Id value (`the_shores`)',
         'name': 'Reformat the Zone entity_id (`the_shores` → `TheShores`)',
         'title': 'Reformat the Zone entity_id (`the_shores` → `The Shores`)'
         }
-OPT_RESTART_NOW_LATER_KEY_TEXT = {
+RESTART_NOW_LATER_ITEMS_KEY_TEXT = {
         'ha': 'RESTART HOME ASSISTANT - Restart HA & iCloud3 now to finish the iCloud3 v2 to v3 migration.',
         'now': 'RESTART NOW - Restart iCloud3 now to load the updated configuration.',
         'later': 'RESTART LATER - The configuration changes have been saved. Load the updated configuration the next time iCloud3 is started.'
         }
-OPT_LOG_LEVEL_KEY_TEXT = {
+LOG_LEVEL_ITEMS_KEY_TEXT = {
         'info': 'Info - Log General Information',
         'debug': 'Debug - Log Internal Tracking Monitors',
         'rawdata': 'Rawdata - Log raw data received from iCloud Location Servers'
         }
-OPT_DISTANCE_METHOD_KEY_TEXT = {
+DISTANCE_METHOD_ITEMS_KEY_TEXT = {
         'waze': 'Waze - Waze Route Service provides travel time & distance information',
         'calc': 'Calc - Distance is calculated using a `straight line` formula'
         }
-OPT_WAZE_REGION_KEY_TEXT = {
-        'us': 'United States',
+WAZE_REGION_ITEMS_KEY_TEXT = {
+        '??': 'Unknown',
+        'au': 'Austrailia',
         'eu': 'Europe',
         'il': 'Isreal',
-        'au': 'Austrailia'
+        'na': 'North America',
+        'us': 'United States'
         }
-OPT_WAZE_HISTORY_TRACK_DIRECTION_KEY_TEXT = {
+WAZE_HISTORY_TRACK_DIRECTION_ITEMS_KEY_TEXT = {
         'north_south': 'North-South - You generally travel in North-to-South direction',
         'east_west': 'East-West- You generally travel in East-West direction'
         }
+
 CONF_SENSORS_MONITORED_DEVICES_KEY_TEXT = {
         'md_badge': 'badge > Badge sensor > A badge showing the Zone Name or distance from the Home zone. Attributes include location related information',
         'md_battery': 'battery, battery_status > Create Battery (65%) and Battery Status (Charging, Low, etc) sensors',
@@ -299,6 +310,29 @@ CONF_SENSORS_OTHER_KEY_TEXT = {
         'vertical_accuracy': 'vertical_accuracy > Vertical (Elevation) Accuracy',
         'altitude': 'altitude > Altitude/Elevation',
         }
+ACTIONS_SCREEN_ITEMS_KEY_TEXT = {
+        "divider1": "━━━━━━━━━━ ICLOUD3 CONTROL ACTIONS ━━━━━━━━━━ ",
+        "restart": "RESTART > Restart iCloud3",
+        "pause": "PAUSE > Pause polling on all devices",
+        "resume": "RESUME > Resume Polling on all devices, Refresh all locations",
+        "divider2": "━━━━━━━━━━━ DEBUG LOG ACTIONS ━━━━━━━━━━━ ",
+        "debug_start": "START DEBUG LOGGING > Start or stop debug logging",
+        "debug_stop": "STOP DEBUG LOGGING > Start or stop debug logging",
+        "rawdata_start": "START RAWDATA LOGGING > Start or stop debug rawdata logging",
+        "rawdata_stop": "STOP RAWDATA LOGGING > Start or stop debug rawdata logging",
+        "commit": "COMMIT DEBUG LOG RECORDS > Verify all debug log file records are written",
+        "divider3": "━━━━━━━━━━━━ OTHER COMMANDS ━━━━━━━━━━━━ ",
+        "evlog_export": "EXPORT EVENT LOG > Export Event Log data",
+        "waze_db_recalc": "WAZE HIST DATABASE > Recalc time/distance data at midnight",
+        "waze_db_track": "WAZE HIST MAP TRACK > Load route locations for map display",
+        "divider4": "═══════════════════════════════════════════════ ",
+        "return": "MAIN MENU > Return to the Main Menu"
+        }
+ACTIONS_SCREEN_ITEMS_TEXT  = [text for text in ACTIONS_SCREEN_ITEMS_KEY_TEXT.values()]
+ACTIONS_SCREEN_ITEMS_KEY_BY_TEXT = {text: key
+                                for key, text in ACTIONS_SCREEN_ITEMS_KEY_TEXT.items()
+                                if key.startswith('divider') is False}
+
 
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 #
@@ -338,6 +372,7 @@ class iCloud3ConfigFlow(config_entries.ConfigFlow, FlowHandler, domain=DOMAIN ):
         self._abort_if_unique_id_configured()
 
         if self.hass.data.get(DOMAIN):
+            close_reopen_ic3_debug_log_file()
             return self.async_abort(reason="already_configured")
 
         if user_input is not None:
@@ -382,6 +417,7 @@ class iCloud3ConfigFlow(config_entries.ConfigFlow, FlowHandler, domain=DOMAIN ):
                     Gb.start_icloud3_request_flag = True
                     Gb.authenticated_time = time.time()
                     self.menu_msg = 'verification_code_accepted'
+                    close_reopen_ic3_debug_log_file()
                     return self.async_abort(reason="reauth_successful")
 
                 else:
@@ -389,6 +425,7 @@ class iCloud3ConfigFlow(config_entries.ConfigFlow, FlowHandler, domain=DOMAIN ):
                                 f"({user_input[CONF_VERIFICATION_CODE]})")
                     self.errors[CONF_VERIFICATION_CODE] = 'invalid_verification_code'
             else:
+                close_reopen_ic3_debug_log_file()
                 return self.async_abort(reason="update_cancelled")
 
 
@@ -483,7 +520,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         self.opt_fmf_text_by_email         = {}
         self.opt_fmf_text_by_email_base    = OPT_LIST_KEY_TEXT_NONE.copy()
         self.opt_iosapp_text_by_entity_id  = {}         # mobile_app device_tracker info used in devices form for iosapp selection
-        self.opt_iosapp_text_by_entity_id  = OPT_IOSAPP_DEVICE_NONE_KEY_TEXT.copy()
+        self.opt_iosapp_text_by_entity_id  = IOSAPP_DEVICE_NONE_ITEMS_KEY_TEXT.copy()
         self.opt_picture_by_filename       = {}
         self.opt_picture_by_filename_base  = OPT_LIST_KEY_TEXT_NONE.copy()
         self.opt_zone_name_key_text        = {}
@@ -584,8 +621,8 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 return await self.async_step_special_zones()
             elif menu_item == 'sensors':
                 return await self.async_step_sensors()
-            elif menu_item == 'action_menu':
-                return await self.async_step_action_menu()
+            elif menu_item == 'actions':
+                return await self.async_step_actions()
 
         menu_msg = {'base': self.menu_msg} if self.menu_msg else {}
         self.menu_msg = ''
@@ -628,6 +665,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 await Gb.hass.services.async_call(  "homeassistant", "restart")
 
             self.config_flow_updated_parms = {''}
+            close_reopen_ic3_debug_log_file()
 
             return self.async_create_entry(title="iCloud3", data={})
 
@@ -901,107 +939,97 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 #                  ACTION MENU HANDLER
 #
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-    #12/17/2022 (beta 1) - Added Erase All Devices Action command
+    '''
+    "divider1": "━━━━━━━━━━ ICLOUD3 CONTROL ACTIONS ━━━━━━━━━━ ",
+    "restart": "RESTART > Restart iCloud3",
+    "pause": "PAUSE > Pause polling on all devices",
+    "resume": "RESUME > Resume Polling on all devices, Refresh all locations",
+    "divider2": "━━━━━━━━━━ ICLOUD ACCOUNT ACTIONS ━━━━━━━━━━ ",
+    "debug": "START/STOP DEBUG LOGGING > Start or stop debug logging",
+    "rawdata": "START/STOP DEBUG RAWDATA LOGGING > Start or stop debug rawdata logging",
+    "commit": "COMMIT DEBUG LOG RECORDS > Verify all debug log file records are written",
+    "divider3": "━━━━━━━━━━━━ OTHER COMMANDS ━━━━━━━━━━━━ ",
+    "evlog_export": "EXPORT EVENT LOG > Export Event Log data",
+    "waze_db_recalc": "WAZE HIST DATABASE > Recalc time/distance data at midnight",
+    "waze_db_track": "WAZE HIST MAP TRACK > Load route locations for map display",
+    "erase_all_devices": "ERASE ALL DEVICES > Reinitialize the iCloud3 Device List",
+    "divider4": "═══════════════════════════════════════════════ ",
+    "return": "MAIN MENU > Return to the Main Menu"
+    '''
 
-    async def async_step_action_menu(self, user_input=None, errors=None):
-        self.step_id = 'action_menu'
-        return self.async_show_menu(
-                    step_id=self.step_id,
-                    menu_options = ['action_divider1', 'action_restart', 'action_pause', 'action_resume',
-                                    'action_divider2', 'action_reauth', 'action_reset_icloud',
-                                    'action_divider3', 'action_evlog_export',
-                                    'action_waze_db_recalc', 'action_waze_db_track', 'action_erase_all_devices',
-                                    'action_divider4', 'action_exit'],
-                    )
-#-------------------------------------------------------------------------------------------
-    async def async_step_action_restart(self, user_input=None, errors=None):
-        self.step_id = 'action_restart'
-        Gb.start_icloud3_request_flag = True
-        self.menu_msg = 'action_completed'
-        return await self.async_step_menu()
+    async def async_step_actions(self, user_input=None, errors=None):
+        '''
+        Handle the Actions request menu
+        '''
+        self.step_id = 'actions'
+        self.errors = errors or {}
+        self.errors_user_input = {}
 
-#-------------------------------------------------------------------------------------------
-    async def async_step_action_pause(self, user_input=None, errors=None):
-        Gb.all_tracking_paused_flag = True
-        Gb.EvLog.display_user_message('Tracking is Paused', alert=True)
-        for Device in Gb.Devices_by_devicename.values():
-            Device.pause_tracking
-        self.menu_msg = 'action_completed'
-        return await self.async_step_menu()
+        if user_input is not None:
+            # Get key for item selected ("RESTART" --> "restart") and then
+            # process the requested action
+            if instr(user_input.get('opt_action'), ' >'):
+                action_item_text = user_input['opt_action']
+                action_item = ACTIONS_SCREEN_ITEMS_KEY_BY_TEXT[action_item_text]
+                user_input.pop('opt_action')
 
-#-------------------------------------------------------------------------------------------
-    async def async_step_action_resume(self, user_input=None, errors=None):
-        Gb.all_tracking_paused_flag = False
-        Gb.EvLog.display_user_message('', clear_alert=True)
-        for Device in Gb.Devices_by_devicename.values():
-            Device.resume_tracking
-        self.menu_msg = 'action_completed'
-        return await self.async_step_menu()
+                self._process_action_request(action_item)
 
-#-------------------------------------------------------------------------------------------
-    async def async_step_action_reauth(self, user_input=None, errors=None):
-        self.called_from_step_id = 'menu'
-        return await self.async_step_reauth(initial_display=True)
+                return await self.async_step_menu()
 
-#-------------------------------------------------------------------------------------------
-    async def async_step_action_reset_icloud(self, user_input=None, errors=None):
-        pyicloud_ic3_interface.pyicloud_reset_session()
-        self.menu_msg = 'action_completed'
-        return await self.async_step_menu()
+        return self.async_show_form(step_id=self.step_id,
+                        data_schema=self.form_schema(self.step_id),
+                        errors=self.errors)
 
-#-------------------------------------------------------------------------------------------
-    async def async_step_action_waze_db_recalc(self, user_input=None, errors=None):
-        if Gb.WazeHist is None:
+#--------------------------------------------------------------------------------
+    def _process_action_request(self, action_item):
+
+        self.menu_msg = None
+        if action_item == 'return':
             return
 
-        if Gb.wazehist_recalculate_time_dist_flag:
-            Gb.wazehist_recalculate_time_dist_flag = False
-            self.menu_msg = 'action_cancelled'
-        else:
-            Gb.wazehist_recalculate_time_dist_flag = True
+        elif action_item == 'restart':
+            Gb.start_icloud3_request_flag = True
+
+        elif action_item == 'pause':
+            Gb.all_tracking_paused_flag = True
+            Gb.EvLog.display_user_message('Tracking is Paused', alert=True)
+            for Device in Gb.Devices_by_devicename.values():
+                Device.pause_tracking
+
+        elif action_item == 'resume':
+            Gb.all_tracking_paused_flag = False
+            Gb.EvLog.display_user_message('', clear_alert=True)
+            for Device in Gb.Devices_by_devicename.values():
+                Device.resume_tracking
+
+        elif action_item.startswith('debug'):
+            service_handler.handle_action_log_level('debug', change_conf_log_level=False)
+
+        elif action_item.startswith('rawdata'):
+            service_handler.handle_action_log_level('rawdata', change_conf_log_level=False)
+
+        elif action_item == 'commit':
+            close_reopen_ic3_debug_log_file(closed_by='Configurator')
+
+        elif action_item == 'waze_db_recalc':
+            if Gb.WazeHist is None:
+                self.menu_msg = 'action_cancelled'
+            elif Gb.wazehist_recalculate_time_dist_flag:
+                Gb.wazehist_recalculate_time_dist_flag = False
+                self.menu_msg = 'action_cancelled'
+            else:
+                Gb.wazehist_recalculate_time_dist_flag = True
+
+        elif action_item == 'waze_db_track':
+            if Gb.WazeHist:
+                Gb.WazeHist.wazehist_update_track_sensor()
+
+        elif action_item == 'evlog_export':
+            Gb.EvLog.export_event_log()
+
+        if self.menu_msg is None:
             self.menu_msg = 'action_completed'
-
-        # await self.hass.async_add_executor_job(
-        #                         Gb.WazeHist.wazehist_recalculate_time_dist_all_zones)
-
-            self.menu_msg = 'action_completed'
-        return await self.async_step_menu()
-
-#-------------------------------------------------------------------------------------------
-    async def async_step_action_waze_db_track(self, user_input=None, errors=None):
-        if Gb.WazeHist:
-            Gb.WazeHist.wazehist_update_track_sensor()
-            self.menu_msg = 'action_completed'
-        return await self.async_step_menu()
-
-#-------------------------------------------------------------------------------------------
-    async def async_step_action_evlog_export(self, user_input=None, errors=None):
-        Gb.EvLog.export_event_log()
-        self.menu_msg = 'action_completed'
-        return await self.async_step_menu()
-
-#-------------------------------------------------------------------------------------------
-    async def async_step_action_erase_all_devices(self, user_input=None, errors=None):
-        # Gb.EvLog.export_event_log()
-        # self.menu_msg = 'action_completed'
-        return await self.async_step_reinitialize_all_devices()
-
-#-------------------------------------------------------------------------------------------
-    async def async_step_action_divider1(self, user_input=None, errors=None):
-        return await self.async_step_action_menu()
-
-    async def async_step_action_divider2(self, user_input=None, errors=None):
-        return await self.async_step_action_menu()
-
-    async def async_step_action_divider3(self, user_input=None, errors=None):
-        return await self.async_step_action_menu()
-
-    async def async_step_action_divider4(self, user_input=None, errors=None):
-        return await self.async_step_action_menu()
-
-    async def async_step_action_exit(self, user_input=None, errors=None):
-        return await self.async_step_menu()
-
 
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 #
@@ -1073,10 +1101,10 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         '''
         The display_zone_format may contain '(Example: ...). If so, strip it off.
         '''
-        user_input = self._option_text_to_parm(user_input, CONF_DISPLAY_ZONE_FORMAT, OPT_DISPLAY_ZONE_FORMAT_KEY_TEXT)
-        user_input = self._option_text_to_parm(user_input, CONF_UNIT_OF_MEASUREMENT, OPT_UNIT_OF_MEASUREMENT_KEY_TEXT)
-        user_input = self._option_text_to_parm(user_input, CONF_TIME_FORMAT, OPT_TIME_FORMAT_KEY_TEXT)
-        user_input = self._option_text_to_parm(user_input, CONF_LOG_LEVEL, OPT_LOG_LEVEL_KEY_TEXT)
+        user_input = self._option_text_to_parm(user_input, CONF_DISPLAY_ZONE_FORMAT, DISPLAY_ZONE_FORMAT_ITEMS_KEY_TEXT)
+        user_input = self._option_text_to_parm(user_input, CONF_UNIT_OF_MEASUREMENT, UNIT_OF_MEASUREMENT_ITEMS_KEY_TEXT)
+        user_input = self._option_text_to_parm(user_input, CONF_TIME_FORMAT, TIME_FORMAT_ITEMS_KEY_TEXT)
+        user_input = self._option_text_to_parm(user_input, CONF_LOG_LEVEL, LOG_LEVEL_ITEMS_KEY_TEXT)
         user_input = self._strip_special_text_from_user_input(user_input)
 
         return user_input
@@ -1087,7 +1115,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         The display_zone_format may contain '(Example: ...). If so, strip it off.
         '''
 
-        user_input = self._option_text_to_parm(user_input, CONF_LOG_LEVEL, OPT_LOG_LEVEL_KEY_TEXT)
+        user_input = self._option_text_to_parm(user_input, CONF_LOG_LEVEL, LOG_LEVEL_ITEMS_KEY_TEXT)
         user_input = self._duration_to_hhmmss(user_input)
 
         return user_input
@@ -1131,8 +1159,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         '''
         Validate the Waze numeric fields
         '''
-        # user_input = self._option_text_to_parm(user_input, CONF_DISTANCE_METHOD, OPT_DISTANCE_METHOD_KEY_TEXT)
-        user_input = self._option_text_to_parm(user_input, CONF_WAZE_REGION, OPT_WAZE_REGION_KEY_TEXT)
+        user_input = self._option_text_to_parm(user_input, CONF_WAZE_REGION, WAZE_REGION_ITEMS_KEY_TEXT)
         user_input = self._validate_numeric_field(user_input)
 
         return user_input
@@ -1142,7 +1169,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         '''
         Validate the Waze numeric fields
         '''
-        user_input = self._option_text_to_parm(user_input, CONF_WAZE_HISTORY_TRACK_DIRECTION, OPT_WAZE_HISTORY_TRACK_DIRECTION_KEY_TEXT)
+        user_input = self._option_text_to_parm(user_input, CONF_WAZE_HISTORY_TRACK_DIRECTION, WAZE_HISTORY_TRACK_DIRECTION_ITEMS_KEY_TEXT)
         user_input = self._validate_numeric_field(user_input)
 
         return user_input
@@ -1214,13 +1241,13 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         self.errors_user_input = {}
         action_item = ''
 
-        if Gb.conf_tracking[CONF_DATA_SOURCE] not in OPT_DATA_SOURCE_KEY_TEXT:
+        if Gb.conf_tracking[CONF_DATA_SOURCE] not in DATA_SOURCE_ITEMS_KEY_TEXT:
             Gb.conf_tracking[CONF_DATA_SOURCE] = f"{ICLOUD},{IOSAPP}"
 
         try:
             if user_input is not None:
                 user_input, action_item = self._action_text_to_item(user_input)
-                user_input = self._option_text_to_parm(user_input, CONF_DATA_SOURCE, OPT_DATA_SOURCE_KEY_TEXT)
+                user_input = self._option_text_to_parm(user_input, CONF_DATA_SOURCE, DATA_SOURCE_ITEMS_KEY_TEXT)
 
                 username_password_changed_flag = self._unobscure_username_password(user_input)
                 if action_item == 'cancel':
@@ -1254,11 +1281,9 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 elif action_item == 'enter_verification_code':
                     return await self.async_step_reauth(initial_display=True)
 
-                elif action_item == 'log_in_icloud_acct':
-                    await self._log_into_icloud_account(user_input, self.step_id)
-
-                    if (self.PyiCloud and self.PyiCloud.requires_2fa):
-                        return await self.async_step_reauth(initial_display=True)
+                elif action_item == 'icloud_acct_reauth':
+                    self.config_flow_updated_parms.update(['reauth'])
+                    self.errors = {'base': 'icloud_reauth_scheduled'}
 
         except Exception as err:
             log_exception(err)
@@ -1358,17 +1383,10 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 
         try:
             self.PyiCloud = await self.hass.async_add_executor_job(
-                                        pyicloud_ic3_interface.create_PyiCloudService_object,
+                                        pyicloud_ic3_interface.create_PyiCloudService_secondary,
                                         self.username,
                                         self.password,
                                         'config_flow')
-
-                                        # PyiCloudService,
-                                        # self.username,
-                                        # self.password,
-                                        # Gb.icloud_cookies_dir,
-                                        # f"{Gb.icloud_cookies_dir}/session",
-                                        # called_from='config_flow')
 
         except (PyiCloudFailedLoginException) as err:
             _LOGGER.error(f"Error logging into iCloud service: {err}")
@@ -1437,6 +1455,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             user_input = None
         else:
             icloud3_service_call = False
+
         # Will be from config_entries if came in from the HA settings on a red configuration screen
         self.step_id = config_entries.SOURCE_REAUTH
         self.errors = errors or {}
@@ -1563,7 +1582,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             elif action_item == 'delete_device':
                 self.sensor_entity_attrs_changed['delete_device'] = True
                 self._get_conf_device_selected(user_input)
-                return await self.async_step_delete_device_confirm()
+                return await self.async_step_delete_device()
 
             elif action_item == 'reinitialize_devices':
                 self.sensor_entity_attrs_changed = {}
@@ -1624,33 +1643,48 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         return True
 
 #-------------------------------------------------------------------------------------------
-    async def async_step_delete_device_confirm(self, user_input=None, errors=None):
+    async def async_step_delete_device(self, user_input=None, errors=None):
         '''
-        Delete the device from the tracking devices list and adjust the device index
-        if necessary
-
-        Display a confirmation form and then delete the device
+        1. Delete the device from the tracking devices list and adjust the device index
+        2. Delete all devices
+        3. Clear the FamShr, FmF, iOS APP and track_from_zone fields from all devices
         '''
-        self.step_id = 'delete_device_confirm'
+        self.step_id = 'delete_device'
         self.errors = errors or {}
         self.errors_user_input = {}
         user_input, action_item = self._action_text_to_item(user_input)
 
-        if user_input is not None:
-            if action_item == 'delete_device_yes':
-                self._process_delete_device_request()
+        # The delete_this_device item was modified to add the devicename/fname so it will
+        # return a field value without a match, reset it here
+        if action_item and action_item.startswith('delete_this_device'):
+            action_item = 'delete_this_device'
 
+        if user_input is not None or action_item is not None:
+            if action_item == 'delete_device_cancel':
+                pass
+
+            elif action_item == 'delete_this_device':
+                self._delete_this_device()
+
+            elif action_item == 'delete_all_devices':
+                self._delete_all_devices()
+
+            elif action_item == 'delete_icloud_iosapp_info':
+                self._clear_icloud_iosapp_selection_parms()
+
+            if action_item != 'delete_device_cancel':
                 self.config_flow_updated_parms.update(['tracking', 'restart'])
+                self.menu_msg = 'action_completed'
 
             return await self.async_step_device_list()
 
         return self.async_show_form(step_id=self.step_id,
-                        data_schema=self.form_schema('delete_device_confirm'),
+                        data_schema=self.form_schema('delete_device'),
                         errors=self.errors,
                         last_step=False)
 
 #-------------------------------------------------------------------------------------------
-    def _process_delete_device_request(self):
+    def _delete_this_device(self):
         """ Delete the device_tracker entity and associated ic3 configuration """
 
         devicename = self.conf_device_selected[CONF_IC3_DEVICENAME]
@@ -1674,19 +1708,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             self.device_list_page_no = 0
 
 #-------------------------------------------------------------------------------------------
-    def _reinitialize_devices_reset(self):
-        """
-        Reset the FamShr, FmF, iOS App, track_from_zone fields to their initiial values.
-        Keep the devicename,, friendly name, picture and other fields
-        """
-
-        for conf_device in Gb.conf_devices:
-            conf_device.update(DEFAULT_DEVICE_REINITIALIZE_CONF)
-
-        config_file.write_storage_icloud3_configuration_file()
-
-#-------------------------------------------------------------------------------------------
-    def _reinitialize_devices_remove(self):
+    def _delete_all_devices(self):
         """
         Erase all ic3 devices,
         Delete the device_tracker entity and associated ic3 configuration
@@ -1700,6 +1722,18 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         self.form_devices_list_all = []
         self.device_list_page_no = 0
         self.conf_device_selected_idx = 0
+
+        config_file.write_storage_icloud3_configuration_file()
+
+#-------------------------------------------------------------------------------------------
+    def _clear_icloud_iosapp_selection_parms(self):
+        """
+        Reset the FamShr, FmF, iOS App, track_from_zone fields to their initiial values.
+        Keep the devicename, friendly name, picture and other fields
+        """
+
+        for conf_device in Gb.conf_devices:
+            conf_device.update(DEFAULT_DEVICE_REINITIALIZE_CONF)
 
         config_file.write_storage_icloud3_configuration_file()
 
@@ -1719,7 +1753,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         self.errors_user_input = {}
 
         user_input, action_item = self._action_text_to_item(user_input)
-        user_input = self._option_text_to_parm(user_input, CONF_TRACKING_MODE, OPT_TRACKING_MODE_KEY_TEXT)
+        user_input = self._option_text_to_parm(user_input, CONF_TRACKING_MODE, TRACKING_MODE_ITEMS_KEY_TEXT)
         user_input = self._option_text_to_parm(user_input, CONF_DEVICE_TYPE, DEVICE_TYPE_FNAME)
 
         if user_input is not None:
@@ -1839,7 +1873,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         '''
         Validate the add device parameters
         '''
-        user_input = self._option_text_to_parm(user_input, CONF_TRACKING_MODE, OPT_TRACKING_MODE_KEY_TEXT)
+        user_input = self._option_text_to_parm(user_input, CONF_TRACKING_MODE, TRACKING_MODE_ITEMS_KEY_TEXT)
         user_input = self._strip_special_text_from_user_input(user_input, CONF_IC3_DEVICENAME)
 
         ui_devicename     = user_input[CONF_IC3_DEVICENAME] = slugify(user_input[CONF_IC3_DEVICENAME]).strip()
@@ -1919,7 +1953,8 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         if user_input[CONF_IOSAPP_DEVICE].strip() == '':
             user_input[CONF_IOSAPP_DEVICE] = 'None'
 
-        if (user_input[CONF_FAMSHR_DEVICENAME] == 'None'
+        if (user_input[CONF_TRACKING_MODE] != INACTIVE_DEVICE
+                and user_input[CONF_FAMSHR_DEVICENAME] == 'None'
                 and user_input[CONF_FMF_EMAIL] == 'None'
                 and user_input[CONF_IOSAPP_DEVICE] == 'None'):
             self.errors['base'] = 'required_field_device'
@@ -2054,36 +2089,36 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         # self.conf_device_selected[CONF_TRACKING_MODE] = new_tracking_mode
 
 #-------------------------------------------------
-    async def async_step_reinitialize_all_devices(self, user_input=None, errors=None):
-        '''
-        Erase all of the iCloud3 devices.
+    # async def async_step_reinitialize_all_devices(self, user_input=None, errors=None):
+    #     '''
+    #     Erase all of the iCloud3 devices.
 
-        Display a confirmation form and then delete the device
-        '''
-        self.step_id = 'reinitialize_all_devices'
-        self.errors = errors or {}
-        self.errors_user_input = {}
-        user_input, action_item = self._action_text_to_item(user_input)
+    #     Display a confirmation form and then delete the device
+    #     '''
+    #     self.step_id = 'reinitialize_all_devices'
+    #     self.errors = errors or {}
+    #     self.errors_user_input = {}
+    #     user_input, action_item = self._action_text_to_item(user_input)
 
-        if user_input is not None:
-            if action_item.endswith('cancel'):
-                return await self.async_step_device_list()
+    #     if user_input is not None:
+    #         if action_item.endswith('cancel'):
+    #             return await self.async_step_device_list()
 
-            if action_item.endswith('remove'):
-                self._reinitialize_devices_remove()
+    #         if action_item.endswith('remove'):
+    #             self._process_delete_all_devices_request()
 
-            elif action_item.endswith('reset'):
-                self._reinitialize_devices_reset()
+    #         elif action_item.endswith('reset'):
+    #             self._clear_icloud_iosapp_selection_parms()
 
-            self.config_flow_updated_parms.update(['tracking', 'restart'])
-            self.menu_msg = 'action_completed'
+    #         self.config_flow_updated_parms.update(['tracking', 'restart'])
+    #         self.menu_msg = 'action_completed'
 
-            return await self.async_step_device_list()
+    #         return await self.async_step_device_list()
 
-        return self.async_show_form(step_id=self.step_id,
-                        data_schema=self.form_schema('reinitialize_all_devices'),
-                        errors=self.errors,
-                        last_step=False)
+    #     return self.async_show_form(step_id=self.step_id,
+    #                     data_schema=self.form_schema('reinitialize_all_devices'),
+    #                     errors=self.errors,
+    #                     last_step=False)
 
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 #
@@ -2191,7 +2226,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         # Build dict of ios app device_tracker entity devicenames ({devicename: entity_id > fname})
         iosapp_entities, iosapp_entity_data = \
                             entity_io.get_entity_registry_data(platform='mobile_app', domain='device_tracker')
-        self.opt_iosapp_text_by_entity_id = OPT_IOSAPP_DEVICE_NONE_KEY_TEXT.copy()
+        self.opt_iosapp_text_by_entity_id = IOSAPP_DEVICE_NONE_ITEMS_KEY_TEXT.copy()
 
         # Add `Devices` options
         self.opt_iosapp_text_by_entity_id.update(
@@ -2204,7 +2239,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         # Add `Search` options
         self.opt_iosapp_text_by_entity_id.update(
                             {f"Search: {slugify(entity_attrs['original_name'])}":
-                                f"{OPT_IOSAPP_DEVICE_SEARCH_TEXT}{entity_attrs['original_name']} "
+                                f"{IOSAPP_DEVICE_SEARCH_TEXT}{entity_attrs['original_name']} "
                                 f"({slugify(entity_attrs['original_name'])})"
                             for dev_trkr_entity, entity_attrs in iosapp_entity_data.items()})
         return
@@ -2644,9 +2679,18 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 action_item = 'next_page'
             else:
                 try:
-                    action_item = [k for k, v in OPT_ACTION_KEY_TEXT.items() if v == action_text][0]
+                    action_item = [k for k, v in OPT_ACTION_ITEMS_KEY_TEXT.items() if v == action_text][0]
                 except:
-                    action_item = action_text.split(' -')[0].lower().replace(' ', '_')
+                    if instr(action_text, ' >'):
+                        action_item = action_text.split(' >')
+                    elif instr(action_text, ' -'):
+                        action_item = action_text.split(' -')
+                    else:
+                        action_item = None
+
+                    if action_item:
+                        action_item = action_item[0].lower().replace(' ', '_')
+
             user_input.pop('opt_action')
         else:
             action_item = None
@@ -2967,7 +3011,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 
 #--------------------------------------------------------------------
     def _action_default_text(self, action_item):
-        return OPT_ACTION_KEY_TEXT.get(action_item, 'UNKNOWN ACTION - Unknown Action')
+        return OPT_ACTION_ITEMS_KEY_TEXT.get(action_item, 'UNKNOWN ACTION - Unknown Action')
 
 #--------------------------------------------------------------------
     def _discard_changes(self, user_input):
@@ -2976,7 +3020,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         selected. Discard changes is the last item in the list.
         '''
         if user_input:
-            return (user_input.get(UPDATE_CONTROL) == self._action_default_text('cancel'))
+            return (user_input.get('action_item') == self._action_default_text('cancel'))
         else:
             return False
 
@@ -2991,7 +3035,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         Return the step_id form schema for the data entry forms
         '''
         schema = {}
-        self.opt_actions = UPDATE_CONTROL_BASE.copy()
+        self.opt_actions = OPT_ACTION_BASE.copy()
 
         if step_id == 'menu':
             if self.menu_page_no == 0:
@@ -3016,31 +3060,22 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 
         #------------------------------------------------------------------------
         elif step_id == 'restart_icloud3':
-            # If migrated, must restart ha to relead everything, otherwise, just restart ic3
-            # if self.v2v3_migrated_flag:
-            #     OPT_RESTART_NOW_LATER_KEY_TEXT.pop('now', None)
-            #     restart_default='ha'
-            # else:
-            #     OPT_RESTART_NOW_LATER_KEY_TEXT.pop('ha', None)
-            #     restart_default='now'
             restart_default='now'
-            OPT_RESTART_NOW_LATER_KEY_TEXT.pop('ha', None)
+            RESTART_NOW_LATER_ITEMS_KEY_TEXT.pop('ha', None)
             restart_now_later_option_list = []
-            restart_now_later_option_list.extend(OPT_RESTART_NOW_LATER_KEY_TEXT.values())
+            restart_now_later_option_list.extend(RESTART_NOW_LATER_ITEMS_KEY_TEXT.values())
 
             return  vol.Schema({
                         vol.Required('restart_now_later',
-                                    default=OPT_RESTART_NOW_LATER_KEY_TEXT[restart_default]):
+                                    default=RESTART_NOW_LATER_ITEMS_KEY_TEXT[restart_default]):
                                     selector.SelectSelector(
                                         selector.SelectSelectorConfig(options=restart_now_later_option_list)),
                         })
 
         #------------------------------------------------------------------------
         elif step_id == 'icloud_account':
-            self.opt_actions = [OPT_ACTION_KEY_TEXT['log_in_icloud_acct']]
-            self.opt_actions.extend([OPT_ACTION_KEY_TEXT['enter_verification_code']])
-            self.opt_actions.extend([OPT_ACTION_KEY_TEXT['show_username_password']])
-            self.opt_actions.extend(UPDATE_CONTROL_BASE)
+            self.opt_actions = ICLOUD_ACCOUNT_ACTIONS.copy()
+            self.opt_actions.extend(OPT_ACTION_BASE)
 
             self.obscure_username = self.username   if self.show_username_password \
                                                     else obscure_field(self.username)
@@ -3049,10 +3084,10 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 
             return vol.Schema({
                         vol.Required(CONF_DATA_SOURCE,
-                                    default=self._option_parm_to_text(CONF_DATA_SOURCE, OPT_DATA_SOURCE_KEY_TEXT)):
+                                    default=self._option_parm_to_text(CONF_DATA_SOURCE, DATA_SOURCE_ITEMS_KEY_TEXT)):
                                     selector.SelectSelector(
                                         selector.SelectSelectorConfig(
-                                                options=dict_value_to_list(OPT_DATA_SOURCE_KEY_TEXT), mode='dropdown')),
+                                                options=dict_value_to_list(DATA_SOURCE_ITEMS_KEY_TEXT), mode='dropdown')),
                         vol.Optional(CONF_USERNAME,
                                     default=self.obscure_username):
                                     selector.TextSelector(),
@@ -3060,14 +3095,14 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                                     default=self.obscure_password):
                                     selector.TextSelector(),
                         # vol.Required(CONF_ICLOUD_SERVER_ENDPOINT_SUFFIX,
-                        #             default=self._option_parm_to_text(CONF_ICLOUD_SERVER_ENDPOINT_SUFFIX, OPT_ICLOUD_SERVER_ENDPOINT_SUFFIX_KEY_TEXT)):
+                        #             default=self._option_parm_to_text(CONF_ICLOUD_SERVER_ENDPOINT_SUFFIX, ICLOUD_SERVER_ENDPOINT_SUFFIX_ITEMS_KEY_TEXT)):
                         #             selector.SelectSelector(
                         #                 selector.SelectSelectorConfig(
-                        #                         options=dict_value_to_list(OPT_ICLOUD_SERVER_ENDPOINT_SUFFIX_KEY_TEXT), mode='dropdown')),
+                        #                         options=dict_value_to_list(ICLOUD_SERVER_ENDPOINT_SUFFIX_ITEMS_KEY_TEXT), mode='dropdown')),
                         vol.Required('opt_action',
                                     default=self._action_default_text('save')):
                                     selector.SelectSelector(
-                                        selector.SelectSelectorConfig(options=self.opt_actions)),
+                                        selector.SelectSelectorConfig(options=self.opt_actions, mode='list')),
                         })
 
         #------------------------------------------------------------------------
@@ -3087,14 +3122,14 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 device_list_default = self.form_devices_list_all[idx]
 
             if len(self.form_devices_list_all) <= 5:
-                self.opt_actions = DEVICE_LIST_CONTROL.copy()
+                self.opt_actions = DEVICE_LIST_ACTIONS.copy()
+
             else:
                 devices_text = f"iCloud3 Devices: {self.next_page_devices_list}"
-
-                next_page_text = OPT_ACTION_KEY_TEXT['next_page_info']
+                next_page_text = OPT_ACTION_ITEMS_KEY_TEXT['next_page_info']
                 next_page_text = next_page_text.replace('^info_field^', devices_text)
                 self.opt_actions = [next_page_text]
-                self.opt_actions.extend(DEVICE_LIST_CONTROL)
+                self.opt_actions.extend(DEVICE_LIST_ACTIONS)
 
             schema = {}
             schema = vol.Schema({})
@@ -3110,7 +3145,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                         vol.Required('opt_action',
                                     default=self._action_default_text(action_default)):
                                     selector.SelectSelector(
-                                        selector.SelectSelectorConfig(options=self.opt_actions)),
+                                        selector.SelectSelectorConfig(options=self.opt_actions, mode='list')),
                         })
             return schema
 
@@ -3130,10 +3165,10 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                                         selector.SelectSelectorConfig(
                                                 options=dict_value_to_list(DEVICE_TYPE_FNAME), mode='dropdown')),
                         vol.Required(CONF_TRACKING_MODE,
-                                    default=self._option_parm_to_text(CONF_TRACKING_MODE, OPT_TRACKING_MODE_KEY_TEXT)):
+                                    default=self._option_parm_to_text(CONF_TRACKING_MODE, TRACKING_MODE_ITEMS_KEY_TEXT)):
                                     selector.SelectSelector(
                                         selector.SelectSelectorConfig(
-                                                options=dict_value_to_list(OPT_TRACKING_MODE_KEY_TEXT), mode='dropdown')),
+                                                options=dict_value_to_list(TRACKING_MODE_ITEMS_KEY_TEXT), mode='dropdown')),
                         vol.Required('iosapp', default=True):
                                     selector.BooleanSelector(),
                         })
@@ -3183,10 +3218,10 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                                         selector.SelectSelectorConfig(
                                                 options=dict_value_to_list(DEVICE_TYPE_FNAME), mode='dropdown')),
                         vol.Required(CONF_TRACKING_MODE,
-                                    default=self._option_parm_to_text(CONF_TRACKING_MODE, OPT_TRACKING_MODE_KEY_TEXT)):
+                                    default=self._option_parm_to_text(CONF_TRACKING_MODE, TRACKING_MODE_ITEMS_KEY_TEXT)):
                                     selector.SelectSelector(
                                         selector.SelectSelectorConfig(
-                                                options=dict_value_to_list(OPT_TRACKING_MODE_KEY_TEXT), mode='dropdown')),
+                                                options=dict_value_to_list(TRACKING_MODE_ITEMS_KEY_TEXT), mode='dropdown')),
                         vol.Required(CONF_FAMSHR_DEVICENAME,
                                     default=self._option_parm_to_text(CONF_FAMSHR_DEVICENAME, opt_famshr_text_by_fname)):
                                     selector.SelectSelector(
@@ -3207,69 +3242,88 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                                     selector.SelectSelector(
                                         selector.SelectSelectorConfig(
                                                 options=dict_value_to_list(opt_picture_by_filename), mode='dropdown')),
-
                         vol.Required(CONF_TRACK_FROM_ZONES,
                                     default=self._parm_or_device(CONF_TRACK_FROM_ZONES)):
-                                    cv.multi_select(self.opt_zone_name_key_text),
+                                        cv.multi_select(self.opt_zone_name_key_text),
+                        vol.Required(CONF_INZONE_INTERVAL,
+                                    default=self._hhmmss_to_duration(CONF_INZONE_INTERVAL, CONF_DEVICES)):
+                                    selector.DurationSelector(),
                         vol.Required(CONF_TRACK_FROM_BASE_ZONE,
-                                    default=self._option_parm_to_text(CONF_TRACK_FROM_BASE_ZONE, self.opt_zone_name_key_text, conf_device=True)):
+                                    default=self._option_parm_to_text(
+                                        CONF_TRACK_FROM_BASE_ZONE, self.opt_zone_name_key_text, conf_device=True)):
                                     selector.SelectSelector(
                                         selector.SelectSelectorConfig(
                                                 options=dict_value_to_list(self.opt_zone_name_key_text), mode='dropdown')),
 
-                        vol.Required(CONF_INZONE_INTERVAL,
-                                    default=self._hhmmss_to_duration(CONF_INZONE_INTERVAL, CONF_DEVICES)):
-                                    selector.DurationSelector(),
-
                         vol.Required('opt_action',
                                     default=self._action_default_text('save')):
                                     selector.SelectSelector(
-                                        selector.SelectSelectorConfig(options=self.opt_actions)),
+                                        selector.SelectSelectorConfig(options=self.opt_actions, mode='list')),
                         })
 
         #------------------------------------------------------------------------
-        elif step_id == 'delete_device_confirm':
-            self.opt_actions = DELETE_DEVICE_CONFIRM_ACTION.copy()
+        elif step_id == 'delete_device':
+            self.opt_actions = DELETE_DEVICE_ACTIONS.copy()
+            device_info = ( f"Delete this device ("
+                            f"{self.conf_device_selected[CONF_IC3_DEVICENAME]}, "
+                            f"{self.conf_device_selected[CONF_FNAME]})")
+
+            # The first item is 'Delete this device, add the selected device's info
+            self.opt_actions[0] = self.opt_actions[0].replace('Delete this device', device_info)
+
             schema = vol.Schema({
                         vol.Required('opt_action',
-                                    default=self._action_default_text('delete_device_no')):
+                                    default=self._action_default_text('delete_device_cancel')):
                                     selector.SelectSelector(
-                                        selector.SelectSelectorConfig(options=self.opt_actions)),
+                                        selector.SelectSelectorConfig(options=self.opt_actions, mode='list')),
                         })
 
         #------------------------------------------------------------------------
-        elif step_id == 'reinitialize_all_devices':
-            self.opt_actions = REINITIALIZE_ALL_DEVICES.copy()
+        elif step_id == 'actions':
+            action_screen_items_key_text = ACTIONS_SCREEN_ITEMS_KEY_TEXT.copy()
+            if Gb.log_debug_flag:
+                action_screen_items_key_text.pop('debug_start')
+            else:
+                action_screen_items_key_text.pop('debug_stop')
+            if Gb.log_rawdata_flag:
+                action_screen_items_key_text.pop('rawdata_start')
+            else:
+                action_screen_items_key_text.pop('rawdata_stop')
+            self.opt_actions  = [text for text in action_screen_items_key_text.values()]
+            # self.opt_actions = ACTIONS_SCREEN_ITEMS_TEXT.copy()
             schema = vol.Schema({
                         vol.Required('opt_action',
-                                    default=self._action_default_text('cancel')):
+                                    default=self._action_default_text('return')):
                                     selector.SelectSelector(
-                                        selector.SelectSelectorConfig(options=self.opt_actions)),
+                                        selector.SelectSelectorConfig(options=self.opt_actions, mode='list')),
                         })
-
         #------------------------------------------------------------------------
         elif step_id == 'event_log_configuration':
             schema = vol.Schema({
                         vol.Required(CONF_LOG_LEVEL,
-                                    default=self._option_parm_to_text(CONF_LOG_LEVEL, OPT_LOG_LEVEL_KEY_TEXT)):
+                                    default=self._option_parm_to_text(CONF_LOG_LEVEL, LOG_LEVEL_ITEMS_KEY_TEXT)):
                                     selector.SelectSelector(
                                         selector.SelectSelectorConfig(
-                                                options=dict_value_to_list(OPT_LOG_LEVEL_KEY_TEXT), mode='dropdown')),
+                                                options=dict_value_to_list(LOG_LEVEL_ITEMS_KEY_TEXT), mode='dropdown')),
                         vol.Required(CONF_DISPLAY_ZONE_FORMAT,
-                                    default=self._option_parm_to_text(CONF_DISPLAY_ZONE_FORMAT, OPT_DISPLAY_ZONE_FORMAT_KEY_TEXT)):
+                                    default=self._option_parm_to_text(
+                                        CONF_DISPLAY_ZONE_FORMAT, DISPLAY_ZONE_FORMAT_ITEMS_KEY_TEXT)):
                                     selector.SelectSelector(
                                         selector.SelectSelectorConfig(
-                                                options=dict_value_to_list(OPT_DISPLAY_ZONE_FORMAT_KEY_TEXT), mode='dropdown')),
+                                                options=dict_value_to_list(
+                                                    DISPLAY_ZONE_FORMAT_ITEMS_KEY_TEXT), mode='dropdown')),
                         vol.Required(CONF_UNIT_OF_MEASUREMENT,
-                                    default=self._option_parm_to_text(CONF_UNIT_OF_MEASUREMENT, OPT_UNIT_OF_MEASUREMENT_KEY_TEXT)):
+                                    default=self._option_parm_to_text(
+                                        CONF_UNIT_OF_MEASUREMENT, UNIT_OF_MEASUREMENT_ITEMS_KEY_TEXT)):
                                     selector.SelectSelector(
                                         selector.SelectSelectorConfig(
-                                                options=dict_value_to_list(OPT_UNIT_OF_MEASUREMENT_KEY_TEXT), mode='dropdown')),
+                                                options=dict_value_to_list(
+                                                    UNIT_OF_MEASUREMENT_ITEMS_KEY_TEXT), mode='dropdown')),
                         vol.Required(CONF_TIME_FORMAT,
-                                    default=self._option_parm_to_text(CONF_TIME_FORMAT, OPT_TIME_FORMAT_KEY_TEXT)):
+                                    default=self._option_parm_to_text(CONF_TIME_FORMAT, TIME_FORMAT_ITEMS_KEY_TEXT)):
                                     selector.SelectSelector(
                                         selector.SelectSelectorConfig(
-                                                options=dict_value_to_list(OPT_TIME_FORMAT_KEY_TEXT), mode='dropdown')),
+                                                options=dict_value_to_list(TIME_FORMAT_ITEMS_KEY_TEXT), mode='dropdown')),
                         vol.Required(CONF_EVLOG_CARD_DIRECTORY,
                                     default=self._parm_or_error_msg(CONF_EVLOG_CARD_DIRECTORY, conf_group=CF_PROFILE)):
                                     selector.SelectSelector(
@@ -3278,7 +3332,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                         vol.Required('opt_action',
                                     default=self._action_default_text('save')):
                                     selector.SelectSelector(
-                                        selector.SelectSelectorConfig(options=self.opt_actions)),
+                                        selector.SelectSelectorConfig(options=self.opt_actions, mode='list')),
                         })
 
         #------------------------------------------------------------------------
@@ -3296,11 +3350,11 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                                                 if k <= 4]
 
             dta_next_page_display_items = ", ".join(dta_next_page_display_list)
-            next_page_text = OPT_ACTION_KEY_TEXT['next_page_info']
+            next_page_text = OPT_ACTION_ITEMS_KEY_TEXT['next_page_info']
             next_page_text = next_page_text.replace('^info_field^', dta_next_page_display_items)
             self.opt_actions = [next_page_text]
-            self.opt_actions.extend([OPT_ACTION_KEY_TEXT['select_text_as']])
-            self.opt_actions.extend(UPDATE_CONTROL_BASE)
+            self.opt_actions.extend([OPT_ACTION_ITEMS_KEY_TEXT['select_text_as']])
+            self.opt_actions.extend(OPT_ACTION_BASE)
 
             schema = vol.Schema({
                         vol.Required(CONF_DISPLAY_TEXT_AS,
@@ -3310,13 +3364,13 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                         vol.Required('opt_action',
                             default=self._action_default_text('select_text_as')):
                             selector.SelectSelector(
-                                        selector.SelectSelectorConfig(options=self.opt_actions)),
+                                        selector.SelectSelectorConfig(options=self.opt_actions, mode='list')),
                         })
 
         #------------------------------------------------------------------------
         elif step_id == 'display_text_as_update':
-            self.opt_actions = [OPT_ACTION_KEY_TEXT['clear_text_as']]
-            self.opt_actions.extend(UPDATE_CONTROL_BASE)
+            self.opt_actions = [OPT_ACTION_ITEMS_KEY_TEXT['clear_text_as']]
+            self.opt_actions.extend(OPT_ACTION_BASE)
 
             if instr(self.dta_working_copy[self.dta_selected_idx], '>'):
                 text_from_to_parts = self.dta_working_copy[self.dta_selected_idx].split('>')
@@ -3334,17 +3388,17 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                             vol.Required('opt_action',
                                     default=self._action_default_text('save')):
                                     selector.SelectSelector(
-                                        selector.SelectSelectorConfig(options=self.opt_actions)),
+                                        selector.SelectSelectorConfig(options=self.opt_actions, mode='list')),
                             })
 
         #------------------------------------------------------------------------
         elif step_id == 'other_parms':
             schema = vol.Schema({
                         vol.Required(CONF_LOG_LEVEL,
-                                    default=self._option_parm_to_text(CONF_LOG_LEVEL, OPT_LOG_LEVEL_KEY_TEXT)):
+                                    default=self._option_parm_to_text(CONF_LOG_LEVEL, LOG_LEVEL_ITEMS_KEY_TEXT)):
                                     selector.SelectSelector(
                                         selector.SelectSelectorConfig(
-                                                options=dict_value_to_list(OPT_LOG_LEVEL_KEY_TEXT), mode='dropdown')),
+                                                options=dict_value_to_list(LOG_LEVEL_ITEMS_KEY_TEXT), mode='dropdown')),
                         vol.Required(CONF_GPS_ACCURACY_THRESHOLD,
                                     default=Gb.conf_general[CONF_GPS_ACCURACY_THRESHOLD]):
                                     selector.NumberSelector(
@@ -3372,7 +3426,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                         vol.Required('opt_action',
                                     default=self._action_default_text('save')):
                                     selector.SelectSelector(
-                                        selector.SelectSelectorConfig(options=self.opt_actions)),
+                                        selector.SelectSelectorConfig(options=self.opt_actions, mode='list')),
                         })
 
         #------------------------------------------------------------------------
@@ -3405,27 +3459,27 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                         vol.Required('opt_action',
                                     default=self._action_default_text('save')):
                                     selector.SelectSelector(
-                                        selector.SelectSelectorConfig(options=self.opt_actions)),
+                                        selector.SelectSelectorConfig(options=self.opt_actions, mode='list')),
                         })
 
         #------------------------------------------------------------------------
         elif step_id == 'waze_main':
-            self.opt_actions = [OPT_ACTION_KEY_TEXT['next_page_waze']]
-            self.opt_actions.extend([OPT_ACTION_KEY_TEXT['cancel']])
+            self.opt_actions = [OPT_ACTION_ITEMS_KEY_TEXT['next_page_waze']]
+            self.opt_actions.extend([OPT_ACTION_ITEMS_KEY_TEXT['cancel']])
 
             schema = vol.Schema({
                         vol.Optional(CONF_WAZE_USED,
                                     default=Gb.conf_general[CONF_WAZE_USED]):
                                                 selector.BooleanSelector(),
-                                    # default=self._option_parm_to_text(CONF_DISTANCE_METHOD, OPT_DISTANCE_METHOD_KEY_TEXT)):
+                                    # default=self._option_parm_to_text(CONF_DISTANCE_METHOD, DISTANCE_METHOD_ITEMS_KEY_TEXT)):
                                     # selector.SelectSelector(
                                     #     selector.SelectSelectorConfig(
-                                    #             options=dict_value_to_list(OPT_DISTANCE_METHOD_KEY_TEXT), mode='dropdown')),
+                                    #             options=dict_value_to_list(DISTANCE_METHOD_ITEMS_KEY_TEXT), mode='dropdown')),
                         vol.Optional(CONF_WAZE_REGION,
-                                    default=self._option_parm_to_text(CONF_WAZE_REGION, OPT_WAZE_REGION_KEY_TEXT)):
+                                    default=self._option_parm_to_text(CONF_WAZE_REGION, WAZE_REGION_ITEMS_KEY_TEXT)):
                                     selector.SelectSelector(
                                         selector.SelectSelectorConfig(
-                                                options=dict_value_to_list(OPT_WAZE_REGION_KEY_TEXT), mode='dropdown')),
+                                                options=dict_value_to_list(WAZE_REGION_ITEMS_KEY_TEXT), mode='dropdown')),
                         vol.Optional(CONF_WAZE_MIN_DISTANCE,
                                     default=Gb.conf_general[CONF_WAZE_MIN_DISTANCE]):
                                     selector.NumberSelector(
@@ -3442,7 +3496,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                         vol.Optional('opt_action',
                                     default=self._action_default_text('next_page_waze')):
                                     selector.SelectSelector(
-                                        selector.SelectSelectorConfig(options=self.opt_actions)),
+                                        selector.SelectSelectorConfig(options=self.opt_actions, mode='list')),
                         })
 
         #------------------------------------------------------------------------
@@ -3458,14 +3512,15 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                                             min=0, mode=selector.NumberSelectorMode.BOX, unit_of_measurement='km')),
                         vol.Required(CONF_WAZE_HISTORY_TRACK_DIRECTION,
                                     default=self._option_parm_to_text(CONF_WAZE_HISTORY_TRACK_DIRECTION,
-                                                                        OPT_WAZE_HISTORY_TRACK_DIRECTION_KEY_TEXT)):
+                                                                        WAZE_HISTORY_TRACK_DIRECTION_ITEMS_KEY_TEXT)):
                                     selector.SelectSelector(
                                         selector.SelectSelectorConfig(
-                                                options=dict_value_to_list(OPT_WAZE_HISTORY_TRACK_DIRECTION_KEY_TEXT), mode='dropdown')),
+                                                options=dict_value_to_list(
+                                                    WAZE_HISTORY_TRACK_DIRECTION_ITEMS_KEY_TEXT), mode='dropdown')),
                         vol.Required('opt_action',
                                     default=self._action_default_text('save')):
                                     selector.SelectSelector(
-                                        selector.SelectSelectorConfig(options=self.opt_actions)),
+                                        selector.SelectSelectorConfig(options=self.opt_actions, mode='list')),
                         })
 
         #------------------------------------------------------------------------
@@ -3485,7 +3540,8 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                                     default=False):
                                     selector.BooleanSelector(),
                         vol.Required(CONF_TRACK_FROM_BASE_ZONE,
-                                    default=self._option_parm_to_text(CONF_TRACK_FROM_BASE_ZONE, self.opt_zone_name_key_text)):
+                                    default=self._option_parm_to_text(
+                                        CONF_TRACK_FROM_BASE_ZONE, self.opt_zone_name_key_text)):
                                     selector.SelectSelector(
                                         selector.SelectSelectorConfig(
                                                 options=dict_value_to_list(self.opt_zone_name_key_text), mode='dropdown')),
@@ -3518,7 +3574,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                         vol.Required('opt_action',
                                     default=self._action_default_text('save')):
                                     selector.SelectSelector(
-                                        selector.SelectSelectorConfig(options=self.opt_actions)),
+                                        selector.SelectSelectorConfig(options=self.opt_actions, mode='list')),
                         })
 
         #------------------------------------------------------------------------
@@ -3529,36 +3585,36 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             schema = vol.Schema({
                         vol.Required(CONF_SENSORS_MONITORED_DEVICES,
                                     default=Gb.conf_sensors[CONF_SENSORS_MONITORED_DEVICES]):
-                                    cv.multi_select(CONF_SENSORS_MONITORED_DEVICES_KEY_TEXT),
+                                        cv.multi_select(CONF_SENSORS_MONITORED_DEVICES_KEY_TEXT),
                         vol.Required(CONF_SENSORS_DEVICE,
                                     default=Gb.conf_sensors[CONF_SENSORS_DEVICE]):
-                                    cv.multi_select(CONF_SENSORS_DEVICE_KEY_TEXT),
+                                        cv.multi_select(CONF_SENSORS_DEVICE_KEY_TEXT),
                         vol.Required(CONF_SENSORS_TRACKING_UPDATE,
                                     default=Gb.conf_sensors[CONF_SENSORS_TRACKING_UPDATE]):
-                                    cv.multi_select(CONF_SENSORS_TRACKING_UPDATE_KEY_TEXT),
+                                        cv.multi_select(CONF_SENSORS_TRACKING_UPDATE_KEY_TEXT),
                         vol.Required(CONF_SENSORS_TRACKING_TIME,
                                     default=Gb.conf_sensors[CONF_SENSORS_TRACKING_TIME]):
-                                    cv.multi_select(CONF_SENSORS_TRACKING_TIME_KEY_TEXT),
+                                        cv.multi_select(CONF_SENSORS_TRACKING_TIME_KEY_TEXT),
                         vol.Required(CONF_SENSORS_TRACKING_DISTANCE,
                                     default=Gb.conf_sensors[CONF_SENSORS_TRACKING_DISTANCE]):
-                                    cv.multi_select(CONF_SENSORS_TRACKING_DISTANCE_KEY_TEXT),
+                                        cv.multi_select(CONF_SENSORS_TRACKING_DISTANCE_KEY_TEXT),
                         vol.Required(CONF_SENSORS_TRACK_FROM_ZONES,
                                     default=Gb.conf_sensors[CONF_SENSORS_TRACK_FROM_ZONES]):
-                                    cv.multi_select(CONF_SENSORS_TRACK_FROM_ZONES_KEY_TEXT),
+                                        cv.multi_select(CONF_SENSORS_TRACK_FROM_ZONES_KEY_TEXT),
                         vol.Required(CONF_SENSORS_TRACKING_OTHER,
                                     default=Gb.conf_sensors[CONF_SENSORS_TRACKING_OTHER]):
-                                    cv.multi_select(CONF_SENSORS_TRACKING_OTHER_KEY_TEXT),
+                                        cv.multi_select(CONF_SENSORS_TRACKING_OTHER_KEY_TEXT),
                         vol.Required(CONF_SENSORS_ZONE,
                                     default=Gb.conf_sensors[CONF_SENSORS_ZONE]):
-                                    cv.multi_select(CONF_SENSORS_ZONE_KEY_TEXT),
+                                        cv.multi_select(CONF_SENSORS_ZONE_KEY_TEXT),
                         vol.Required(CONF_SENSORS_OTHER,
                                     default=Gb.conf_sensors[CONF_SENSORS_OTHER]):
-                                    cv.multi_select(CONF_SENSORS_OTHER_KEY_TEXT),
+                                        cv.multi_select(CONF_SENSORS_OTHER_KEY_TEXT),
 
                         vol.Required('opt_action',
                                 default=self._action_default_text('save')):
                                 selector.SelectSelector(
-                                        selector.SelectSelectorConfig(options=self.opt_actions)),
+                                        selector.SelectSelectorConfig(options=self.opt_actions, mode='list')),
                         })
 
         elif step_id == '':

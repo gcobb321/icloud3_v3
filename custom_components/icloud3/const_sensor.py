@@ -11,7 +11,7 @@ from .const     import (DISTANCE_TO_DEVICES,
                         ZONE_NAME, ZONE_FNAME, LAST_ZONE_NAME, LAST_ZONE_FNAME,
                         INTERVAL,
                         BATTERY_SOURCE, BATTERY, BATTERY_STATUS,
-                        DISTANCE, ZONE_DISTANCE, CALC_DISTANCE, WAZE_DISTANCE, HOME_DISTANCE,
+                        DISTANCE, ZONE_DISTANCE, CALC_DISTANCE, WAZE_DISTANCE, WAZE_METHOD, HOME_DISTANCE,
                         MAX_DISTANCE, TRAVEL_TIME, TRAVEL_TIME_MIN, DIR_OF_TRAVEL, MOVED_DISTANCE,
                         DEVICE_STATUS,
                         LAST_UPDATE, LAST_UPDATE_DATETIME,
@@ -44,6 +44,8 @@ SENSOR_LIST_ZONE =      [ZONE_DISTANCE, HOME_DISTANCE,
                         ZONE, ZONE_FNAME, ZONE_NAME, ZONE_DATETIME,
                         LAST_ZONE, LAST_ZONE_FNAME, LAST_ZONE_NAME,
                         ]
+SENSOR_LIST_DISTANCE =  [DISTANCE, ZONE_DISTANCE, HOME_DISTANCE,
+                        ]
 SENSOR_GROUPS = {
         'battery': [BATTERY, BATTERY_STATUS],
         'md_badge': [BADGE],
@@ -59,25 +61,25 @@ SENSOR_GROUPS = {
 }
 '''
 The Sensor Definition dictionary defines all sensors created by iCloud3.
-    Key:
-        Sensor id used in config_flow and in the en.json file (Ex: 'name', 'tfz_zone_distance')
-    Item definition:
-        Field 0:
-            HA base sensor entity_id name.
-                Prefix: [devicename]
-                Suffix: [Track_from_zone name]
-                Examples:   'sensor.gary_iphone_battery', 'sensor.gary_iphone_zone_HOME_DISTANCE',
-                            'sensor.bary_iphone_travel_time_home'
+        Key:
+                Sensor id used in config_flow and in the en.json file (Ex: 'name', 'tfz_zone_distance')
+        Item definition:
+                Field 0:
+                HA base sensor entity_id name.
+                        Prefix: [devicename]
+                        Suffix: [Track_from_zone name]
+                        Examples:   'sensor.gary_iphone_battery', 'sensor.gary_iphone_zone_HOME_DISTANCE',
+                                'sensor.bary_iphone_travel_time_home'
         Index 1:
-            Sensor Friendly Name.
-                Prefix: [device fridndly name]/[device type]
-                Examples:   'Gary/iPhone Name', 'Gary/iPhone Distance Warhouse'
+                Sensor Friendly Name.
+                        Prefix: [device fridndly name]/[device type]
+                        Examples:   'Gary/iPhone Name', 'Gary/iPhone Distance Warhouse'
         Index 2:
-            Sensor type used to determine the format of sensor and the Class object that should be used
+                Sensor type used to determine the format of sensor and the Class object that should be used
         Index 3:
-            mdi Icon for the sensor
+                mdi Icon for the sensor
         Index 4:
-            List of attributes that should be added to the sensor
+                List of attributes that should be added to the sensor
 '''
 
 SENSOR_SUFFIX = ''
@@ -169,43 +171,38 @@ SENSOR_DEFINITION = {
                 'ZoneDistance',
                 'distance, km-mi',
                 'mdi:map-marker-distance',
-                [FROM_ZONE, TRAVEL_TIME, TRAVEL_TIME_MIN,
-                MAX_DISTANCE, WAZE_DISTANCE, CALC_DISTANCE],
+                [FROM_ZONE, MAX_DISTANCE, CALC_DISTANCE, WAZE_DISTANCE, WAZE_METHOD],
                 0],
         DISTANCE: [
                 'Distance',
                 'distance, km-mi',
                 'mdi:map-marker-distance',
-                [FROM_ZONE, TRAVEL_TIME, TRAVEL_TIME_MIN,
-                MAX_DISTANCE, WAZE_DISTANCE, CALC_DISTANCE],
+                [FROM_ZONE, MAX_DISTANCE, CALC_DISTANCE, WAZE_DISTANCE, WAZE_METHOD],
                 0],
         HOME_DISTANCE: [
                 'HomeDistance',
                 'distance, km-mi',
                 'mdi:map-marker-distance',
-                [FROM_ZONE, TRAVEL_TIME, TRAVEL_TIME_MIN,
-                MAX_DISTANCE, WAZE_DISTANCE, CALC_DISTANCE],
+                [FROM_ZONE, MAX_DISTANCE, CALC_DISTANCE, WAZE_DISTANCE, WAZE_METHOD],
                 '0'],
         DIR_OF_TRAVEL: [
                 'Direction',
                 'text, title',
                 'mdi:compass-outline',
-                [FROM_ZONE, TRAVEL_TIME, TRAVEL_TIME_MIN,
-                MAX_DISTANCE, WAZE_DISTANCE, CALC_DISTANCE],
+                [FROM_ZONE, TRAVEL_TIME, TRAVEL_TIME_MIN, DISTANCE, MAX_DISTANCE],
                 BLANK_SENSOR_FIELD],
         MOVED_DISTANCE: [
                 'MovedDistance',
                 'distance, km-mi',
                 'mdi:map-marker-distance',
-                [FROM_ZONE, TRAVEL_TIME, TRAVEL_TIME_MIN,
-                MAX_DISTANCE, WAZE_DISTANCE, CALC_DISTANCE],
+                [FROM_ZONE, MAX_DISTANCE],
                 0],
         ZONE_INFO: [
                 'ZoneInfo',
                 'zone_info',
                 'mdi:map-marker-radius-outline',
                 [FROM_ZONE, TRAVEL_TIME, TRAVEL_TIME_MIN,
-                DISTANCE, MAX_DISTANCE, WAZE_DISTANCE, CALC_DISTANCE, DIR_OF_TRAVEL],
+                DISTANCE, MAX_DISTANCE, CALC_DISTANCE, WAZE_DISTANCE, WAZE_METHOD, DIR_OF_TRAVEL],
                 BLANK_SENSOR_FIELD],
 
         # CONF_SENSORS_TRACK_FROM_ZONES
@@ -214,7 +211,7 @@ SENSOR_DEFINITION = {
                 'zone_info',
                 'mdi:map-marker-radius-outline',
                 [FROM_ZONE, TRAVEL_TIME, TRAVEL_TIME_MIN,
-                DISTANCE, MAX_DISTANCE, WAZE_DISTANCE, CALC_DISTANCE, DIR_OF_TRAVEL],
+                DISTANCE, MAX_DISTANCE, CALC_DISTANCE, WAZE_DISTANCE, WAZE_METHOD, DIR_OF_TRAVEL],
                 BLANK_SENSOR_FIELD],
         TFZ_TRAVEL_TIME: [
                 'TravelTime',
@@ -232,22 +229,19 @@ SENSOR_DEFINITION = {
                 'ZoneDistance',
                 'distance, km-mi',
                 'mdi:map-marker-distance',
-                [FROM_ZONE, TRAVEL_TIME, TRAVEL_TIME_MIN,
-                DISTANCE, MAX_DISTANCE, WAZE_DISTANCE, CALC_DISTANCE, DIR_OF_TRAVEL],
+                [FROM_ZONE, DISTANCE, MAX_DISTANCE, CALC_DISTANCE, WAZE_DISTANCE, WAZE_METHOD],
                 '0 mi'],
         TFZ_ZONE_DISTANCE: [
                 'ZoneDistance',
                 'distance, km-mi',
                 'mdi:map-marker-distance',
-                [FROM_ZONE, TRAVEL_TIME, TRAVEL_TIME_MIN,
-                DISTANCE, MAX_DISTANCE, WAZE_DISTANCE, CALC_DISTANCE, DIR_OF_TRAVEL],
+                [FROM_ZONE, DISTANCE, MAX_DISTANCE, CALC_DISTANCE, WAZE_DISTANCE, WAZE_METHOD],
                 '0 mi'],
         TFZ_DIR_OF_TRAVEL: [
                 'Direction',
                 'text, title',
                 'mdi:compass-outline',
-                [FROM_ZONE, TRAVEL_TIME, TRAVEL_TIME_MIN,
-                DISTANCE, MAX_DISTANCE, WAZE_DISTANCE, CALC_DISTANCE, DIR_OF_TRAVEL],
+                [FROM_ZONE, TRAVEL_TIME, TRAVEL_TIME_MIN, DISTANCE, MAX_DISTANCE],
                 BLANK_SENSOR_FIELD],
 
         # CONF_SENSORS_TRACKING_OTHER
@@ -261,13 +255,13 @@ SENSOR_DEFINITION = {
                 'WazeDistance',
                 'distance, km-mi',
                 'mdi:map-marker-distance',
-                [FROM_ZONE, MAX_DISTANCE, DISTANCE, WAZE_DISTANCE, CALC_DISTANCE],
+                [FROM_ZONE, MAX_DISTANCE, DISTANCE, CALC_DISTANCE, WAZE_DISTANCE, WAZE_METHOD],
                 0],
         CALC_DISTANCE: [
                 'CalcDistance',
                 'distance, km-mi',
                 'mdi:map-marker-distance',
-                [FROM_ZONE, MAX_DISTANCE, DISTANCE, WAZE_DISTANCE, CALC_DISTANCE],
+                [FROM_ZONE, MAX_DISTANCE, DISTANCE, CALC_DISTANCE, WAZE_DISTANCE, WAZE_METHOD],
                 0],
 
         # CONF_SENSORS_ZONE

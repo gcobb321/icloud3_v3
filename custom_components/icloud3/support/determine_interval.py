@@ -19,7 +19,7 @@
 
 
 from ..global_variables     import GlobalVariables as Gb
-from ..const                import (HOME, NOT_HOME , NOT_SET,
+from ..const                import (HOME, NOT_HOME , NOT_SET, HIGH_INTEGER, CHECK_MARK,
                                     STATIONARY, STATIONARY_FNAME,
                                     AWAY_FROM, TOWARDS, PAUSED,
                                     ERROR,
@@ -34,7 +34,7 @@ from ..const                import (HOME, NOT_HOME , NOT_SET,
                                     EXIT_ZONE,
                                     ZONE, ZONE_INFO,
                                     INTERVAL,
-                                    DISTANCE, ZONE_DISTANCE, CALC_DISTANCE, WAZE_DISTANCE, MAX_DISTANCE,
+                                    DISTANCE, ZONE_DISTANCE, CALC_DISTANCE, WAZE_DISTANCE, WAZE_METHOD, MAX_DISTANCE,
                                     TRAVEL_TIME, TRAVEL_TIME_MIN, DIR_OF_TRAVEL, MOVED_DISTANCE,
                                     LAST_LOCATED, LAST_LOCATED_TIME, LAST_LOCATED_DATETIME,
                                     LAST_UPDATE, LAST_UPDATE_TIME, LAST_UPDATE_DATETIME,
@@ -49,7 +49,7 @@ from ..helpers.messaging    import (post_event, post_error_msg,
                                     post_internal_error, post_monitor_msg, log_debug_msg, log_rawdata,
                                     log_info_msg, log_error_msg, log_exception, _trace, _traceha, )
 from ..helpers.time_util    import (secs_to_time, secs_to_time_str, secs_to_time_age_str, waze_mins_to_time_str,
-                                    secs_since, time_to_12hrtime, secs_to_datetime, secs_to,
+                                    secs_since, time_to_12hrtime, secs_to_datetime, secs_to, secs_to_age_str,
                                     datetime_now, time_now, )
 from ..helpers.dist_util    import (km_to_mi, km_to_mi_str, format_dist_km,  format_dist_m, )
 
@@ -114,10 +114,14 @@ def determine_interval(Device, DeviceFmZone):
             and DeviceFmZone.from_zone in Device.NearDevice.DeviceFmZones_by_zone
             and (Device.isnot_inzone
                     or Device.is_inzone and Device.inzone_interval_secs == Device.NearDevice.inzone_interval_secs)):
-        event_msg =(f"Results from {Device.NearDevice.fname_devtype} used > "
-                    f"Distance-{format_dist_m(Device.near_device_distance)}")
-        if DeviceFmZone.from_zone != HOME:
-            event_msg += f", Zone-{DeviceFmZone.from_zone_display_as}"
+
+        neardevice_fname      = Device.NearDevice.fname_devtype
+        neardevice_fname_chk  = f"{CHECK_MARK[:1]}{neardevice_fname}"
+        Device.dist_apart_msg = Device.dist_apart_msg.replace(CHECK_MARK[:1], '')
+        Device.dist_apart_msg = Device.dist_apart_msg.replace(neardevice_fname, neardevice_fname_chk)
+
+        event_msg =(f"Results: From-{DeviceFmZone.from_zone_display_as} > {Device.NearDevice.fname_devtype} info used, "
+                    f"Dist-{format_dist_m(Device.near_device_distance)}")
         post_event(Device.devicename, event_msg)
 
         copy_near_device_results(Device, DeviceFmZone)
@@ -125,6 +129,8 @@ def determine_interval(Device, DeviceFmZone):
         post_results_message_to_event_log(Device, DeviceFmZone,)
         post_zone_time_dist_event_msg(Device, DeviceFmZone)
         return DeviceFmZone.sensors
+
+    Device.NearDeviceUsed = None
 
     #--------------------------------------------------------------------------------
     location_data = _get_distance_data(Device, DeviceFmZone)
@@ -430,8 +436,9 @@ def determine_interval(Device, DeviceFmZone):
     except Exception as err:
         sensor_msg = post_internal_error('Update DeviceFmZone Times', traceback.format_exc)
 
+
     #--------------------------------------------------------------------------------
-    #if poor gps and moved less than 1km, redisplay last distances
+    # if poor gps and moved less than 1km, redisplay last distances
     if (Device.state_change_flag is False
             and Device.is_gps_poor
             and dist_moved_km < 1):
@@ -449,6 +456,12 @@ def determine_interval(Device, DeviceFmZone):
 
     waze_time_msg = Gb.Waze.waze_mins_to_time_str(waze_time_from_zone)
 
+    if (Device.is_location_gps_good
+            and interval > 60
+            and waze_dist_from_zone_km > DeviceFmZone.max_dist_km):
+        _traceha(f"Set MaxDist {interval=} {waze_dist_from_zone_km=} {DeviceFmZone.max_dist_km=} {Device.loc_data_gps_accuracy=}")
+        DeviceFmZone.max_dist_km = waze_dist_from_zone_km
+
     #--------------------------------------------------------------------------------
     #Make sure the new 'last state' value is the internal value for
     #the state (e.g., Away-->not_home) to reduce state change triggers later.
@@ -465,33 +478,13 @@ def determine_interval(Device, DeviceFmZone):
     sensors[NEXT_UPDATE]          = secs_to_time(next_update_secs)
     sensors[TRAVEL_TIME]          = waze_mins_to_time_str(waze_time_from_zone)
     sensors[TRAVEL_TIME_MIN]      = f"{waze_time_from_zone:.0f} min"
-
-    sensors[WAZE_DISTANCE] = ''
-    # if Gb.Waze.is_status_USED:
-    #     sensors[WAZE_DISTANCE] = km_to_mi_str(waze_dist_from_zone_km)
-    if Gb.Waze.is_status_NOT_USED:
-        sensors[WAZE_DISTANCE] = 'NotUsed'
-    elif Gb.Waze.is_status_NO_DATA:
-        sensors[WAZE_DISTANCE] = 'NoData'
-    elif Gb.Waze.is_status_OUT_OF_RANGE:
-        if waze_dist_from_zone_km < 1:
-            pass
-            # sensors[WAZE_DISTANCE] = km_to_mi_str(0)
-        elif waze_dist_from_zone_km < Gb.Waze.waze_min_distance:
-            sensors[WAZE_DISTANCE] = 'DistLow'
-        else:
-            sensors[WAZE_DISTANCE] = 'DistHigh'
-
-    if sensors[WAZE_DISTANCE] == '':
-        sensors[WAZE_DISTANCE] = km_to_mi_str(waze_dist_from_zone_km)
-    if waze_dist_from_zone_km > DeviceFmZone.max_dist_km:
-        DeviceFmZone.max_dist_km = waze_dist_from_zone_km
-
-    sensors[DISTANCE]       = km_to_mi_str(dist_from_zone_km)
-    sensors[MAX_DISTANCE]   = km_to_mi_str(DeviceFmZone.max_dist_km)
-    sensors[ZONE_DISTANCE]  = km_to_mi_str(dist_from_zone_km)
-    sensors[CALC_DISTANCE]  = km_to_mi_str(calc_dist_from_zone_km)
-    sensors[MOVED_DISTANCE] = km_to_mi_str(dist_moved_km)
+    sensors[DISTANCE]       = km_to_mi(dist_from_zone_km)
+    sensors[MAX_DISTANCE]   = km_to_mi(DeviceFmZone.max_dist_km)
+    sensors[ZONE_DISTANCE]  = km_to_mi(dist_from_zone_km)
+    sensors[WAZE_DISTANCE]  = km_to_mi(waze_dist_from_zone_km)
+    sensors[WAZE_METHOD]    = Gb.Waze.waze_status_fname
+    sensors[CALC_DISTANCE]  = km_to_mi(calc_dist_from_zone_km)
+    sensors[MOVED_DISTANCE] = km_to_mi(dist_moved_km)
     sensors[DIR_OF_TRAVEL]  = dir_of_travel
 
     if Device.is_inzone:
@@ -554,11 +547,12 @@ def post_results_message_to_event_log(Device, DeviceFmZone):
                     f"Moved-{format_dist_km(Device.StatZone.moved_dist)}, "
                     f"Battery-{Device.dev_data_battery_level}%, "
                     f"LastDataUpdate-{secs_to_time(Device.last_data_update_secs)}, "
+                    f"GPSAccuracy-{Device.loc_data_gps_accuracy}m, "
+                    f"LocAge-{secs_to_age_str(Device.loc_data_secs)}, "
+                    f"OldThreshold-{secs_to_time_str(Device.old_loc_threshold_secs)}, "
                     f"LastEvLogMsg-{secs_to_time(Device.last_evlog_msg_secs)}, "
                     f"Method-{DeviceFmZone.interval_method}")
         log_info_msg(Device.devicename, log_msg)
-
-        # _traceha(f"559 test traceha>> {Device.devicename=} {log_msg=} {secs_to_time(Device.last_data_update_secs)=}")
 
 #--------------------------------------------------------------------------------
 def post_zone_time_dist_event_msg(Device, DeviceFmZone):
@@ -608,7 +602,6 @@ def copy_near_device_results(Device, DeviceFmZone):
     DeviceFmZone.waze_dist         = NearDeviceFmZone.waze_dist
     DeviceFmZone.waze_time         = NearDeviceFmZone.waze_time
     DeviceFmZone.calc_dist         = NearDeviceFmZone.calc_dist
-    # DeviceFmZone.max_dist_km       = NearDeviceFmZone.max_dist_km
     DeviceFmZone.next_update_secs  = NearDeviceFmZone.next_update_secs
     DeviceFmZone.next_update_time  = NearDeviceFmZone.next_update_time
     DeviceFmZone.interval_secs     = NearDeviceFmZone.interval_secs
@@ -625,8 +618,8 @@ def copy_near_device_results(Device, DeviceFmZone):
     Device.StatZone.moved_dist     = NearDevice.StatZone.moved_dist
     Device.zone_change_secs        = NearDevice.zone_change_secs
 
-    log_msg = f"Using Nearby Device Results-{NearDevice.devicename}"
-    log_info_msg(Device.devicename, log_msg)
+    # log_msg = f"Using Nearby Device Results-{NearDevice.devicename}"
+    # post_event(Device.devicename, log_msg)
     log_rawdata(f"{Device.devicename} - {from_zone}", DeviceFmZone.sensors)
 
     return DeviceFmZone.sensors
@@ -1097,3 +1090,126 @@ def _get_interval_for_error_retry_cnt(Device, counter=OLD_LOC_POOR_GPS_CNT, paus
     interval = interval * 60
 
     return interval
+
+
+#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+#
+#   UPDATE DEVICE LOCATION & INFORMATION ATTRIBUTE FUNCTIONS
+#
+#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+def update_nearby_device_info(Device):
+    '''
+    Cycle through the devices and see if this device is in the same location as
+    another device updated earlier in this 5-sec polling loop.
+
+    Return: The closest device
+
+    {devicename: [dist_m, gps_accuracy_factor, display_text]}
+    '''
+    if (len(Gb.Devices) == 1
+            or len(Device.dist_to_other_devices) == 0):
+        return
+
+    closest_device_distance     = HIGH_INTEGER
+    Device.dist_apart_msg       = ''
+    Device.NearDevice           = None
+    Device.near_device_distance = 0
+
+    for devicename, dist_to_other_devices in Device.dist_to_other_devices.items():
+        _Device = Gb.Devices_by_devicename[devicename]
+
+        dist_m, gps_accuracy_factor, display_text = dist_to_other_devices
+
+        if (dist_m > NEAR_DEVICE_DISTANCE
+                or gps_accuracy_factor > NEAR_DEVICE_DISTANCE
+                or display_text == '0m/±0m'
+                or _Device.NearDevice is Device
+                or Device.is_inzone_stationary
+                or _Device.is_inzone_stationary):
+            nearby_symbol = '⊗'
+        else:
+            nearby_symbol = ''
+
+        Device.dist_apart_msg += f"{nearby_symbol}{_Device.fname_devtype}-{display_text}, "
+
+        # The nearby devices can not point to each other and other criteria
+        if (((Device.is_tracked and _Device.is_tracked) or _Device.is_monitored)
+                and nearby_symbol == ''
+                and _Device.DeviceFmZoneHome.interval_secs > 0
+                and _Device.old_loc_poor_gps_cnt == 0
+                and _Device.is_online):
+
+            if dist_m < closest_device_distance:
+                closest_device_distance = dist_m
+                Device.NearDevice = _Device
+                Device.near_device_distance = dist_m
+
+    monitor_msg = f"Nearby Devices (<{NEAR_DEVICE_DISTANCE}m) > {Device.dist_apart_msg}"
+    post_monitor_msg(Device.devicename, monitor_msg)
+
+    return
+
+    try:
+        if len(Gb.Devices) == 1:
+            return
+
+        closest_device_distance     = HIGH_INTEGER
+        Device.dist_apart_msg       = ''
+        Device.NearDevice           = None
+        Device.near_device_distance = 0
+
+        for _Device in Gb.Devices:
+            can_use_nearby_device = False
+            nearby_symbol = ''
+
+            # If the device being updated has been reached and the data is iCloud, a nearby device
+            # cannot be used and must be calculated. Otherwise, there is a circular reference and
+            # this device will be set to another device's previous results
+            if _Device is Device:
+                can_use_nearby_device = _Device.is_using_iosapp_data
+                continue
+
+            distance_apart       = _Device.distance_m(Device.loc_data_latitude, Device.loc_data_longitude)
+            gps_accuracy_factor  = min(Device.loc_data_gps_accuracy, _Device.loc_data_gps_accuracy) * distance_apart / NEAR_DEVICE_DISTANCE
+            location_age_ok_flag = (secs_since(_Device.loc_data_secs) < _Device.old_loc_threshold_secs)
+            if Device.sensor_zone == _Device.sensor_zone and Device.is_inzone:
+                location_age_ok_flag = True
+
+            if (distance_apart > NEAR_DEVICE_DISTANCE
+                    or gps_accuracy_factor > NEAR_DEVICE_DISTANCE
+                    or Device.is_inzone_stationary
+                    or _Device.is_inzone_stationary):
+                nearby_symbol = '⊗'
+
+            dist_apart_msg = (f"{format_dist_m(distance_apart)}/±"
+                                f"{min(Device.loc_data_gps_accuracy, _Device.loc_data_gps_accuracy)}m")
+
+            # Update the other Device with this Device's distance
+            if location_age_ok_flag:
+                Device.dist_apart_msg_by_devicename[_Device.devicename] = dist_apart_msg
+                _Device.dist_apart_msg_by_devicename[Device.devicename] = dist_apart_msg
+
+            Device.dist_apart_msg += f"{nearby_symbol}{_Device.fname_devtype}-{dist_apart_msg}, "
+
+            # The nearby devices can not point to each other and other criteria
+            if (_Device.NearDevice is not Device
+                    and ((Device.is_tracked and _Device.is_tracked) or Device.is_monitored)
+                    and location_age_ok_flag
+                    and nearby_symbol == ''
+                    and _Device.DeviceFmZoneHome.interval_secs > 0
+                    and _Device.old_loc_poor_gps_cnt == 0
+                    and _Device.is_online):
+                can_use_nearby_device = True
+
+            if can_use_nearby_device and distance_apart < closest_device_distance:
+                closest_device_distance = distance_apart
+                Device.NearDevice = _Device
+                Device.near_device_distance = distance_apart
+
+        monitor_msg = f"Nearby Devices (<{NEAR_DEVICE_DISTANCE}m) > {Device.dist_apart_msg}"
+        post_monitor_msg(Device.devicename, monitor_msg)
+
+        return
+
+    except Exception as err:
+        post_internal_error('Get nearby device', traceback.format_exc)

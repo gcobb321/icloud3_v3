@@ -40,6 +40,7 @@ from .const             import (VERSION,
                                 ICLOUD_FNAME,
                                 TRACKING_NORMAL,
                                 CMD_RESET_PYICLOUD_SESSION, NEAR_DEVICE_DISTANCE,
+                                DISTANCE_TO_OTHER_DEVICES, DISTANCE_TO_OTHER_DEVICES_DATETIME,
                                 STAT_ZONE_MOVE_DEVICE_INTO, STAT_ZONE_MOVE_TO_BASE,
                                 OLD_LOC_POOR_GPS_CNT, AUTH_ERROR_CNT,
                                 IOSAPP_UPDATE, ICLOUD_UPDATE,
@@ -50,7 +51,7 @@ from .const             import (VERSION,
                                 GPS, INTERVAL, BATTERY, BATTERY_LEVEL, BATTERY_STATUS,
                                 NEXT_UPDATE,
                                 )
-
+from .const_sensor      import (SENSOR_LIST_DISTANCE, )
 from .support           import start_ic3
 from .support           import start_ic3_control
 from .support           import restore_state
@@ -144,7 +145,7 @@ class iCloud3:
             start_ic3_control.stage_5_configure_tracked_devices()
             start_ic3_control.stage_6_initialization_complete()
             start_ic3_control.stage_7_initial_locate()
-            close_reopen_ic3_debug_log_file()
+            close_reopen_ic3_debug_log_file(closed_by='iCloud3 Initialization')
 
             Gb.trace_prefix = ''
             Gb.initial_locate_complete_flag = False
@@ -240,12 +241,23 @@ class iCloud3:
 
         # Update the EvLog display if the displayed device was updated after
         # the last EvLog refresh
-        if Device :=  Gb.Devices_by_devicename.get(Gb.EvLog.devicename):
+        if Device := Gb.Devices_by_devicename.get(Gb.EvLog.devicename):
             show_one_screen = (len(Gb.EvLog.evlog_table) > 300
                                     and Gb.log_debug_flag is False)
             if Device.last_evlog_msg_secs > Gb.EvLog.last_refresh_secs:
                 Gb.EvLog.update_event_log_display(devicename=Device.devicename,
                                                     show_one_screen=show_one_screen)
+
+        # Update distance sensors (_zone/home.waze/calc_distace) to update the
+        # distance to each device
+        if Gb.dist_to_other_devices_update_sensor_list:
+            for devicename in Gb.dist_to_other_devices_update_sensor_list:
+                Device = Gb.Devices_by_devicename[devicename]
+                Device.sensors[DISTANCE_TO_OTHER_DEVICES] = Device.dist_to_other_devices.copy()
+                Device.sensors[DISTANCE_TO_OTHER_DEVICES_DATETIME] = Device.dist_to_other_devices_datetime
+                Device.write_ha_sensors_state(SENSOR_LIST_DISTANCE)
+
+            Gb.dist_to_other_devices_update_sensor_list = set()
 
         Gb.trace_prefix = ''
         Gb.any_device_was_updated_reason = ''
@@ -475,12 +487,13 @@ class iCloud3:
             for Device in Gb.Devices_by_devicename.values():
                 Device.display_info_msg(Device.format_info_msg)
 
+            close_reopen_ic3_debug_log_file()
+
         # Every 15-minutes
-        if time_now_mm in ['00', '15', '30', '45']:
+        # if time_now_mm in ['00', '15', '30', '45']:
             # Close and reopen icloud3-debug.log file so all records are written
             # if last record was written within the last 15-minutes
-            if Gb.ic3_debug_log_update_flag:
-                close_reopen_ic3_debug_log_file()
+            # close_reopen_ic3_debug_log_file(closed_by='iCloud3 Commit Log Records')
 
         # Every 1/2-hour
         if time_now_mm in ['00', '30']:
@@ -493,7 +506,7 @@ class iCloud3:
                 and Gb.this_update_secs >= Gb.authentication_error_retry_secs):
             post_event(f"Retry authentication > "
                         f"Timer={secs_to_time(Gb.authentication_error_retry_secs)}")
-            pyicloud_ic3_interface.authenticate_icloud_account()
+            pyicloud_ic3_interface.authenticate_icloud_account(Gb.PyiCloud)
 
         service_handler.issue_ha_notification()
 
@@ -812,7 +825,7 @@ class iCloud3:
             # Update the devices that are near each other
             # See if a device updated updated earlier in this 5-sec loop was just updated and is
             # near the device being updated now
-            self._identify_nearby_devices(Device)
+            det_interval.update_nearby_device_info(Device)
 
             # Cycle thru each Track From Zone get the interval and all other data
             devicename = Device.devicename
@@ -1058,81 +1071,6 @@ class iCloud3:
 
         except:
             return False
-
-#----------------------------------------------------------------------------
-    def _identify_nearby_devices(self, Device):
-        '''
-        Cycle through the devices and see if this device is in the same location as
-        another device updated earlier in this 5-sec polling loop.
-
-        Return: The closest device
-        '''
-        try:
-            if len(Gb.Devices) == 1:
-                return
-
-            closest_device_distance     = HIGH_INTEGER
-            Device.dist_apart_msg  = ''
-            Device.NearDevice           = None
-            Device.near_device_distance = 0
-
-            for _Device in Gb.Devices:
-                can_use_nearby_device = False
-                nearby_symbol = ''
-
-                # If the device being updated has been reached and the data is iCloud, a nearby device
-                # cannot be used and must be calculated. Otherwise, there is a circular reference and
-                # this device will be set to another device's previous results
-                if _Device is Device:
-                    can_use_nearby_device = _Device.is_using_iosapp_data
-                    continue
-
-                distance_apart       = _Device.distance_m(Device.loc_data_latitude, Device.loc_data_longitude)
-                gps_accuracy_factor  = min(Device.loc_data_gps_accuracy, _Device.loc_data_gps_accuracy) * distance_apart / NEAR_DEVICE_DISTANCE
-                location_age_ok_flag = (secs_since(_Device.loc_data_secs) < _Device.old_loc_threshold_secs)
-                if Device.sensor_zone == _Device.sensor_zone and Device.is_inzone:
-                    location_age_ok_flag = True
-
-                # if (distance_apart > NEAR_DEVICE_DISTANCE - gps_accuracy_adjustment
-                if (distance_apart > NEAR_DEVICE_DISTANCE
-                        or gps_accuracy_factor > NEAR_DEVICE_DISTANCE
-                        or Device.is_inzone_stationary
-                        or _Device.is_inzone_stationary):
-                    nearby_symbol = '⊗'
-
-                # dist_apart_msg = (f"{format_dist_m(distance_apart)}±{format_dist_m(gps_accuracy_adjustment)}"
-                dist_apart_msg = (f"{format_dist_m(distance_apart)}/±"
-                                    f"{min(Device.loc_data_gps_accuracy, _Device.loc_data_gps_accuracy)}m")
-
-                # Update the other Device with this Device's distance
-                if location_age_ok_flag:
-                    Device.dist_apart_msg_by_devicename[_Device.devicename] = dist_apart_msg
-                    _Device.dist_apart_msg_by_devicename[Device.devicename] = dist_apart_msg
-
-                Device.dist_apart_msg += f"{nearby_symbol}{_Device.fname_devtype}-{dist_apart_msg}, "
-
-                # The nearby devices can not point to each other and other criteria
-                if (_Device.NearDevice is not Device
-                        and ((Device.is_tracked and _Device.is_tracked) or Device.is_monitored)
-                        and location_age_ok_flag
-                        and nearby_symbol == ''
-                        and _Device.DeviceFmZoneHome.interval_secs > 0
-                        and _Device.old_loc_poor_gps_cnt == 0
-                        and _Device.is_online):
-                    can_use_nearby_device = True
-
-                if can_use_nearby_device and distance_apart < closest_device_distance:
-                    closest_device_distance = distance_apart
-                    Device.NearDevice = _Device
-                    Device.near_device_distance = distance_apart
-
-            monitor_msg = f"Nearby Devices (<{NEAR_DEVICE_DISTANCE}m) > {Device.dist_apart_msg}"
-            post_monitor_msg(Device.devicename, monitor_msg)
-
-            return
-
-        except Exception as err:
-            post_internal_error('Get nearby device', traceback.format_exc)
 
 #--------------------------------------------------------------------
     def _get_icloud_data_prefetch_device(self):

@@ -189,7 +189,7 @@ class PyiCloudSession(Session):
                 # Handle re-authentication for Find My iPhone
                 fmip_url = self.Service._get_webservice_url("findme")
                 if retry_cnt == 0 and response.status_code in AUTHENTICATION_NEEDED_421_450_500 and fmip_url in url:
-                    log_debug_msg("196 Re-authenticating Find My iPhone service")
+                    log_debug_msg("Re-authenticating Find My iPhone service")
 
                     try:
                         # If 450, authentication requires a sign in to the account
@@ -216,7 +216,9 @@ class PyiCloudSession(Session):
 
                 return self.request(method, url, **kwargs)
 
-            self._raise_error(response.status_code, response.reason)
+            error_code, error_reason = self._resolve_error_code_reason(data)
+
+            self._raise_error(response.status_code, error_reason)
 
         if content_type not in json_mimetypes:
             return response
@@ -230,31 +232,63 @@ class PyiCloudSession(Session):
                 request_logger.warning(msg)
             return response
 
-        if isinstance(data, dict):
-            reason = data.get("errorMessage")
-            reason = reason or data.get("reason")
-            reason = reason or data.get("errorReason")
+        error_code, error_reason = self._resolve_error_code_reason(data)
 
-            if not reason and data.get("error"):
-                reason = f"Unknown reason, will continue {data=}"
-
-            code = data.get("errorCode")
-            code = code or data.get("serverErrorCode")
-            if reason:
-                self._raise_error(code, reason)
+        if error_reason:
+            self._raise_error(error_code, error_reason)
 
         return response
 
 #------------------------------------------------------------------
-    def _raise_error(self, code, reason):
+    @staticmethod
+    def _resolve_error_code_reason(data):
+        '''
+        Determine if there is an error message in the data returned.
+
+        Return:
+            error code - Error Code
+            error reason - Text reason for the error
+        '''
+
+        code = reason = None
+        if isinstance(data, dict):
+            reason = data.get("error")
+            reason = reason or data.get("errorMessage")
+            reason = reason or data.get("reason")
+            reason = reason or data.get("errorReason")
+
+            code = data.get("errorCode")
+            code = code or data.get("serverErrorCode")
+
+            if (reason in [1, '1', '2fa Already Processed']
+                    or code == 1):
+                return None, None
+
+        return code, reason
+
+#------------------------------------------------------------------
+    @staticmethod
+    def _raise_error(code, reason):
+
         api_error = None
+        if code is None and reason is None:
+            return
+
         if reason in ("ZONE_NOT_FOUND", "AUTHENTICATION_FAILED"):
             reason = ("Please log into https://icloud.com/ to manually "
                     "finish setting up your iCloud service")
             api_error = PyiCloudServiceNotActivatedException(reason, code)
 
         elif code in AUTHENTICATION_NEEDED_421_450_500: #[204, 421, 450, 500]:
-            log_info_msg(f"Authentication needed for Account ({code})")
+            log_info_msg(f"iCloud Account Authentication is needed ({code})")
+            return
+
+        elif reason ==  'Missing X-APPLE-WEBAUTH-TOKEN cookie':
+            log_info_msg(f"iCloud Account Authentication is needed, No WebAuth Token")
+            api_error = PyiCloud2FARequiredException()
+
+        # 2fa needed that has already been requested and processed
+        elif reason == '2fa Already Processed':
             return
 
         elif code in [400, 404]:
@@ -264,13 +298,15 @@ class PyiCloudSession(Session):
             reason = (reason + ".  Please wait a few minutes then try again."
                                 "The remote servers might be trying to throttle requests.")
 
-        api_error = PyiCloudAPIResponseException(reason, code)
+        if api_error is None:
+            api_error = PyiCloudAPIResponseException(reason, code)
 
         # log_error_msg(f"{api_error}")
         raise api_error
 
 #------------------------------------------------------------------
-    def _log_debug_msg(self, title, display_data):
+    @staticmethod
+    def _log_debug_msg(title, display_data):
         ''' Display debug data fields '''
         try:
             log_debug_msg(f"{title} -- {display_data}")
@@ -375,29 +411,28 @@ class PyiCloudService():
             self.init_stage['setup_session'] = True
 
             if called_from == 'config_flow':
-                Gb.PyiCloud_config_flow = self
+                Gb.PyiCloudConfigFlow = self
+            elif called_from == 'init':
+                Gb.PyiCloudInit = self
             else:
                 Gb.PyiCloud = self
 
         if self.init_stage['authenticate'] is False:
+            post_monitor_msg(f"AUTHENTICATING PyiCloud, -{obscure_field(apple_id)} ({called_from})")
             self.authenticate()
             self.init_stage['authenticate'] = True
-            post_monitor_msg(f"AUTHENTICATE PyiCloud, -{obscure_field(apple_id)}, {called_from}")
 
         if self.init_stage['setup_famshr'] is False:
+            post_monitor_msg(f"CREATING PyiCloud FamShr, {obscure_field(apple_id)} ({called_from})")
             self.create_FamilySharing_object()
             self.init_stage['setup_famshr'] = True
-            post_monitor_msg(f"CREATED PyiCloud FamShr, {obscure_field(apple_id)}, {called_from}")
 
         if self.init_stage['setup_fmf'] is False:
+            post_monitor_msg(f"CREATING PyiCloud FmF, {obscure_field(apple_id)} ({called_from})")
             self.create_FindMyFriends_object()
             self.init_stage['setup_fmf'] = True
-            post_monitor_msg(f"CREATED PyiCloud FmF, {obscure_field(apple_id)}, {called_from}")
 
         self.init_stage['complete'] = True
-
-#----------------------------------------------------------------------------
-
 
 #----------------------------------------------------------------------------
     def _initialize_variables(self):
@@ -433,7 +468,7 @@ class PyiCloudService():
         self.init_stage['setup_fmf']      = False
         self.init_stage['complete']       = False
 
-        Gb.PyiCloud = self
+        # Gb.PyiCloud = self
 
 #----------------------------------------------------------------------------
     def authenticate(self, refresh_session=False, service=None):
@@ -712,17 +747,29 @@ class PyiCloudService():
     @property
     def requires_2sa(self):
         '''Returns True if two-step authentication is required.'''
-        return self.data.get("dsInfo", {}).get("hsaVersion", 0) >= 1 and (
-            self.data.get("hsaChallengeRequired", False) or not self.is_trusted_session)
+        needs_2sa_flag = (self.data.get("dsInfo", {}).get("hsaVersion", 0) >= 1
+                                and (self.data.get("hsaChallengeRequired", False))
+                            or not self.is_trusted_session)
+
+        return needs_2sa_flag
 
     @property
     def requires_2fa(self):
         '''Returns True if two-factor authentication is required.'''
-        needs_2fa_flag = self.data["dsInfo"].get("hsaVersion", 0) == 2 and (
-            self.data.get("hsaChallengeRequired", False) or not self.is_trusted_session)
+        try:
+            needs_2fa_flag = (self.data.get("dsInfo", {}).get("hsaVersion", 0) == 2
+                                    and (self.data.get("hsaChallengeRequired", False)
+                                or not self.is_trusted_session))
+
+        except KeyError:
+            needs_2fa_flag = True
+        except Exception as err:
+            log_exception(err)
+            return False
 
         if needs_2fa_flag:
-            log_debug_msg(f"NEEDS-2FA, is_trusted_session-{self.is_trusted_session}, data-{self.data}")
+            log_debug_msg(f"NEEDS-2FA, is_trusted_session-{self.is_trusted_session}")
+
         return needs_2fa_flag
 
     @property
@@ -898,7 +945,7 @@ class PyiCloudService():
 #----------------------------------------------------------------------------
     def __repr__(self):
         try:
-            return (f"<PyiCloudService: {self.apple_id}>")
+            return (f"<PyiCloudService: {self.apple_id} ({self.called_from})>")
         except:
             return (f"<PyiCloudService: Undefined>")
 
@@ -1190,8 +1237,11 @@ class PyiCloud_FindMyFriends():
                 "serverContext": None,
             }
         )
-
-        response = self.Session.post(self._friend_endpoint, data=mock_payload, params=params)
+        try:
+            response = self.Session.post(self._friend_endpoint, data=mock_payload, params=params)
+        except:
+            self.response = {}
+            log_debug_msg("No data returned on friends refresh request")
 
         try:
             self.response = response.json()
@@ -1549,6 +1599,7 @@ class PyiCloudException(Exception):
 class PyiCloudAPIResponseException(PyiCloudException):
     '''iCloud response exception.'''
     def __init__(self, reason, code=None, retry=False):
+
         self.reason = reason
         self.code = code
         message = reason or ""
@@ -1570,11 +1621,9 @@ class PyiCloudFailedLoginException(PyiCloudException):
     pass
 
 #----------------------------------------------------------------------------
-class PyiCloud2SARequiredException(PyiCloudException):
+class PyiCloud2FARequiredException(PyiCloudException):
     '''iCloud 2SA required exception.'''
-    def __init__(self, apple_id):
-        message = f"Two-Step Authentication (2SA) Required for Account {apple_id}"
-        super(PyiCloud2SARequiredException, self).__init__(message)
+    pass
 
 #----------------------------------------------------------------------------
 class PyiCloudNoStoredPasswordAvailableException(PyiCloudException):

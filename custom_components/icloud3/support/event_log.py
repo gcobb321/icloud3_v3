@@ -220,6 +220,9 @@ class EventLog(object):
             event_text = event_text.replace('Geographic','Geo')
             event_text = event_text.replace('Significant','Sig')
 
+            if self.display_text_as is None:
+                    self.display_text_as = {}
+
             for from_text in self.display_text_as:
                 event_text = event_text.replace(from_text, self.display_text_as[from_text])
 
@@ -296,7 +299,7 @@ class EventLog(object):
                         icloud3_event_log entity is at a minimm size
 
         '''
-        if devicename == '':
+        if devicename == '' or devicename is None:
             devicename = self.devicename
 
         try:
@@ -307,11 +310,9 @@ class EventLog(object):
 
             self.evlog_attrs['log_level_debug'] = log_attr_text
 
-            # if devicename is None:
-            #     return
             max_recds = HIGH_INTEGER
             self.clear_secs = time_now_secs() + EVENT_LOG_CLEAR_SECS
-            if show_one_screen:# or devicename == 'clear_log_items':
+            if show_one_screen:
                 max_recds  = EVENT_LOG_CLEAR_CNT
                 self.clear_secs = HIGH_INTEGER
                 devicename = self.devicename
@@ -628,6 +629,7 @@ class EventLog(object):
                     log_info_msg(f"{el_recd}")
 
         return []
+
 #--------------------------------------------------------------------
     def _export_ic3_event_log_reformat_recds(self, devicename, el_records):
 
@@ -694,3 +696,24 @@ class EventLog(object):
 
         except Exception as err:
             log_exception(err)
+
+#--------------------------------------------------------------------
+    @staticmethod
+    def uncompress_evlog_recd_special_characters(recd):
+        '''
+        The evlog records may have a compressed character that is expanded in
+        icloud3-event-log-card.js. It is used to reduce space in the
+        sensor.icloud3-event_log entity.
+        '''
+        if recd is None:
+            return recd
+
+        recd = recd.replace('⣇', "")
+        recd = recd.replace('⠈', " ")
+        recd = recd.replace('⠉', "  ")
+        recd = recd.replace('⠋', "   ")
+        recd = recd.replace('⠛', "    ")
+        recd = recd.replace('⠟', "     ")
+        recd = recd.replace('⠿', "      ")
+
+        return recd

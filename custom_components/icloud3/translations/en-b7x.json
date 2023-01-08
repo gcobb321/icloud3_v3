@@ -45,7 +45,7 @@
       "icloud_logging_into": "Logging into iCloud Account",
       "icloud_logged_into": "Successfully Logged into the iCloud Account",
       "icloud_invalid_auth": "iCloud Account Login Failed, Check Username & Password",
-      "icloud_reauth_scheduled": "Reauhentication scheduled after exiting, BROWSER REFRESH MAY BE NEEDED",
+      "icloud_reauth_scheduled": "iCloud Account Reauhentication scheduled after exit",
       "icloud_acct_not_set_up": "The iCloud Account Username/Password have not been set up",
       "send_verification_code": "Failed to send the Apple ID Verification Code",
       "verification_code_accepted": "The Apple ID Verification Code was Accepted",
@@ -102,8 +102,9 @@
       },
       "reauth": {
         "data": {
-          "verification_code": "ICLOUD ACCOUNT VERIFICATION CODE - The 6-digit verification code received from Apple"
+          "verification_code": "ICLOUD ACCOUNT VERIFICATION CODE"
         },
+        "description": "Enter the 6-digit verification code you just received from Apple",
         "title": "Apple ID Verification Code"
       },
       "device_list": {
@@ -181,6 +182,12 @@
         "data_description": {
         },
         "title": "Update Event Log 'Display Text As' Value"
+      },
+      "actons": {
+        "data": {
+          "opt_action": ""
+        },
+        "title": "Actions"
       },
       "action_menu": {
         "menu_options": {

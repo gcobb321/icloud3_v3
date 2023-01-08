@@ -162,51 +162,24 @@ def stage_4_setup_tracking_methods(retry=False):
     Gb.trace_prefix = 'STAGE 4 > '
     stage_title = 'Stage 4 > Setup iCloud & iOSApp Tracking Methods'
 
-    try:
-        return_code = True
-        retry_msg = ', Retrying iCloud Device Setup' if retry else ''
-        Gb.EvLog.display_user_message(stage_title)
-        broadcast_info_msg(stage_title)
+    # Missing username/password, PyiCloud can not be started
+    if Gb.data_source_use_icloud:
+        if Gb.username == '' and Gb.password == '':
+            Gb.data_source_use_icloud = False
+            event_msg =(f"{EVLOG_ALERT}Alert > The iCloud username or password has not been "
+                                f"configured. iCloud will not be used for location tracking")
+            post_event(event_msg)
 
+    return_code = True
+    retry_msg = ', Retrying iCloud Device Setup' if retry else ''
+    Gb.EvLog.display_user_message(stage_title)
+    broadcast_info_msg(stage_title)
+
+    try:
         if Gb.data_source_use_icloud:
             post_event(f"iCloud Account Used > {obscure_field(Gb.username)}")
 
-            # PyiCloud is started early in __init__ and is already set up
-            if (Gb.PyiCloud and Gb.PyiCloud.init_stage.get('complete', False)):
-                post_event('iCloud Location Services Interface > Started during iCloud3 '
-                            'initialization completed successfully')
-
-            # PyiCloud setup was not completed, continue
-            elif Gb.username and Gb.password:
-                if Gb.PyiCloud:
-                    post_monitor_msg(f"PyiCloud Service Stage > {Gb.PyiCloud.init_stage}")
-
-                # 12/17/2022 (beta 1) - Force Create of FamShr & FmF is wasn't completed initially
-                init_stage_msg = 'Initial'
-                if Gb.PyiCloud is not None:
-                    try:
-                        # Check to see if this exists, if not, start all over
-                        webservices_url = Gb.PyiCloud._get_webservice_url("findme")
-                    except AttributeError:
-                        Gb.PyiCloud.init_stage['authenticate'] = False
-                        Gb.PyiCloud.init_stage['setup_famshr'] = False
-                        Gb.PyiCloud.init_stage['setup_fmf']    = False
-
-                        if Gb.PyiCloud.init_stage['setup_fmf'] is False:
-                            init_stage_msg = 'FmF Service'
-                        if Gb.PyiCloud.init_stage['setup_famshr'] is False:
-                            init_stage_msg = 'FamShr Service'
-                        if Gb.PyiCloud.init_stage['authenticate'] is False:
-                            init_stage_msg = 'Authentication'
-                        post_event(f"iCloud Location Services Interface > Continuing-{init_stage_msg}")
-
-                pyicloud_ic3_interface.create_PyiCloud_service(called_from='start_ic3')
-
-            # Missing username/password, PyiCloud can not be started
-            else:
-                event_msg =(f"{EVLOG_ALERT}Alert > The iCloud username or password has not been "
-                            f"configured. iCloud will not be used for location tracking")
-                post_event(event_msg)
+            pyicloud_ic3_interface.verify_pyicloud_setup_status()
 
             if Gb.PyiCloud:
                 start_ic3.setup_tracked_devices_for_famshr()
@@ -223,23 +196,7 @@ def stage_4_setup_tracking_methods(retry=False):
             event_msg = 'iOS App is not being used to locate devices'
             post_event(event_msg)
 
-        unverified_devices = [devicename for devicename, Device in Gb.Devices_by_devicename_tracked.items() \
-                                            if Device.verified_flag is False and Device.is_tracked]
-        if unverified_devices != []:
-            if retry:
-                event_msg = (f"{EVLOG_ALERT}Some devices could not be verified. iCloud3 needs to be "
-                                f"restarted to see if the unverified devices are available for "
-                                f"tracking. If not, check the device parameters in the iCloud3 configurator:"
-                                f"{CRLF}1. {SETTINGS_INTEGRATIONS_MSG} >"
-                                f"{CRLF}2. {INTEGRATIONS_IC3_CONFIG_MSG}"
-                                f"{CRLF}3. iCloud3 Devices")
-            else:
-                event_msg = (f"{EVLOG_ALERT}Alert > Some devices could not be verified. iCloud Location Services "
-                                f"will be reinitialized")
-            event_msg += (f"{CRLF}{CRLF}Unverified Devices > {', '.join(unverified_devices)}")
-            post_event(event_msg)
-
-            return_code = False
+        return_code = _list_unverified_devices(retry=retry)
 
     except Exception as err:
         log_exception(err)
@@ -248,6 +205,42 @@ def stage_4_setup_tracking_methods(retry=False):
     post_event(f"{EVLOG_IC3_STAGE_HDR}{stage_title}{retry_msg}")
     Gb.EvLog.update_event_log_display("")
     return return_code
+
+#------------------------------------------------------------------
+def _list_unverified_devices(retry=False):
+    '''
+    See if all tracked devices are verified.
+
+    Arguments:
+        retry   - True  - The verification was retried
+                - False - This is the first time the verification was done
+
+    Return:
+        True  - All were verifice
+        False - Some were not verified
+    '''
+
+    unverified_devices = [devicename for devicename, Device in Gb.Devices_by_devicename_tracked.items() \
+                                        if Device.verified_flag is False and Device.is_tracked]
+
+    if unverified_devices == []:
+        return True
+
+    if retry:
+        event_msg = (f"{EVLOG_ALERT}Some devices could not be verified. iCloud3 needs to be "
+                        f"restarted to see if the unverified devices are available for "
+                        f"tracking. If not, check the device parameters in the iCloud3 configurator:"
+                        f"{CRLF}1. {SETTINGS_INTEGRATIONS_MSG} >"
+                        f"{CRLF}2. {INTEGRATIONS_IC3_CONFIG_MSG}"
+                        f"{CRLF}3. iCloud3 Devices")
+    else:
+        event_msg = (f"{EVLOG_ALERT}Alert > Some devices could not be verified. iCloud Location Services "
+                        f"will be reinitialized")
+    event_msg += (f"{CRLF}{CRLF}Unverified Devices > {', '.join(unverified_devices)}")
+    post_event(event_msg)
+
+    return False
+
 
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 def stage_5_configure_tracked_devices():

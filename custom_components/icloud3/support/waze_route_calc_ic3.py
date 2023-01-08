@@ -97,23 +97,21 @@ class WazeRouteCalculator(object):
             "options": ','.join('%s:t' % route_option for route_option in self.route_options),
         }
 
-        response = requests.get(self.WAZE_URL + routing_server, params=url_options, headers=self.HEADERS)
-        response.encoding = 'utf-8'
-        response_json = self._check_response(response)
+        try:
+            response = requests.get(self.WAZE_URL + routing_server, params=url_options, headers=self.HEADERS)
+            response.encoding = 'utf-8'
+            response_json = self._check_response(response)
+
+        except Exception as err:
+            log_exception(err)
+
         if response_json:
             if 'error' not in response_json:
-                # if response_json.get("alternatives"):
-                #     return [alt['response'] for alt in response_json['alternatives']]
                 response_obj = response_json['response']
                 if isinstance(response_obj, list):
                     response_obj = response_obj[0]
 
                 return response_obj
-
-        # raise WRCError("empty response")
-        # error_msg = (f"Waze Server Error > No route info was returned, "
-        #                 f"({from_lat:0.5f}, {from_long:0.5f}) to ({to_lat:0.5f}, {to_long:0.5f})")
-        # log_warning_msg(error_msg)
 
     @staticmethod
     def _check_response(response):
@@ -122,8 +120,10 @@ class WazeRouteCalculator(object):
             try:
                 return response.json()
 
-            except ValueError:
-                return None
+            except Exception as err:
+                log_exception(err)
+
+            return None
 
     def _add_up_route(self, results, stop_at_bounds=False):
         """Calculate route time and distance."""

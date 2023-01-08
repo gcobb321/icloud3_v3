@@ -22,7 +22,7 @@ from .const             import (HOME, NOT_SET,
                                 TOWARDS, AWAY_FROM,
                                 INTERVAL,
                                 DISTANCE, ZONE_DISTANCE, CALC_DISTANCE, WAZE_DISTANCE,
-                                MAX_DISTANCE,
+                                WAZE_METHOD, MAX_DISTANCE,
                                 FROM_ZONE, ZONE_INFO,
                                 TRAVEL_TIME, TRAVEL_TIME_MIN, DIR_OF_TRAVEL, MOVED_DISTANCE,
                                 LAST_LOCATED, LAST_LOCATED_TIME, LAST_LOCATED_DATETIME,
@@ -106,6 +106,7 @@ class iCloud3_DeviceFmZone(object):
         self.sensors[MAX_DISTANCE]         = 0
         self.sensors[ZONE_DISTANCE]        = 0
         self.sensors[WAZE_DISTANCE]        = 0
+        self.sensors[WAZE_METHOD]          = ''
         self.sensors[CALC_DISTANCE]        = 0
         self.sensors[DIR_OF_TRAVEL]        = NOT_SET
         self.sensors[MOVED_DISTANCE]       = 0

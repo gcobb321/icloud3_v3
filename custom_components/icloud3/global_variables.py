@@ -100,8 +100,9 @@ class GlobalVariables(object):
     iC3DebugLogFile = None
     Sensors         = None
     iC3EntityPlatform = None    # iCloud3 Entity Platform (homeassistant.helpers.entity_component)
-    PyiCloud        = None
-    PyiCloud_config_flow = None
+    PyiCloud        = None      # iCloud Account service
+    PyiCloudInit    = None      # iCloud Account service when started from __init__ via executive job
+    PyiCloudConfigFlow = None   # iCloud Account service when started from config_flow
     Waze            = None
     WazeHist        = None
     WazeHistTrackSensor = None    # Sensor for updating the lat/long values for the WazeHist Map display
@@ -350,6 +351,8 @@ class GlobalVariables(object):
     iosapp_update_flag             = {}
     attr_tracking_msg              = '' # tracking msg on attributes
     all_tracking_paused_flag       = False
+    dist_to_other_devices_update_sensor_list = set()    # Contains a list of devicenames that need their distance sensors updated
+                                                        # at the end of polling loop after all devices have been processed
 
     # Miscellenous variables
     broadcast_msg                  = ''

@@ -21,8 +21,10 @@ def km_to_mi(distance):
 
         if mi == 0:
             mi = 0
+        elif mi < 1:
+            mi = float(f"{mi:.2f}")
         elif mi < 20:
-            mi = round(mi, 1)
+            mi = float(f"{mi:.1f}")
         else:
             mi = round(mi)
 

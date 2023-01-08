@@ -4,7 +4,7 @@
 #
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-VERSION                         = '3.0.0b5'
+VERSION                         = '3.0.0b7'
 DOMAIN                          = 'icloud3'
 ICLOUD3                         = 'iCloud3'
 MODE_PLATFORM                   = -1
@@ -37,6 +37,8 @@ HA_DEVICE_TRACKER_LEGACY_MODE   = False
 MOBILE_APP                      = 'mobile_app_'
 NOTIFY                          = 'notify'
 DISTANCE_TO_DEVICES             = 'distance_to'
+DISTANCE_TO_OTHER_DEVICES       = 'distance_to_other_devices'
+DISTANCE_TO_OTHER_DEVICES_DATETIME = 'distance_to_other_devices_datetime'
 
 # General constants
 HOME                            = 'home'
@@ -110,16 +112,16 @@ DEVICE_TYPE_ICONS = {
         WATCH: "mdi:watch-variant",
         OTHER: 'mdi:laptop'
 }
-
-DATETIME_FORMAT                 = '%Y-%m-%d %H:%M:%S'
-DATETIME_ZERO                   = '0000-00-00 00:00:00'
-HHMMSS_ZERO                     = '00:00:00'
-HIGH_INTEGER                    = 9999999999
+UM_FNAME        = {'mi': 'Miles', 'km': 'Kilometers'}
+DATETIME_FORMAT = '%Y-%m-%d %H:%M:%S'
+DATETIME_ZERO   = '0000-00-00 00:00:00'
+HHMMSS_ZERO     = '00:00:00'
+HIGH_INTEGER    = 9999999999
 
 # Device Tracking Status
-TRACKING_NORMAL            = 0
-TRACKING_PAUSED            = 1
-TRACKING_RESUMED           = 2
+TRACKING_NORMAL  = 0
+TRACKING_PAUSED  = 1
+TRACKING_RESUMED = 2
 
 #Other constants
 IOSAPP_DT_ENTITY = True
@@ -201,20 +203,24 @@ EVLOG_MONITOR     = '^6^'
 SETTINGS_INTEGRATIONS_MSG   = '`Settings > Devices & Services > Integrations`'
 INTEGRATIONS_IC3_CONFIG_MSG = '`iCloud3 > Configuration`'
 
-# Symbols = ▪•●▬⊗⊘✓×ø¦ ▶◀ ►◄▲▼ ∙▪ »« oPhone=►▶→⟾➤➟➜➔➤🡆🡪🡺⟹🡆➔ᐅ◈
-#  — – ⁃ » ━▶━➤🡺 —> > > ❯↦ … 🡪ᗕ ᗒ ᐳ ─🡢 ──ᗒ 🡢 ─ᐅ ↣ ➙ →《》◆◈◉●▐‖
-# white_circled_letters = "🅐 🅑 🅒 🅓 🅔 🅕 🅖 🅗 🅘 🅙 🅚 🅛 🅜 🅝 🅞 🅟 🅠 🅡 🅢 🅣 🅤 🅥 🅦 🅧 🅨 🅩"
 CIRCLE_LETTERS_DARK =  {'a':'🅐', 'b':'🅑', 'c':'🅒', 'd':'🅓', 'e':'🅔', 'f':'🅕', 'g':'🅖',
                         'h':'🅗', 'i':'🅘', 'j':'🅙', 'k':'🅚', 'l':'🅛', 'm':'🅜', 'n':'🅝',
                         'q':'🅞', 'p':'🅟', 'q':'🅠', 'r':'🅡', 's':'🅢', 't':'🅣', 'u':'🅤',
                         'v':'🅥', 'w':'🅦', 'x':'🅧', 'y':'🅨', 'z':'🅩', 'other': '✪'}
-#dark_circled_letters = "Ⓐ Ⓑ Ⓒ Ⓓ Ⓔ Ⓕ Ⓖ Ⓗ Ⓘ Ⓙ Ⓚ Ⓛ Ⓜ Ⓝ Ⓞ Ⓟ Ⓠ Ⓡ Ⓢ Ⓣ Ⓤ Ⓥ Ⓦ Ⓧ Ⓨ Ⓩ"
-NBSP              = '&nbsp;'
-NBSP2             = '&nbsp;&nbsp;'
-NBSP3             = '&nbsp;&nbsp;&nbsp;'
-NBSP4             = '&nbsp;&nbsp;&nbsp;&nbsp;'
-NBSP6             = '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'
-CRLF              = '<br>'
+'''
+dark_circled_letters = "Ⓐ Ⓑ Ⓒ Ⓓ Ⓔ Ⓕ Ⓖ Ⓗ Ⓘ Ⓙ Ⓚ Ⓛ Ⓜ Ⓝ Ⓞ Ⓟ Ⓠ Ⓡ Ⓢ Ⓣ Ⓤ Ⓥ Ⓦ Ⓧ Ⓨ Ⓩ"
+Symbols = ▪•●▬⊗⊘✓×ø¦ ▶◀ ►◄▲▼ ∙▪ »« oPhone=►▶→⟾➤➟➜➔➤🡆🡪🡺⟹🡆➔ᐅ◈
+  — – ⁃ » ━▶━➤🡺 —> > > ❯↦ … 🡪ᗕ ᗒ ᐳ ─🡢 ──ᗒ 🡢 ─ᐅ ↣ ➙ →《》◆◈◉●▐‖
+ white_circled_letters = "🅐 🅑 🅒 🅓 🅔 🅕 🅖 🅗 🅘 🅙 🅚 🅛 🅜 🅝 🅞 🅟 🅠 🅡 🅢 🅣 🅤 🅥 🅦 🅧 🅨 🅩"
+ ⣇⠈⠉⠋⠛⠟⠿⡿⣿       https://www.fileformat.info/info/unicode/block/braille_patterns/utf8test.htm
+'''
+NBSP              = '⠈' #'&nbsp;'
+NBSP2             = '⠉' #'&nbsp;&nbsp;'
+NBSP3             = '⠋' #'&nbsp;&nbsp;&nbsp;'
+NBSP4             = '⠛' #'&nbsp;&nbsp;&nbsp;&nbsp;'
+NBSP5             = '⠟' #'&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'
+NBSP6             = '⠿' #'&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'
+CRLF              = '⣇' #'<br>'
 CHECK_MARK        = '✓ '
 CIRCLE_X          = '✪ '
 DOT               = '• '
@@ -415,6 +421,7 @@ ZONE_DISTANCE              = 'zone_distance'
 HOME_DISTANCE              = 'home_distance'
 CALC_DISTANCE              = 'calc_distance'
 WAZE_DISTANCE              = 'waze_distance'
+WAZE_METHOD                = 'waze_method'
 MAX_DISTANCE               = 'max_distance'
 
 TRAVEL_TIME                = 'travel_time'
@@ -581,6 +588,7 @@ CONF_DATA_SOURCE                = 'data_source'
 CONF_VERIFICATION_CODE          = 'verification_code'
 CONF_ICLOUD_SERVER_ENDPOINT_SUFFIX = 'icloud_server_endpoint_suffix'
 CONF_ENCODE_PASSWORD            = 'encode_password'
+CONF_SETUP_ICLOUD_SESSION_EARLY = 'setup_icloud_session_early'
 
 #devices_schema parameters used for v2->v3 migration
 CONF_DEVICENAME                 = 'device_name'
@@ -745,6 +753,7 @@ DEFAULT_TRACKING_CONF = {
         CONF_PASSWORD: '',
         CONF_ENCODE_PASSWORD: True,
         CONF_ICLOUD_SERVER_ENDPOINT_SUFFIX: '',
+        CONF_SETUP_ICLOUD_SESSION_EARLY: True,
         CONF_DATA_SOURCE: 'icloud,iosapp',
         CONF_DEVICES: [],
 }
@@ -788,6 +797,8 @@ DEFAULT_DEVICE_REINITIALIZE_CONF.pop(CONF_UNIQUE_ID, None)
 
 
 DEFAULT_GENERAL_CONF = {
+        CONF_LOG_LEVEL: 'info',
+
         # General Configuration Parameters
         CONF_UNIT_OF_MEASUREMENT: 'mi',
         CONF_TIME_FORMAT: '12-hour',
@@ -835,8 +846,6 @@ DEFAULT_GENERAL_CONF = {
 
         CONF_DISPLAY_TEXT_AS: ['#1', '#2', '#3', '#4', '#5', '#6', '#7', '#8', '#9', '#10'],
 
-        # Other Parameters
-        CONF_LOG_LEVEL: 'info',
 }
 
 # Default Create Sensor Field Parameter

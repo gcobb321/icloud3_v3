@@ -111,6 +111,7 @@ CONF_SENSORS_OTHER_LIST             = ['gps_accuracy', 'vertical_accuracy', 'alt
 from ..helpers.common       import (instr, )
 from ..helpers.messaging    import (_traceha, log_info_msg, log_warning_msg, log_exception, )
 from ..helpers.time_util    import (time_str_to_secs, secs_to_hhmmss, datetime_now, )
+from ..support              import waze
 from .                      import config_file
 
 import os
@@ -536,16 +537,21 @@ class iCloud3_v2v3ConfigMigration(object):
         '''
         Set the iCloud3 variables from the configuration parameters
         '''
+
+        # Convert operational parameters
         Gb.conf_profile[CONF_VERSION]                    = 0
         Gb.conf_profile[CONF_EVLOG_CARD_DIRECTORY]       = self.config_parm_general.get(CONF_EVLOG_CARD_DIRECTORY, V2_EVLOG_CARD_WWW_DIRECTORY)
         if instr(Gb.conf_profile[CONF_EVLOG_CARD_DIRECTORY], 'www') is False:
             Gb.conf_profile[CONF_EVLOG_CARD_DIRECTORY]   = f"www/{Gb.conf_profile[CONF_EVLOG_CARD_DIRECTORY]}"
         Gb.conf_profile[CONF_EVLOG_CARD_PROGRAM]         = self.config_parm_general.get(CONF_EVLOG_CARD_PROGRAM, EVLOG_CARD_WWW_JS_PROG)
 
+        # Convert iCloud Account Parameters
         Gb.conf_tracking[CONF_USERNAME]                  = self.config_parm_tracking[CONF_USERNAME]
         Gb.conf_tracking[CONF_PASSWORD]                  = self.config_parm_tracking[CONF_PASSWORD]
         Gb.conf_tracking[CONF_DEVICES]                   = self.config_ic3_track_devices_fields
 
+        # Convert General parameters
+        Gb.conf_general[CONF_LOG_LEVEL]                  = self.config_parm_general[CONF_LOG_LEVEL]
         Gb.conf_general[CONF_UNIT_OF_MEASUREMENT]        = self.config_parm_general[CONF_UNIT_OF_MEASUREMENT].lower()
         #12/17/2022 (beta 1) - The time format was being converted to 12_hour_hour instead of 12_hour
         Gb.conf_general[CONF_TIME_FORMAT]                = (f"{self.config_parm_general[CONF_TIME_FORMAT]}-hour").replace('-hour-hour', '-hour')
@@ -556,6 +562,9 @@ class iCloud3_v2v3ConfigMigration(object):
         Gb.conf_general[CONF_DISPLAY_ZONE_FORMAT]        = self.config_parm_general[CONF_DISPLAY_ZONE_FORMAT].lower()
         Gb.conf_general[CONF_CENTER_IN_ZONE]             = self.config_parm_general[CONF_CENTER_IN_ZONE]
         Gb.conf_general[CONF_DISCARD_POOR_GPS_INZONE]    = self.config_parm_general.get(CONF_DISCARD_POOR_GPS_INZONE, False)
+        Gb.conf_general[CONF_DISPLAY_TEXT_AS]           = self.config_parm_general[CONF_DISPLAY_TEXT_AS]
+
+        # Convert Waze Parameters
         if CONF_WAZE_USED in self.config_parm_general:
             Gb.conf_general[CONF_WAZE_USED]              = self.config_parm_general[CONF_WAZE_USED]
         elif 'distance_method' in self.config_parm_general:
@@ -564,8 +573,22 @@ class iCloud3_v2v3ConfigMigration(object):
         Gb.conf_general[CONF_WAZE_MIN_DISTANCE]          = self.config_parm_general[CONF_WAZE_MIN_DISTANCE]
         Gb.conf_general[CONF_WAZE_MAX_DISTANCE]          = self.config_parm_general[CONF_WAZE_MAX_DISTANCE]
         Gb.conf_general[CONF_WAZE_REALTIME]              = self.config_parm_general[CONF_WAZE_REALTIME]
-        Gb.conf_general[CONF_LOG_LEVEL]                  = self.config_parm_general[CONF_LOG_LEVEL]
 
+        if Gb.conf_general[CONF_WAZE_USED]:
+            waze_region_code = waze.waze_region_by_country_code()
+            if waze_region_code != Gb.conf_general[CONF_WAZE_REGION]:
+                log_msg =  (f"\n\nWARNING: VERIFY THE WAZE REGION CODE. "
+                            f"The current Waze Region ({Gb.conf_general[CONF_WAZE_REGION].upper()}) "
+                            f"does not match the region ({waze_region_code}) "
+                            f"for the HA Country Code ({Gb.location_info['country_code']}). "
+                            f"The Region in the iCloud3 configuration was changed\n")
+                self.write_migration_log_msg(log_msg)
+                log_warning_msg(log_msg)
+
+                Gb.conf_general[CONF_WAZE_REGION] = waze_region_code.lower()
+                Gb.conf_general[CONF_WAZE_USED]   = (waze_region_code != '??')
+
+        # Convert Stationary Zone Parameters
         if instr(self.config_parm_general[CONF_STAT_ZONE_STILL_TIME], ':'):
             Gb.conf_general[CONF_STAT_ZONE_STILL_TIME]   = self.config_parm_general[CONF_STAT_ZONE_STILL_TIME]
         else:
@@ -576,9 +599,8 @@ class iCloud3_v2v3ConfigMigration(object):
             Gb.conf_general[CONF_STAT_ZONE_INZONE_INTERVAL] = secs_to_hhmmss(time_str_to_secs(self.config_parm_general[CONF_STAT_ZONE_INZONE_INTERVAL]))
         Gb.conf_general[CONF_STAT_ZONE_BASE_LATITUDE]   = self.config_parm_general[CONF_STAT_ZONE_BASE_LATITUDE]
         Gb.conf_general[CONF_STAT_ZONE_BASE_LONGITUDE]  = self.config_parm_general[CONF_STAT_ZONE_BASE_LONGITUDE]
-        Gb.conf_general[CONF_DISPLAY_TEXT_AS]           = self.config_parm_general[CONF_DISPLAY_TEXT_AS]
 
-        self.write_migration_log_msg(f"/nCreated iCloud3 configuration file: {Gb.icloud3_config_filename}")
+        self.write_migration_log_msg(f"\nCreated iCloud3 configuration file: {Gb.icloud3_config_filename}")
 
     #--------------------------------------------------------------------
     def _extract_name_device_type(self, devicename):
