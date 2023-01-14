@@ -4,7 +4,7 @@ Beta 8 - 1/14/2023
     issue with accessing the iCloud Account through HA. I could make it fail yesterday but not today
     when trying to verify that the new approach fixed it. For those that are having this problem,
     please let me know if you are still having a problem and I'll take another crack at it.
-2.  The Waze Route Service is handled by 3-servers around the world - United States/Canada, Isreal,
+2.  The Waze Route Service is handled by 3-servers around the world - United States/Canada, Israel,
     and the Rest of the World. The HA Country Code is now used to determine that
     the appropriate server is used. It is still shown on the Waze configuration screen for
     information only. It is verified and corrected when HA starts if the wrong server is selected.

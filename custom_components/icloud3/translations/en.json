@@ -55,7 +55,7 @@
       "stat_zone_base_lat_range_error": "The value must be between -90 and 90",
       "stat_zone_base_long_range_error": "The value must be between -180 and 180",
       "waze_server_error_us": "The correct server for your location is: United States, Canada",
-      "waze_server_error_il": "The correct server for your location is: Isreal",
+      "waze_server_error_il": "The correct server for your location is: Israel",
       "waze_server_error_row": "The correct server for your location is: Rest of the World",
       "required_field": "This parameter must be specified",
       "required_field_device": "At least one device (Family Share List, Find-my-Friends, iOS App device must be specified",

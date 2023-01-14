@@ -158,8 +158,8 @@ DI_ZONES                = 7
 WAZE_SERVERS_BY_COUNTRY_CODE = {'us': 'us', 'ca': 'us', 'il': 'il', 'row': 'row'}
 WAZE_SERVERS_FNAME =           {'us': 'United States, Canada',
                                 'US': 'United States, Canada',
-                                'il': 'Isreal',
-                                'IL': 'Isreal',
+                                'il': 'Israel',
+                                'IL': 'Israel',
                                 'row': 'Rest of the World',
                                 'ROW': 'Rest of the World'}
 WAZE_USED         = 0
