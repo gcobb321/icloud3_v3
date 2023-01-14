@@ -167,20 +167,24 @@ def config_file_special_maintenance():
         update_config_file_flag = True
 
     # v3.0.0 beta 8 - Convert waze region code to us/il/row based on country code
-    correct_server = WAZE_SERVERS_BY_COUNTRY_CODE.get(Gb.ha_country_code, 'row')
-    correct_server_fname = WAZE_SERVERS_FNAME.get(correct_server, correct_server)
-    config_server    = Gb.conf_general[CONF_WAZE_REGION]
-    config_server_fname = WAZE_SERVERS_FNAME.get(config_server, config_server)
-    if (config_server not in WAZE_SERVERS_BY_COUNTRY_CODE
-            or config_server != correct_server):
-        log_msg = ( f"iCloud3 Warning: Current Waze Route Server "
-                    f"({config_server_fname}) "
-                    f"does not match the server for your country "
-                    f"({Gb.ha_country_code.upper()}). "
-                    f"Changing the configuration to the correct value "
-                    f"({correct_server_fname})")
-        Gb.conf_general[CONF_WAZE_REGION] = correct_server
-        log_info_msg(log_msg)
+    # correct_server = WAZE_SERVERS_BY_COUNTRY_CODE.get(Gb.ha_country_code, 'row')
+    # correct_server_fname = WAZE_SERVERS_FNAME.get(correct_server, correct_server)
+    # config_server    = Gb.conf_general[CONF_WAZE_REGION]
+    # config_server_fname = WAZE_SERVERS_FNAME.get(config_server, config_server)
+    # if (config_server not in WAZE_SERVERS_BY_COUNTRY_CODE
+    #         or config_server != correct_server):
+    #     log_msg = ( f"iCloud3 Warning: Current Waze Route Server "
+    #                 f"({config_server_fname}) "
+    #                 f"might not match the server for your country "
+    #                 f"({Gb.ha_country_code.upper()}). "
+    #                 f"Changing the configuration to the correct value "
+    #                 f"({correct_server_fname})")
+        # Gb.conf_general[CONF_WAZE_REGION] = correct_server
+    if Gb.conf_general[CONF_WAZE_REGION].lower() in ['na']:
+        Gb.conf_general[CONF_WAZE_REGION] = 'us'
+        update_config_file_flag = True
+    elif Gb.conf_general[CONF_WAZE_REGION].lower() in ['eu', 'au']:
+        Gb.conf_general[CONF_WAZE_REGION] = 'row'
         update_config_file_flag = True
 
     if update_config_file_flag:
@@ -352,8 +356,8 @@ def build_initial_config_file_structure():
 
     # Verify general parameters and make any necessary corrections
     try:
-        if Gb.ha_country_code in APPLE_SPECIAL_ICLOUD_SERVER_COUNTRY_CODE:
-            Gb.conf_tracking[CONF_ICLOUD_SERVER_ENDPOINT_SUFFIX] = Gb.ha_country_code
+        if Gb.country_code in APPLE_SPECIAL_ICLOUD_SERVER_COUNTRY_CODE:
+            Gb.conf_tracking[CONF_ICLOUD_SERVER_ENDPOINT_SUFFIX] = Gb.country_code
 
         if Gb.config and Gb.config.units['name'] != 'Imperial':
             Gb.conf_general[CONF_UNIT_OF_MEASUREMENT] = 'km'

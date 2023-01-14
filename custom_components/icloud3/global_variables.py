@@ -82,8 +82,8 @@ class GlobalVariables(object):
     async_executor_call_parameters = None
 
     ha_location_info= {'country_code': 'us', 'use_metric': False}
-    ha_country_code = 'us'
-    ha_use_metric   = False
+    # ha_country_code = 'us'
+    # ha_use_metric   = False
     country_code = 'us'
     use_metric   = False
 

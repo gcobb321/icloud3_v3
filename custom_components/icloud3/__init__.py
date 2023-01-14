@@ -244,5 +244,7 @@ async def async_get_ha_location_info():
             "use_metric": location_info.use_metric,
         }
 
-        Gb.ha_country_code = Gb.ha_location_info.country_code.lower()
-        Gb.ha_use_metric   = Gb.ha_location_info.use_metric
+        Gb.country_code = Gb.ha_location_info.country_code.lower()
+        Gb.use_metric   = Gb.ha_location_info.use_metric
+        # Gb.ha_country_code = Gb.ha_location_info.country_code.lower()
+        # Gb.ha_use_metric   = Gb.ha_location_info.use_metric

@@ -352,7 +352,6 @@ def set_icloud_username_password():
     Gb.data_source_use_icloud       = instr(Gb.conf_tracking[CONF_DATA_SOURCE], ICLOUD)
     Gb.data_source_use_iosapp       = instr(Gb.conf_tracking[CONF_DATA_SOURCE], IOSAPP)
     Gb.devices                      = Gb.conf_devices
-    Gb.country_code                 = Gb.conf_tracking[CONF_ICLOUD_SERVER_ENDPOINT_SUFFIX].lower().replace('.', '')
 
 #------------------------------------------------------------------------------
 def initialize_PyiCloud():

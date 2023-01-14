@@ -27,20 +27,21 @@ from .const             import (DOMAIN,
                                 TRACK_DEVICE, MONITOR_DEVICE, INACTIVE_DEVICE,
                                 NAME,  FRIENDLY_NAME, BATTERY,
                                 ZONE, HOME_DISTANCE,
+                                WAZE_SERVERS_BY_COUNTRY_CODE, WAZE_SERVERS_FNAME,
                                 CONF_VERSION, CONF_EVLOG_CARD_DIRECTORY,
                                 CONF_USERNAME, CONF_PASSWORD, CONF_DEVICES, CONF_SETUP_ICLOUD_SESSION_EARLY,
                                 CONF_DATA_SOURCE, CONF_VERIFICATION_CODE,
                                 CONF_TRACK_FROM_ZONES, CONF_TRACK_FROM_BASE_ZONE, CONF_TRACK_FROM_HOME_ZONE,
                                 CONF_NO_IOSAPP,
                                 CONF_PICTURE, CONF_DEVICE_TYPE, CONF_INZONE_INTERVALS,
-                                CONF_RAW_MODEL, CONF_MODEL, CONF_MODEL_DISPLAY_NAME,
+                                CONF_RAW_MODEL, CONF_MODEL, CONF_MODEL_DISPLAY_NAME, CONF_FAMSHR_DEVICE_ID,
                                 CONF_EVLOG_DISPLAY_ORDER,
                                 CONF_UNIT_OF_MEASUREMENT, CONF_TIME_FORMAT, CONF_MAX_INTERVAL, CONF_OFFLINE_INTERVAL,
                                 CONF_GPS_ACCURACY_THRESHOLD, CONF_OLD_LOCATION_THRESHOLD,
                                 CONF_TRAVEL_TIME_FACTOR, CONF_TFZ_TRACKING_MAX_DISTANCE,
                                 CONF_PASSTHRU_ZONE_TIME, CONF_LOG_LEVEL,
                                 CONF_DISPLAY_ZONE_FORMAT, CONF_CENTER_IN_ZONE, CONF_DISCARD_POOR_GPS_INZONE,
-                                CONF_WAZE_USED, CONF_WAZE_REGION, CONF_WAZE_MAX_DISTANCE, CONF_WAZE_MIN_DISTANCE,
+                                CONF_WAZE_USED, CONF_WAZE_SERVER, CONF_WAZE_MAX_DISTANCE, CONF_WAZE_MIN_DISTANCE,
                                 CONF_WAZE_REALTIME, CONF_WAZE_HISTORY_DATABASE_USED, CONF_WAZE_HISTORY_MAX_DISTANCE,
                                 CONF_WAZE_HISTORY_TRACK_DIRECTION,
 
@@ -110,10 +111,10 @@ MENU_KEY_TEXT = {
         'waze': 'WAZE ROUTE DISTANCE & TIME, WAZE HISTORY DATABASE > Route Server Location, Min/Max Intervals, Waze History Database Parameters and Controls',
         'special_zones': 'SPECIAL ZONES - Pass Through Zone, Track From Zone, Stationary Zone',
         'sensors': 'SENSORS > Sensors created by iCloud3',
-        'next_page_0': 'NEXT PAGE 1 > Location Data Source & iCloud Account ᗕᗒ iCloud3 Devices ᗕᗒ Sensors ᗕᗒ Display Text As ᗕᗒ Action Commands',
-        'next_page_1': 'NEXT PAGE 2 > Event Log Configuration ᗕᗒ Waze Route Time & Dist ᗕᗒ inZone Intervals ᗕᗒ Special Zones ᗕᗒ Other Parameters',
+        'next_page_0': 'NEXT PAGE 1 > ● Location Data Source & iCloud Account, ● iCloud3 Devices, ● Sensors, ● Display Text As, ● Action Commands',
+        'next_page_1': 'NEXT PAGE 2 > ● Event Log Configuration, ● Waze Route Time & Dist, ● inZone Intervals, ● Special Zones, ● Other Parameters',
         'select': 'SELECT > Select the parameter update form',
-        'actions': 'ACTION COMMANDS > Restart/Pause/Resume Polling ᗕᗒ EDebug Logging ᗕᗒ Export Event Log ᗕᗒ Waze Utilities',
+        'actions': 'ACTION COMMANDS > ● Restart/Pause/Resume Polling, ● Debug Logging, ● Export Event Log, ● Waze Utilities',
 
         'exit': 'EXIT AND RESTART ICLOUD3'
 }
@@ -145,7 +146,7 @@ OPT_ACTION_ITEMS_KEY_TEXT = {
         'enter_verification_code': 'ENTER VERIFICATION CODE > Enter the 6-digit Verification Code',
         "icloud_acct_reauth": "RESET AND REAUTHENTICATE ACCOUNT > Request a new Verification Code",
         'show_username_password': 'SHOW/HIDE USERNAME/PASSWORD > Show or hide the Username and Password',
-        'next_page': 'NEXT PAGE > Save changes ᗕᗒ Display the next page',
+        'next_page': 'NEXT PAGE > Save changes. Display the next page',
         'next_page_info': 'NEXT PAGE > ^info_field^',
         'next_page_device': 'NEXT PAGE > Friendly Name, Track-from-Zones, Other Setup Fields',
         'next_page_waze': 'NEXT PAGE > Waze History Database parameters',
@@ -158,7 +159,7 @@ OPT_ACTION_ITEMS_KEY_TEXT = {
         'clear_text_as': 'CLEAR > Remove `Display Test As` entry',
         'exit': 'EXIT > Exit the iCloud3 Configurator',
         'return': 'RETURN > Return to the Main Menu',
-        'save': 'SAVE > Update Configuration File ᗕᗒ Return to the menu screen',
+        'save': 'SAVE > Update Configuration File, Return to the menu screen',
         'cancel': 'RETURN > Return to the Main Menu. Cancel any changes not already saved',
         "divider1": "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ ",
         "divider2": "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ ",
@@ -246,13 +247,10 @@ DISTANCE_METHOD_ITEMS_KEY_TEXT = {
         'waze': 'Waze - Waze Route Service provides travel time & distance information',
         'calc': 'Calc - Distance is calculated using a `straight line` formula'
         }
-WAZE_REGION_ITEMS_KEY_TEXT = {
-        '??': 'Unknown',
-        'au': 'Austrailia',
-        'eu': 'Europe',
-        'il': 'Israel',
-        'na': 'North America',
-        'us': 'United States'
+WAZE_SERVER_ITEMS_KEY_TEXT = {
+        'us': WAZE_SERVERS_FNAME['us'],
+        'il': WAZE_SERVERS_FNAME['il'],
+        'row': WAZE_SERVERS_FNAME['row']
         }
 WAZE_HISTORY_TRACK_DIRECTION_ITEMS_KEY_TEXT = {
         'north_south': 'North-South - You generally travel in North-to-South direction',
@@ -528,7 +526,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         self.opt_picture_file_name_list    = []
 
         self.devicename_by_famshr_fmf     = {}
-        self.device_model_info_by_fname   = {}
+        # self.device_model_info_by_fname   = {}
         self.iosapp_search_for_devicename = 'None'
 
         self._verification_code = None
@@ -711,8 +709,6 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 user_input = self._validate_inzone_intervals(user_input)
             elif self.step_id == "waze_main":
                 user_input = self._validate_waze_main(user_input)
-            elif self.step_id == "waze_history_db":
-                user_input = self._validate_waze_history_db(user_input)
             elif self.step_id == "special_zones":
                 user_input = self._validate_special_zones(user_input)
             elif self.step_id == "sensors":
@@ -786,26 +782,10 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         user_input, action_item = self._action_text_to_item(user_input)
 
         if self.common_form_handler(user_input, action_item, errors):
-            if action_item == 'next_page':
-                return await self.async_step_waze_history_db()
-            else:
-                return await self.async_step_menu()
+            return await self.async_step_menu()
 
         if self.errors != {}:
                 self.errors['opt_action'] = 'update_aborted'
-
-        return self.async_show_form(step_id=self.step_id,
-                            data_schema=self.form_schema(self.step_id),
-                            errors=self.errors,
-                            last_step=False)
-
-#-------------------------------------------------------------------------------------------
-    async def async_step_waze_history_db(self, user_input=None, errors=None):
-        self.step_id = 'waze_history_db'
-        user_input, action_item = self._action_text_to_item(user_input)
-
-        if self.common_form_handler(user_input, action_item, errors):
-            return await self.async_step_menu()
 
         return self.async_show_form(step_id=self.step_id,
                             data_schema=self.form_schema(self.step_id),
@@ -1159,18 +1139,20 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         '''
         Validate the Waze numeric fields
         '''
-        user_input = self._option_text_to_parm(user_input, CONF_WAZE_REGION, WAZE_REGION_ITEMS_KEY_TEXT)
+        user_input = self._option_text_to_parm(user_input, CONF_WAZE_SERVER, WAZE_SERVER_ITEMS_KEY_TEXT)
         user_input = self._validate_numeric_field(user_input)
-
-        return user_input
-
-#-------------------------------------------------------------------------------------------
-    def _validate_waze_history_db(self, user_input):
-        '''
-        Validate the Waze numeric fields
-        '''
         user_input = self._option_text_to_parm(user_input, CONF_WAZE_HISTORY_TRACK_DIRECTION, WAZE_HISTORY_TRACK_DIRECTION_ITEMS_KEY_TEXT)
         user_input = self._validate_numeric_field(user_input)
+
+        # If Waze Used changes, also change the History DB used
+        if user_input[CONF_WAZE_USED] != Gb.conf_general[CONF_WAZE_USED]:
+            user_input[CONF_WAZE_HISTORY_DATABASE_USED] = user_input[CONF_WAZE_USED]
+
+        # correct_server = WAZE_SERVERS_BY_COUNTRY_CODE.get(Gb.ha_country_code, 'row')
+        # if (CONF_WAZE_SERVER in user_input
+        #         and user_input[CONF_WAZE_SERVER] != correct_server):
+        #     self.errors[CONF_WAZE_SERVER] = f"waze_server_error_{correct_server}"
+        #     user_input[CONF_WAZE_SERVER] = correct_server
 
         return user_input
 
@@ -1189,6 +1171,26 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         user_input = self._duration_to_hhmmss(user_input)
         user_input = self._validate_numeric_field(user_input)
         user_input = self._option_text_to_parm(user_input, CONF_TRACK_FROM_BASE_ZONE, self.opt_zone_name_key_text)
+
+        if 'passthru_zone_header' in user_input:
+            if user_input['passthru_zone_header'] is False:
+                user_input[CONF_PASSTHRU_ZONE_TIME] = '55:55:55'
+            elif (user_input['passthru_zone_header'] is True
+                    and user_input[CONF_PASSTHRU_ZONE_TIME] == '55:55:55'):
+                user_input[CONF_PASSTHRU_ZONE_TIME] = DEFAULT_GENERAL_CONF[CONF_PASSTHRU_ZONE_TIME]
+
+        if 'track_from_zone_header' in user_input:
+            if (user_input[CONF_TRACK_FROM_BASE_ZONE] == Gb.conf_general[CONF_TRACK_FROM_BASE_ZONE]
+                    and user_input['track_from_zone_header']):
+                user_input[CONF_TRACK_FROM_BASE_ZONE] = HOME
+                user_input[CONF_TRACK_FROM_HOME_ZONE] = True
+
+        if 'stat_zone_header' in user_input:
+            if user_input['stat_zone_header'] is False:
+                user_input[CONF_STAT_ZONE_STILL_TIME] = '55:55:55'
+            elif (user_input['stat_zone_header'] is True
+                    and user_input[CONF_STAT_ZONE_STILL_TIME] == '55:55:55'):
+                user_input[CONF_STAT_ZONE_STILL_TIME] = DEFAULT_GENERAL_CONF[CONF_STAT_ZONE_STILL_TIME]
 
         if CONF_STAT_ZONE_BASE_LATITUDE not in self.errors:
             sbo_latitude = float(user_input[CONF_STAT_ZONE_BASE_LATITUDE])
@@ -1406,7 +1408,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         self.errors   = {'base': 'icloud_logged_into'}
         self.menu_msg = 'icloud_logged_into'
 
-        self._build_device_form_selection_lists()
+        await self._build_device_form_selection_lists()
 
         if self.called_from_step_id:
             self.step_id = self.called_from_step_id
@@ -1556,7 +1558,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 return await self.async_step_reauth(initial_display=True)
 
         if user_input is None:
-            self._build_device_form_selection_lists()
+            await self._build_device_form_selection_lists()
 
         device_cnt = len(Gb.conf_devices)
         if user_input is not None:
@@ -1931,7 +1933,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 change_tfz_flag: True if the track_fm_zones zone was changed and the sensors need to be updated
         """
         # self.errors = {}
-
+        _FamShr = self.PyiCloud.FamilySharing
         ui_devicename  = user_input[CONF_IC3_DEVICENAME]
         old_devicename = user_input.get('old_devicename', ui_devicename)
         ui_old_devicename = [ui_devicename, old_devicename]
@@ -1971,8 +1973,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 
         conf_famshr_device_fname = user_input[CONF_FAMSHR_DEVICENAME]     #.split(" >")[0].strip()
         if conf_famshr_device_fname != 'None':
-            # raw_model, model, model_display_name = self.device_model_info_by_fname[conf_famshr_device_fname].split(';')
-            raw_model, model, model_display_name = self.device_model_info_by_fname[conf_famshr_device_fname]
+            raw_model, model, model_display_name = _FamShr.device_model_info_by_fname[conf_famshr_device_fname]
             if (user_input.get(CONF_RAW_MODEL) != raw_model
                         or user_input[CONF_MODEL] != model
                         or user_input[CONF_MODEL_DISPLAY_NAME] != model_display_name):
@@ -2086,39 +2087,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 and new_tracking_mode != 'inactive'
                 and new_devicename not in Gb.DeviceTrackers_by_devicename):
             self._create_device_tracker_and_sensor_entities(new_devicename, self.conf_device_selected)
-        # self.conf_device_selected[CONF_TRACKING_MODE] = new_tracking_mode
 
-#-------------------------------------------------
-    # async def async_step_reinitialize_all_devices(self, user_input=None, errors=None):
-    #     '''
-    #     Erase all of the iCloud3 devices.
-
-    #     Display a confirmation form and then delete the device
-    #     '''
-    #     self.step_id = 'reinitialize_all_devices'
-    #     self.errors = errors or {}
-    #     self.errors_user_input = {}
-    #     user_input, action_item = self._action_text_to_item(user_input)
-
-    #     if user_input is not None:
-    #         if action_item.endswith('cancel'):
-    #             return await self.async_step_device_list()
-
-    #         if action_item.endswith('remove'):
-    #             self._process_delete_all_devices_request()
-
-    #         elif action_item.endswith('reset'):
-    #             self._clear_icloud_iosapp_selection_parms()
-
-    #         self.config_flow_updated_parms.update(['tracking', 'restart'])
-    #         self.menu_msg = 'action_completed'
-
-    #         return await self.async_step_device_list()
-
-    #     return self.async_show_form(step_id=self.step_id,
-    #                     data_schema=self.form_schema('reinitialize_all_devices'),
-    #                     errors=self.errors,
-    #                     last_step=False)
 
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 #
@@ -2126,19 +2095,19 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 #
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-    def _build_device_form_selection_lists(self):
+    async def _build_device_form_selection_lists(self):
         """ Setup the option lists used to select device parameters """
 
         self._build_opt_picture_filename_list()
         self._build_opt_iosapp_entity_list()
         self._build_opt_zone_list()
 
-        self._build_opt_famshr_devices_list()
+        await self._build_opt_famshr_devices_list()
         self._build_opt_fmf_devices_list()
         self._build_devicename_by_famshr_fmf()
 
 #----------------------------------------------------------------------
-    def _build_opt_famshr_devices_list(self):
+    async def _build_opt_famshr_devices_list(self):
         """ Cycle through famshr data and get devices that can be tracked for the
             icloud device selection list
         """
@@ -2147,15 +2116,67 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         if self.PyiCloud is None:
             return
 
-        devices_desc = start_ic3.get_famshr_devices(self.PyiCloud)
-        device_id_by_device_fname   = devices_desc[0]   # Example: n6ofM9CX4j...
-        device_fname_by_device_id   = devices_desc[1]   # Example: Gary-iPhone14
-        device_info_by_device_fname = devices_desc[2]   # Example: Gary-iPhone14 > Phone 14 Pro/iPhone
-        device_model_info_by_fname  = devices_desc[3]   # raw_model;model;model_display_name
+        _FamShr = self.PyiCloud.FamilySharing
 
-        self.opt_famshr_text_by_fname_base.update(device_info_by_device_fname)
-        self.device_model_info_by_fname = device_model_info_by_fname.copy()
+        # devices_desc = start_ic3.get_famshr_devices_local(self.PyiCloud)
+        # _FamShr.device_id_by_device_fname   = devices_desc[0]   # Example: n6ofM9CX4j...
+        # _FamShr.device_fname_by_device_id   = devices_desc[1]   # Example: Gary-iPhone14
+        # _FamShr.device_info_by_device_fname = devices_desc[2]   # Example: Gary-iPhone14 > Phone 14 Pro/iPhone
+        # _FamShr.device_model_info_by_fname  = devices_desc[3]   # raw_model;model;model_display_name
+
+        self._check_finish_v2v3conversion_for_famshr_fname()   #device_id_by_device_fname, device_model_info_by_fname)
+
+        self.opt_famshr_text_by_fname_base.update(_FamShr.device_info_by_device_fname)
         self.opt_famshr_text_by_fname = self.opt_famshr_text_by_fname_base.copy()
+
+#----------------------------------------------------------------------
+    def _check_finish_v2v3conversion_for_famshr_fname(self):    #, device_id_by_device_fname,
+                                                            # device_model_info_by_fname):
+        '''
+        This will be done if the v2 files were just converted to the v3 configuration.
+        Finish setting up the device by determining the actual FamShr devicename and the
+        raw_model, model, model_display_name and device_id fields.
+        '''
+
+        _FamShr = self.PyiCloud.FamilySharing
+        famshr_devicenames = [conf_device[CONF_FAMSHR_DEVICENAME]
+                                            for conf_device in Gb.conf_devices
+                                            if conf_device[CONF_FAMSHR_DEVICENAME] == \
+                                                    conf_device[CONF_IC3_DEVICENAME]]
+
+        if famshr_devicenames == []:
+            return
+
+        # Build a dictionary of the FamShr fnames to compare to the ic3_devicename {gary_iphone: Gary-iPhone}
+        famshr_fname_by_ic3_devicename = {slugify(fname).strip(): fname
+                                                for fname in _FamShr.device_model_info_by_fname.keys()}
+
+        # Cycle thru conf_devices and see if there are any ic3_devicename = famshr_fname entries.
+        # If so, they were just converted and the real famshr_devicename needs to be reset to the actual
+        # value from the PyiCloud RawData fields
+        update_conf_file_flag = False
+        for conf_device in Gb.conf_devices:
+            famshr_devicename = conf_device[CONF_FAMSHR_DEVICENAME]
+            ic3_devicename    = conf_device[CONF_IC3_DEVICENAME]
+
+            if (famshr_devicename != ic3_devicename
+                    or famshr_devicename not in famshr_fname_by_ic3_devicename):
+                continue
+
+            famshr_fname = famshr_fname_by_ic3_devicename[ic3_devicename]
+            conf_device[CONF_FAMSHR_DEVICENAME] = famshr_fname
+
+            raw_model, model, model_display_name = \
+                                _FamShr.device_model_info_by_fname[famshr_fname]
+
+            conf_device[CONF_MODEL] = model
+            conf_device[CONF_MODEL_DISPLAY_NAME] = model_display_name
+            conf_device[CONF_RAW_MODEL] = raw_model
+            conf_device[CONF_FAMSHR_DEVICE_ID] = _FamShr.device_id_by_device_fname[famshr_fname]
+            update_conf_file_flag = True
+
+        if update_conf_file_flag:
+            config_file.write_storage_icloud3_configuration_file()
 
 #----------------------------------------------------------------------
     def _build_opt_fmf_devices_list(self):
@@ -2169,8 +2190,10 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         if self.PyiCloud is None:
             return
 
-        devices_desc = start_ic3.get_fmf_devices(self.PyiCloud)
-        self.opt_fmf_text_by_email_base.update(devices_desc[2])
+        # devices_desc = start_ic3.get_fmf_devices(self.PyiCloud)
+        # self.opt_fmf_text_by_email_base.update(devices_desc[2])
+        _FmF = self.PyiCloud.FindMyFriends
+        self.opt_fmf_text_by_email_base.update(_FmF.device_info_by_fmf_email)
         self.opt_fmf_text_by_email= self.opt_fmf_text_by_email_base.copy()
 
 #----------------------------------------------------------------------
@@ -2326,7 +2349,8 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                     continue
 
                 for file in files:
-                    if file.rsplit('.', 1)[1] in image_extensions:
+                    # if file.rsplit('.', 1)[1] in image_extensions:
+                    if instr(file, 'png') or instr(file, 'jpg') or instr(file, 'jpeg'):
                         image_filenames.append(f"{path.replace('/config/', '')}/{file}")
 
             sorted_image_filenames = []
@@ -3456,6 +3480,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                         vol.Required(CONF_DISCARD_POOR_GPS_INZONE,
                                     default=Gb.conf_general[CONF_DISCARD_POOR_GPS_INZONE]):
                                     selector.BooleanSelector(),
+
                         vol.Required('opt_action',
                                     default=self._action_default_text('save')):
                                     selector.SelectSelector(
@@ -3464,22 +3489,18 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 
         #------------------------------------------------------------------------
         elif step_id == 'waze_main':
-            self.opt_actions = [OPT_ACTION_ITEMS_KEY_TEXT['next_page_waze']]
-            self.opt_actions.extend([OPT_ACTION_ITEMS_KEY_TEXT['cancel']])
+            self.opt_actions = OPT_ACTION_BASE.copy()
+            # self.opt_actions.extend([OPT_ACTION_ITEMS_KEY_TEXT['cancel']])
 
             schema = vol.Schema({
                         vol.Optional(CONF_WAZE_USED,
                                     default=Gb.conf_general[CONF_WAZE_USED]):
                                                 selector.BooleanSelector(),
-                                    # default=self._option_parm_to_text(CONF_DISTANCE_METHOD, DISTANCE_METHOD_ITEMS_KEY_TEXT)):
-                                    # selector.SelectSelector(
-                                    #     selector.SelectSelectorConfig(
-                                    #             options=dict_value_to_list(DISTANCE_METHOD_ITEMS_KEY_TEXT), mode='dropdown')),
-                        vol.Optional(CONF_WAZE_REGION,
-                                    default=self._option_parm_to_text(CONF_WAZE_REGION, WAZE_REGION_ITEMS_KEY_TEXT)):
+                        vol.Optional(CONF_WAZE_SERVER,
+                                    default=self._option_parm_to_text(CONF_WAZE_SERVER, WAZE_SERVER_ITEMS_KEY_TEXT)):
                                     selector.SelectSelector(
                                         selector.SelectSelectorConfig(
-                                                options=dict_value_to_list(WAZE_REGION_ITEMS_KEY_TEXT), mode='dropdown')),
+                                                options=dict_value_to_list(WAZE_SERVER_ITEMS_KEY_TEXT), mode='dropdown')),
                         vol.Optional(CONF_WAZE_MIN_DISTANCE,
                                     default=Gb.conf_general[CONF_WAZE_MIN_DISTANCE]):
                                     selector.NumberSelector(
@@ -3493,15 +3514,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                         vol.Optional(CONF_WAZE_REALTIME,
                                     default=Gb.conf_general[CONF_WAZE_REALTIME]):
                                     selector.BooleanSelector(),
-                        vol.Optional('opt_action',
-                                    default=self._action_default_text('next_page_waze')):
-                                    selector.SelectSelector(
-                                        selector.SelectSelectorConfig(options=self.opt_actions, mode='list')),
-                        })
 
-        #------------------------------------------------------------------------
-        elif step_id == 'waze_history_db':
-            schema = vol.Schema({
                         vol.Required(CONF_WAZE_HISTORY_DATABASE_USED,
                                     default=Gb.conf_general[CONF_WAZE_HISTORY_DATABASE_USED]):
                                     selector.BooleanSelector(),
@@ -3517,6 +3530,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                                         selector.SelectSelectorConfig(
                                                 options=dict_value_to_list(
                                                     WAZE_HISTORY_TRACK_DIRECTION_ITEMS_KEY_TEXT), mode='dropdown')),
+
                         vol.Required('opt_action',
                                     default=self._action_default_text('save')):
                                     selector.SelectSelector(
@@ -3527,30 +3541,21 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         elif step_id == 'special_zones':
             if self.opt_zone_name_key_text == {}:
                 self._build_opt_zone_list()
+            stat_zone_used       = (Gb.conf_general[CONF_STAT_ZONE_STILL_TIME] != '55:55:55')
+            base_offset_header   = stat_zone_used
+            pass_thru_zone_used  = (Gb.conf_general[CONF_PASSTHRU_ZONE_TIME] != '55:55:55')
+            track_from_zone_home = (Gb.conf_general[CONF_TRACK_FROM_BASE_ZONE] == HOME)
 
             schema = vol.Schema({
                         vol.Optional('passthru_zone_header',
-                                    default=False):
+                                    default=pass_thru_zone_used):
                                     selector.BooleanSelector(),
                         vol.Required(CONF_PASSTHRU_ZONE_TIME,
                                     default=self._hhmmss_to_duration(CONF_PASSTHRU_ZONE_TIME)):
                                     selector.DurationSelector(),
 
-                        vol.Optional('track_from_zone_header',
-                                    default=False):
-                                    selector.BooleanSelector(),
-                        vol.Required(CONF_TRACK_FROM_BASE_ZONE,
-                                    default=self._option_parm_to_text(
-                                        CONF_TRACK_FROM_BASE_ZONE, self.opt_zone_name_key_text)):
-                                    selector.SelectSelector(
-                                        selector.SelectSelectorConfig(
-                                                options=dict_value_to_list(self.opt_zone_name_key_text), mode='dropdown')),
-                        vol.Optional(CONF_TRACK_FROM_HOME_ZONE,
-                                    default=Gb.conf_general[CONF_TRACK_FROM_HOME_ZONE]):
-                                    selector.BooleanSelector(),
-
                         vol.Optional('stat_zone_header',
-                                    default=False):
+                                    default=stat_zone_used):
                                     selector.BooleanSelector(),
                         vol.Required(CONF_STAT_ZONE_FNAME,
                                     default=self._parm_or_error_msg(CONF_STAT_ZONE_FNAME)):
@@ -3562,7 +3567,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                                     default=self._hhmmss_to_duration(CONF_STAT_ZONE_INZONE_INTERVAL)):
                                     selector.DurationSelector(),
                         vol.Optional('base_offset_header',
-                                    default=False):
+                                    default=stat_zone_used):
                                     selector.BooleanSelector(),
                         vol.Required(CONF_STAT_ZONE_BASE_LATITUDE,
                                     default=self._parm_or_error_msg(CONF_STAT_ZONE_BASE_LATITUDE)):
@@ -3570,6 +3575,19 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                         vol.Required(CONF_STAT_ZONE_BASE_LONGITUDE,
                                     default=self._parm_or_error_msg(CONF_STAT_ZONE_BASE_LONGITUDE)):
                                     selector.TextSelector(),
+
+                        vol.Optional('track_from_zone_header',
+                                    default=track_from_zone_home):
+                                    selector.BooleanSelector(),
+                        vol.Required(CONF_TRACK_FROM_BASE_ZONE,
+                                    default=self._option_parm_to_text(
+                                        CONF_TRACK_FROM_BASE_ZONE, self.opt_zone_name_key_text)):
+                                    selector.SelectSelector(
+                                        selector.SelectSelectorConfig(
+                                                options=dict_value_to_list(self.opt_zone_name_key_text), mode='dropdown')),
+                        vol.Optional(CONF_TRACK_FROM_HOME_ZONE,
+                                    default=Gb.conf_general[CONF_TRACK_FROM_HOME_ZONE]):
+                                    selector.BooleanSelector(),
 
                         vol.Required('opt_action',
                                     default=self._action_default_text('save')):

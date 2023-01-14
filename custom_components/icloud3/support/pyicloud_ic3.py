@@ -369,8 +369,8 @@ class PyiCloudService():
     '''
 
     # See if a country code suffix is needed to access iCloud servers in specific countries
-    # Gb.ha_country_code = 'cn'
-    url_suffix = f".{Gb.ha_country_code}" if Gb.ha_country_code in APPLE_SPECIAL_ICLOUD_SERVER_COUNTRY_CODE else ''
+    # Gb.country_code = 'cn'
+    url_suffix = f".{Gb.country_code}" if Gb.country_code in APPLE_SPECIAL_ICLOUD_SERVER_COUNTRY_CODE else ''
 
     HOME_ENDPOINT = f"https://www.icloud.com{url_suffix}"
     SETUP_ENDPOINT = f"https://setup.icloud.com{url_suffix}/setup/ws/1"

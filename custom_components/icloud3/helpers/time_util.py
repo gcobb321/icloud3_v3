@@ -434,9 +434,10 @@ def calculate_time_zone_offset():
         if (l_hhmmss == g_hhmmss):
             Gb.timestamp_local_offset_secs = local_zone_offset_secs
 
-        post_event(f"Local Time Zone Offset > "
-                            f"UTC{local_zone_offset[:3]}:{local_zone_offset[-2:]} hrs, "
-                            f"{local_zone_name}")
+        post_event( f"Local Time Zone Offset > "
+                    f"UTC{local_zone_offset[:3]}:{local_zone_offset[-2:]} hrs, "
+                    f"{local_zone_name}, "
+                    f"Country Code-{Gb.country_code.upper()}")
 
     except Exception as err:
         internal_error_msg(err, 'CalcTimeOffset')
