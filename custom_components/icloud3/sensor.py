@@ -26,7 +26,7 @@ from .const             import (DOMAIN, VERSION,
                                 DISTANCE_TO_OTHER_DEVICES,
                                 NAME, FNAME, BADGE,
                                 ZONE, ZONE_INFO,
-                                BATTERY, BATTERY_STATUS,
+                                BATTERY, BATTERY_STATUS, BATTERY_SOURCE,
                                 ZONE_DISTANCE,
                                 DISTANCE_TO_OTHER_DEVICES_DATETIME,
                                 CONF_TRACK_FROM_ZONES,
@@ -37,7 +37,7 @@ from .const_sensor      import (SENSOR_DEFINITION, SENSOR_GROUPS,
                                 SENSOR_FNAME, SENSOR_TYPE, SENSOR_ICON,
                                 SENSOR_ATTRS, SENSOR_DEFAULT, SENSOR_LIST_DISTANCE, )
 
-from .helpers.common    import (instr, )
+from .helpers.common    import (instr, format_battery_status, )
 from .helpers.messaging import (log_info_msg, log_debug_msg, log_error_msg, log_exception,
                                 _trace, _traceha, )
 from .helpers.time_util import (time_to_12hrtime, time_remove_am_pm, secs_to_time_str, mins_to_time_str,
@@ -386,16 +386,7 @@ class SensorBase(SensorEntity):
                                     f"{self.from_zone_fname}")
             self._attr_native_unit_of_measurement = ''
 
-            self.default_value = self._get_sensor_definition(sensor_base, SENSOR_DEFAULT)
-            try:
-                if from_zone:
-                    self.default_value = Gb.restore_state_devices[self.devicename]['from_zone'][from_zone][sensor_base]
-                else:
-                    self.default_value = Gb.restore_state_devices[self.devicename]['sensors'][sensor_base]
-            except:
-                pass
-
-            self._state = self.default_value
+            self._state = self._get_restore_or_default_value(sensor_base)
 
             # Add this sensor to the HA Recorder history exclude entity list
             try:
@@ -431,11 +422,12 @@ class SensorBase(SensorEntity):
 
     @property
     def icon(self):
-        if (self.sensor_type == BATTERY
-                and self.Device):
-            return icon_for_battery_level(
-                            battery_level = self.Device.sensors[BATTERY],
-                            charging      = (self.Device.sensors[BATTERY_STATUS] == "Charging"))
+        if self.Device and self.sensor_base.startswith(BATTERY):
+            battery_level = self.Device.sensors[BATTERY]
+            charging      = (self.Device.sensors[BATTERY_STATUS].lower() == "charging")
+            icon = icon_for_battery_level(battery_level, charging)
+
+            return icon
         else:
             return self._get_sensor_definition(self.sensor, SENSOR_ICON)
 
@@ -465,8 +457,10 @@ class SensorBase(SensorEntity):
             extra_attrs["Units"] = UM_FNAME.get(Gb.um, Gb.um)
 
         for _sensor in self._get_sensor_definition(sensor, SENSOR_ATTRS):
-            sensor_value = self._get_sensor_value(_sensor)
-            extra_attrs[_sensor] = sensor_value
+            _sensor_value = self._get_sensor_value(_sensor)
+            # if _sensor == BATTERY_STATUS:
+            #     _sensor_value = format_battery_status(_sensor_value)
+            extra_attrs[_sensor] = _sensor_value
 
         if (self.Device is None or sensor not in SENSOR_LIST_DISTANCE):
             return extra_attrs
@@ -551,20 +545,41 @@ class SensorBase(SensorEntity):
 
         try:
             if self.Device is None:
-                return self.default_value
+                return self._get_restore_or_default_value(sensor)
 
             sensor_value = self.Device.sensors.get(sensor, None)
 
             if (sensor_value is None
                     or sensor_value == NOT_SET
-                    or type(sensor_value) is str and sensor_value.strip() == ''):
-                return self.default_value
+                    or type(sensor_value) is str
+                        and (sensor_value.strip() == '')):
 
+                return self._get_restore_or_default_value(sensor)
+
+            # if sensor == BATTERY_STATUS:
+            #     sensor_value = format_battery_status(sensor_value)
             return sensor_value
 
         except Exception as err:
             log_exception(err)
-            return self.default_value
+
+        return self._get_restore_or_default_value(sensor)
+
+#-------------------------------------------------------------------------------------------
+    def _get_restore_or_default_value(self, sensor):
+        '''
+        Get a default value that is used when iCloud3 has not started or the Device for the
+        sensor has not veen created.
+        '''
+        try:
+            if self.from_zone:
+                sensor_value = Gb.restore_state_devices[self.devicename]['from_zone'][self.from_zone][sensor]
+            else:
+                sensor_value = Gb.restore_state_devices[self.devicename]['sensors'][sensor]
+        except:
+            sensor_value = self._get_sensor_definition(sensor, SENSOR_DEFAULT)
+
+        return sensor_value
 
 #-------------------------------------------------------------------------------------------
     def _get_tfz_sensor_value(self, sensor):
@@ -575,7 +590,7 @@ class SensorBase(SensorEntity):
         try:
             if (self.Device is None
                     or self.DeviceFmZone is None):
-                return self.default_value
+                return self._get_restore_or_default_value(sensor)
 
             # Strip off zone to get the actual tfz dictionary item
             tfz_sensor   = sensor.replace(f"_{self.from_zone}", "")
@@ -584,13 +599,14 @@ class SensorBase(SensorEntity):
             if (sensor_value is None
                     or sensor_value == NOT_SET
                     or (type(sensor_value) is str and sensor_value.strip() == '')):
-                return self.default_value
+                return self._get_restore_or_default_value(sensor)
 
             return sensor_value
 
         except Exception as err:
             log_exception(err)
-            return self.default_value
+
+        return self._get_restore_or_default_value(sensor)
 
 #-------------------------------------------------------------------------------------------
     def _get_sensor_value_um(self, sensor, value_and_um=True):
@@ -806,10 +822,10 @@ class Sensor_Text(SensorBase):
     def native_value(self):
         sensor_value = self._get_sensor_value(self.sensor)
 
-        if instr(self.sensor_type, 'title'):
-            sensor_value = sensor_value.title().replace('_', ' ')
+        # if instr(self.sensor_type, 'title'):
+        #     sensor_value = sensor_value.title().replace('_', ' ')
 
-        elif instr(self.sensor_type, 'time'):
+        if instr(self.sensor_type, 'time'):
             if instr(sensor_value, ' '):
                 text_um_parts = sensor_value.split(' ')
                 sensor_value = text_um_parts[0]
@@ -993,9 +1009,9 @@ class Sensor_Battery(SensorBase):
 
     @property
     def extra_state_attributes(self):
-        extra_attrs = { 'data_source': 'iCloud3',
-                        'device_class': 'battery',
-                        'state_class': 'battery'}
+        extra_attrs = self._get_extra_attributes(self.sensor)
+        extra_attrs.update({'device_class': 'battery', 'state_class': 'battery'})
+
         return extra_attrs
 
 

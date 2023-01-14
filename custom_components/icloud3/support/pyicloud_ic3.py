@@ -27,15 +27,10 @@ from ..global_variables     import GlobalVariables as Gb
 from ..const                import (AIRPODS_FNAME, CONF_PASSWORD,
                                     APPLE_SPECIAL_ICLOUD_SERVER_COUNTRY_CODE,
                                     HHMMSS_ZERO,
-                                    FMF, FAMSHR,
-                                    FMF_FNAME, FAMSHR_FNAME,
-                                    NAME, ID,
+                                    FMF, FAMSHR, FMF_FNAME, FAMSHR_FNAME, NAME, ID,
                                     ICLOUD_HORIZONTAL_ACCURACY,
-                                    NAME,
-                                    LOCATION,
-                                    TIMESTAMP, LOCATION_TIME,
-                                    TRACKING_METHOD,
-                                    NAME,
+                                    LOCATION, TIMESTAMP, LOCATION_TIME, TRACKING_METHOD,
+                                    ICLOUD_BATTERY_STATUS, BATTERY_STATUS_REFORMAT,
                                     )
 from ..helpers.time_util    import (time_now_secs, secs_to_time, timestamp_to_time_utcsecs, )
 from ..helpers.common       import (instr, obscure_field, )
@@ -374,8 +369,8 @@ class PyiCloudService():
     '''
 
     # See if a country code suffix is needed to access iCloud servers in specific countries
-    # Gb.country_code = 'cn'
-    url_suffix = f".{Gb.country_code}" if Gb.country_code in APPLE_SPECIAL_ICLOUD_SERVER_COUNTRY_CODE else ''
+    # Gb.ha_country_code = 'cn'
+    url_suffix = f".{Gb.ha_country_code}" if Gb.ha_country_code in APPLE_SPECIAL_ICLOUD_SERVER_COUNTRY_CODE else ''
 
     HOME_ENDPOINT = f"https://www.icloud.com{url_suffix}"
     SETUP_ENDPOINT = f"https://setup.icloud.com{url_suffix}/setup/ws/1"
@@ -990,20 +985,32 @@ class PyiCloud_FamilySharing():
         if task == "PlaySound":
             if device_id:
                 self.play_sound(device_id, subject)
+            return
 
         elif task == "Message":
             if device_id:
                 self.display_message(device_id, subject, message)
+            return
 
         elif task == "LostDevice":
             if device_id:
                 self.lost_device(device_id, number, message, newpasscode="")
+            return
 
-        else:
-            # Refresh the data
-            #self.Session.FindMyiPhone = self
-            self.refresh_client(device_id)
+        # FamShr Device information - These is used verify the device, display on the EvLog and in the Config Flow
+        # device selection list on the iCloud3 Devices screen
+        self.dup_device_fname_cnt        = {}       # Used to create a suffix for duplicate devicenames
+        self.device_id_by_device_fname   = {}       # Example: {'Gary-iPhone': 'n6ofM9CX4j...'}
+        self.device_fname_by_device_id   = {}       # Example: {'n6ofM9CX4j...': 'Gary-iPhone14'}
+        self.device_info_by_device_fname = {}       # Example: {'Gary-iPhone': 'Gary-iPhone (iPhone 14 Pro (iPhone15,2)'}
+        self.device_model_info_by_fname  = {}       # {'Gary-iPhone': [raw_model,model,model_display_name]}
+                                                    # {'Gary-iPhone': ['iPhone15,2', 'iPhone', 'iPhone 14 Pro']}
 
+        # Refresh the data
+        self.refresh_client(device_id)
+
+
+#----------------------------------------------------------------------------
     @property
     def timestamp_field(self):
         return 'timeStamp'
@@ -1085,45 +1092,59 @@ class PyiCloud_FamilySharing():
 
             monitor_msg = ''
             if device_id in self.PyiCloud.RawData_by_device_id:
-                if  device_id in Gb.Devices_by_icloud_device_id:
+                if device_id in Gb.Devices_by_icloud_device_id:
                     _RawData = self.PyiCloud.RawData_by_device_id[device_id]
 
                     _RawData.save_new_device_data(device_info)
                     requested_by_flag = ' *' if requested_by_devicename == _RawData.devicename else ''
 
-                    log_rawdata(f"FamShr PyiCloud Device Data - <{device_name}/{_RawData.devicename}>", _RawData.device_data)
+                    log_rawdata(f"FamShr PyiCloud Device Data - "
+                                f"<{device_name}/{_RawData.devicename}>", _RawData.device_data)
 
                     monitor_msg = ( f"UPDATED FamShr PyiCloudData-"
                                     f"{_RawData.devicename}, "
                                     f"{_RawData.location_time}/"
                                     f"{_RawData.gps_accuracy}m"
                                     f"{requested_by_flag}")
+                    if Gb.EvLog:
+                        post_monitor_msg(monitor_msg)
+                    else:
+                        log_debug_msg(monitor_msg)
 
             else:
-                _RawData = PyiCloud_RawData(device_id, device_info, self.Session, self.params,
-                                            'FamShr', 'timeStamp',
-                                            self,
-                                            device_name,
-                                            sound_url=self._fmip_sound_url,
-                                            lost_url=self._fmip_lost_url,
-                                            message_url=self._fmip_message_url,)
-
-                self.PyiCloud.RawData_by_device_id[device_id]        = _RawData
-                self.PyiCloud.RawData_by_device_id_famshr[device_id] = _RawData
-
-                log_rawdata(f"FamShr PyiCloud Device Data - <{device_name}>", _RawData.device_data)
-
-                monitor_msg = (f"ADDED FamShr PyiCloudDevice-{device_name}/{device_id[:8]}")
-
-            if monitor_msg:
-                if Gb.EvLog:
-                    post_monitor_msg(monitor_msg)
-                else:
-                    log_debug_msg(monitor_msg)
-
+                self._create_RawData_object(device_id, device_name, device_info)
 
         if not self.PyiCloud.RawData_by_device_id:
             raise PyiCloudNoDevicesException()
+
+#----------------------------------------------------------------------------
+    def _create_RawData_object(self, device_id, device_name, device_info):
+
+        _RawData = PyiCloud_RawData(device_id, device_info, self.Session, self.params,
+                                    'FamShr', 'timeStamp',
+                                    self,
+                                    device_name,
+                                    sound_url=self._fmip_sound_url,
+                                    lost_url=self._fmip_lost_url,
+                                    message_url=self._fmip_message_url,)
+
+        self.PyiCloud.RawData_by_device_id[device_id]        = _RawData
+        self.PyiCloud.RawData_by_device_id_famshr[device_id] = _RawData
+
+        fname = _RawData.famshr_device_fname
+        self.device_id_by_device_fname[fname]     = device_id
+        self.device_fname_by_device_id[device_id] = fname
+        self.device_info_by_device_fname[fname]   = _RawData.famshr_device_info
+        self.device_model_info_by_fname[fname]    = _RawData.famshr_device_model_info
+
+        log_rawdata(f"FamShr PyiCloud Device Data - <{device_name}>", _RawData.device_data)
+
+        monitor_msg = (f"ADDED FamShr PyiCloudDevice-{device_name}/{device_id[:8]}")
+
+        if Gb.EvLog:
+            post_monitor_msg(monitor_msg)
+        else:
+            log_debug_msg(monitor_msg)
 
 #----------------------------------------------------------------------------
     def play_sound(self, device_id, subject):
@@ -1203,7 +1224,16 @@ class PyiCloud_FindMyFriends():
         self.response         = {}
         self.devices_without_location_data = []
 
+        # FmF Device information - These is used verify the device, display on the EvLog and in the Config Flow
+        # device selection list on the iCloud3 Devices screen
+        self.device_id_by_fmf_email      = {}
+        self.fmf_email_by_device_id      = {}
+        self.device_info_by_fmf_email    = {}
+        self.device_form_icloud_fmf_list = []
+
         self.refresh_client()
+
+        self._update_fmf_email_tables()
 
     @property
     def timestamp_field(self):
@@ -1278,37 +1308,69 @@ class PyiCloud_FindMyFriends():
                                         f"{_RawData.location_time}/"
                                         f"{_RawData.gps_accuracy}m"
                                         f"{requested_by_flag}")
+                        if Gb.EvLog:
+                            post_monitor_msg(monitor_msg)
+                        else:
+                            log_debug_msg(monitor_msg)
 
                 else:
-                    _RawData = PyiCloud_RawData(device_id, device_info, self.Session, self.params,
-                                                'FmF', 'timestamp',
-                                                self,
-                                                device_name,
-                                                sound_url=None, lost_url=None, message_url=None,)
-
-                    self.PyiCloud.RawData_by_device_id[device_id]     = _RawData
-                    self.PyiCloud.RawData_by_device_id_fmf[device_id] = _RawData
-
-                    log_rawdata(f"FmF PyiCloud Device Data - <{_RawData.devicename}>", _RawData.device_data)
-
-                    monitor_msg = (f"ADDED FmF PyiCloudDevice-{device_name}/{device_id[:8]}")
-
-                    if (LOCATION not in device_info
-                            or device_info[LOCATION] == {}
-                            or device_info[LOCATION] is None):
-                        monitor_msg += " (No Location Data)"
-
-                if monitor_msg:
-                    if Gb.EvLog:
-                        post_monitor_msg(monitor_msg)
-                    else:
-                        log_debug_msg(monitor_msg)
+                    self._create_RawData_object(device_id, device_name, device_info)
 
             return self.response
 
         except Exception as err:
             log_exception(err)
             return None
+
+#----------------------------------------------------------------------------
+    def _create_RawData_object(self, device_id, device_name, device_info):
+        _RawData = PyiCloud_RawData(device_id, device_info, self.Session, self.params,
+                                    'FmF', 'timestamp',
+                                    self,
+                                    device_name,
+                                    sound_url=None, lost_url=None, message_url=None,)
+
+        self.PyiCloud.RawData_by_device_id[device_id]     = _RawData
+        self.PyiCloud.RawData_by_device_id_fmf[device_id] = _RawData
+
+        log_rawdata(f"FmF PyiCloud Device Data - <{_RawData.devicename}>", _RawData.device_data)
+
+        monitor_msg = (f"ADDED FmF PyiCloudDevice-{device_name}/{device_id[:8]}")
+
+        if (LOCATION not in device_info
+                or device_info[LOCATION] == {}
+                or device_info[LOCATION] is None):
+            monitor_msg += " (No Location Data)"
+
+        if Gb.EvLog:
+            post_monitor_msg(monitor_msg)
+        else:
+            log_debug_msg(monitor_msg)
+
+#----------------------------------------------------------------------------
+    def _update_fmf_email_tables(self):
+
+        fmf_friends_data = {'emails': self.contact_details,
+                            'invitationFromHandles': self.followers,
+                            'invitationAcceptedHandles': self.following}
+
+        for fmf_email_field, Pyicloud_FmF_data in fmf_friends_data.items():
+            if Pyicloud_FmF_data is None:
+                continue
+
+            for friend in Pyicloud_FmF_data:
+                friend_emails = friend.get(fmf_email_field)
+                full_name     = (f"{friend.get('firstName', '')} {friend.get('lastName', '')}")
+                full_name     = full_name.strip()
+                device_id     = friend.get('id')
+
+                # extracted_fmf_devices.append((device_id, friend_emails))
+                for friend_email in friend_emails:
+                    self.device_id_by_fmf_email[friend_email] = device_id
+                    self.fmf_email_by_device_id[device_id]    = friend_email
+                    friend_email_full_name = f"{friend_email} ({full_name})" if full_name else friend_email
+                    if (friend_email not in self.device_info_by_fmf_email or full_name):
+                        self.device_info_by_fmf_email[friend_email] = f"{friend_email_full_name}"
 
 #----------------------------------------------------------------------------
     def contact_id_for(self, identifier, default=None):
@@ -1419,16 +1481,17 @@ class PyiCloud_RawData():
                         sound_url=None, lost_url=None, message_url=None, ):
 
         self.device_id       = device_id
-        self.Device          = Gb.Devices_by_icloud_device_id.get(device_id)
-        self.devicename      = self.Device.devicename if self.Device else device_id[:8]
         self.device_data     = device_data
-        self.FamShr_FmF      = FamShr_FmF
         self.Session         = Session
         self.params          = params
-        self.name            = device_name
-        self.update_secs     = time_now_secs()
         self.tracking_method = tracking_method
         self.timestamp_field = timestamp_field
+        self.FamShr_FmF      = FamShr_FmF
+        self.name            = device_name
+
+        self.Device          = Gb.Devices_by_icloud_device_id.get(device_id)
+        self.devicename      = self.Device.devicename if self.Device else device_id[:8]
+        self.update_secs     = time_now_secs()
         self.location_secs   = 0
         self.location_time   = HHMMSS_ZERO
         self.last_used_location_secs = 0
@@ -1441,10 +1504,87 @@ class PyiCloud_RawData():
         self.set_located_time()
         self.device_data[TRACKING_METHOD] = self.tracking_method
 
+#----------------------------------------------------------------------
     @property
     def device_id8(self):
         return self.device_id[:8]
 
+#----------------------------------------------------------------------
+    @property
+    def device_identifier(self):
+        '''
+        Format device name:
+            - iPhone 14,2 (iPhone15,2)
+            - Gary-iPhone
+        '''
+        if self.tracking_method_FAMSHR:
+            display_name = self.device_data['deviceDisplayName'].split(' (')[0]
+            display_name = display_name.replace('Series ', '')
+            if self.device_data.get('rawDeviceModel').startswith(AIRPODS_FNAME):
+                device_class = AIRPODS_FNAME
+            else:
+                device_class = self.device_data.get('deviceClass', '')
+            raw_model = self.device_data.get('rawDeviceModel', device_class).replace('_', '')
+
+            return (f"{display_name} ({raw_model}").replace("’", "'")
+
+        elif self.tracking_method_FMF:
+            full_name = (f"{self.device_data.get('firstName', '')} {self.device_data.get('lastName', '')}").strip()
+            return full_name.replace("’", "'")
+
+        else:
+            return self.name.replace("’", "'")
+
+#----------------------------------------------------------------------
+    @property
+    def famshr_device_fname(self):
+        if self.tracking_method_FAMSHR:
+            _FamShr = self.FamShr_FmF
+            # Remove non-breakable space and right quote mark
+            fname = self.name.replace("\xa0", " ").replace("’", "'")
+
+            if fname not in _FamShr.dup_device_fname_cnt:
+                _FamShr.dup_device_fname_cnt[fname] = 1
+
+            if fname in _FamShr.device_id_by_device_fname:
+                dup_fname = f"{fname}{'*'*_FamShr.dup_device_fname_cnt[fname]}"
+                _FamShr.device_id_by_device_fname[dup_fname]      = _FamShr.device_id_by_device_fname[fname]
+                _FamShr.device_fname_by_device_id[self.device_id] = dup_fname
+                _FamShr.device_info_by_device_fname[dup_fname]    = _FamShr.device_info_by_device_fname[fname]
+                _FamShr.dup_device_fname_cnt[fname] += 1
+
+            self.fname = fname
+            return fname
+
+        elif self.tracking_method_FMF:
+            _FmF = self.FamShr_FmF
+            pass
+
+#----------------------------------------------------------------------
+    @property
+    def famshr_device_info(self):
+        info = f"{self.fname} ({self.device_identifier})"
+
+        return info
+
+#----------------------------------------------------------------------
+    @property
+    def famshr_device_display_name(self):
+        display_name = self.device_data['deviceDisplayName'].split(' (')[0]
+        display_name = display_name.replace('Series ', '')
+
+        return display_name
+
+#----------------------------------------------------------------------
+    @property
+    def famshr_device_model_info(self):
+        model_info = [  self.device_data['rawDeviceModel'].replace("_", ""),        # iPhone15,2
+                        self.device_data['modelDisplayName'],      # iPhone
+                        self.famshr_device_display_name]     # iPhone 14 Pro
+
+        return model_info
+
+#----------------------------------------------------------------------
     @property
     def tracking_method_FMF(self):
         return (self.tracking_method in [FMF, FMF_FNAME])
@@ -1486,32 +1626,6 @@ class PyiCloud_RawData():
         self.set_located_time()
         self.device_data[TRACKING_METHOD] = self.tracking_method
         return
-
-    @property
-    def device_identifier(self):
-        '''
-        Format device name:
-            - iPhone 14,2 (iPhone15,2)
-            - Gary-iPhone
-        '''
-        if self.tracking_method_FAMSHR:
-            display_name = self.device_data['deviceDisplayName'].split(' (')[0]
-            display_name = display_name.replace('Series ', '')
-            if self.device_data.get('rawDeviceModel').startswith(AIRPODS_FNAME):
-                device_class = AIRPODS_FNAME
-            else:
-                device_class = self.device_data.get('deviceClass', '')
-            raw_model = self.device_data.get('rawDeviceModel', device_class).replace('_', '')
-
-            return (f"{display_name} ({raw_model}")
-
-        elif self.tracking_method_FMF:
-            full_name = (f"{self.device_data.get('firstName', '')} {self.device_data.get('lastName', '')}").strip()
-            return full_name
-
-        else:
-            return self.name
-
 
 #----------------------------------------------------------------------------
     def status(self, additional_fields=[]):  # pylint: disable=dangerous-default-value
@@ -1563,6 +1677,13 @@ class PyiCloud_RawData():
 
 
         self.update_secs = time_now_secs()
+
+        # Reformat and convert batteryStatus
+        try:
+            battery_status = self.device_data[ICLOUD_BATTERY_STATUS].lower()
+            self.device_data[ICLOUD_BATTERY_STATUS] = BATTERY_STATUS_REFORMAT.get(battery_status, battery_status)
+        except:
+            pass
 
 #----------------------------------------------------------------------------
     @property

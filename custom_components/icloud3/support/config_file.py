@@ -15,12 +15,14 @@ from ..const                import (
                                     HOME_DISTANCE, CONF_SENSORS_TRACKING_DISTANCE,
                                     CONF_SENSORS_DEVICE, BATTERY_STATUS,
                                     CONF_WAZE_USED, CONF_WAZE_REGION, CONF_DISTANCE_METHOD,
+                                    WAZE_SERVERS_BY_COUNTRY_CODE, WAZE_SERVERS_FNAME,
                                     )
 
 from ..support              import start_ic3
 from ..support              import waze
 from ..helpers.common       import (instr, ordereddict_to_dict, )
-from ..helpers.messaging    import (log_exception, _trace, _traceha, close_reopen_ic3_debug_log_file, )
+from ..helpers.messaging    import (log_exception, _trace, _traceha, log_info_msg,
+                                    close_reopen_ic3_debug_log_file, )
 from ..helpers.time_util    import (datetime_now, )
 
 import os
@@ -86,79 +88,6 @@ def load_storage_icloud3_configuration_file():
     Gb.www_evlog_js_filename  = f"{Gb.www_evlog_js_directory}/{Gb.conf_profile[CONF_EVLOG_CARD_PROGRAM]}"
 
     return
-
-#-------------------------------------------------------------------------------------------
-def load_icloud3_ha_config_yaml(ha_config_yaml):
-
-
-    Gb.ha_config_yaml_icloud3_platform = {}
-    # _traceha(f"{ha_config_yaml=} ")
-    if ha_config_yaml == '':
-        return
-
-    ha_config_yaml_devtrkr_platforms = ordereddict_to_dict(ha_config_yaml)['device_tracker']
-
-    ic3_ha_config_yaml = {}
-    for ha_config_yaml_platform in ha_config_yaml_devtrkr_platforms:
-        if ha_config_yaml_platform['platform'] == 'icloud3':
-            ic3_ha_config_yaml = ha_config_yaml_platform.copy()
-            break
-
-    Gb.ha_config_yaml_icloud3_platform = ordereddict_to_dict(ic3_ha_config_yaml)
-    # _traceha(f"{ic3_ha_config_yaml=} ")
-    # _traceha(f"{Gb.ha_config_yaml_icloud3_platform=} ")
-
-#--------------------------------------------------------------------
-def build_initial_config_file_structure():
-    '''
-    Create the initial data structure of the ic3 config file
-
-    |---profile
-    |---data
-        |---tracking
-            |---devices
-        |---general
-            |---parameters
-        |---sensors
-
-    '''
-
-    Gb.conf_profile   = DEFAULT_PROFILE_CONF.copy()
-    Gb.conf_tracking  = DEFAULT_TRACKING_CONF.copy()
-    Gb.conf_devices   = []
-    Gb.conf_general   = DEFAULT_GENERAL_CONF.copy()
-    Gb.conf_sensors   = DEFAULT_SENSORS_CONF.copy()
-    Gb.conf_file_data = CF_DEFAULT_IC3_CONF_FILE.copy()
-
-    Gb.conf_data['tracking']        = Gb.conf_tracking
-    Gb.conf_data['tracking']['devices'] = Gb.conf_devices
-    Gb.conf_data['general']         = Gb.conf_general
-    Gb.conf_data['sensors']         = Gb.conf_sensors
-
-    Gb.conf_file_data['profile']    = Gb.conf_profile
-    Gb.conf_file_data['data']       = Gb.conf_data
-
-
-    # Verify general parameters and make any necessary corrections
-    try:
-        if Gb.location_info['country_code'].lower() in APPLE_SPECIAL_ICLOUD_SERVER_COUNTRY_CODE:
-            Gb.conf_tracking[CONF_ICLOUD_SERVER_ENDPOINT_SUFFIX] = Gb.location_info['country_code'].lower()
-
-        if Gb.config and Gb.config.units['name'] != 'Imperial':
-            Gb.conf_general[CONF_UNIT_OF_MEASUREMENT] = 'km'
-            Gb.conf_general[CONF_TIME_FORMAT] = '24-hour'
-
-        elif Gb.location_info['use_metric']:
-            Gb.conf_general[CONF_UNIT_OF_MEASUREMENT] = 'km'
-            Gb.conf_general[CONF_TIME_FORMAT] = '24-hour'
-
-        waze_region_code = waze.waze_region_by_country_code()
-        Gb.conf_general[CONF_WAZE_REGION] = waze_region_code.lower()
-        Gb.conf_general[CONF_WAZE_USED]   = (waze_region_code != '??')
-
-    except:
-        pass
-
 
 #-------------------------------------------------------------------------------------------
 def read_storage_icloud3_configuration_file(filename_suffix=''):
@@ -236,7 +165,23 @@ def config_file_special_maintenance():
     if CONF_SETUP_ICLOUD_SESSION_EARLY not in Gb.conf_tracking:
         _insert_into_conf_tracking(CONF_SETUP_ICLOUD_SESSION_EARLY, True)
         update_config_file_flag = True
-        # Gb.conf_tracking.insert(3, [CONF_SETUP_ICLOUD_SESSION_EARLY]) = True
+
+    # v3.0.0 beta 8 - Convert waze region code to us/il/row based on country code
+    correct_server = WAZE_SERVERS_BY_COUNTRY_CODE.get(Gb.ha_country_code, 'row')
+    correct_server_fname = WAZE_SERVERS_FNAME.get(correct_server, correct_server)
+    config_server    = Gb.conf_general[CONF_WAZE_REGION]
+    config_server_fname = WAZE_SERVERS_FNAME.get(config_server, config_server)
+    if (config_server not in WAZE_SERVERS_BY_COUNTRY_CODE
+            or config_server != correct_server):
+        log_msg = ( f"iCloud3 Warning: Current Waze Route Server "
+                    f"({config_server_fname}) "
+                    f"does not match the server for your country "
+                    f"({Gb.ha_country_code.upper()}). "
+                    f"Changing the configuration to the correct value "
+                    f"({correct_server_fname})")
+        Gb.conf_general[CONF_WAZE_REGION] = correct_server
+        log_info_msg(log_msg)
+        update_config_file_flag = True
 
     if update_config_file_flag:
         write_storage_icloud3_configuration_file()
@@ -244,7 +189,7 @@ def config_file_special_maintenance():
 #--------------------------------------------------------------------
 def _insert_into_conf_tracking(new_item, initial_value):
     '''
-    Add item to conf_travking before the devices element
+    Add item to conf_tracking before the devices element
     '''
     pos = list(Gb.conf_tracking.keys()).index(CONF_DEVICES) - 1
     items = list(Gb.conf_tracking.items())
@@ -352,5 +297,74 @@ def base64_decode(string):
     base64_bytes = string.encode('ascii')
     string_bytes = base64.b64decode(base64_bytes)
     return string_bytes.decode('ascii')
+
+#-------------------------------------------------------------------------------------------
+def load_icloud3_ha_config_yaml(ha_config_yaml):
+
+
+    Gb.ha_config_yaml_icloud3_platform = {}
+    # _traceha(f"{ha_config_yaml=} ")
+    if ha_config_yaml == '':
+        return
+
+    ha_config_yaml_devtrkr_platforms = ordereddict_to_dict(ha_config_yaml)['device_tracker']
+
+    ic3_ha_config_yaml = {}
+    for ha_config_yaml_platform in ha_config_yaml_devtrkr_platforms:
+        if ha_config_yaml_platform['platform'] == 'icloud3':
+            ic3_ha_config_yaml = ha_config_yaml_platform.copy()
+            break
+
+    Gb.ha_config_yaml_icloud3_platform = ordereddict_to_dict(ic3_ha_config_yaml)
+    # _traceha(f"{ic3_ha_config_yaml=} ")
+    # _traceha(f"{Gb.ha_config_yaml_icloud3_platform=} ")
+
+#--------------------------------------------------------------------
+def build_initial_config_file_structure():
+    '''
+    Create the initial data structure of the ic3 config file
+
+    |---profile
+    |---data
+        |---tracking
+            |---devices
+        |---general
+            |---parameters
+        |---sensors
+
+    '''
+
+    Gb.conf_profile   = DEFAULT_PROFILE_CONF.copy()
+    Gb.conf_tracking  = DEFAULT_TRACKING_CONF.copy()
+    Gb.conf_devices   = []
+    Gb.conf_general   = DEFAULT_GENERAL_CONF.copy()
+    Gb.conf_sensors   = DEFAULT_SENSORS_CONF.copy()
+    Gb.conf_file_data = CF_DEFAULT_IC3_CONF_FILE.copy()
+
+    Gb.conf_data['tracking']        = Gb.conf_tracking
+    Gb.conf_data['tracking']['devices'] = Gb.conf_devices
+    Gb.conf_data['general']         = Gb.conf_general
+    Gb.conf_data['sensors']         = Gb.conf_sensors
+
+    Gb.conf_file_data['profile']    = Gb.conf_profile
+    Gb.conf_file_data['data']       = Gb.conf_data
+
+
+    # Verify general parameters and make any necessary corrections
+    try:
+        if Gb.ha_country_code in APPLE_SPECIAL_ICLOUD_SERVER_COUNTRY_CODE:
+            Gb.conf_tracking[CONF_ICLOUD_SERVER_ENDPOINT_SUFFIX] = Gb.ha_country_code
+
+        if Gb.config and Gb.config.units['name'] != 'Imperial':
+            Gb.conf_general[CONF_UNIT_OF_MEASUREMENT] = 'km'
+            Gb.conf_general[CONF_TIME_FORMAT] = '24-hour'
+
+        elif Gb.ha_use_metric:
+            Gb.conf_general[CONF_UNIT_OF_MEASUREMENT] = 'km'
+            Gb.conf_general[CONF_TIME_FORMAT] = '24-hour'
+
+    except:
+        pass
+
 
 #--------------------------------------------------------------------:)

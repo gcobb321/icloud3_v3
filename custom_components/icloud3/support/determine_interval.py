@@ -459,7 +459,6 @@ def determine_interval(Device, DeviceFmZone):
     if (Device.is_location_gps_good
             and interval > 60
             and waze_dist_from_zone_km > DeviceFmZone.max_dist_km):
-        _traceha(f"Set MaxDist {interval=} {waze_dist_from_zone_km=} {DeviceFmZone.max_dist_km=} {Device.loc_data_gps_accuracy=}")
         DeviceFmZone.max_dist_km = waze_dist_from_zone_km
 
     #--------------------------------------------------------------------------------
@@ -1124,6 +1123,7 @@ def update_nearby_device_info(Device):
                 or gps_accuracy_factor > NEAR_DEVICE_DISTANCE
                 or display_text == '0m/±0m'
                 or _Device.NearDevice is Device
+                or _check_near_device_circular_loop(_Device, Device) is False
                 or Device.is_inzone_stationary
                 or _Device.is_inzone_stationary):
             nearby_symbol = '⊗'
@@ -1149,67 +1149,46 @@ def update_nearby_device_info(Device):
 
     return
 
-    try:
-        if len(Gb.Devices) == 1:
-            return
+#--------------------------------------------------------------------------------
+def _check_near_device_circular_loop(_Device, Device):
+    '''
+    Make sure the eligible nearbe device is not used by another device(s) that ends
+    up referencing the Device being updated, creating a circular loop back to itself
+    '''
+    if _Device.NearDevice is None:
+        return True
 
-        closest_device_distance     = HIGH_INTEGER
-        Device.dist_apart_msg       = ''
-        Device.NearDevice           = None
-        Device.near_device_distance = 0
+    cnt = 0
+    next_Device_to_check = _Device.NearDevice
+    near_devices = f"{_Device.devicename}{RARROW}{next_Device_to_check.devicename}"
+    log_debug_base_msg = f"Check Nearby Device-{_Device.devicename}"
 
-        for _Device in Gb.Devices:
-            can_use_nearby_device = False
-            nearby_symbol = ''
+    while next_Device_to_check is not Device:
+        # Make sure the loop will not hang
+        cnt += 1
+        if cnt > len(Gb.Devices):
+            log_debug_msg(Device.devicename, f"CanNotUse, DeviceCnt-{cnt} > {len(Gb.Devices)}")
+            return False
 
-            # If the device being updated has been reached and the data is iCloud, a nearby device
-            # cannot be used and must be calculated. Otherwise, there is a circular reference and
-            # this device will be set to another device's previous results
-            if _Device is Device:
-                can_use_nearby_device = _Device.is_using_iosapp_data
-                continue
+        # If the NearDevice cycle ends, it's OK to use the current _Device
+        if (next_Device_to_check is None
+                or next_Device_to_check.NearDevice is None):
+            near_devices += f"{RARROW}None"
+            log_debug_msg(Device.devicename, f"{log_debug_base_msg}, CanUse, {near_devices}")
+            return True
 
-            distance_apart       = _Device.distance_m(Device.loc_data_latitude, Device.loc_data_longitude)
-            gps_accuracy_factor  = min(Device.loc_data_gps_accuracy, _Device.loc_data_gps_accuracy) * distance_apart / NEAR_DEVICE_DISTANCE
-            location_age_ok_flag = (secs_since(_Device.loc_data_secs) < _Device.old_loc_threshold_secs)
-            if Device.sensor_zone == _Device.sensor_zone and Device.is_inzone:
-                location_age_ok_flag = True
+        near_devices += f"{RARROW}{next_Device_to_check.NearDevice.devicename}"
+        next_Device_to_check = next_Device_to_check.NearDevice
 
-            if (distance_apart > NEAR_DEVICE_DISTANCE
-                    or gps_accuracy_factor > NEAR_DEVICE_DISTANCE
-                    or Device.is_inzone_stationary
-                    or _Device.is_inzone_stationary):
-                nearby_symbol = '⊗'
+        # If the next_NearDevice circles back to the _Device originally being checked,
+        # do not use the _Device.NearDevice
+        if next_Device_to_check.NearDevice is _Device:
+            near_devices += f"{RARROW}{_Device.devicename}"
+            log_debug_msg(Device.devicename, f"{log_debug_base_msg}, CanNotUse, LoopedBack, {near_devices}")
+            return False
 
-            dist_apart_msg = (f"{format_dist_m(distance_apart)}/±"
-                                f"{min(Device.loc_data_gps_accuracy, _Device.loc_data_gps_accuracy)}m")
-
-            # Update the other Device with this Device's distance
-            if location_age_ok_flag:
-                Device.dist_apart_msg_by_devicename[_Device.devicename] = dist_apart_msg
-                _Device.dist_apart_msg_by_devicename[Device.devicename] = dist_apart_msg
-
-            Device.dist_apart_msg += f"{nearby_symbol}{_Device.fname_devtype}-{dist_apart_msg}, "
-
-            # The nearby devices can not point to each other and other criteria
-            if (_Device.NearDevice is not Device
-                    and ((Device.is_tracked and _Device.is_tracked) or Device.is_monitored)
-                    and location_age_ok_flag
-                    and nearby_symbol == ''
-                    and _Device.DeviceFmZoneHome.interval_secs > 0
-                    and _Device.old_loc_poor_gps_cnt == 0
-                    and _Device.is_online):
-                can_use_nearby_device = True
-
-            if can_use_nearby_device and distance_apart < closest_device_distance:
-                closest_device_distance = distance_apart
-                Device.NearDevice = _Device
-                Device.near_device_distance = distance_apart
-
-        monitor_msg = f"Nearby Devices (<{NEAR_DEVICE_DISTANCE}m) > {Device.dist_apart_msg}"
-        post_monitor_msg(Device.devicename, monitor_msg)
-
-        return
-
-    except Exception as err:
-        post_internal_error('Get nearby device', traceback.format_exc)
+    # If the next_NearDevice circles back to the Device being updated,
+    # do not use the _Device.NearDevice
+    near_devices += f"{RARROW}{_Device.devicename}"
+    log_debug_msg(Device.devicename, f"{log_debug_base_msg}, CanNotUse, LoopedBack, {near_devices}")
+    return False

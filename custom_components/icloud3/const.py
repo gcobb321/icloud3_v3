@@ -4,7 +4,7 @@
 #
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-VERSION                         = '3.0.0b7'
+VERSION                         = '3.0.0b8'
 DOMAIN                          = 'icloud3'
 ICLOUD3                         = 'iCloud3'
 MODE_PLATFORM                   = -1
@@ -154,7 +154,14 @@ DI_IOSAPP_SUFFIX        = 6
 DI_ZONES                = 7
 
 # Waze status codes
-WAZE_REGIONS      = ['US', 'NA', 'EU', 'IL', 'AU']
+# WAZE_REGIONS      = ['US', 'NA', 'EU', 'IL', 'AU']
+WAZE_SERVERS_BY_COUNTRY_CODE = {'us': 'us', 'ca': 'us', 'il': 'il', 'row': 'row'}
+WAZE_SERVERS_FNAME =           {'us': 'United States, Canada',
+                                'US': 'United States, Canada',
+                                'il': 'Isreal',
+                                'IL': 'Isreal',
+                                'row': 'Rest of the World',
+                                'ROW': 'Rest of the World'}
 WAZE_USED         = 0
 WAZE_NOT_USED     = 1
 WAZE_PAUSED       = 2
@@ -412,7 +419,7 @@ DATA_SOURCE                = 'data_source'
 DATETIME                   = 'date_time'
 AGE                        = 'age'
 TRIGGER                    = 'trigger'
-BATTERY_SOURCE             = 'Battery Data Source'
+BATTERY_SOURCE             = 'battery_data_source'
 BATTERY                    = 'battery'
 BATTERY_LEVEL              = 'battery_level'
 BATTERY_STATUS             = 'battery_status'
@@ -503,14 +510,21 @@ TRACE_ICLOUD_ATTRS_BASE = {
         ICLOUD_VERTICAL_ACCURACY: 0,
         'positionType': 'Wifi',
         }
-
 BATTERY_STATUS_FNAME = {
         'full': 'Full',
         'charging': 'Charging',
-        'notcharging': 'NotCharging',
+        'notcharging': 'Not Charging',
         'not charging': 'Not Charging',
-
-}
+        'not_charging': 'Not Charging',
+        'unknown': 'Unknown',
+        '': 'Unknown',
+        }
+# Standardize the battery status text between the ios app and icloud famshr
+BATTERY_STATUS_REFORMAT = {
+        'notcharging': 'not charging',
+        'Not Charging': 'not charging',
+        'unknown': '',
+        }
 DEVICE_STATUS_SET = [
         ICLOUD_DEVICE_CLASS,
         ICLOUD_BATTERY_STATUS,
@@ -624,6 +638,7 @@ CONF_INZONE_INTERVALS           = 'inzone_intervals'
 CONF_DISTANCE_METHOD            = 'distance_method'
 CONF_WAZE_USED                  = 'waze_used'
 CONF_WAZE_REGION                = 'waze_region'
+CONF_WAZE_SERVER                = 'waze_region'
 CONF_WAZE_MAX_DISTANCE          = 'waze_max_distance'
 CONF_WAZE_MIN_DISTANCE          = 'waze_min_distance'
 CONF_WAZE_REALTIME              = 'waze_realtime'
@@ -795,7 +810,6 @@ DEFAULT_DEVICE_REINITIALIZE_CONF.pop(CONF_EVLOG_DISPLAY_ORDER, None)
 DEFAULT_DEVICE_REINITIALIZE_CONF.pop(CONF_DEVICE_TYPE, None)
 DEFAULT_DEVICE_REINITIALIZE_CONF.pop(CONF_UNIQUE_ID, None)
 
-
 DEFAULT_GENERAL_CONF = {
         CONF_LOG_LEVEL: 'info',
 
@@ -930,4 +944,11 @@ RESTORE_STATE_FILE = {
                 CONF_VERSION: 0,
                 LAST_UPDATE: DATETIME_ZERO, },
         'devices': {}
+}
+# Initialize the Device sensors[xxx] value from the restore_state file if
+# the sensor is in the file. Otherwise, initialize to this value
+USE_RESTORE_STATE_VALUE_ON_STARTUP = {
+        BATTERY: 0,
+        BATTERY_STATUS: '',
+        BATTERY_SOURCE: '',
 }

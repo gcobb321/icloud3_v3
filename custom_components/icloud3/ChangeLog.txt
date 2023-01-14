@@ -1,3 +1,41 @@
+Beta 8 - 1/14/2023
+~~~~~~~~~~~~~~~~~~~~
+1.  Fixed the bug accessing the iCloud3 Devices screen. Again. I hope. It is a timing issue and an
+    issue with accessing the iCloud Account through HA. I could make it fail yesterday but not today
+    when trying to verify that the new approach fixed it. For those that are having this problem,
+    please let me know if you are still having a problem and I'll take another crack at it.
+2.  The Waze Route Service is handled by 3-servers around the world - United States/Canada, Isreal,
+    and the Rest of the World. The HA Country Code is now used to determine that
+    the appropriate server is used. It is still shown on the Waze configuration screen for
+    information only. It is verified and corrected when HA starts if the wrong server is selected.
+3.  Combined the configuration screens for the Waze Route Server and Waze History Database into one
+    screen. THIS MAY REQUIRE A BROWSER CACHE REFRESH
+4.  Added the 'iCloud3 Theme' that tweeks the field labels in the Configurator so the descriptive
+    text is a little more readable (at least for me with my old eyes). It has both a light and dark
+    mode and only a few entries. You can find the it in config/custom_components/icloud3/theme.
+
+    Move the 'iCloud3 Theme' from the 'icloud3/theme' folder to the 'config/themes' folder.
+    (1) If you are already using a theme, copy the 'icloud3_theme.yaml' file statements (both the
+        light and dark mode) into the appropriate location in your theme's yaml file. Then restart HA.
+    (2) If you are not using a theme, restart HA, open your Profile screen, then select 'iCloud3 Theme'
+    on the Themes list.
+
+    I used it when capturing screenshots for the iCloud3 documentation.
+5.  Fixed a number of problems with the battery and battery status sensors. (1) It was being updated
+    by the iOS App every 15-minutes instead of every 5-seconds. (2) The value was resetting to 0 when
+    HA or iCloud3 restarted instead of restoring it's value from the last update. (3) It was not being
+    updated when iCloud3 restarted until the next poll, which may be 2-hours if you are in a zone.
+    (4) It was only being saved to the restore_state file on the next poll, not the value when it
+    changed in the iOS App. Again, if you are in a zone, the value might be 2-hours old from the last
+    iCloud update, leading to drops and spikes in the battery sensor in the HA history.
+6.  Fixed a problem that might cause iCloud3 to hang when you are tracking 2 or more devices and they
+    are all close to eack other. The problem occured when device A was using device B tracking results
+    (distance, travel time, next update time, etc), B was using C, and C was using A. This created a
+    circular loop so every device used the same data and a new update was never done.
+7.  Addressed a problem building the picture file list for the iCloud3 Devices screen. I can not
+    reproduce the error but changed some code so the error being encountered would not occur.
+
+
 Beta 7 - 1/8/2023
 ~~~~~~~~~~~~~~~~~~~~
 1.  Fixed a problem connecting to the iCloud Account when there was a delay establishing the

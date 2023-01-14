@@ -4,13 +4,11 @@
 #
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-from ..global_variables             import GlobalVariables as Gb
-from ..const                        import (WAZE_USED, WAZE_NOT_USED, WAZE_PAUSED, WAZE_OUT_OF_RANGE, WAZE_NO_DATA,
-                                            EVLOG_ALERT,
-                                            LATITUDE, LONGITUDE,
-                                            ZONE,
-                                            )
-
+from ..global_variables     import GlobalVariables as Gb
+from ..const                import (WAZE_USED, WAZE_NOT_USED, WAZE_PAUSED, WAZE_OUT_OF_RANGE, WAZE_NO_DATA,
+                                    EVLOG_ALERT,
+                                    WAZE_SERVERS_FNAME,
+                                    LATITUDE, LONGITUDE, ZONE, )
 from ..support.waze_history         import WazeRouteHistory as WazeHist
 from ..support.waze_route_calc_ic3  import WazeRouteCalculator, WRCError
 
@@ -27,33 +25,6 @@ WAZE_STATUS_FNAME ={WAZE_USED: 'Waze-Used',
                     WAZE_PAUSED: 'Waze-Paused',
                     WAZE_OUT_OF_RANGE: 'Waze-Out of Range',
                     WAZE_NO_DATA: 'Waze-No Data'}
-
-WAZE_REGION_COUNTRY_CODES = {
-                    'EU':  ['AL', 'AD', 'AT', 'BY', 'BE', 'BA', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FO', 'FI',
-                            'FR', 'DE', 'GI', 'GR', 'HU', 'IS', 'IE', 'IM', 'IT', 'RS', 'LV', 'LI', 'LT', 'LU',
-                            'MK', 'MT', 'MD', 'MC', 'ME', 'NL', 'NO', 'PL', 'PT', 'RO', 'RU', 'SM', 'RS', 'SK',
-                            'SI', 'ES', 'SE', 'CH', 'UA', 'GB', 'VA', 'RS', ],
-                    'AU':  ['AS', 'AU', 'NZ', 'CK', 'TL', 'FM', 'FJ', 'PF', 'GU', 'KI', 'MP', 'MH', 'UM', 'NR',
-                            'NC', 'NZ', 'NU', 'NF', 'PW', 'PG', 'MP', 'WS', 'SB', 'TK', 'TO', 'TV', 'VU', 'UM',
-                            'WF', ],
-                    'NA':  ['AI', 'AG', 'AW', 'BS', 'BB', 'BZ', 'BM', 'BQ', 'VG', 'CA', 'KY', 'CR', 'CU', 'CW',
-                            'DM', 'DO', 'SV', 'GL', 'GD', 'GP', 'GT', 'HT', 'HN', 'JM', 'MQ', 'MX', 'PM', 'MS',
-                            'CW', 'KN', 'NI', 'PA', 'PR', 'BQ', 'SX', 'KN', 'LC', 'PM', 'VC', 'TT', 'TC', 'VI', ],
-                    'US':  ['US', ],
-                    'IL':  ['IL', ]}
-                    # 'SA':  ['AR', 'BO', 'BR', 'CL', 'CO', 'EC', 'FK', 'GF', 'GY', 'GY', 'PY', 'PE', 'SR', 'UY',
-                            # 'VE', ],
-
-#-------------------------------------------------------------------------------------------
-def waze_region_by_country_code():
-    '''
-    Determine the region code using the country code in the HA location_info data
-    '''
-    for waze_region_code, country_codes in WAZE_REGION_COUNTRY_CODES.items():
-        if Gb.location_info['country_code'].upper() in country_codes:
-            return waze_region_code
-    return '??'
-
 
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 class Waze(object):
@@ -82,8 +53,8 @@ class Waze(object):
 
         if self.distance_method_waze_flag:
             self.waze_status = WAZE_USED
-
-            event_msg = (f"Set Up Waze > Region-{self.waze_region}, "
+            config_server_fname = WAZE_SERVERS_FNAME.get(self.waze_region, self.waze_region)
+            event_msg = (f"Set Up Waze > Server-{config_server_fname}, "
                         f"MinDist-{self.waze_min_distance}km, "
                         f"MaxDist-{self.waze_max_distance}km, "
                         f"Realtime-{self.waze_realtime}, "

@@ -1,7 +1,8 @@
 
 
 from ..global_variables import GlobalVariables as Gb
-from ..const            import (NOT_HOME, STATIONARY, CIRCLE_LETTERS_DARK, UNKNOWN, CRLF_DOT, CRLF, )
+from ..const            import (NOT_HOME, STATIONARY, CIRCLE_LETTERS_DARK, UNKNOWN, CRLF_DOT, CRLF,
+                                BATTERY_STATUS_FNAME,)
 from collections        import OrderedDict
 
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -164,6 +165,10 @@ def format_gps(latitude, longitude, accuracy, latitude_to=None, longitude_to=Non
         gps_text      = f"({latitude:.5f}, {longitude:.5f}{accuracy_text}{gps_to_text}"
 
     return gps_text
+
+#--------------------------------------------------------------------
+def format_battery_status(battery_status):
+    return BATTERY_STATUS_FNAME.get(battery_status, battery_status.title())
 
 #--------------------------------------------------------------------
 def format_list(arg_list):

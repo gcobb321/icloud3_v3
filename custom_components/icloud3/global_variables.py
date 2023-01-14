@@ -79,18 +79,13 @@ class GlobalVariables(object):
     entry_id        = None      # Has entry_id for iCloud3
     async_add_entities_sensor = None            # Initial add_entities link passed to sensor during ha startup
     async_add_entities_device_tracker = None    # Initial add_entities link passed to device_tracker during ha startup
+    async_executor_call_parameters = None
 
-    location_info   = {        # ha location info from ha.utils.location (set up in __init__)
-                        'country_code': 'us',
-                        'region_code': '',
-                        'zip_code': '',
-                        'region_name': '',
-                        'city': '',
-                        'time_zone': 'America/New_York',
-                        'latitude': 0.0,
-                        'longitude': 0.0,
-                        'use_metric': False}
-    country_code    = 'us'
+    ha_location_info= {'country_code': 'us', 'use_metric': False}
+    ha_country_code = 'us'
+    ha_use_metric   = False
+    country_code = 'us'
+    use_metric   = False
 
     iCloud3         = None      # iCloud3 Platform object
     OptionsFlowHandler = None   # config_flow OptionsFlowHandler

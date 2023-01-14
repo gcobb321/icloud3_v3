@@ -1,23 +1,16 @@
 
 
 from ..global_variables     import GlobalVariables as Gb
-from ..const                import (DEVICE_TRACKER,
-                                    NOTIFY,
-                                    NOT_SET, NOT_HOME,
-                                    STATIONARY,
-                                    UTC_TIME, NUMERIC,
-                                    HIGH_INTEGER, HHMMSS_ZERO,
+from ..const                import (DEVICE_TRACKER, NOTIFY,
+                                    NOT_SET, NOT_HOME, RARROW, STATIONARY,
+                                    UTC_TIME, NUMERIC, HIGH_INTEGER, HHMMSS_ZERO,
                                     STAT_ZONE_NO_UPDATE, STAT_ZONE_MOVE_DEVICE_INTO, STAT_ZONE_MOVE_TO_BASE,
-                                    RARROW,
                                     IOSAPP_FNAME,
-                                    ENTER_ZONE,
-                                    EXIT_ZONE,
-                                    IOS_TRIGGERS_EXIT,
+                                    ENTER_ZONE, EXIT_ZONE, IOS_TRIGGERS_EXIT,
                                     LATITUDE, LONGITUDE, TIMESTAMP_SECS, TIMESTAMP_TIME,
                                     TRIGGER,
-                                    BATTERY_SOURCE, BATTERY, BATTERY_LEVEL, BATTERY_STATUS,
+                                    BATTERY_LEVEL, BATTERY_STATUS, BATTERY_STATUS_REFORMAT,
                                     GPS_ACCURACY, VERT_ACCURACY, ALTITUDE,
-                                    BATTERY, BATTERY_STATUS, INFO,
                                     )
 
 from ..helpers.common       import (instr, is_statzone, zone_fname,  )
@@ -359,11 +352,17 @@ def get_iosapp_device_trkr_entity_attrs(Device):
             return None
 
         if GPS_ACCURACY in device_trkr_attrs:
-            device_trkr_attrs[GPS_ACCURACY]  = round(device_trkr_attrs[GPS_ACCURACY])
+            device_trkr_attrs[GPS_ACCURACY] = round(device_trkr_attrs[GPS_ACCURACY])
         if ALTITUDE in device_trkr_attrs:
-            device_trkr_attrs[ALTITUDE]      = round(device_trkr_attrs[ALTITUDE])
+            device_trkr_attrs[ALTITUDE] = round(device_trkr_attrs[ALTITUDE])
         if VERT_ACCURACY in device_trkr_attrs:
             device_trkr_attrs[VERT_ACCURACY] = round(device_trkr_attrs[VERT_ACCURACY])
+
+        if BATTERY_STATUS in device_trkr_attrs:
+            battery_status = device_trkr_attrs[BATTERY_STATUS].lower()
+            device_trkr_attrs[BATTERY_STATUS] = BATTERY_STATUS_REFORMAT.get(battery_status, battery_status)
+
+        #log_rawdata(f"iOSApp Data - {entity_id}", device_trkr_attrs)
 
         return device_trkr_attrs
 
@@ -382,6 +381,8 @@ def update_iosapp_data_from_entity_attrs(Device, device_trkr_attrs):
         log_error_msg(Device.devicename, 'iOSApp Date Error > No data available')
         return
 
+    log_rawdata(f"iOS Appp - {Device.devicename}", device_trkr_attrs)
+
     Device.iosapp_data_state      = device_trkr_attrs.get(DEVICE_TRACKER, NOT_SET)
     Device.iosapp_data_state_secs = device_trkr_attrs.get(f"state_{TIMESTAMP_SECS}", 0)
     Device.iosapp_data_state_time = device_trkr_attrs.get(f"state_{TIMESTAMP_TIME}", HHMMSS_ZERO)
@@ -389,7 +390,6 @@ def update_iosapp_data_from_entity_attrs(Device, device_trkr_attrs):
     Device.iosapp_data_trigger   = device_trkr_attrs.get("trigger", NOT_SET)
     Device.iosapp_data_secs      = device_trkr_attrs.get(TIMESTAMP_SECS, Device.iosapp_data_state_secs)
     Device.iosapp_data_time      = device_trkr_attrs.get(TIMESTAMP_TIME, Device.iosapp_data_state_time)
-
     Device.iosapp_data_invalid_error_cnt = 0
     Device.iosapp_data_latitude          = entity_io.extract_attr_value(device_trkr_attrs, LATITUDE, NUMERIC)
     Device.iosapp_data_longitude         = entity_io.extract_attr_value(device_trkr_attrs, LONGITUDE, NUMERIC)
@@ -398,6 +398,10 @@ def update_iosapp_data_from_entity_attrs(Device, device_trkr_attrs):
     Device.iosapp_data_battery_status    = entity_io.extract_attr_value(device_trkr_attrs, BATTERY_STATUS)
     Device.iosapp_data_vertical_accuracy = entity_io.extract_attr_value(device_trkr_attrs, VERT_ACCURACY, NUMERIC)
     Device.iosapp_data_altitude          = entity_io.extract_attr_value(device_trkr_attrs, ALTITUDE, NUMERIC)
+
+    # battery_status = Device.iosapp_data_battery_status.lower()
+    # Device.iosapp_data_battery_status = BATTERY_STATUS_REFORMAT.get(battery_status, battery_status)
+    # _traceha(f"{Device.devicename} {Device.iosapp_data_battery_level=} {Device.iosapp_data_battery_status=}")
 
     if Device.DeviceFmZoneHome:
         home_dist = format_dist_km(Device.DeviceFmZoneHome.distance_km_iosapp)

@@ -467,11 +467,12 @@ def set_log_level(log_level, new_debug_log=False):
 #
 #------------------------------------------------------------------------------
 def set_waze_conf_parameters():
-    Gb.distance_method_waze_flag    = Gb.conf_general[CONF_WAZE_USED]
-    Gb.waze_region                  = Gb.conf_general[CONF_WAZE_REGION]
-    Gb.waze_max_distance            = Gb.conf_general[CONF_WAZE_MAX_DISTANCE]
-    Gb.waze_min_distance            = Gb.conf_general[CONF_WAZE_MIN_DISTANCE]
-    Gb.waze_realtime                = Gb.conf_general[CONF_WAZE_REALTIME]
+    Gb.waze_max_distance = Gb.conf_general[CONF_WAZE_MAX_DISTANCE]
+    Gb.waze_min_distance = Gb.conf_general[CONF_WAZE_MIN_DISTANCE]
+    Gb.waze_realtime     = Gb.conf_general[CONF_WAZE_REALTIME]
+    Gb.waze_region       = Gb.conf_general[CONF_WAZE_REGION]
+
+    Gb.distance_method_waze_flag = Gb.conf_general[CONF_WAZE_USED]
     if Gb.distance_method_waze_flag is False:
         Gb.waze_history_database_used = False
     else:
@@ -1024,17 +1025,18 @@ def setup_tracked_devices_for_famshr(PyiCloud=None):
     broadcast_info_msg(f"Stage 3 > Set up Family Share Devices")
 
     if PyiCloud is None: PyiCloud = Gb.PyiCloud
+    _FamShr = PyiCloud.FamilySharing
 
-    devices_desc                = get_famshr_devices(PyiCloud)
-    device_id_by_device_fname   = devices_desc[0]   # Example: n6ofM9CX4j...
-    device_fname_by_device_id   = devices_desc[1]   # Example: Gary-iPhone14
-    device_info_by_device_fname = devices_desc[2]   # Example: Gary-iPhone14 > Phone 14 Pro/iPhone
-    device_model_info_by_fname  = devices_desc[3]   # [raw_model,model,model_display_name]
-                                                    # iPhone15,2;iPhone;iPhone 14 Pro
+    # devices_desc = get_famshr_devices_local(PyiCloud)
+    # _FamShr.device_id_by_device_fname   = devices_desc[0]   # Example: n6ofM9CX4j...
+    # _FamShr.device_fname_by_device_id   = devices_desc[1]   # Example: Gary-iPhone14
+    # _FamShr.device_info_by_device_fname = devices_desc[2]   # Example: 'Lillian-Watch': 'Lillian-Watch (Apple Watch 8 (Watch6,16)'
+    # _FamShr.device_model_info_by_fname  = devices_desc[3]   # [raw_model,model,model_display_name]
 
+                                                    # 'Lillian-Watch': ['Watch6,16', 'Apple Watch', 'Apple Watch 8']
     Gb.famshr_device_verified_cnt = 0
     event_msg = "Family Sharing List devices > "
-    if device_fname_by_device_id == {}:
+    if _FamShr.device_fname_by_device_id == {}:
         event_msg += "NO DEVICES FOUND"
         post_event(event_msg)
         return
@@ -1042,87 +1044,46 @@ def setup_tracked_devices_for_famshr(PyiCloud=None):
     try:
         # Cycle thru the devices from those found in the iCloud data. We are not cycling
         # through the PyiCloud_RawData so we get devices without location info
-        update_conf_file_flag = False
-        sorted_device_id_by_device_fname = OrderedDict(sorted(device_id_by_device_fname.items()))
-        for famshr_device_fname, device_id in sorted_device_id_by_device_fname.items():
+        sorted_device_id_by_device_fname = OrderedDict(sorted(_FamShr.device_id_by_device_fname.items()))
+        for device_fname, device_id in sorted_device_id_by_device_fname.items():
+            exception_msg = duplicate_msg = ''
+
             try:
-                # Example device_info: Gary-iPhone (iPhone 14 Pro (iPhone15,2)
-                device_fname = famshr_device_fname
-                device_desc  = device_raw_model = 'Unknown'
-                device_info_parts = device_info_by_device_fname[famshr_device_fname].split(' (')
-                device_fname      = device_info_parts[0]
-                device_desc       = device_info_parts[1]
-                device_raw_model  = device_info_parts[2]
+                raw_model, model, model_display_name = \
+                                        _FamShr.device_model_info_by_fname[device_fname]
             except:
                 log_debug_msg(  f"Error extracting device info, "
-                                f"source-{device_info_parts}, "
+                                f"source-{_FamShr.device_model_info_by_fname[device_fname]}, "
                                 f"fname-{device_fname}, "
-                                f"desc-{device_desc}, "
-                                f"raw_model-{device_raw_model}")
-                pass
+                                f"desc-{model_display_name}, "
+                                f"raw_model-{raw_model}")
+                continue
 
             broadcast_info_msg(f"Set up FamShr Device > {device_fname}")
 
-            _RawData = None
-            exception_msg = duplicate_msg = ''
+            _RawData    = PyiCloud.RawData_by_device_id_famshr.get(device_id, None)
+            conf_device = _verify_conf_device(device_fname, device_id, _FamShr)
 
-            # Cycle through the config tracked devices and find the matching device.
-            for device in Gb.conf_devices:
-                conf_famshr_device_fname = device[CONF_FAMSHR_DEVICENAME]
-
-                # The device's famshr config devicename will be the ic3 devicename when the parameters
-                # are converted from the config_ic3.yaml file the first time iC3 is loaded. Check for
-                # this and change the famshr config parameter to the Device's fname.
-                if (conf_famshr_device_fname != famshr_device_fname
-                        and conf_famshr_device_fname == slugify(famshr_device_fname)):
-                    device[CONF_FAMSHR_DEVICENAME] = famshr_device_fname
-                    conf_famshr_device_fname = famshr_device_fname
-                    update_conf_file_flag = True
-
-                if conf_famshr_device_fname == famshr_device_fname:
-                    devicename   = device[CONF_IC3_DEVICENAME]
-                    device_fname = device[CONF_FNAME]
-                    device_type  = device[CONF_DEVICE_TYPE]
-
-                    # Get the model info from PyiCloud data and update it if necessary
-                    raw_model, model, model_display_name = \
-                                    device_model_info_by_fname[famshr_device_fname]
-
-                    if (device[CONF_RAW_MODEL] != raw_model
-                            or device[CONF_MODEL] != model
-                            or device[CONF_MODEL_DISPLAY_NAME] != model_display_name):
-                        device[CONF_RAW_MODEL] = raw_model
-                        device[CONF_MODEL] = model
-                        device[CONF_MODEL_DISPLAY_NAME] = model_display_name
-                        update_conf_file_flag = True
-
-                    if device[CONF_FAMSHR_DEVICE_ID] != device_id:
-                        device[CONF_FAMSHR_DEVICE_ID] = device_id
-
-                    _RawData = PyiCloud.RawData_by_device_id_famshr[device_id]
-                    break
-
-            if update_conf_file_flag:
-                config_file.write_storage_icloud3_configuration_file()
+            devicename = conf_device.get(CONF_IC3_DEVICENAME, 'Not Tracked')
 
             if _RawData is None:
                 exception_msg += 'Not Tracked, '
 
-            elif device[CONF_TRACKING_MODE] == INACTIVE_DEVICE:
+            elif conf_device.get(CONF_TRACKING_MODE, False) == INACTIVE_DEVICE:
                 exception_msg += 'INACTIVE, '
 
-            if (instr(famshr_device_fname, '*' )
+            if (instr(device_fname, '*' )
                     or instr(exception_msg, "INACTIVE")
                     or instr(exception_msg, "NO LOCATION")):
-                famshr_device_fname = famshr_device_fname.replace('*', '')
+                device_fname = device_fname.replace('*', '')
                 crlf_mark = CRLF_X
             else:
                 crlf_mark = CRLF_DOT
 
             if exception_msg:
                 event_msg += (  f"{crlf_mark}"
-                                f"{famshr_device_fname}{RARROW}{exception_msg}"
-                                f"{device_desc} ({device_raw_model}"
+                                f"{device_fname}{RARROW}{exception_msg}"
+                                f"{model_display_name} ({raw_model})"
                                 f"{duplicate_msg}")
                 continue
 
@@ -1137,8 +1098,8 @@ def setup_tracked_devices_for_famshr(PyiCloud=None):
 
             if _RawData and Gb.log_rawdata_flag:
                 log_title = (   f"FamShr PyiCloud Data (device_data -- "
-                                f"{devicename}/{famshr_device_fname}), "
-                                f"{device_desc} ({device_raw_model}")
+                                f"{devicename}/{device_fname}), "
+                                f"{model_display_name} ({raw_model})")
                 log_rawdata(log_title, {'data': _RawData.device_data})
 
             device_type = ''
@@ -1161,8 +1122,8 @@ def setup_tracked_devices_for_famshr(PyiCloud=None):
                 crlf_mark = CRLF_DOT
 
             event_msg += (  f"{crlf_mark}"
-                            f"{famshr_device_fname}{RARROW}{devicename}, "
-                            f"{device_desc} ({device_raw_model}"
+                            f"{device_fname}{RARROW}{devicename}, "
+                            f"{model_display_name} ({raw_model})"
                             f"{exception_msg}")
 
         post_event(event_msg)
@@ -1181,6 +1142,43 @@ def setup_tracked_devices_for_famshr(PyiCloud=None):
     return
 
 #--------------------------------------------------------------------
+def _verify_conf_device(device_fname, device_id, _FamShr):
+    '''
+    Get the this famshr device's configuration item. Then see if the raw_model, model
+    or model_display_name has changed. If so, update it in the configuration file.
+
+    Return:
+        conf_device configuration item or {} if it is not being tracked
+    '''
+    # Cycle through the config tracked devices and find the matching device.
+    update_conf_file_flag = False
+    try:
+        conf_device = [cd_item  for cd_item in Gb.conf_devices
+                                if device_fname == cd_item[CONF_FAMSHR_DEVICENAME]][0]
+    except:
+        return {}
+
+    # Get the model info from PyiCloud data and update it if necessary
+    raw_model, model, model_display_name = \
+                    _FamShr.device_model_info_by_fname[device_fname]
+
+    if (conf_device[CONF_RAW_MODEL] != raw_model
+            or conf_device[CONF_MODEL] != model
+            or conf_device[CONF_MODEL_DISPLAY_NAME] != model_display_name):
+        conf_device[CONF_RAW_MODEL] = raw_model
+        conf_device[CONF_MODEL] = model
+        conf_device[CONF_MODEL_DISPLAY_NAME] = model_display_name
+        update_conf_file_flag = True
+
+    if conf_device[CONF_FAMSHR_DEVICE_ID] != device_id:
+        conf_device[CONF_FAMSHR_DEVICE_ID] = device_id
+
+    if update_conf_file_flag:
+        config_file.write_storage_icloud3_configuration_file()
+
+    return conf_device
+
+#--------------------------------------------------------------------
 def setup_tracked_devices_for_fmf(PyiCloud=None):
     '''
     The Find-my-Friends device data is available from PyiCloud when logging into the iCloud
@@ -1194,16 +1192,16 @@ def setup_tracked_devices_for_fmf(PyiCloud=None):
     '''
     broadcast_info_msg(f"Stage 3 > Set up Find-my-Friends Devices")
 
-    #
-    if PyiCloud is None: PyiCloud = Gb.PyiCloud
+    # devices_desc             = get_fmf_devices(PyiCloud)
+    # device_id_by_fmf_email   = devices_desc[0]
+    # fmf_email_by_device_id   = devices_desc[1]
+    # device_info_by_fmf_email = devices_desc[2]
 
-    devices_desc             = get_fmf_devices(PyiCloud)
-    device_id_by_fmf_email   = devices_desc[0]
-    fmf_email_by_device_id   = devices_desc[1]
-    device_info_by_fmf_email = devices_desc[2]
+    if PyiCloud is None: PyiCloud = Gb.PyiCloud
+    _FmF = PyiCloud.FindMyFriends
 
     event_msg = "Find-My-Friends devices > "
-    if device_id_by_fmf_email == {}:
+    if _FmF.device_id_by_fmf_email == {}:
         event_msg += "NO DEVICES FOUND"
         post_event(event_msg)
         return
@@ -1214,7 +1212,7 @@ def setup_tracked_devices_for_fmf(PyiCloud=None):
         # Cycle through all the FmF devices in the iCloud account
         exception_event_msg = ''
         device_fname_by_device_id = {}
-        sorted_device_id_by_fmf_email = OrderedDict(sorted(device_id_by_fmf_email.items()))
+        sorted_device_id_by_fmf_email = OrderedDict(sorted(_FmF.device_id_by_fmf_email.items()))
         for fmf_email, device_id in sorted_device_id_by_fmf_email.items():
             broadcast_info_msg(f"Set up FmF Device > {fmf_email}")
             devicename    = ''
@@ -1291,7 +1289,7 @@ def setup_tracked_devices_for_fmf(PyiCloud=None):
                                                                 f"({device_fname_by_device_id[device_id]})")
 
         # Remove any unknown device_ids
-        for device_id, fmf_email in fmf_email_by_device_id.items():
+        for device_id, fmf_email in _FmF.fmf_email_by_device_id.items():
             exception_event_msg = exception_event_msg.replace(f"({device_id})", "")
 
         event_msg += exception_event_msg
@@ -1309,25 +1307,58 @@ def setup_tracked_devices_for_fmf(PyiCloud=None):
         post_error_msg(event_msg)
 
     return
+
 #----------------------------------------------------------------------
-def get_famshr_devices(PyiCloud):
+def get_famshr_devices_pyicloud(PyiCloud):
+    '''
+    The device information tables are built when the devices are added the when
+    the FamilySharing object and RawData objects are created when logging into
+    the iCloud account.
+    '''
+    if PyiCloud is None: PyiCloud = Gb.PyiCloud
+
+    _FamShr = PyiCloud.FamilySharing
+    return [_FamShr.device_id_by_device_fname,
+            _FamShr.device_fname_by_device_id,
+            _FamShr.device_info_by_device_fname,
+            _FamShr.device_model_info_by_fname]
+
+#----------------------------------------------------------------------
+def get_fmf_devices_pyicloud(PyiCloud):
+    '''
+    The device information tables are built when the devices are added the when
+    the FamilySharing object and RawData objects are created when logging into
+    the iCloud account.
+    '''
+
+    if PyiCloud is None: PyiCloud = Gb.PyiCloud
+
+    _FmF = PyiCloud.FindMyFriends
+    return (_FmF.device_id_by_fmf_email,
+            _FmF.fmf_email_by_device_id,
+            _FmF.device_info_by_fmf_email)
+
+#----------------------------------------------------------------------
+def get_famshr_devices_local(PyiCloud):
     '''
     Cycle through famshr data and get devices that can be tracked for the
     icloud device selection list
     '''
-    device_id_by_device_fname   = {}  # Example: n6ofM9CX4j...
-    device_fname_by_device_id   = {}  # Example: Gary-iPhone14
-    device_info_by_device_fname = {}  # Example: Gary-iPhone (iPhone 14 Pro (iPhone15,2)
-    dup_device_fname_cnt        = {}  # Used to create a suffix for duplicate devicenames
-    device_model_info_by_fname  = {}  # [raw_model,model,model_display_name]
-                                      # ['iPhone15,2', 'iPhone', 'iPhone 14 Pro']
+    device_id_by_device_fname   = {}    # Example: {'Gary-iPhone': 'n6ofM9CX4j...'}
+    device_fname_by_device_id   = {}    # Example: {'n6ofM9CX4j...': 'Gary-iPhone14'}
+    device_info_by_device_fname = {}    # Example: {'Gary-iPhone': 'Gary-iPhone (iPhone 14 Pro (iPhone15,2)'}
+    dup_device_fname_cnt        = {}    # Used to create a suffix for duplicate devicenames
+    device_model_info_by_fname  = {}    # {'Gary-iPhone': [raw_model,model,model_display_name]}
+                                        # {'Gary-iPhone': ['iPhone15,2', 'iPhone', 'iPhone 14 Pro']}
+    _FamShr = PyiCloud.FamilySharing
 
     # 12/17/2022 (beta 1) - Added check for setting PyiCloud
     if PyiCloud is None: PyiCloud = Gb.PyiCloud
 
     # 12/17 (beta 1) - Added check for no FamShr items
-    if (PyiCloud.FamilySharing is None
+    if (_FamShr is None
             or PyiCloud.RawData_by_device_id is None):
+
         return [device_id_by_device_fname,
                 device_fname_by_device_id,
                 device_info_by_device_fname,
@@ -1336,18 +1367,18 @@ def get_famshr_devices(PyiCloud):
     # Preliminary check to make sure all the conf_famshr_devicename specified have been
     # returned from iCloud. Sometimes, they are not all returned on the initial request.
     conf_famshr_devicenames = [device[CONF_FAMSHR_DEVICENAME]
-                            for device in Gb.conf_devices
-                            if device[CONF_FAMSHR_DEVICENAME] != 'None']
+                                        for device in Gb.conf_devices
+                                        if device[CONF_FAMSHR_DEVICENAME] != 'None']
     conf_famshr_device_cnt = len(conf_famshr_devicenames)
 
     pyicloud_famshr_device_cnt = len([device_id
-                            for device_id, _RawData in PyiCloud.RawData_by_device_id.items()
-                            if _RawData.name.replace("\xa0", " ").replace("’", "'") in conf_famshr_devicenames])
+                                        for device_id, _RawData in PyiCloud.RawData_by_device_id.items()
+                                        if _RawData.name.replace("\xa0", " ").replace("’", "'") in conf_famshr_devicenames])
 
     if pyicloud_famshr_device_cnt < conf_famshr_device_cnt:
         # 12/17 (beta 1)-Fix problem calling the wrong method. Should be Famshr, was FmF
-        PyiCloud.FamilySharing.refresh_client()
-        # Gb.PyiCloud.FindMyFriends.refresh_client()
+        _FamShr.refresh_client()
+
         event_msg = (   f"Refreshing iCloud FamShr Data > Not all devices were returned during initialization, "
                         f"iCloud3 FamShr Cnt-{conf_famshr_device_cnt}, "
                         f"Returned-{pyicloud_famshr_device_cnt}")
@@ -1382,7 +1413,7 @@ def get_famshr_devices(PyiCloud):
             display_name = _RawData.device_data['deviceDisplayName'].split(' (')[0]
             display_name = display_name.replace('Series ', '')
             device_model_info_by_fname[device_fname]  = \
-                        [   _RawData.device_data['rawDeviceModel'],        # iPhone15,2
+                        [   _RawData.device_data['rawDeviceModel'].replace("_", ""),        # iPhone15,2
                             _RawData.device_data['modelDisplayName'],      # iPhone
                             display_name]     # iPhone 14 Pro
 
@@ -1390,6 +1421,17 @@ def get_famshr_devices(PyiCloud):
             log_exception(err)
             pass
 
+    _traceha(f"FAMShr-dev_id_by_fname-{_FamShr.device_id_by_device_fname}")
+    _traceha(f"OLDOLD-dev_id_by_fname-{device_id_by_device_fname}")
+
+    _traceha(f"FAMShr-fname_bydev_id-{_FamShr.device_fname_by_device_id}")
+    _traceha(f"OLDOLD-fname_bydev_id-{device_fname_by_device_id}")
+
+    _traceha(f"FAMShr-dev_iinfo_by_fname-{_FamShr.device_info_by_device_fname}")
+    _traceha(f"OLDOLD-dev_iinfo_by_fname-{device_info_by_device_fname}")
+
+    _traceha(f"FAMShr-model_info_by_fname-{_FamShr.device_model_info_by_fname}")
+    _traceha(f"OLDOLD-model_info_by_fname-{device_model_info_by_fname}")
 
     return [device_id_by_device_fname,
             device_fname_by_device_id,
@@ -1397,7 +1439,7 @@ def get_famshr_devices(PyiCloud):
             device_model_info_by_fname]
 
 #----------------------------------------------------------------------
-def get_fmf_devices(PyiCloud):
+def get_fmf_devices_local(PyiCloud):
     '''
     Cycle through fmf following, followers and contact details data and get
     devices that can be tracked for the icloud device selection list
@@ -1407,14 +1449,10 @@ def get_fmf_devices(PyiCloud):
     device_info_by_fmf_email    = {}
     device_form_icloud_fmf_list = []
 
-    if PyiCloud is None: PyiCloud = Gb.PyiCloud
-
-    if PyiCloud.FindMyFriends is None:
-        return device_id_by_fmf_email, fmf_email_by_device_id, device_info_by_fmf_email
-
-    fmf_friends_data = {'emails': PyiCloud.FindMyFriends.contact_details,
-                        'invitationFromHandles': PyiCloud.FindMyFriends.followers,
-                        'invitationAcceptedHandles': PyiCloud.FindMyFriends.following}
+    _FmF = PyiCloud.FindMyFriends
+    fmf_friends_data = {'emails': _FmF.contact_details,
+                        'invitationFromHandles': _FmF.followers,
+                        'invitationAcceptedHandles': _FmF.following}
 
     for fmf_email_field, Pyicloud_FmF_data in fmf_friends_data.items():
         if Pyicloud_FmF_data is None:
@@ -1433,6 +1471,15 @@ def get_fmf_devices(PyiCloud):
                 friend_email_full_name = f"{friend_email} ({full_name})" if full_name else friend_email
                 if (friend_email not in device_info_by_fmf_email  or full_name):
                     device_info_by_fmf_email[friend_email] = f"{friend_email_full_name}"
+
+    _traceha(f"FMF-dev_id_by_email-{_FmF.device_id_by_fmf_email}")
+    _traceha(f"OLD-dev_id_by_email-{device_id_by_fmf_email}")
+
+    _traceha(f"FMF-email_by_id-{_FmF.fmf_email_by_device_id}")
+    _traceha(f"OLD-email_by_id-{fmf_email_by_device_id}")
+
+    _traceha(f"FMF-dev_info_by_email-{_FmF.device_info_by_fmf_email}")
+    _traceha(f"OLD-dev_info_by_email-{device_info_by_fmf_email}")
 
     return device_id_by_fmf_email, fmf_email_by_device_id, device_info_by_fmf_email
 
@@ -1894,9 +1941,19 @@ def display_inactive_devices():
 
     if inactive_devices == []:
         return
+
     event_msg = f"Inactive/Untracked Devices > "
     event_msg+= list_to_str(inactive_devices, separator=CRLF_X)
     post_event(event_msg)
+
+    if len(inactive_devices) == len(Gb.conf_devices):
+        event_msg =(f"{EVLOG_ALERT}All devices are set to INCTIVE. No devices are being tracked. "
+                    f"Review and update the devices on the `Devices & Settings > Integrations > "
+                    f"iCloud3 Configuration > iCloud3 Devices` screen. For each device:"
+                    f"{CRLF}1. Verify the FamShr, FmF and iOS App assigned to the device"
+                    f"{CRLF}2. Change the `Tracking Mode` from INACTIVE to Tracked"
+                    f"{CRLF}3. Exit the Configuration and Restart iCloud3")
+        post_event(event_msg)
 
 #------------------------------------------------------------------------------
 def create_Device_StationaryZone_object(Device):

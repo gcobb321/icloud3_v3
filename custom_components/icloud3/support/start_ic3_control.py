@@ -63,7 +63,7 @@ def stage_1_setup_variables():
         Gb.hass.loop.create_task(start_ic3.update_lovelace_resource_event_log_js_entry())
         start_ic3.check_ic3_event_log_file_version()
 
-        post_monitor_msg(f"LocationInfo-{Gb.location_info}")
+        post_monitor_msg(f"LocationInfo-{Gb.ha_location_info}")
 
         calculate_time_zone_offset()
         start_ic3.set_evlog_table_max_cnt()

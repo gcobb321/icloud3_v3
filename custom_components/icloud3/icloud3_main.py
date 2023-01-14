@@ -47,8 +47,8 @@ from .const             import (VERSION,
                                 EVLOG_IC3_STAGE_HDR, EVLOG_UPDATE_START, EVLOG_UPDATE_END, EVLOG_ALERT,
                                 FMF, FAMSHR, IOSAPP, IOSAPP_FNAME,
                                 ENTER_ZONE,
-                                LATITUDE, LONGITUDE, BATTERY_SOURCE,
-                                GPS, INTERVAL, BATTERY, BATTERY_LEVEL, BATTERY_STATUS,
+                                LATITUDE, LONGITUDE, GPS, INTERVAL,
+                                BATTERY, BATTERY_LEVEL, BATTERY_STATUS, BATTERY_SOURCE, BATTERY_STATUS_FNAME,
                                 NEXT_UPDATE,
                                 )
 from .const_sensor      import (SENSOR_LIST_DISTANCE, )
@@ -421,15 +421,20 @@ class iCloud3:
         Update the Device's battery info
         '''
         try:
-            if Gb.this_update_time[-5:] not in ['00:00', '15:00', '30:00', '45:00']:
+            if Gb.start_icloud3_inprocess_flag:
                 return
 
-            if Device.update_battery_information():
+            if Device.update_iosapp_battery_information():
+                battery_status = Device.dev_data_battery_status
                 event_msg = (f"Battery Status > "
                             f"Level-{Device.dev_data_battery_level_last}%{RARROW}{Device.dev_data_battery_level}%, "
-                            f"{Device.dev_data_battery_status} "
+                            f"{BATTERY_STATUS_FNAME.get(battery_status, battery_status.title())} "
                             f"({Device.dev_data_battery_source})")
-                post_event(Device.devicename, event_msg)
+                if Device.dev_data_battery_status_last != battery_status:
+                    Device.dev_data_battery_status_last = battery_status
+                    post_event(Device.devicename, event_msg)
+                else:
+                    post_monitor_msg(Device.devicename, event_msg)
                 log_debug_msg(Device.devicename, event_msg)
 
         except Exception as err:

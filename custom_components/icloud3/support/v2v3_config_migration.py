@@ -45,6 +45,7 @@ from ..const            import (
                                 CF_DEFAULT_IC3_CONF_FILE,
                                 DEFAULT_PROFILE_CONF, DEFAULT_TRACKING_CONF, DEFAULT_DEVICE_CONF, DEFAULT_GENERAL_CONF,
                                 DEFAULT_SENSORS_CONF,
+                                WAZE_SERVERS_BY_COUNTRY_CODE,
                                 )
 
 CONF_DEVICENAME       = 'device_name'
@@ -302,7 +303,6 @@ class iCloud3_v2v3ConfigMigration(object):
         Returns:    The dictionary with the fields associated with all of the devices
         '''
         devices_list = []
-        initial_track_device_set = False
         for device in conf_devices_parameter:
             devicename = slugify(device[CONF_DEVICENAME])
             if devicename in self.devicename_list:
@@ -310,10 +310,7 @@ class iCloud3_v2v3ConfigMigration(object):
             self.devicename_list.append(devicename)
             conf_device = DEFAULT_DEVICE_CONF.copy()
             conf_device[CONF_IOSAPP_DEVICE] = f"Search: {devicename}"
-
-            if initial_track_device_set is False:
-                initial_track_device_set = True
-                conf_device[CONF_TRACKING_MODE]= INACTIVE_DEVICE
+            conf_device[CONF_TRACKING_MODE]= INACTIVE_DEVICE
 
             self.write_migration_log_msg(f"Extracted device: {devicename}")
             for pname, pvalue in device.items():
@@ -569,24 +566,25 @@ class iCloud3_v2v3ConfigMigration(object):
             Gb.conf_general[CONF_WAZE_USED]              = self.config_parm_general[CONF_WAZE_USED]
         elif 'distance_method' in self.config_parm_general:
             Gb.conf_general[CONF_WAZE_USED]              = self.config_parm_general['distance_method'].lower() == 'waze'
-        Gb.conf_general[CONF_WAZE_REGION]                = self.config_parm_general[CONF_WAZE_REGION].lower()
+        # Gb.conf_general[CONF_WAZE_REGION]                = self.config_parm_general[CONF_WAZE_REGION].lower()
+        Gb.conf_general[CONF_WAZE_REGION]                = WAZE_SERVERS_BY_COUNTRY_CODE.get(Gb.ha_country_code, 'row')
         Gb.conf_general[CONF_WAZE_MIN_DISTANCE]          = self.config_parm_general[CONF_WAZE_MIN_DISTANCE]
         Gb.conf_general[CONF_WAZE_MAX_DISTANCE]          = self.config_parm_general[CONF_WAZE_MAX_DISTANCE]
         Gb.conf_general[CONF_WAZE_REALTIME]              = self.config_parm_general[CONF_WAZE_REALTIME]
 
-        if Gb.conf_general[CONF_WAZE_USED]:
-            waze_region_code = waze.waze_region_by_country_code()
-            if waze_region_code != Gb.conf_general[CONF_WAZE_REGION]:
-                log_msg =  (f"\n\nWARNING: VERIFY THE WAZE REGION CODE. "
-                            f"The current Waze Region ({Gb.conf_general[CONF_WAZE_REGION].upper()}) "
-                            f"does not match the region ({waze_region_code}) "
-                            f"for the HA Country Code ({Gb.location_info['country_code']}). "
-                            f"The Region in the iCloud3 configuration was changed\n")
-                self.write_migration_log_msg(log_msg)
-                log_warning_msg(log_msg)
+        # if Gb.conf_general[CONF_WAZE_USED]:
+        #     waze_region_code = waze.waze_region_by_country_code()
+            # if waze_region_code != Gb.conf_general[CONF_WAZE_REGION]:
+            #     log_msg =  (f""
+            #                 f"The current Waze Region ({Gb.conf_general[CONF_WAZE_REGION].upper()}) "
+            #                 f"does not match the region ({waze_region_code}) "
+            #                 f"for the HA Country Code ({Gb.location_info['country_code']}). "
+            #                 f"The Region in the iCloud3 configuration was changed\n")
+            #     self.write_migration_log_msg(log_msg)
+            #     log_warning_msg(log_msg)
 
-                Gb.conf_general[CONF_WAZE_REGION] = waze_region_code.lower()
-                Gb.conf_general[CONF_WAZE_USED]   = (waze_region_code != '??')
+                # Gb.conf_general[CONF_WAZE_REGION] = waze_region_code.lower()
+                # Gb.conf_general[CONF_WAZE_USED]   = (waze_region_code != '??')
 
         # Convert Stationary Zone Parameters
         if instr(self.config_parm_general[CONF_STAT_ZONE_STILL_TIME], ':'):

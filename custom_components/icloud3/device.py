@@ -7,23 +7,18 @@ from .global_variables  import GlobalVariables as Gb
 from .const             import (DEVICE_TRACKER, DEVICE_TRACKER_DOT,
                                 NOTIFY, DISTANCE_TO_DEVICES, NEAR_DEVICE_DISTANCE,
                                 DISTANCE_TO_OTHER_DEVICES, DISTANCE_TO_OTHER_DEVICES_DATETIME,
-                                HOME, NOT_HOME, NOT_SET,
-                                UNKNOWN,
-                                PAUSED, TOWARDS,
-                                PAUSED_CAPS, RESUMING,
-                                DEVICE_TYPE_FNAME,
+                                HOME, NOT_HOME, NOT_SET, UNKNOWN, DOT, RARROW, INFO_SEPARATOR,
+                                PAUSED, TOWARDS, PAUSED_CAPS, RESUMING,
                                 DATETIME_ZERO, HHMMSS_ZERO, HIGH_INTEGER,
                                 TRACKING_NORMAL, TRACKING_PAUSED, TRACKING_RESUMED,
                                 STAT_ZONE_NO_UPDATE, STAT_ZONE_MOVE_TO_BASE,
                                 EVLOG_ALERT,
-                                BLANK_SENSOR_FIELD,
-                                DOT, RARROW,
-                                INFO_SEPARATOR,
+                                USE_RESTORE_STATE_VALUE_ON_STARTUP, BLANK_SENSOR_FIELD,
                                 FMF, FAMSHR, FMF_FNAME, FAMSHR_FNAME,
                                 IOSAPP, IOSAPP_FNAME,
                                 TRACKING_METHOD_FNAME,
                                 TRACK_DEVICE, MONITOR_DEVICE, INACTIVE_DEVICE,
-                                NAME,
+                                NAME, DEVICE_TYPE_FNAME,
                                 ICLOUD_HORIZONTAL_ACCURACY, ICLOUD_VERTICAL_ACCURACY, ICLOUD_BATTERY_STATUS,
                                 ICLOUD_BATTERY_LEVEL, ICLOUD_DEVICE_CLASS, ICLOUD_DEVICE_STATUS, ICLOUD_LOW_POWER_MODE, ID,
                                 FRIENDLY_NAME, PICTURE, ICON, BADGE,
@@ -31,8 +26,7 @@ from .const             import (DEVICE_TRACKER, DEVICE_TRACKER_DOT,
                                 DEVTRK_STATE_VALUE, LOCATION,
                                 LOCATION_SOURCE, TRIGGER, TRACKING,
                                 ZONE, ZONE_DATETIME, LAST_ZONE, FROM_ZONE, LAST_ZONE_DATETIME,
-                                ZONE_NAME, ZONE_FNAME, LAST_ZONE_NAME, LAST_ZONE_FNAME,
-                                INTERVAL,
+                                ZONE_NAME, ZONE_FNAME, LAST_ZONE_NAME, LAST_ZONE_FNAME, INTERVAL,
                                 BATTERY_SOURCE, BATTERY, BATTERY_LEVEL, BATTERY_STATUS,
                                 ZONE_DISTANCE, CALC_DISTANCE, WAZE_DISTANCE, WAZE_METHOD, HOME_DISTANCE, MAX_DISTANCE,
                                 TRAVEL_TIME, TRAVEL_TIME_MIN, DIR_OF_TRAVEL, MOVED_DISTANCE,
@@ -48,6 +42,7 @@ from .const             import (DEVICE_TRACKER, DEVICE_TRACKER_DOT,
                                 CONF_FNAME, CONF_FAMSHR_DEVICENAME,
                                 CONF_IOSAPP_DEVICE, CONF_FMF_EMAIL,
                                 CONF_TRACKING_MODE, CONF_INZONE_INTERVAL,
+
                                 )
 from .const_sensor      import  (SENSOR_LIST_DISTANCE, )
 from .                  import device_fm_zone
@@ -56,18 +51,20 @@ from .support           import restore_state
 from .helpers           import entity_io
 
 from .helpers.common    import (instr, is_inzone_zone, is_statzone, circle_letter, format_gps, zone_fname,
-                                round_to_zero, )
+                                round_to_zero, format_battery_status, )
 from .helpers.messaging import (post_event, post_error_msg, post_monitor_msg, log_exception, log_debug_msg,
                                 post_internal_error, _trace, _traceha, )
 from .helpers.time_util import ( time_now_secs, secs_to_time, secs_to_time_str, secs_since, secs_to,
                                 time_to_12hrtime, secs_to_time,
                                 datetime_to_secs, secs_to_datetime, datetime_now,
                                 secs_to_age_str,  secs_to_time_age_str, hhmmss_to_secs, )
-from .helpers.dist_util import (calc_distance_m, calc_distance_km, km_to_mi_str, m_to_ft_str, format_dist_km, )
+from .helpers.dist_util import (calc_distance_m, calc_distance_km, km_to_mi_str, m_to_ft_str,
+                                format_dist_km, format_dist_m, )
 
 from homeassistant.components.device_tracker.config_entry import TrackerEntity
 from homeassistant.util import slugify
 import traceback
+import copy
 
 #<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 class iCloud3_Device(TrackerEntity):
@@ -209,7 +206,7 @@ class iCloud3_Device(TrackerEntity):
         self.iosapp_data_altitude          = 0.0
 
         self.iosapp_data_battery_level     = 0
-        self.iosapp_data_battery_status    = UNKNOWN
+        self.iosapp_data_battery_status    = ''
         self.iosapp_data_battery_update_secs = 0
 
         # iOS App data update control variables
@@ -246,6 +243,7 @@ class iCloud3_Device(TrackerEntity):
         self.dev_data_battery_level      = 0
         self.dev_data_battery_status     = ''
         self.dev_data_battery_level_last = 0
+        self.dev_data_battery_status_last = ''
 
         self.loc_data_zone           = NOT_SET
         self.loc_data_latitude       = 0.0
@@ -282,14 +280,22 @@ class iCloud3_Device(TrackerEntity):
         self.sensors_um         = {}
         self.sensor_badge_attrs = {}
 
+        # Initialize the Device sensors[xxx] value from the restore_state file if
+        # the sensor is in the file. Otherwise, initialize to this value. This will preserve
+        # non-tracking sensors across restarts
+        for sensor, default_value in USE_RESTORE_STATE_VALUE_ON_STARTUP.items():
+            if (self.devicename in Gb.restore_state_devices
+                    and 'sensor' in Gb.restore_state_devices[self.devicename]
+                    and sensor in Gb.restore_state_devices[self.devicename]['sensors']):
+                self.sensors[sensor] = Gb.restore_state_devices[self.devicename]['sensors'][sensor]
+            else:
+                self.sensors[sensor] = default_value
+
         # Device related sensors
         self.sensors[DEVTRK_STATE_VALUE] = ''
         self.sensors[NAME]               = ''
         self.sensors[PICTURE]            = ''
         self.sensors[BADGE]              = ''
-        self.sensors[BATTERY_SOURCE]     = ''
-        self.sensors[BATTERY]            = 0
-        self.sensors[BATTERY_STATUS]     = UNKNOWN
         self.sensors[LOW_POWER_MODE]     = ''
         self.sensors[INFO]               = ''
 
@@ -1082,6 +1088,8 @@ class iCloud3_Device(TrackerEntity):
         for sensor, Sensor in update_sensors_list.items():
             Sensor.write_ha_sensor_state()
 
+        self._update_restore_state_values()
+
 #--------------------------------------------------------------------
     def write_ha_device_from_zone_sensors_state(self, sensors=None):
         ''' Update the sensors for the Device that are in the sensor_list '''
@@ -1100,12 +1108,17 @@ class iCloud3_Device(TrackerEntity):
     def _update_restore_state_values(self):
         """ Save the Device's updated sensors in the icloud3.restore_state file """
 
+        if self.update_sensors_flag is False:
+            return
+
         Gb.restore_state_devices[self.devicename] = {}
+        # Gb.restore_state_devices[self.devicename]['sensors'] = {}
         Gb.restore_state_devices[self.devicename]['last_update'] = datetime_now()
-        Gb.restore_state_devices[self.devicename]['sensors']     = self.sensors
-        Gb.restore_state_devices[self.devicename]['from_zone']   = {}
+        Gb.restore_state_devices[self.devicename]['sensors'] = copy.deepcopy(self.sensors)
+
+        Gb.restore_state_devices[self.devicename]['from_zone'] = {}
         for from_zone, DeviceFmZone in self.DeviceFmZones_by_zone.items():
-            Gb.restore_state_devices[self.devicename]['from_zone'][from_zone] = DeviceFmZone.sensors
+            Gb.restore_state_devices[self.devicename]['from_zone'][from_zone] = copy.deepcopy(DeviceFmZone.sensors)
 
         restore_state.write_storage_icloud3_restore_state_file()
 
@@ -1140,7 +1153,9 @@ class iCloud3_Device(TrackerEntity):
 
             if (self.StatZone.timer > 0
                     and self.sensors[MOVED_DISTANCE] == 0):
-                info_msg += (f"IntoStatZone@{secs_to_time_age_str(self.StatZone.timer)}, ")
+                info_msg += (f"IntoStatZone@{secs_to_time(self.StatZone.timer)}, ")
+            # elif self.StatZone.timer < 0:
+            #     info_msg += (f"IntoStatZone@{secs_to_time_age_str(abs(self.StatZone.timer))}, ")
 
             elif self.zone_change_secs > 0:
                 into_exit_text = "Into" if self.is_inzone else "Exit"
@@ -1153,7 +1168,7 @@ class iCloud3_Device(TrackerEntity):
 
             if self.NearDeviceUsed:
                 info_msg +=(f"Used Nearby Device {self.NearDeviceUsed.fname}, "
-                            f"({format_dist_m(Device.near_device_distance)}")
+                            f"({format_dist_m(self.near_device_distance)}")
 
             if self.tracking_method != self.dev_data_source.lower():
                 info_msg += (f"DataSource-{self.dev_data_source}, ")
@@ -1311,8 +1326,6 @@ class iCloud3_Device(TrackerEntity):
         {devicename: [distance_m, gps_accuracy_factor, display_text]}
         '''
 
-        # Gb.dist_to_other_devices_update_sensor_list = set()
-        # _traceha(f"---start----{self.devicename}-----{self.dev_data_source}-----------------")
         for _Device in Gb.Devices:
             if _Device is self:
                 continue
@@ -1346,22 +1359,15 @@ class iCloud3_Device(TrackerEntity):
                 self.dist_to_other_devices_datetime = datetime_now()
                 _Device.dist_to_other_devices[self.devicename] = distance_apart_data
 
-                # _traceha(f"{self.devicename}/{_Device.devicename}={before_s} --> {distance_apart_data}")
-                # _traceha(f"{self.devicename}={self.dist_to_other_devices}")
-                # _traceha(f"{_Device.devicename}={_Device.dist_to_other_devices}")
-
                 Gb.dist_to_other_devices_update_sensor_list.add(self.devicename)
                 Gb.dist_to_other_devices_update_sensor_list.add(_Device.devicename)
-
-        # _traceha(f"update {Gb.dist_to_other_devices_update_sensor_list=}")
-        # _traceha(f"---start----{self.devicename}-----{self.dev_data_source}-----------------")
 
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 #
 #   UPDATE BATTERY INFORMATION
 #
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-    def update_battery_information(self):
+    def update_iosapp_battery_information(self):
         '''
         Update the battery info from the iOS App if the iOS App data is newer than the FamShr
         battery info. Then update the sensors if it has changed.
@@ -1373,17 +1379,23 @@ class iCloud3_Device(TrackerEntity):
 
         try:
             if self.iosapp_entity[BATTERY_LEVEL]:
-                self.dev_data_battery_level  = int(entity_io.get_state(self.iosapp_entity[BATTERY_LEVEL]))
-                self.dev_data_battery_status = entity_io.get_state(self.iosapp_entity[BATTERY_STATUS])
+                self.dev_data_battery_level = int(entity_io.get_state(self.iosapp_entity[BATTERY_LEVEL]))
+                battery_status = entity_io.get_state(self.iosapp_entity[BATTERY_STATUS])
+                self.dev_data_battery_status = battery_status if battery_status else UNKNOWN
                 self.dev_data_battery_source = IOSAPP_FNAME
 
-            if self.dev_data_battery_level == self.sensors[BATTERY]:
-                    #and self.dev_data_battery_status == self.sensors[BATTERY_STATUS]):
+            if (self.dev_data_battery_level == self.sensors[BATTERY]
+                    and self.dev_data_battery_status.lower() == self.sensors[BATTERY_STATUS].lower()):
+                return False
+
+            elif self.dev_data_battery_level == 0:
                 return False
 
             self.dev_data_battery_level_last = self.sensors[BATTERY]
+            self.dev_data_battery_status_last = self.sensors[BATTERY_STATUS]
             self.sensors[BATTERY]        = self.dev_data_battery_level
-            self.sensors[BATTERY_STATUS] = self.dev_data_battery_status
+            # self.sensors[BATTERY_STATUS] = self.dev_data_battery_status
+            self.sensors[BATTERY_STATUS] = format_battery_status(self.dev_data_battery_status)
             self.sensors[BATTERY_SOURCE] = self.dev_data_battery_source
             self.write_ha_sensors_state([BATTERY, BATTERY_STATUS])
 
@@ -1411,9 +1423,11 @@ class iCloud3_Device(TrackerEntity):
         self.dev_data_device_status     = "Online"
         self.dev_data_device_status_code = 200
 
-        self.dev_data_battery_source    = IOSAPP_FNAME
-        self.dev_data_battery_level     = self.iosapp_data_battery_level
-        self.dev_data_battery_status    = self.iosapp_data_battery_status
+        if (self.iosapp_data_battery_level > 0
+                and self.iosapp_data_battery_status):
+            self.dev_data_battery_level  = self.iosapp_data_battery_level
+            self.dev_data_battery_status = self.iosapp_data_battery_status
+            self.dev_data_battery_source = IOSAPP_FNAME
 
         self.loc_data_latitude          = self.iosapp_data_latitude
         self.loc_data_longitude         = self.iosapp_data_longitude
@@ -1459,11 +1473,13 @@ class iCloud3_Device(TrackerEntity):
         self.dev_data_device_class     = RawData.device_data.get(ICLOUD_DEVICE_CLASS, "")
         self.dev_data_low_power_mode   = RawData.device_data.get(ICLOUD_LOW_POWER_MODE, "")
 
-        self.dev_data_battery_source   = RawData.tracking_method
-        battery_level                  = round(RawData.device_data.get(ICLOUD_BATTERY_LEVEL, 0) * 100)
-        if battery_level > 0:
-            self.dev_data_battery_level  = battery_level
-            self.dev_data_battery_status = RawData.device_data.get(ICLOUD_BATTERY_STATUS, UNKNOWN)
+        icloud_rawdata_battery_level = round(RawData.device_data.get(ICLOUD_BATTERY_LEVEL, 0) * 100)
+        icloud_rawdata_battery_status = RawData.device_data.get(ICLOUD_BATTERY_STATUS, '')
+        if (icloud_rawdata_battery_level > 0
+                and icloud_rawdata_battery_status):
+            self.dev_data_battery_level  = icloud_rawdata_battery_level
+            self.dev_data_battery_status = icloud_rawdata_battery_status
+            self.dev_data_battery_source = RawData.tracking_method
 
         self.dev_data_device_status_code = RawData.device_data.get(ICLOUD_DEVICE_STATUS, 0)
         self.dev_data_device_status      = DEVICE_STATUS_CODES.get(self.dev_data_device_status_code, UNKNOWN)
@@ -1521,7 +1537,8 @@ class iCloud3_Device(TrackerEntity):
             # Device related sensors
             self.sensors[INFO]                 = self.format_info_msg
             self.sensors[BATTERY]              = self.dev_data_battery_level
-            self.sensors[BATTERY_STATUS]       = self.dev_data_battery_status
+            # self.sensors[BATTERY_STATUS]       = self.dev_data_battery_status
+            self.sensors[BATTERY_STATUS]       = format_battery_status(self.dev_data_battery_status)
             self.sensors[BATTERY_SOURCE]       = self.dev_data_battery_source
             self.sensors[DEVICE_STATUS]        = self.device_status
             self.sensors[LOW_POWER_MODE]       = self.dev_data_low_power_mode

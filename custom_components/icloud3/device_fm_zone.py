@@ -35,10 +35,11 @@ from .helpers.messaging import (log_exception, post_internal_error, _trace, _tra
 
 import homeassistant.util.dt as dt_util
 import traceback
+import copy
 
 
 #<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
-class iCloud3_DeviceFmZone(object):
+class iCloud3_DeviceFmZone():
 
     def __init__(self, Device, from_zone):
         try:
@@ -86,8 +87,8 @@ class iCloud3_DeviceFmZone(object):
             post_internal_error(traceback.format_exc)
 
     def initialize_sensors(self):
-        self.sensors                       = {}
-        self.sensors_um                    = {}
+        self.sensors_um = {}
+        self.sensors    = {}
 
         self.sensors[FROM_ZONE]            = self.from_zone
         self.sensors[INTERVAL]             = 0

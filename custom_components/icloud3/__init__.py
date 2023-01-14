@@ -60,21 +60,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     Gb.operating_mode = MODE_PLATFORM
     log_info_msg(f"Initializing iCloud3 {VERSION} - Using Platform method")
 
-    # Get location information from ha
-    if location_info := await ha_location_info.async_detect_location_info(
-            async_get_clientsession(hass)):
-        Gb.location_info = {
-            "country_code": 'GB',#location_info.country_code,
-            "region_code": location_info.region_code,
-            "zip_code": location_info.zip_code,
-            "region_name": location_info.region_name,
-            "city": location_info.city,
-            "time_zone": location_info.time_zone,
-            "latitude": location_info.latitude,
-            "longitude": location_info.longitude,
-            "use_metric": location_info.use_metric,
-        }
-
+    async_get_ha_location_info()
     start_ic3.initialize_directory_filenames()
     config_file.load_storage_icloud3_configuration_file()
     start_ic3.set_icloud_username_password()
@@ -90,6 +76,20 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
 
     return True
 
+#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+#
+#   SETUP PROCESS TO START ICLOUD3
+#
+#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+async def start_icloud3(event=None):
+    Gb.initial_icloud3_loading_flag = True
+    log_debug_msg('START iCloud3 Initial Load Executor Job (iCloud3.start_icloud3)')
+    icloud3_started = await Gb.hass.async_add_executor_job(Gb.iCloud3.start_icloud3)
+
+    if icloud3_started:
+        log_info_msg(f"iCloud3 {Gb.version} started")
+    else:
+        log_error_msg(f"iCloud3 {Gb.version} Initialization Failed")
 
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>><><><><><><><><><>
 #
@@ -109,27 +109,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
             hass.config_entries.async_update_entry(entry, unique_id=DOMAIN)
         hass_data = dict(entry.data)
 
-        # Get location information from ha
-        if location_info := await ha_location_info.async_detect_location_info(
-                async_get_clientsession(hass)):
-            Gb.location_info = {
-                "country_code": location_info.country_code,
-                "region_code": location_info.region_code,
-                "zip_code": location_info.zip_code,
-                "region_name": location_info.region_name,
-                "city": location_info.city,
-                "time_zone": location_info.time_zone,
-                "latitude": location_info.latitude,
-                "longitude": location_info.longitude,
-                "use_metric": location_info.use_metric,
-            }
-        log_info_msg(f"111 {Gb.location_info['country_code']=}")
+
         Gb.hass = hass
         Gb.config_entry   = entry
         Gb.entry_id       = entry.entry_id
         Gb.operating_mode = MODE_INTEGRATION
         Gb.start_icloud3_inprocess_flag = True
 
+        async_get_ha_location_info()
         start_ic3.initialize_directory_filenames()
         config_file.load_storage_icloud3_configuration_file()
 
@@ -141,7 +128,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
         restore_state.load_storage_icloud3_restore_state_file()
         hass.config_entries.async_setup_platforms(entry, PLATFORMS)
 
-        log_info_msg(f"133 Setting up iCloud3 {VERSION} - Using Integration method")
+        log_info_msg(f"Setting up iCloud3 {VERSION} - Using Integration method")
         #----- hass test - start
 
 
@@ -178,15 +165,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     #   SETUP PROCESS TO START ICLOUD3
     #
     #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-    async def start_icloud3(event=None):
-        Gb.initial_icloud3_loading_flag = True
-        log_debug_msg('START iCloud3 Initial Load Executor Job (iCloud3.start_icloud3)')
-        icloud3_started = await Gb.hass.async_add_executor_job(Gb.iCloud3.start_icloud3)
+    # async def start_icloud3(event=None):
+    #     Gb.initial_icloud3_loading_flag = True
+    #     log_debug_msg('START iCloud3 Initial Load Executor Job (iCloud3.start_icloud3)')
+    #     icloud3_started = await Gb.hass.async_add_executor_job(Gb.iCloud3.start_icloud3)
 
-        if icloud3_started:
-            log_info_msg(f"iCloud3 {Gb.version} started")
-        else:
-            log_error_msg(f"iCloud3 {Gb.version} Initialization Failed")
+    #     if icloud3_started:
+    #         log_info_msg(f"iCloud3 {Gb.version} started")
+    #     else:
+    #         log_error_msg(f"iCloud3 {Gb.version} Initialization Failed")
 
     Gb.PyiCloud = None
     Gb.EvLog    = event_log.EventLog(Gb.hass)
@@ -239,3 +226,23 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry):
         hass.data[DOMAIN].pop(entry.entry_id)
 
     return unload_ok
+
+#-------------------------------------------------------------------------------------------
+async def async_get_ha_location_info():
+    if location_info := await ha_location_info.async_detect_location_info(
+            async_get_clientsession(Gb.hass)):
+
+        Gb.ha_location_info = {
+            "country_code": location_info.country_code,
+            "region_code": location_info.region_code,
+            "zip_code": location_info.zip_code,
+            "region_name": location_info.region_name,
+            "city": location_info.city,
+            "time_zone": location_info.time_zone,
+            "latitude": location_info.latitude,
+            "longitude": location_info.longitude,
+            "use_metric": location_info.use_metric,
+        }
+
+        Gb.ha_country_code = Gb.ha_location_info.country_code.lower()
+        Gb.ha_use_metric   = Gb.ha_location_info.use_metric

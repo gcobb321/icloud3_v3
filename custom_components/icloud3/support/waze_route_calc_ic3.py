@@ -41,31 +41,37 @@ class WazeRouteCalculator(object):
         "User-Agent": "Mozilla/5.0",
         "referer": WAZE_URL,
     }
-    VEHICLE_TYPES = ('TAXI', 'MOTORCYCLE')
-    BASE_COORDS = {
-        'US': {"lat": 40.713, "lon": -74.006},
-        'EU': {"lat": 47.498, "lon": 19.040},
-        'IL': {"lat": 31.768, "lon": 35.214},
-        'AU': {"lat": -35.281, "lon": 149.128}
-    }
-    COORD_SERVERS = {
-        'US': 'SearchServer/mozi',
-        'EU': 'row-SearchServer/mozi',
-        'IL': 'il-SearchServer/mozi',
-        'AU': 'row-SearchServer/mozi'
-    }
+    # VEHICLE_TYPES = ('TAXI', 'MOTORCYCLE')
+    # BASE_COORDS = {
+    #     'US': {"lat": 40.713, "lon": -74.006},
+    #     'EU': {"lat": 47.498, "lon": 19.040},
+    #     'IL': {"lat": 31.768, "lon": 35.214},
+    #     'AU': {"lat": -35.281, "lon": 149.128}
+    # }
+    # COORD_SERVERS = {
+    #     'US': 'SearchServer/mozi',
+    #     'EU': 'row-SearchServer/mozi',
+    #     'IL': 'il-SearchServer/mozi',
+    #     'AU': 'row-SearchServer/mozi'
+    # }
+    # COORD_MATCH = re.compile(r'^([-+]?)([\d]{1,2})(((\.)(\d+)(,)))(\s*)(([-+]?)([\d]{1,3})((\.)(\d+))?)$')
+    
     ROUTING_SERVERS = {
         'US': 'RoutingManager/routingRequest',
-        'EU': 'row-RoutingManager/routingRequest',
         'IL': 'il-RoutingManager/routingRequest',
-        'AU': 'row-RoutingManager/routingRequest'
-    }
-    COORD_MATCH = re.compile(r'^([-+]?)([\d]{1,2})(((\.)(\d+)(,)))(\s*)(([-+]?)([\d]{1,3})((\.)(\d+))?)$')
+        'ROW': 'row-RoutingManager/routingRequest',
 
+        'us': 'RoutingManager/routingRequest',
+        'il': 'il-RoutingManager/routingRequest',
+        'row': 'row-RoutingManager/routingRequest',
+
+        'EU': 'row-RoutingManager/routingRequest',
+        'AU': 'row-RoutingManager/routingRequest',
+    }
 
     def __init__(self, region, real_time):
-        self.log = logging.getLogger(__name__)
-        self.log.addHandler(logging.NullHandler())
+        # self.log = logging.getLogger(__name__)
+        # self.log.addHandler(logging.NullHandler())
 
         region = region.upper()
         if region == 'NA':

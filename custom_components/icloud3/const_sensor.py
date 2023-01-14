@@ -90,6 +90,13 @@ SENSOR_ATTRS  = 3
 SENSOR_DEFAULT= 4
 
 SENSOR_DEFINITION = {
+        # SENSOR_FIELD_ITEMS: [
+        #         'Sensor Friendly Name',
+        #         'Sensor Type-battery, text, info, distance, time, timer, timestamp, zone',
+        #         'icon-mdi:xxx,
+        #         [attributes from sensors[sensorname1, sensorname2, ...]],
+        #         default value to display at startup,
+        #       ]
         NAME: [
                 'Name',
                 'text',
@@ -118,7 +125,7 @@ SENSOR_DEFINITION = {
                 'text, title',
                 'mdi:battery-outline',
                 [BATTERY, BATTERY_SOURCE],
-                BLANK_SENSOR_FIELD],
+                ''],
         INFO: [
                 'Info',
                 'info, ha_history_exclude',
