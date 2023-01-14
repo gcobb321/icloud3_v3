@@ -1091,31 +1091,30 @@ class PyiCloud_FamilySharing():
                     continue
 
             monitor_msg = ''
-            if device_id in self.PyiCloud.RawData_by_device_id:
-                if device_id in Gb.Devices_by_icloud_device_id:
-                    _RawData = self.PyiCloud.RawData_by_device_id[device_id]
-
-                    _RawData.save_new_device_data(device_info)
-                    requested_by_flag = ' *' if requested_by_devicename == _RawData.devicename else ''
-
-                    log_rawdata(f"FamShr PyiCloud Device Data - "
-                                f"<{device_name}/{_RawData.devicename}>", _RawData.device_data)
-
-                    monitor_msg = ( f"UPDATED FamShr PyiCloudData-"
-                                    f"{_RawData.devicename}, "
-                                    f"{_RawData.location_time}/"
-                                    f"{_RawData.gps_accuracy}m"
-                                    f"{requested_by_flag}")
-                    if Gb.EvLog:
-                        post_monitor_msg(monitor_msg)
-                    else:
-                        log_debug_msg(monitor_msg)
-
-            else:
+            if device_id not in self.PyiCloud.RawData_by_device_id:
                 self._create_RawData_object(device_id, device_name, device_info)
 
-        if not self.PyiCloud.RawData_by_device_id:
-            raise PyiCloudNoDevicesException()
+            else:
+                _RawData = self.PyiCloud.RawData_by_device_id[device_id]
+
+                _RawData.save_new_device_data(device_info)
+                requested_by_flag = ' *' if requested_by_devicename == _RawData.devicename else ''
+
+                log_rawdata(f"FamShr PyiCloud Device Data - "
+                            f"<{device_name}/{_RawData.devicename}>", _RawData.device_data)
+
+                monitor_msg = ( f"UPDATED FamShr PyiCloudData-"
+                                f"{_RawData.devicename}, "
+                                f"{_RawData.location_time}/"
+                                f"{_RawData.gps_accuracy}m"
+                                f"{requested_by_flag}")
+                if Gb.EvLog:
+                    post_monitor_msg(monitor_msg)
+                else:
+                    log_debug_msg(monitor_msg)
+
+        # if not self.PyiCloud.RawData_by_device_id:
+        #     raise PyiCloudNoDevicesException()
 
 #----------------------------------------------------------------------------
     def _create_RawData_object(self, device_id, device_name, device_info):
