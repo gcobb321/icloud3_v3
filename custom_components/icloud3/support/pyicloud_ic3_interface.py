@@ -109,11 +109,17 @@ def verify_pyicloud_setup_status():
                                     called_from='start_ic3')
 
     else:
-        # __init__ set up was not authenticated, start all over
-        event_msg =(f"iCloud Location Svcs Interface > Started during initialization"
-                    f"{CRLF_DOT}Completed: None"
-                    f"{CRLF_DOT}Working on now: {list_to_str(Gb.PyiCloud.init_step_needed)}")
-        post_event(event_msg)
+        if Gb.PyiCloudInit:
+            # __init__ set up was not authenticated, start all over
+            event_msg =(f"iCloud Location Svcs Interface > Started during initialization"
+                        f"{CRLF_DOT}Completed: None"
+                        f"{CRLF_DOT}Working on now: {list_to_str(Gb.PyiCloudInit.init_step_needed)}")
+            post_event(event_msg)
+        else:
+            event_msg =(f"iCloud Location Svcs Interface > Started during initialization"
+                        f"{CRLF_DOT}Completed: None"
+                        f"{CRLF_DOT}Working on now: Restarting the interface now")
+            post_event(event_msg)
 
         create_PyiCloudService(Gb.PyiCloud, called_from='start_ic3')
 
