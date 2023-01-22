@@ -27,7 +27,7 @@ from .const             import (DEVICE_TRACKER, DEVICE_TRACKER_DOT,
                                 LOCATION_SOURCE, TRIGGER, TRACKING,
                                 ZONE, ZONE_DATETIME, LAST_ZONE, FROM_ZONE, LAST_ZONE_DATETIME,
                                 ZONE_NAME, ZONE_FNAME, LAST_ZONE_NAME, LAST_ZONE_FNAME, INTERVAL,
-                                BATTERY_SOURCE, BATTERY, BATTERY_LEVEL, BATTERY_STATUS,
+                                BATTERY_SOURCE, BATTERY, BATTERY_LEVEL, BATTERY_STATUS, BATTERY_STATUS_FNAME,
                                 ZONE_DISTANCE, CALC_DISTANCE, WAZE_DISTANCE, WAZE_METHOD, HOME_DISTANCE, MAX_DISTANCE,
                                 TRAVEL_TIME, TRAVEL_TIME_MIN, DIR_OF_TRAVEL, MOVED_DISTANCE,
                                 DEVICE_STATUS, LOW_POWER_MODE, RAW_MODEL, MODEL, MODEL_DISPLAY_NAME,
@@ -51,7 +51,7 @@ from .support           import restore_state
 from .helpers           import entity_io
 
 from .helpers.common    import (instr, is_inzone_zone, is_statzone, circle_letter, format_gps, zone_fname,
-                                round_to_zero, format_battery_status, )
+                                round_to_zero, )
 from .helpers.messaging import (post_event, post_error_msg, post_monitor_msg, log_exception, log_debug_msg,
                                 post_internal_error, _trace, _traceha, )
 from .helpers.time_util import ( time_now_secs, secs_to_time, secs_to_time_str, secs_since, secs_to,
@@ -387,7 +387,7 @@ class iCloud3_Device(TrackerEntity):
         self.iosapp_entity = {
             DEVICE_TRACKER: '',
             TRIGGER: '',
-            BATTERY_LEVEL: '',
+            BATTERY_LEVEL: 0,
             BATTERY_STATUS: '',
             NOTIFY: '',
         }
@@ -605,6 +605,24 @@ class iCloud3_Device(TrackerEntity):
     @property
     def iosapp_data_gps(self):
         return (self.iosapp_data_latitude, self.iosapp_data_longitude)
+
+    #--------------------------------------------------------------------
+    @property
+    def format_battery_level(self):
+        return f"{self.dev_data_battery_level}%"
+
+    @property
+    def format_battery_status(self):
+        return f"{BATTERY_STATUS_FNAME.get(self.dev_data_battery_status, self.dev_data_battery_status.title())}"
+
+    @property
+    def format_battery_status_source(self):
+        return (f"{BATTERY_STATUS_FNAME.get(self.dev_data_battery_status, self.dev_data_battery_status.title())} "
+                f"({self.dev_data_battery_source})")
+
+    @property
+    def format_battery_level_status_source(self):
+        return f"{self.format_battery_level}, {self.format_battery_status_source}"
 
 #--------------------------------------------------------------------
     @property
@@ -1173,8 +1191,8 @@ class iCloud3_Device(TrackerEntity):
             if self.tracking_method != self.dev_data_source.lower():
                 info_msg += (f"DataSource-{self.dev_data_source}, ")
 
-            if 20 > self.dev_data_battery_level < 0:
-                info_msg += f"Battery-{self.dev_data_battery_level}%, "
+            if self.dev_data_battery_level > 0:
+                info_msg += f"Battery-{self.format_battery_level}, "
 
             if self.is_gps_poor:
                 info_msg += (f"Poor.GPS.Accuracy, Dist-{self.loc_data_gps_accuracy}m "
@@ -1379,7 +1397,11 @@ class iCloud3_Device(TrackerEntity):
 
         try:
             if self.iosapp_entity[BATTERY_LEVEL]:
-                self.dev_data_battery_level = int(entity_io.get_state(self.iosapp_entity[BATTERY_LEVEL]))
+                try:
+                    self.dev_data_battery_level = int(entity_io.get_state(self.iosapp_entity[BATTERY_LEVEL]))
+                except:
+                    self.dev_data_battery_leve = 0
+
                 battery_status = entity_io.get_state(self.iosapp_entity[BATTERY_STATUS])
                 self.dev_data_battery_status = battery_status if battery_status else UNKNOWN
                 self.dev_data_battery_source = IOSAPP_FNAME
@@ -1392,17 +1414,17 @@ class iCloud3_Device(TrackerEntity):
                 return False
 
             self.dev_data_battery_level_last = self.sensors[BATTERY]
-            self.dev_data_battery_status_last = self.sensors[BATTERY_STATUS]
+            # self.dev_data_battery_status_last = self.sensors[BATTERY_STATUS]
+
             self.sensors[BATTERY]        = self.dev_data_battery_level
-            # self.sensors[BATTERY_STATUS] = self.dev_data_battery_status
-            self.sensors[BATTERY_STATUS] = format_battery_status(self.dev_data_battery_status)
             self.sensors[BATTERY_SOURCE] = self.dev_data_battery_source
+            self.sensors[BATTERY_STATUS] = self.format_battery_status
             self.write_ha_sensors_state([BATTERY, BATTERY_STATUS])
 
             return True
 
         except Exception as err:
-            log_exception(err)
+            # log_exception(err)
             return False
 
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -1537,8 +1559,7 @@ class iCloud3_Device(TrackerEntity):
             # Device related sensors
             self.sensors[INFO]                 = self.format_info_msg
             self.sensors[BATTERY]              = self.dev_data_battery_level
-            # self.sensors[BATTERY_STATUS]       = self.dev_data_battery_status
-            self.sensors[BATTERY_STATUS]       = format_battery_status(self.dev_data_battery_status)
+            self.sensors[BATTERY_STATUS]       = self.format_battery_status
             self.sensors[BATTERY_SOURCE]       = self.dev_data_battery_source
             self.sensors[DEVICE_STATUS]        = self.device_status
             self.sensors[LOW_POWER_MODE]       = self.dev_data_low_power_mode
@@ -1589,11 +1610,16 @@ class iCloud3_Device(TrackerEntity):
 
             # Zone related sensors
             if self.loc_data_zone != self.sensor_zone:
-                self.sensors[LAST_ZONE]      = self.sensors[ZONE]
+                last_zone = self.sensors[ZONE]
+                self.sensors[LAST_ZONE]      = last_zone
+                self.sensors[LAST_ZONE_NAME] = Gb.Zones_by_zone.get(last_zone, last_zone.title()).name
+                self.sensors[LAST_ZONE_FNAME]= Gb.Zones_by_zone.get(last_zone, last_zone.title()).fname
                 self.sensors[ZONE_DATETIME]  = self.zone_change_datetime
+
             self.sensors[ZONE]               = self.loc_data_zone
-            # v3.9.9-beta 3-Do not capitalize state value
-            # self.sensors[DEVTRK_STATE_VALUE] = self.loc_data_zone_fname
+            self.sensors[ZONE_NAME]          = Gb.Zones_by_zone.get(self.loc_data_zone, self.loc_data_zone.title()).name
+            self.sensors[ZONE_FNAME]         = Gb.Zones_by_zone.get(self.loc_data_zone, self.loc_data_zone.title()).fname
+
             self.sensors[DEVTRK_STATE_VALUE] = self.loc_data_zone
 
             if self.sensors[FROM_ZONE] != HOME:

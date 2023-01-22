@@ -90,6 +90,8 @@ def stage_2_prepare_configuration():
         start_ic3.create_Zones_object()
         start_ic3.create_Waze_object()
 
+        Gb.WazeHist.load_track_from_zone_table()
+
     except Exception as err:
         log_exception(err)
 
@@ -147,8 +149,6 @@ def stage_3_setup_configured_devices():
             Gb.config_track_devices_change_flag = True
 
         start_ic3.create_Devices_object()
-
-        Gb.WazeHist.load_track_from_zone_table()
 
     except Exception as err:
         log_exception(err)
@@ -286,7 +286,6 @@ def stage_6_initialization_complete():
     Gb.startup_log_msgs = ''
 
     start_ic3.display_object_lists()
-
 
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 def stage_7_initial_locate():

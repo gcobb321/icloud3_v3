@@ -1,12 +1,12 @@
 
 
-from ..global_variables import GlobalVariables as Gb
-from ..const            import ( HIGH_INTEGER, HHMMSS_ZERO, DATETIME_ZERO, DATETIME_FORMAT, WAZE_USED, )
+from ..global_variables         import GlobalVariables as Gb
+from ..const                    import ( HIGH_INTEGER, HHMMSS_ZERO, DATETIME_ZERO, DATETIME_FORMAT, WAZE_USED, )
 
-from .messaging         import (_trace, _traceha, post_event, internal_error_msg, )
-from .common            import instr
+from .messaging                 import (_trace, _traceha, post_event, internal_error_msg, )
+from .common                    import instr
 
-import homeassistant.util.dt       as dt_util
+import homeassistant.util.dt    as dt_util
 import time
 
 
@@ -15,6 +15,11 @@ import time
 #   Time conversion and formatting functions
 #
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+def time_now():
+    ''' Return now in MM/DD/YYYY hh:mm:ss format'''
+    return (dt_util.now().strftime(DATETIME_FORMAT)[11:19])
+
+#--------------------------------------------------------------------
 def time_now_secs():
     ''' Return the current timestamp seconds '''
 
@@ -24,11 +29,6 @@ def time_now_secs():
 def datetime_now():
     ''' Return now in MM/DD/YYYY hh:mm:ss format'''
     return (dt_util.now().strftime(DATETIME_FORMAT)[0:19])
-
-#--------------------------------------------------------------------
-def time_now():
-    ''' Return now in MM/DD/YYYY hh:mm:ss format'''
-    return (dt_util.now().strftime(DATETIME_FORMAT)[11:19])
 
 #--------------------------------------------------------------------
 def msecs_to_time(secs):

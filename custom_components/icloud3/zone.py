@@ -68,16 +68,16 @@ class iCloud3_Zone(object):
             ztitle = ztitle.replace(' Ipod', ' iPod')
 
         self.title      = ztitle
-        self.name       = ztitle.replace(" ","")
-        self.fname      = zone_data.get(FRIENDLY_NAME, ztitle)
+        self.name       = ztitle.replace(" ","").replace("'", "`")
         self.display_as = self.name
-        self.name = self.fname = self.display_as.replace("'", "`")
+        #self.name       = self.display_as
+        self.fname      = zone_data.get(FRIENDLY_NAME, ztitle)
 
         self.latitude   = zone_data.get(LATITUDE, 0)
         self.longitude  = zone_data.get(LONGITUDE, 0)
         self.passive    = zone_data.get(PASSIVE, True)
         self.radius_m   = round(zone_data.get(RADIUS, 100))
-    
+
         self.entity_id  = zone_data.get(ID, zone.lower())[:6]
         self.unique_id  = zone_data.get('unique_id', zone.lower())
 
@@ -149,7 +149,7 @@ class iCloud3_StationaryZone(iCloud3_Zone):
 
         self.base_latitude  = Gb.stat_zone_base_latitude
         self.base_longitude = Gb.stat_zone_base_longitude
-        
+
         statzone_data = {   LATITUDE: self.base_latitude,
                             LONGITUDE: self.base_longitude,
                             RADIUS: 1, PASSIVE: True}
@@ -295,7 +295,7 @@ class iCloud3_StationaryZone(iCloud3_Zone):
 
         if self.Device.old_loc_poor_gps_cnt > 0:
             return
-            
+
         try:
             latitude  = self.Device.loc_data_latitude
             longitude = self.Device.loc_data_longitude
@@ -328,7 +328,7 @@ class iCloud3_StationaryZone(iCloud3_Zone):
             self.timer                 = 0
             self.radius_m              = self.inzone_radius
 
-            Gb.hass.states.set(f"zone.{self.zone}", "zoning", self.away_attrs, force_update=True)
+            Gb.hass.states.async_set(f"zone.{self.zone}", "zoning", self.away_attrs, force_update=True)
 
             # Set Stationary Zone at new location
             self.Device.loc_data_zone      = self.zone
@@ -348,6 +348,10 @@ class iCloud3_StationaryZone(iCloud3_Zone):
 
             return False
 
+# #--------------------------------------------------------------------
+#     def set_stat_zone_state(self):
+#             Gb.hass.states.set(f"zone.{self.zone}", "zoning", self.away_attrs, force_update=True)
+
 #--------------------------------------------------------------------
     def move_stationary_zone_to_base_location(self):
         ''' Move stationary zone back to base location '''
@@ -356,7 +360,8 @@ class iCloud3_StationaryZone(iCloud3_Zone):
         self.clear_timer
         self.radius_m = 1
 
-        Gb.hass.states.set(f"zone.{self.zone}", "zoning", self.base_attrs, force_update=True)
+        self.base_attrs[LATITUDE] += 20
+        Gb.hass.states.async_set(f"zone.{self.zone}", "zoning", self.base_attrs, force_update=True)
 
         event_msg =(f"Reset Stationary Zone Location > {self.zone}, "
                     f"Moved back to Base Location-{format_gps(self.base_latitude, self.base_longitude, 1)}")

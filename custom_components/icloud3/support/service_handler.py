@@ -8,10 +8,10 @@ import voluptuous as vol
 
 from ..global_variables     import GlobalVariables as Gb
 from ..const                import (DOMAIN,
-                                    WAZE,
                                     HHMMSS_ZERO, HIGH_INTEGER,
+                                    WAZE,
                                     CMD_RESET_PYICLOUD_SESSION,
-                                    LOCATION,
+                                    LOCATION, NEXT_UPDATE_TIME, NEXT_UPDATE,
                                     CONF_DEVICENAME, CONF_ZONE, CONF_COMMAND, CONF_LOG_LEVEL,
                                     )
 
@@ -28,7 +28,6 @@ from ..helpers.time_util    import (secs_to_time, time_str_to_secs, datetime_now
 
 # EvLog Action Commands
 CMD_ERROR                  = 'error'
-# CMD_INTERVAL               = 'interval'
 CMD_PAUSE                  = 'pause'
 CMD_RESUME                 = 'resume'
 CMD_WAZE                   = 'waze'
@@ -67,9 +66,7 @@ NO_EVLOG_ACTION_POST_EVENT = [
                     REFRESH_EVLOG_FNAME,
                     HIDE_TRACKING_MONITORS_FNAME,
                     SHOW_TRACKING_MONITORS_FNAME,
-                    CMD_DISPLAY_STARTUP_EVENTS,
-
-]
+                    CMD_DISPLAY_STARTUP_EVENTS, ]
 
 SERVICE_SCHEMA = vol.Schema({
     vol.Optional(CONF_COMMAND): cv.string,
@@ -94,12 +91,12 @@ def process_update_service_request(call):
     update_service_handler(action, action_fname, devicename)
 
 #--------------------------------------------------------------------
-def process_update_icloud3_configuration_request(call):
-    """
-    Call the Icloud3 edit configuration service_request function
-    that initiates a config_flow update
-    """
-    update_configuration_parameters_handler()
+# def process_update_icloud3_configuration_request(call):
+#     """
+#     Call the Icloud3 edit configuration service_request function
+#     that initiates a config_flow update
+#     """
+#     update_configuration_parameters_handler()
 
 #--------------------------------------------------------------------
 def process_restart_icloud3_service_request(call):
@@ -159,10 +156,6 @@ def update_service_handler(action=None, action_fname=None, devicename=None):
                             of the iloud3 attributes. This does the see
                             service call and then an update.
     - reset            = reset everything and rescans all of the devices
-    - debug interval   = displays the interval formula being used
-    - debug gps        = simulates bad gps accuracy
-    - debug old        = simulates that the location informaiton is old
-    - info xxx         = the same as 'debug'
     - location         = request location update from ios app
     """
     # Ignore Action requests during startup. They are caused by the devicename changes
@@ -186,7 +179,9 @@ def update_service_handler(action=None, action_fname=None, devicename=None):
 
     action        = action.replace(f"{CONF_ZONE} ", f"{CONF_ZONE}:")
     action        = action.replace(f"{WAZE} ", f"{WAZE}:")
+    action        = action.replace('eventlog', 'monitor')
     action        = action.replace(' ', '')
+
     action_parts  = action.split(':')
     action        = action_parts[0]
     try:
@@ -204,38 +199,37 @@ def update_service_handler(action=None, action_fname=None, devicename=None):
     if action in GLOBAL_ACTIONS:
         _handle_global_action(action, action_option)
 
-    else:
-        if (action == CMD_PAUSE and devicename is None):
-            Gb.all_tracking_paused_flag = True
+    elif devicename == 'startup_log':
+        pass
+
+    elif action in DEVICE_ACTIONS:
+        if devicename:
+            Devices = [Gb.Devices_by_devicename[devicename]]
+        else:
+            # Devices = [Device for Device in Gb.Devices_by_devicename.values()]
+            Devices = Gb.Devices
+
+        if action == CMD_PAUSE:
+            Gb.all_tracking_paused_flag = (devicename is None)
             Gb.EvLog.display_user_message('Tracking is Paused', alert=True)
+            for Device in Devices:
+                Device.pause_tracking
 
         elif action == CMD_RESUME:
             Gb.all_tracking_paused_flag = False
             Gb.EvLog.display_user_message('', clear_alert=True)
-
-        for Device in Gb.Devices_by_devicename.values():
-            if devicename and Device.devicename != devicename:
-                continue
-
-            info_msg = None
-            if action == CMD_PAUSE:
-                Device.pause_tracking
-
-            elif action == CMD_RESUME:
+            for Device in Devices:
                 Device.resume_tracking
 
-            elif action == LOCATION:
+        elif action == CMD_REQUEST_LOCATION:
+            for Device in Devices:
                 _handle_action_device_location(Device)
-
-            else:
-                info_msg = (f"INVALID ACTION > {action}")
-                Device.display_info_msg( info_msg)
 
     if devicename == 'startup_log':
         pass
     elif (Gb.EvLog.evlog_attrs['fname'] == 'Startup Events'
             and action == 'log_level'
-            and action_option == 'eventlog'):
+            and action_option == 'monitor'):
         devicename = 'startup_log'
 
     Gb.EvLog.update_event_log_display(devicename)
@@ -360,42 +354,37 @@ def handle_action_log_level(action_option, change_conf_log_level=True):
         new_log_rawdata_flag = False
 
     if instr(action_option, 'rawdata'):
-        new_log_debug_flag = new_log_rawdata_flag = (not Gb.log_rawdata_flag)
-        if new_log_rawdata_flag:
-            Gb.log_rawdata_flag_restart = True
+        new_log_rawdata_flag = (not Gb.log_rawdata_flag)
+        new_log_debug_flag   = True if new_log_rawdata_flag else new_log_debug_flag
 
-    if instr(action_option, 'eventlog'):
+    if instr(action_option, 'monitor'):
         Gb.evlog_trk_monitors_flag = (not Gb.evlog_trk_monitors_flag)
 
-    event_msg = ""
-    if Gb.evlog_trk_monitors_flag: event_msg += "Event Log Details: On, "
-    if new_log_debug_flag:         event_msg += "Debug: On, "
-    if new_log_rawdata_flag:       event_msg += "Rawdata: On, "
-
-    event_msg = "Logging: Off" if event_msg == "" else event_msg
-    event_msg =(f"Log Level State > {event_msg}")
+    event_msg = "Debug Logging Status > "
+    # event_msg += f"Tracking Monitors-{Gb.evlog_trk_monitors_flag}, "
+    event_msg += f"Debug-{new_log_debug_flag}, "
+    event_msg += f"Rawdata-{new_log_rawdata_flag}"
     post_event(event_msg)
 
-    if (change_conf_log_level
-            and new_log_debug_flag is False
-            and Gb.conf_general[CONF_LOG_LEVEL] != 'info'):
-        Gb.conf_general[CONF_LOG_LEVEL] = 'info'
-        config_file.write_storage_icloud3_configuration_file()
-
+    # Create a new debug.log file if the current one was created over 24-hours ago
     if new_log_debug_flag:
-        # Create a new debug.log file if the current one was created over 24-hours ago
-        new_debug_log = (Gb.ic3_debug_log_new_file_secs == 0
+        new_debug_log_file = (Gb.ic3_debug_log_new_file_secs == 0
                             or secs_since(Gb.ic3_debug_log_new_file_secs) > 80000)
 
-        open_ic3_debug_log_file(new_debug_log=new_debug_log)
+        open_ic3_debug_log_file(new_debug_log=new_debug_log_file)
         write_ic3_debug_log_recd(f"\n{'-'*25} Opened by Event Log > Actions {'-'*25}")
+        write_ic3_debug_log_recd(event_msg)
 
     elif Gb.iC3DebugLogFile is not None:
+        write_ic3_debug_log_recd(event_msg)
         write_ic3_debug_log_recd(f"{'-'*25} Closed by Event Log > Actions {'-'*25}\n")
         close_ic3_debug_log_file()
 
     Gb.log_debug_flag   = new_log_debug_flag
     Gb.log_rawdata_flag = new_log_rawdata_flag
+
+def _on_off_text(condition):
+    return 'On' if condition else 'Off'
 
 #--------------------------------------------------------------------
 def close_reopen_ic3_debug_log_file():
@@ -404,13 +393,12 @@ def close_reopen_ic3_debug_log_file():
 #--------------------------------------------------------------------
 def _handle_action_device_location(Device):
 
-    Device.display_info_msg( 'Sending Location Request')
+    Device.display_info_msg('Updating Location')
     if Device.iosapp_monitor_flag:
         iosapp_interface.request_location(Device, force_request=True)
-    else:
-        Device.DeviceFmZoneHome.next_update_time = HHMMSS_ZERO
-        Device.DeviceFmZoneHome.next_update_secs = 0
-        Device.override_interval_seconds         = 0
+
+    Device.resume_tracking
+    Device.write_ha_sensor_state(NEXT_UPDATE, 'Locating')
 
 #--------------------------------------------------------------------
 def set_ha_notification(title, message, issue=True):

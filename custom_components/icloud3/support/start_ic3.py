@@ -860,6 +860,12 @@ def create_Zones_object():
                 f"DistMoveLimit-{format_dist_km(dist_move_limit)}")
     post_event(event_msg)
 
+    # Cycle thru the Device's conf and get all zones that are tracked from for all devices
+    Gb.TrackedZones_by_zone = {}
+    for conf_device in Gb.conf_devices:
+        for from_zone in conf_device[CONF_TRACK_FROM_ZONES]:
+            Gb.TrackedZones_by_zone[from_zone] = Gb.Zones_by_zone[from_zone]
+
 
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 #
@@ -940,9 +946,9 @@ def create_Devices_object():
         Gb.conf_devicenames      = []
         Gb.conf_famshr_devicenames = []
         Gb.Devices_by_devicename = {}
-        Gb.TrackedZones_by_zone  = {}
-        if Gb.track_from_base_zone != HOME and Gb.track_from_home_zone:
-            Gb.TrackedZones_by_zone[HOME] = Gb.HomeZone
+        # Gb.TrackedZones_by_zone  = {}
+        # if Gb.track_from_base_zone != HOME and Gb.track_from_home_zone:
+        #     Gb.TrackedZones_by_zone[HOME] = Gb.HomeZone
 
         for conf_device in Gb.conf_devices:
             devicename = conf_device[CONF_IC3_DEVICENAME]
@@ -1026,13 +1032,6 @@ def setup_tracked_devices_for_famshr(PyiCloud=None):
     if PyiCloud is None: PyiCloud = Gb.PyiCloud
     _FamShr = PyiCloud.FamilySharing
 
-    # devices_desc = get_famshr_devices_local(PyiCloud)
-    # _FamShr.device_id_by_device_fname   = devices_desc[0]   # Example: n6ofM9CX4j...
-    # _FamShr.device_fname_by_device_id   = devices_desc[1]   # Example: Gary-iPhone14
-    # _FamShr.device_info_by_device_fname = devices_desc[2]   # Example: 'Lillian-Watch': 'Lillian-Watch (Apple Watch 8 (Watch6,16)'
-    # _FamShr.device_model_info_by_fname  = devices_desc[3]   # [raw_model,model,model_display_name]
-
-                                                    # 'Lillian-Watch': ['Watch6,16', 'Apple Watch', 'Apple Watch 8']
     Gb.famshr_device_verified_cnt = 0
     event_msg = "Family Sharing List devices > "
     if _FamShr.device_fname_by_device_id == {}:
@@ -1343,6 +1342,9 @@ def get_famshr_devices_local(PyiCloud):
     Cycle through famshr data and get devices that can be tracked for the
     icloud device selection list
     '''
+
+    return
+
     device_id_by_device_fname   = {}    # Example: {'Gary-iPhone': 'n6ofM9CX4j...'}
     device_fname_by_device_id   = {}    # Example: {'n6ofM9CX4j...': 'Gary-iPhone14'}
     device_info_by_device_fname = {}    # Example: {'Gary-iPhone': 'Gary-iPhone (iPhone 14 Pro (iPhone15,2)'}
@@ -1443,6 +1445,8 @@ def get_fmf_devices_local(PyiCloud):
     Cycle through fmf following, followers and contact details data and get
     devices that can be tracked for the icloud device selection list
     '''
+    return
+
     device_id_by_fmf_email      = {}
     fmf_email_by_device_id      = {}
     device_info_by_fmf_email    = {}
@@ -1526,7 +1530,7 @@ def set_device_tracking_method_famshr_fmf(PyiCloud=None):
                     Gb.Devices_by_icloud_device_id[device_id] = Device
                     _RawData = PyiCloud.RawData_by_device_id[device_id]
                     _RawData.device = Device
-                    _RawData.devicename = devicename
+                    # _RawData.devicename = devicename
                     Device.PyiCloud_RawData_famshr = _RawData
 
             if Device.device_id_fmf:
@@ -1537,7 +1541,7 @@ def set_device_tracking_method_famshr_fmf(PyiCloud=None):
                     Gb.Devices_by_icloud_device_id[device_id] = Device
                     _RawData = PyiCloud.RawData_by_device_id[device_id]
                     _RawData.device = Device
-                    _RawData.devicename = devicename
+                    # _RawData.devicename = devicename
                     Device.PyiCloud_RawData_fmf = _RawData
 
             if (Device.iosapp_monitor_flag
@@ -1665,6 +1669,14 @@ def setup_tracked_devices_for_iosapp():
 
         # Check if the specified iosapp device tracker is valid and in the entity registry
         if conf_iosapp_device.startswith('Search: ') is False:
+            if conf_iosapp_device not in iosapp_id_by_iosapp_devicename:
+                alert_msg =(f"{EVLOG_ALERT}Configuration Alert > {Device.fname_devicename} > "
+                            f"The iOS `device_tracker.{conf_iosapp_device}` "
+                            f"entity was not found"
+                            f"{CRLF_DOT}Verify the iOS App device selected in the configuration")
+                post_event(alert_msg)
+                continue
+
             iosapp_devicename = conf_iosapp_device
         else:
             conf_iosapp_device = conf_iosapp_device.replace('Search: ', '')
@@ -1674,8 +1686,9 @@ def setup_tracked_devices_for_iosapp():
 
             if len(monitored_iosapp_devices) == 0:
                 alert_msg = (f"{EVLOG_ALERT}Configuration Alert > {Device.fname_devicename} > "
-                        f"Search for iOS `device_tracker.{conf_iosapp_device}_???` "
-                        f"entity failure. No mobile_app entity was found. ")
+                        f"The iOS `device_tracker.{conf_iosapp_device}_???` "
+                        f"search failed. No mobile_app entity was found"
+                        f"{CRLF_DOT}Verify the iOS App device selected in the configuration")
                 post_event(alert_msg)
                 continue
 

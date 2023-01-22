@@ -48,7 +48,7 @@ from .const             import (VERSION,
                                 FMF, FAMSHR, IOSAPP, IOSAPP_FNAME,
                                 ENTER_ZONE,
                                 LATITUDE, LONGITUDE, GPS, INTERVAL,
-                                BATTERY, BATTERY_LEVEL, BATTERY_STATUS, BATTERY_SOURCE, BATTERY_STATUS_FNAME,
+                                BATTERY, BATTERY_LEVEL, BATTERY_STATUS, BATTERY_SOURCE,
                                 NEXT_UPDATE,
                                 )
 from .const_sensor      import (SENSOR_LIST_DISTANCE, )
@@ -425,17 +425,11 @@ class iCloud3:
                 return
 
             if Device.update_iosapp_battery_information():
-                battery_status = Device.dev_data_battery_status
-                event_msg = (f"Battery Status > "
-                            f"Level-{Device.dev_data_battery_level_last}%{RARROW}{Device.dev_data_battery_level}%, "
-                            f"{BATTERY_STATUS_FNAME.get(battery_status, battery_status.title())} "
-                            f"({Device.dev_data_battery_source})")
-                if Device.dev_data_battery_status_last != battery_status:
-                    Device.dev_data_battery_status_last = battery_status
+                event_msg = f"Battery Info > Level-{Device.format_battery_level_status_source}"
+
+                if Device.dev_data_battery_status_last != Device.dev_data_battery_status:
+                    Device.dev_data_battery_status_last = Device.dev_data_battery_status
                     post_event(Device.devicename, event_msg)
-                else:
-                    post_monitor_msg(Device.devicename, event_msg)
-                log_debug_msg(Device.devicename, event_msg)
 
         except Exception as err:
             log_exception(err)

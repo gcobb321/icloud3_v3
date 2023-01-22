@@ -54,8 +54,8 @@ from .const             import (DOMAIN,
                                 CONF_SENSORS_MONITORED_DEVICES,
                                 CONF_SENSORS_DEVICE,
                                 CONF_SENSORS_TRACKING_UPDATE, CONF_SENSORS_TRACKING_TIME, CONF_SENSORS_TRACKING_DISTANCE,
-                                CONF_SENSORS_TRACK_FROM_ZONES,
-                                CONF_SENSORS_TRACKING_OTHER, CONF_SENSORS_ZONE, CONF_SENSORS_OTHER,
+                                CONF_SENSORS_TRACK_FROM_ZONES, CONF_SENSORS_TRACKING_OTHER, CONF_SENSORS_ZONE,
+                                CONF_SENSORS_OTHER, CONF_EXCLUDED_SENSORS,
                                 CONF_PARAMETER_TIME_STR, CONF_PARAMETER_FLOAT,
                                 CF_PROFILE, CF_DATA_TRACKING, CF_DATA_GENERAL,
                                 DEFAULT_DEVICE_CONF, DEFAULT_GENERAL_CONF,
@@ -110,7 +110,7 @@ MENU_KEY_TEXT = {
         'inzone_intervals': 'INZONE INTERVALS > Default inZone intervals for different device types, inZone Interval if the iOS App is not installed, Other inZone Controls ',
         'waze': 'WAZE ROUTE DISTANCE & TIME, WAZE HISTORY DATABASE > Route Server Location, Min/Max Intervals, Waze History Database Parameters and Controls',
         'special_zones': 'SPECIAL ZONES - Pass Through Zone, Track From Zone, Stationary Zone',
-        'sensors': 'SENSORS > Sensors created by iCloud3',
+        'sensors': 'SENSORS > Sensors created by iCloud3, Exclude Specific Sensors from being created',
         'next_page_0': 'NEXT PAGE 1 > ● Location Data Source & iCloud Account, ● iCloud3 Devices, ● Sensors, ● Display Text As, ● Action Commands',
         'next_page_1': 'NEXT PAGE 2 > ● Event Log Configuration, ● Waze Route Time & Dist, ● inZone Intervals, ● Special Zones, ● Other Parameters',
         'select': 'SELECT > Select the parameter update form',
@@ -139,31 +139,39 @@ menu_action = [
     ]
 
 OPT_ACTION_ITEMS_KEY_TEXT = {
+        'next_page_info': 'NEXT PAGE > ^info_field^',
+        'next_page': 'NEXT PAGE > Save changes. Display the next page',
+        'next_page_device': 'NEXT PAGE > Friendly Name, Track-from-Zones, Other Setup Fields',
+        'next_page_waze': 'NEXT PAGE > Waze History Database parameters',
+
         'select_form': 'SELECT > Select the parameter update form',
-        'update_device': 'UPDATE DEVICE > Update the selected device',
-        'select_text_as': 'SELECT > Update selected `Display Text As` field',
+
         'log_in_icloud_acct': 'LOGIN > Log into the iCloud Account',
         'enter_verification_code': 'ENTER VERIFICATION CODE > Enter the 6-digit Verification Code',
         "icloud_acct_reauth": "RESET AND REAUTHENTICATE ACCOUNT > Request a new Verification Code",
         'show_username_password': 'SHOW/HIDE USERNAME/PASSWORD > Show or hide the Username and Password',
-        'next_page': 'NEXT PAGE > Save changes. Display the next page',
-        'next_page_info': 'NEXT PAGE > ^info_field^',
-        'next_page_device': 'NEXT PAGE > Friendly Name, Track-from-Zones, Other Setup Fields',
-        'next_page_waze': 'NEXT PAGE > Waze History Database parameters',
+        'update_device': 'UPDATE DEVICE > Update the selected device',
         'add_device': 'ADD DEVICE > Add a device to be tracked by iCloud3',
         'delete_device': 'DELETE DEVICE(S), OTHER DEVICE MAINTENANCE > Delete the device(s) from the tracked device list, clear the FamShr/FmF/iOS App selection fields',
         'delete_this_device': 'DELETE THIS DEVICE > Delete this device from the iCloud3 tracked devices list',
         'delete_all_devices': 'DELETE ALL DEVICES > Delete all devices from the iCloud3 tracked devices list',
         'delete_icloud_iosapp_info': 'CLEAR FAMSHR/FMF/IOSAPP INFO - Reset the FamShr/FmF/iOS App seletion fields on all devices',
         'delete_device_cancel': 'CANCEL > Return to the Device List screen',
+
+        'select_text_as': 'SELECT > Update selected `Display Text As` field',
         'clear_text_as': 'CLEAR > Remove `Display Test As` entry',
-        'exit': 'EXIT > Exit the iCloud3 Configurator',
-        'return': 'RETURN > Return to the Main Menu',
+
+        'exclude_sensors': 'EXCLUDE SENSORS > Select specific Sensors that should not be created',
+        'filter_sensors': 'FILTER SENSORS > Select Sensors that should be displayed',
+
         'save': 'SAVE > Update Configuration File, Return to the menu screen',
         'cancel': 'RETURN > Return to the Main Menu. Cancel any changes not already saved',
-        "divider1": "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ ",
-        "divider2": "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ ",
-        "divider3": "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ "
+        'exit': 'EXIT > Exit the iCloud3 Configurator',
+        'return': 'RETURN > Return to the Main Menu',
+
+        "divider1": "═══════════════════════════════════════",
+        "divider2": "═══════════════════════════════════════",
+        "divider3": "═══════════════════════════════════════"
         }
 OPT_ACTION_ITEMS_KEY_BY_TEXT = {text: key for key, text in OPT_ACTION_ITEMS_KEY_TEXT.items()}
 
@@ -234,9 +242,9 @@ DISPLAY_ZONE_FORMAT_ITEMS_KEY_TEXT = {
         'title': 'Reformat the Zone entity_id (`the_shores` → `The Shores`)'
         }
 RESTART_NOW_LATER_ITEMS_KEY_TEXT = {
-        'ha': 'RESTART HOME ASSISTANT - Restart HA & iCloud3 now to finish the iCloud3 v2 to v3 migration.',
-        'now': 'RESTART NOW - Restart iCloud3 now to load the updated configuration.',
-        'later': 'RESTART LATER - The configuration changes have been saved. Load the updated configuration the next time iCloud3 is started.'
+        'ha': 'RESTART HOME ASSISTANT - Restart HA & iCloud3 now to load the updated configuration',
+        'now': 'RESTART NOW - Restart iCloud3 now to load the updated configuration',
+        'later': 'RESTART LATER - The configuration changes have been saved. Load the updated configuration the next time iCloud3 is started'
         }
 LOG_LEVEL_ITEMS_KEY_TEXT = {
         'info': 'Info - Log General Information',
@@ -309,21 +317,21 @@ CONF_SENSORS_OTHER_KEY_TEXT = {
         'altitude': 'altitude > Altitude/Elevation',
         }
 ACTIONS_SCREEN_ITEMS_KEY_TEXT = {
-        "divider1": "━━━━━━━━━━ ICLOUD3 CONTROL ACTIONS ━━━━━━━━━━ ",
+        "divider1": "════════════ ICLOUD3 CONTROL ACTIONS ════════════",
         "restart": "RESTART > Restart iCloud3",
         "pause": "PAUSE > Pause polling on all devices",
         "resume": "RESUME > Resume Polling on all devices, Refresh all locations",
-        "divider2": "━━━━━━━━━━━ DEBUG LOG ACTIONS ━━━━━━━━━━━ ",
+        "divider2": "════════════════ DEBUG LOG ACTIONS ══════════════",
         "debug_start": "START DEBUG LOGGING > Start or stop debug logging",
         "debug_stop": "STOP DEBUG LOGGING > Start or stop debug logging",
         "rawdata_start": "START RAWDATA LOGGING > Start or stop debug rawdata logging",
         "rawdata_stop": "STOP RAWDATA LOGGING > Start or stop debug rawdata logging",
         "commit": "COMMIT DEBUG LOG RECORDS > Verify all debug log file records are written",
-        "divider3": "━━━━━━━━━━━━ OTHER COMMANDS ━━━━━━━━━━━━ ",
+        "divider3": "═════════════════ OTHER COMMANDS ════════════════",
         "evlog_export": "EXPORT EVENT LOG > Export Event Log data",
-        "waze_db_recalc": "WAZE HIST DATABASE > Recalc time/distance data at midnight",
-        "waze_db_track": "WAZE HIST MAP TRACK > Load route locations for map display",
-        "divider4": "═══════════════════════════════════════════════ ",
+        "wazehist_maint": "WAZE HIST DATABASE > Recalc time/distance data at midnight",
+        "wazehist_track": "WAZE HIST MAP TRACK > Load route locations for map display",
+        "divider4": "═══════════════════════════════════════════════",
         "return": "MAIN MENU > Return to the Main Menu"
         }
 ACTIONS_SCREEN_ITEMS_TEXT  = [text for text in ACTIONS_SCREEN_ITEMS_KEY_TEXT.values()]
@@ -470,6 +478,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         self.opt_actions               = []
         self.config_flow_updated_parms = {''}   # Stores the type of parameters that were updated, used to reinitialize parms
         self._description_placeholders = None
+        self.code_to_schema_pass_value = None
 
         # Variables used for icloud_account update forms
         self.logging_into_icloud_flag = False
@@ -480,8 +489,6 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         # intefer with ones already in use by iC3. The Global Gb variables will be set to the local
         # variables if they were changes and a iC3 Restart was selected when finishing the config setup.
         self.PyiCloud                 = Gb.PyiCloud                 # PyiCloud login object
-        # self.PyiCloud_FamilySharing   = Gb.PyiCloud_FamilySharing    # Family Sharing object
-        # self.PyiCloud_FindMyFriends   = Gb.PyiCloud_FindMyFriends    # FindMyFriends object
         self.username                 = Gb.username
         self.password                 = Gb.password
         self.obscure_username         = ''
@@ -526,7 +533,6 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         self.opt_picture_file_name_list    = []
 
         self.devicename_by_famshr_fmf     = {}
-        # self.device_model_info_by_fname   = {}
         self.iosapp_search_for_devicename = 'None'
 
         self._verification_code = None
@@ -539,6 +545,14 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 
         # Variables used for the system_settings s update
         self.opt_www_directory_list = []
+
+        # List of all sensors created by ic3 during startup by sensor.py that is used
+        # in the exclude_sensors screen
+        # Format: ('gary_iphone_zone_distance': 'Gary ZoneDistance (gary_iphone_zone_distance)')
+        self.sensors_fname_list     = []
+        self.excluded_sensors       = []
+        self.excluded_sensors_removed = []
+        self.sensors_list_filter    = '?'
 
     async def async_step_init(self, user_input=None):
         if self.initialize_options_required_flag:
@@ -714,6 +728,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             elif self.step_id == "sensors":
                 self._remove_and_create_sensors(user_input)
 
+
             post_event(f"Configuration Updated > Type-{self.step_id.replace('_', ' ').title()}")
             self._update_configuration_file(user_input)
 
@@ -816,6 +831,11 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             if HOME_DISTANCE not in user_input[CONF_SENSORS_TRACKING_DISTANCE]:
                 user_input[CONF_SENSORS_TRACKING_DISTANCE].append(HOME_DISTANCE)
 
+            if action_item == 'exclude_sensors':
+                self.excluded_sensors = Gb.conf_sensors[CONF_EXCLUDED_SENSORS].copy()
+                self.sensors_list_filter = '?'
+                return await self.async_step_exclude_sensors()
+
         if self.common_form_handler(user_input, action_item, errors):
             return await self.async_step_menu()
 
@@ -825,6 +845,72 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         return self.async_show_form(step_id=self.step_id,
                             data_schema=self.form_schema(self.step_id),
                             errors=self.errors)
+
+#-------------------------------------------------------------------------------------------
+    async def async_step_exclude_sensors(self, user_input=None, errors=None):
+        self.step_id = 'exclude_sensors'
+        self.errors = {}
+        user_input, action_item = self._action_text_to_item(user_input)
+
+        if self.excluded_sensors == []:
+            self.excluded_sensors = ['None']
+
+        if self.sensors_fname_list == []:
+                Sensors = []
+                for devicename in Gb.Devices_by_devicename.keys():
+                    devicename_Sensors = [Sensor for Sensor in Gb.Sensors_by_devicename[devicename].values()]
+                    Sensors.extend(devicename_Sensors)
+
+                self.sensors_fname_list = [Sensor.fname_entity_name for Sensor in Sensors]
+                self.sensors_fname_list.sort()
+
+        if user_input is not None:
+            sensors_list_filter = user_input['filter'].lower().replace('?', '').strip()
+
+            if (self.sensors_list_filter == sensors_list_filter
+                    and len(self.excluded_sensors) == len(user_input[CONF_EXCLUDED_SENSORS])
+                    and user_input['filtered_sensors'] == []):
+                self.sensors_list_filter = '?'
+            else:
+                self.sensors_list_filter = sensors_list_filter or '?'
+
+            if action_item == 'cancel':
+                return await self.async_step_sensors()
+
+            if (action_item == 'save'
+                    or user_input[CONF_EXCLUDED_SENSORS] != self.excluded_sensors
+                    or user_input['filtered_sensors'] != []):
+                self._update_excluded_sensors(user_input)
+
+                if Gb.conf_sensors[CONF_EXCLUDED_SENSORS] != self.excluded_sensors:
+                    Gb.conf_sensors[CONF_EXCLUDED_SENSORS] = self.excluded_sensors.copy()
+                    config_file.write_storage_icloud3_configuration_file()
+
+                    self.errors['excluded_sensors'] = 'excluded_sensors_ha_restart'
+                    self.config_flow_updated_parms.update(['ha-restart', 'restart'])
+
+        return self.async_show_form(step_id=self.step_id,
+                            data_schema=self.form_schema(self.step_id),
+                            errors=self.errors)
+
+#-------------------------------------------------------------------------------------------
+    def _update_excluded_sensors(self, user_input):
+
+        excluded_sensors = []
+        excluded_sensors.extend(user_input[CONF_EXCLUDED_SENSORS])
+        excluded_sensors.extend(user_input['filtered_sensors'])
+        self.excluded_sensors = list(set(excluded_sensors))
+        self.excluded_sensors.sort()
+
+        self.excluded_sensors_removed = [sensor_fname
+                                        for sensor_fname in Gb.conf_sensors[CONF_EXCLUDED_SENSORS]
+                                        if sensor_fname not in self.excluded_sensors]
+        self.sensors_fname_list.extend(self.excluded_sensors)
+        self.sensors_fname_list = list(set(self.sensors_fname_list))
+        self.sensors_fname_list.sort()
+
+        if len(self.excluded_sensors) > 1 and 'None' in self.excluded_sensors:
+            self.excluded_sensors.remove('None')
 
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 #
@@ -930,11 +1016,10 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
     "commit": "COMMIT DEBUG LOG RECORDS > Verify all debug log file records are written",
     "divider3": "━━━━━━━━━━━━ OTHER COMMANDS ━━━━━━━━━━━━ ",
     "evlog_export": "EXPORT EVENT LOG > Export Event Log data",
-    "waze_db_recalc": "WAZE HIST DATABASE > Recalc time/distance data at midnight",
-    "waze_db_track": "WAZE HIST MAP TRACK > Load route locations for map display",
-    "erase_all_devices": "ERASE ALL DEVICES > Reinitialize the iCloud3 Device List",
+    "wazehist_maint": "WAZE HIST DATABASE > Recalc time/distance data at midnight",
+    "wazehist_track": "WAZE HIST MAP TRACK > Load route locations for map display",
     "divider4": "═══════════════════════════════════════════════ ",
-    "return": "MAIN MENU > Return to the Main Menu"
+    "return": "RETURN > Return to the Main Menu"
     '''
 
     async def async_step_actions(self, user_input=None, errors=None):
@@ -951,6 +1036,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             if instr(user_input.get('opt_action'), ' >'):
                 action_item_text = user_input['opt_action']
                 action_item = ACTIONS_SCREEN_ITEMS_KEY_BY_TEXT[action_item_text]
+
                 user_input.pop('opt_action')
 
                 self._process_action_request(action_item)
@@ -963,25 +1049,15 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 
 #--------------------------------------------------------------------------------
     def _process_action_request(self, action_item):
-
+        #update_service_handler(action=None, action_fname=None, devicename=None):#
         self.menu_msg = None
+
         if action_item == 'return':
             return
-
-        elif action_item == 'restart':
-            Gb.start_icloud3_request_flag = True
-
-        elif action_item == 'pause':
-            Gb.all_tracking_paused_flag = True
-            Gb.EvLog.display_user_message('Tracking is Paused', alert=True)
-            for Device in Gb.Devices_by_devicename.values():
-                Device.pause_tracking
-
-        elif action_item == 'resume':
-            Gb.all_tracking_paused_flag = False
-            Gb.EvLog.display_user_message('', clear_alert=True)
-            for Device in Gb.Devices_by_devicename.values():
-                Device.resume_tracking
+        elif action_item in [ 'restart', 'pause', 'resume',
+                            'wazehist_maint', 'wazehist_track',
+                            'evlog_export', ]:
+            service_handler.update_service_handler(action_item)
 
         elif action_item.startswith('debug'):
             service_handler.handle_action_log_level('debug', change_conf_log_level=False)
@@ -991,22 +1067,6 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 
         elif action_item == 'commit':
             close_reopen_ic3_debug_log_file(closed_by='Configurator')
-
-        elif action_item == 'waze_db_recalc':
-            if Gb.WazeHist is None:
-                self.menu_msg = 'action_cancelled'
-            elif Gb.wazehist_recalculate_time_dist_flag:
-                Gb.wazehist_recalculate_time_dist_flag = False
-                self.menu_msg = 'action_cancelled'
-            else:
-                Gb.wazehist_recalculate_time_dist_flag = True
-
-        elif action_item == 'waze_db_track':
-            if Gb.WazeHist:
-                Gb.WazeHist.wazehist_update_track_sensor()
-
-        elif action_item == 'evlog_export':
-            Gb.EvLog.export_event_log()
 
         if self.menu_msg is None:
             self.menu_msg = 'action_completed'
@@ -1933,7 +1993,6 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 change_tfz_flag: True if the track_fm_zones zone was changed and the sensors need to be updated
         """
         # self.errors = {}
-        _FamShr = self.PyiCloud.FamilySharing
         ui_devicename  = user_input[CONF_IC3_DEVICENAME]
         old_devicename = user_input.get('old_devicename', ui_devicename)
         ui_old_devicename = [ui_devicename, old_devicename]
@@ -1963,23 +2022,23 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 
         if (user_input[CONF_FAMSHR_DEVICENAME] in self.devicename_by_famshr_fmf
                 and self.devicename_by_famshr_fmf[user_input[CONF_FAMSHR_DEVICENAME]] not in ui_old_devicename):
-                # and self.devicename_by_famshr_fmf[user_input[CONF_FAMSHR_DEVICENAME]] != ui_devicename):
             self.errors[CONF_FAMSHR_DEVICENAME] = 'already_assigned'
 
         if (user_input[CONF_FMF_EMAIL] in self.devicename_by_famshr_fmf
                 and self.devicename_by_famshr_fmf[user_input[CONF_FMF_EMAIL]] not in ui_old_devicename):
-                # and self.devicename_by_famshr_fmf[user_input[CONF_FMF_EMAIL]] != ui_devicename):
             self.errors[CONF_FMF_EMAIL] = 'already_assigned'
 
-        conf_famshr_device_fname = user_input[CONF_FAMSHR_DEVICENAME]     #.split(" >")[0].strip()
-        if conf_famshr_device_fname != 'None':
-            raw_model, model, model_display_name = _FamShr.device_model_info_by_fname[conf_famshr_device_fname]
-            if (user_input.get(CONF_RAW_MODEL) != raw_model
-                        or user_input[CONF_MODEL] != model
-                        or user_input[CONF_MODEL_DISPLAY_NAME] != model_display_name):
-                user_input[CONF_RAW_MODEL] = raw_model
-                user_input[CONF_MODEL] = model
-                user_input[CONF_MODEL_DISPLAY_NAME] = model_display_name
+        if self.PyiCloud:
+            _FamShr = self.PyiCloud.FamilySharing
+            conf_famshr_device_fname = user_input[CONF_FAMSHR_DEVICENAME]     #.split(" >")[0].strip()
+            if conf_famshr_device_fname != 'None':
+                raw_model, model, model_display_name = _FamShr.device_model_info_by_fname[conf_famshr_device_fname]
+                if (user_input.get(CONF_RAW_MODEL) != raw_model
+                            or user_input[CONF_MODEL] != model
+                            or user_input[CONF_MODEL_DISPLAY_NAME] != model_display_name):
+                    user_input[CONF_RAW_MODEL] = raw_model
+                    user_input[CONF_MODEL] = model
+                    user_input[CONF_MODEL_DISPLAY_NAME] = model_display_name
 
         # Handle track_from_zone changes
         track_from_zones = []
@@ -2137,6 +2196,9 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         Finish setting up the device by determining the actual FamShr devicename and the
         raw_model, model, model_display_name and device_id fields.
         '''
+
+        if self.PyiCloud is None:
+            return
 
         _FamShr = self.PyiCloud.FamilySharing
         famshr_devicenames = [conf_device[CONF_FAMSHR_DEVICENAME]
@@ -2406,6 +2468,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
     def _remove_and_create_sensors(self, user_input):
         """ Remove unchecked sensor entities and create newly checked sensor entities """
 
+
         new_sensors_list, remove_sensors_list = \
                 self._sensor_form_identify_new_and_removed_sensors(user_input)
         self._remove_sensor_entity(remove_sensors_list)
@@ -2543,9 +2606,11 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         new_sensors_list    = []
         remove_sensors_list = []     # base device sensors
         for sensor_group, sensor_list in user_input.items():
-            if sensor_group not in Gb.conf_sensors:
-                continue
-            if user_input[sensor_group] == Gb.conf_sensors[sensor_group]:
+            if (sensor_group not in Gb.conf_sensors
+                    or user_input[sensor_group] == Gb.conf_sensors[sensor_group]
+                    or sensor_group == CONF_EXCLUDED_SENSORS):
+                if user_input[CONF_EXCLUDED_SENSORS] != Gb.conf_sensors[CONF_EXCLUDED_SENSORS]:
+                    self.config_flow_updated_parms.update(['ha-restart', 'restart'])
                 continue
 
             # Cycle thru the sensors now in the user_input sensor_group
@@ -2600,7 +2665,6 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                     device_sensors_list.append(sensor)
 
             Sensors_list = [v for k, v in devicename_sensors.items() if k in device_sensors_list]
-
             for Sensor in Sensors_list:
                 if Sensor.entity_removed_flag is False:
                     Sensor.remove_entity()
@@ -2618,7 +2682,6 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                                             for z in device_track_from_zones[devicename]]
 
             Sensors_list = [v for k, v in devicename_sensors.items() if k in tfz_sensors_list]
-
             for Sensor in Sensors_list:
                 if Sensor.entity_removed_flag is False:
                     Sensor.remove_entity()
@@ -2648,6 +2711,9 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 
         sensors_list = []
         for sensor_group, sensor_list in Gb.conf_sensors.items():
+            if sensor_group == CONF_EXCLUDED_SENSORS:
+                continue
+
             for sensor in Gb.conf_sensors[sensor_group]:
                 sensors_list.append(sensor)
 
@@ -2847,6 +2913,10 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             return f"{pvalue_key} > Unknown Selection"
 
 #-------------------------------------------------------------------------------------------
+    def key_text_to_text_list(self, key_text):
+        return [text for text in key_text.values()]
+
+#-------------------------------------------------------------------------------------------
     def _option_text_to_parm(self, user_input, pname, option_list_key_text):
         '''
         user_input contains the full text of the option list item selected. Replace it with
@@ -3034,8 +3104,11 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         return (fname, device_type)
 
 #--------------------------------------------------------------------
-    def _action_default_text(self, action_item):
-        return OPT_ACTION_ITEMS_KEY_TEXT.get(action_item, 'UNKNOWN ACTION - Unknown Action')
+    def _action_default_text(self, action_item, opt_actions_key_text=None):
+        if opt_actions_key_text:
+            return opt_actions_key_text.get(action_item, 'UNKNOWN ACTION > Unknown Action')
+        else:
+            return OPT_ACTION_ITEMS_KEY_TEXT.get(action_item, 'UNKNOWN ACTION - Unknown Action')
 
 #--------------------------------------------------------------------
     def _discard_changes(self, user_input):
@@ -3070,31 +3143,36 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 menu_action[1] = MENU_KEY_TEXT['next_page_0']
 
             schema = vol.Schema({
-                    vol.Required("menu_item",
-                                default=self.menu_item_selected[self.menu_page_no]):
-                                selector.SelectSelector(
-                                        selector.SelectSelectorConfig(options=menu_key_text)),
-                    vol.Required("menu_action",
-                                default=menu_action[0]):
-                                selector.SelectSelector(
-                                        selector.SelectSelectorConfig(options=menu_action)),
-                    })
+                vol.Required("menu_item",
+                            default=self.menu_item_selected[self.menu_page_no]):
+                            selector.SelectSelector(selector.SelectSelectorConfig(
+                                options=menu_key_text)),
+                vol.Required("menu_action",
+                            default=menu_action[0]):
+                            selector.SelectSelector(selector.SelectSelectorConfig(
+                                options=menu_action)),
+                })
 
             return schema
 
         #------------------------------------------------------------------------
         elif step_id == 'restart_icloud3':
-            restart_default='now'
-            RESTART_NOW_LATER_ITEMS_KEY_TEXT.pop('ha', None)
+            self.opt_actions = RESTART_NOW_LATER_ITEMS_KEY_TEXT.copy()
+            if 'ha-restart' in self.config_flow_updated_parms:
+                restart_default='ha'
+            else:
+                restart_default='now'
+                self.opt_actions.pop('ha', None)
+
             restart_now_later_option_list = []
-            restart_now_later_option_list.extend(RESTART_NOW_LATER_ITEMS_KEY_TEXT.values())
+            restart_now_later_option_list.extend(self.opt_actions.values())
 
             return  vol.Schema({
-                        vol.Required('restart_now_later',
-                                    default=RESTART_NOW_LATER_ITEMS_KEY_TEXT[restart_default]):
-                                    selector.SelectSelector(
-                                        selector.SelectSelectorConfig(options=restart_now_later_option_list)),
-                        })
+                vol.Required('restart_now_later',
+                            default=RESTART_NOW_LATER_ITEMS_KEY_TEXT[restart_default]):
+                            selector.SelectSelector(selector.SelectSelectorConfig(
+                                options=restart_now_later_option_list)),
+                })
 
         #------------------------------------------------------------------------
         elif step_id == 'icloud_account':
@@ -3107,27 +3185,26 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                                                     else obscure_field(self.password)
 
             return vol.Schema({
-                        vol.Required(CONF_DATA_SOURCE,
-                                    default=self._option_parm_to_text(CONF_DATA_SOURCE, DATA_SOURCE_ITEMS_KEY_TEXT)):
-                                    selector.SelectSelector(
-                                        selector.SelectSelectorConfig(
-                                                options=dict_value_to_list(DATA_SOURCE_ITEMS_KEY_TEXT), mode='dropdown')),
-                        vol.Optional(CONF_USERNAME,
-                                    default=self.obscure_username):
-                                    selector.TextSelector(),
-                        vol.Optional(CONF_PASSWORD,
-                                    default=self.obscure_password):
-                                    selector.TextSelector(),
-                        # vol.Required(CONF_ICLOUD_SERVER_ENDPOINT_SUFFIX,
-                        #             default=self._option_parm_to_text(CONF_ICLOUD_SERVER_ENDPOINT_SUFFIX, ICLOUD_SERVER_ENDPOINT_SUFFIX_ITEMS_KEY_TEXT)):
-                        #             selector.SelectSelector(
-                        #                 selector.SelectSelectorConfig(
-                        #                         options=dict_value_to_list(ICLOUD_SERVER_ENDPOINT_SUFFIX_ITEMS_KEY_TEXT), mode='dropdown')),
-                        vol.Required('opt_action',
-                                    default=self._action_default_text('save')):
-                                    selector.SelectSelector(
-                                        selector.SelectSelectorConfig(options=self.opt_actions, mode='list')),
-                        })
+                vol.Required(CONF_DATA_SOURCE,
+                            default=self._option_parm_to_text(CONF_DATA_SOURCE, DATA_SOURCE_ITEMS_KEY_TEXT)):
+                            selector.SelectSelector(selector.SelectSelectorConfig(
+                                options=dict_value_to_list(DATA_SOURCE_ITEMS_KEY_TEXT), mode='dropdown')),
+                vol.Optional(CONF_USERNAME,
+                            default=self.obscure_username):
+                            selector.TextSelector(),
+                vol.Optional(CONF_PASSWORD,
+                            default=self.obscure_password):
+                            selector.TextSelector(),
+                # vol.Required(CONF_ICLOUD_SERVER_ENDPOINT_SUFFIX,
+                #             default=self._option_parm_to_text(CONF_ICLOUD_SERVER_ENDPOINT_SUFFIX, ICLOUD_SERVER_ENDPOINT_SUFFIX_ITEMS_KEY_TEXT)):
+                #             selector.SelectSelector(
+                #                 selector.SelectSelectorConfig(
+                #                         options=dict_value_to_list(ICLOUD_SERVER_ENDPOINT_SUFFIX_ITEMS_KEY_TEXT), mode='dropdown')),
+                vol.Required('opt_action',
+                            default=self._action_default_text('save')):
+                            selector.SelectSelector(
+                                selector.SelectSelectorConfig(options=self.opt_actions, mode='list')),
+                })
 
         #------------------------------------------------------------------------
         elif step_id == 'reauth':
@@ -3158,44 +3235,42 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             schema = {}
             schema = vol.Schema({})
             if self.form_devices_list_displayed != []:
-                    schema = schema.extend({
-                        vol.Required('devices',
-                                    default=device_list_default):
-                                    selector.SelectSelector(
-                                        selector.SelectSelectorConfig(
-                                                options=self.form_devices_list_displayed)),
-                    })
+                schema = schema.extend({
+                    vol.Required('devices',
+                                default=device_list_default):
+                                selector.SelectSelector(selector.SelectSelectorConfig(
+                                    options=self.form_devices_list_displayed)),
+                })
             schema = schema.extend({
-                        vol.Required('opt_action',
-                                    default=self._action_default_text(action_default)):
-                                    selector.SelectSelector(
-                                        selector.SelectSelectorConfig(options=self.opt_actions, mode='list')),
-                        })
+                vol.Required('opt_action',
+                            default=self._action_default_text(action_default)):
+                            selector.SelectSelector(selector.SelectSelectorConfig(
+                                options=self.opt_actions, mode='list')),
+                })
             return schema
 
         #------------------------------------------------------------------------
         elif step_id == 'add_device':
 
             schema = vol.Schema({
-                        vol.Required(CONF_IC3_DEVICENAME,
-                                    default=self._parm_or_device(CONF_IC3_DEVICENAME)):
-                                    selector.TextSelector(),
-                        vol.Required(CONF_FNAME,
-                                    default=self._parm_or_device(CONF_FNAME)):
-                                    selector.TextSelector(),
-                        vol.Required(CONF_DEVICE_TYPE,
-                                    default=self._parm_or_device(CONF_DEVICE_TYPE, suggested_value=IPHONE)):
-                                    selector.SelectSelector(
-                                        selector.SelectSelectorConfig(
-                                                options=dict_value_to_list(DEVICE_TYPE_FNAME), mode='dropdown')),
-                        vol.Required(CONF_TRACKING_MODE,
-                                    default=self._option_parm_to_text(CONF_TRACKING_MODE, TRACKING_MODE_ITEMS_KEY_TEXT)):
-                                    selector.SelectSelector(
-                                        selector.SelectSelectorConfig(
-                                                options=dict_value_to_list(TRACKING_MODE_ITEMS_KEY_TEXT), mode='dropdown')),
-                        vol.Required('iosapp', default=True):
-                                    selector.BooleanSelector(),
-                        })
+                vol.Required(CONF_IC3_DEVICENAME,
+                            default=self._parm_or_device(CONF_IC3_DEVICENAME)):
+                            selector.TextSelector(),
+                vol.Required(CONF_FNAME,
+                            default=self._parm_or_device(CONF_FNAME)):
+                            selector.TextSelector(),
+                vol.Required(CONF_DEVICE_TYPE,
+                            default=self._parm_or_device(CONF_DEVICE_TYPE, suggested_value=IPHONE)):
+                            selector.SelectSelector(selector.SelectSelectorConfig(
+                                options=dict_value_to_list(DEVICE_TYPE_FNAME), mode='dropdown')),
+                vol.Required(CONF_TRACKING_MODE,
+                            default=self._option_parm_to_text(CONF_TRACKING_MODE, TRACKING_MODE_ITEMS_KEY_TEXT)):
+                            selector.SelectSelector(selector.SelectSelectorConfig(
+                                options=dict_value_to_list(TRACKING_MODE_ITEMS_KEY_TEXT), mode='dropdown')),
+                vol.Required('iosapp',
+                            default=True):
+                            selector.BooleanSelector(),
+                })
 
         #------------------------------------------------------------------------
         elif step_id == 'update_device':
@@ -3230,60 +3305,52 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 opt_picture_by_filename[picture_filename] = f"{picture_filename}{UNKNOWN_DEVICE_TEXT}"
 
             schema = vol.Schema({
-                        vol.Required(CONF_IC3_DEVICENAME,
-                                    default=self._parm_or_device(CONF_IC3_DEVICENAME)):
-                                    selector.TextSelector(),
-                        vol.Required(CONF_FNAME,
-                                    default=self._parm_or_device(CONF_FNAME)):
-                                    selector.TextSelector(),
-                        vol.Required(CONF_DEVICE_TYPE,
-                                    default=self._option_parm_to_text(CONF_DEVICE_TYPE, DEVICE_TYPE_FNAME)):
-                                    selector.SelectSelector(
-                                        selector.SelectSelectorConfig(
-                                                options=dict_value_to_list(DEVICE_TYPE_FNAME), mode='dropdown')),
-                        vol.Required(CONF_TRACKING_MODE,
-                                    default=self._option_parm_to_text(CONF_TRACKING_MODE, TRACKING_MODE_ITEMS_KEY_TEXT)):
-                                    selector.SelectSelector(
-                                        selector.SelectSelectorConfig(
-                                                options=dict_value_to_list(TRACKING_MODE_ITEMS_KEY_TEXT), mode='dropdown')),
-                        vol.Required(CONF_FAMSHR_DEVICENAME,
-                                    default=self._option_parm_to_text(CONF_FAMSHR_DEVICENAME, opt_famshr_text_by_fname)):
-                                    selector.SelectSelector(
-                                        selector.SelectSelectorConfig(
-                                                options=dict_value_to_list(opt_famshr_text_by_fname), mode='dropdown')),
-                        vol.Required(CONF_FMF_EMAIL,
-                                    default=self._option_parm_to_text(CONF_FMF_EMAIL, opt_fmf_text_by_email)):
-                                    selector.SelectSelector(
-                                        selector.SelectSelectorConfig(
-                                            options=dict_value_to_list(opt_fmf_text_by_email), mode='dropdown')),
-                        vol.Required(CONF_IOSAPP_DEVICE,
-                                    default=self._option_parm_to_text(CONF_IOSAPP_DEVICE, opt_iosapp_text_by_entity_id)):
-                                    selector.SelectSelector(
-                                        selector.SelectSelectorConfig(
-                                                options=dict_value_to_list(opt_iosapp_text_by_entity_id), mode='dropdown')),
-                        vol.Required(CONF_PICTURE,
-                                    default=self._option_parm_to_text(CONF_PICTURE, opt_picture_by_filename)):
-                                    selector.SelectSelector(
-                                        selector.SelectSelectorConfig(
-                                                options=dict_value_to_list(opt_picture_by_filename), mode='dropdown')),
-                        vol.Required(CONF_TRACK_FROM_ZONES,
-                                    default=self._parm_or_device(CONF_TRACK_FROM_ZONES)):
-                                        cv.multi_select(self.opt_zone_name_key_text),
-                        vol.Required(CONF_INZONE_INTERVAL,
-                                    default=self._hhmmss_to_duration(CONF_INZONE_INTERVAL, CONF_DEVICES)):
-                                    selector.DurationSelector(),
-                        vol.Required(CONF_TRACK_FROM_BASE_ZONE,
-                                    default=self._option_parm_to_text(
-                                        CONF_TRACK_FROM_BASE_ZONE, self.opt_zone_name_key_text, conf_device=True)):
-                                    selector.SelectSelector(
-                                        selector.SelectSelectorConfig(
-                                                options=dict_value_to_list(self.opt_zone_name_key_text), mode='dropdown')),
+                vol.Required(CONF_IC3_DEVICENAME,
+                            default=self._parm_or_device(CONF_IC3_DEVICENAME)):
+                            selector.TextSelector(),
+                vol.Required(CONF_FNAME,
+                            default=self._parm_or_device(CONF_FNAME)):
+                            selector.TextSelector(),
+                vol.Required(CONF_DEVICE_TYPE,
+                            default=self._option_parm_to_text(CONF_DEVICE_TYPE, DEVICE_TYPE_FNAME)):
+                            selector.SelectSelector(selector.SelectSelectorConfig(
+                                options=dict_value_to_list(DEVICE_TYPE_FNAME), mode='dropdown')),
+                vol.Required(CONF_TRACKING_MODE,
+                            default=self._option_parm_to_text(CONF_TRACKING_MODE, TRACKING_MODE_ITEMS_KEY_TEXT)):
+                            selector.SelectSelector(selector.SelectSelectorConfig(
+                                options=dict_value_to_list(TRACKING_MODE_ITEMS_KEY_TEXT), mode='dropdown')),
+                vol.Required(CONF_FAMSHR_DEVICENAME,
+                            default=self._option_parm_to_text(CONF_FAMSHR_DEVICENAME, opt_famshr_text_by_fname)):
+                            selector.SelectSelector(selector.SelectSelectorConfig(
+                                options=dict_value_to_list(opt_famshr_text_by_fname), mode='dropdown')),
+                vol.Required(CONF_FMF_EMAIL,
+                            default=self._option_parm_to_text(CONF_FMF_EMAIL, opt_fmf_text_by_email)):
+                            selector.SelectSelector(selector.SelectSelectorConfig(
+                                options=dict_value_to_list(opt_fmf_text_by_email), mode='dropdown')),
+                vol.Required(CONF_IOSAPP_DEVICE,
+                            default=self._option_parm_to_text(CONF_IOSAPP_DEVICE, opt_iosapp_text_by_entity_id)):
+                            selector.SelectSelector(selector.SelectSelectorConfig(
+                                options=dict_value_to_list(opt_iosapp_text_by_entity_id), mode='dropdown')),
+                vol.Required(CONF_PICTURE,
+                            default=self._option_parm_to_text(CONF_PICTURE, opt_picture_by_filename)):
+                            selector.SelectSelector(selector.SelectSelectorConfig(
+                                options=dict_value_to_list(opt_picture_by_filename), mode='dropdown')),
+                vol.Required(CONF_TRACK_FROM_ZONES,
+                            default=self._parm_or_device(CONF_TRACK_FROM_ZONES)):
+                            cv.multi_select(self.opt_zone_name_key_text),
+                vol.Required(CONF_INZONE_INTERVAL,
+                            default=self._hhmmss_to_duration(CONF_INZONE_INTERVAL, CONF_DEVICES)):
+                            selector.DurationSelector(),
+                vol.Required(CONF_TRACK_FROM_BASE_ZONE,
+                            default=self._option_parm_to_text(CONF_TRACK_FROM_BASE_ZONE, self.opt_zone_name_key_text, conf_device=True)):
+                            selector.SelectSelector(selector.SelectSelectorConfig(
+                                options=dict_value_to_list(self.opt_zone_name_key_text), mode='dropdown')),
 
-                        vol.Required('opt_action',
-                                    default=self._action_default_text('save')):
-                                    selector.SelectSelector(
-                                        selector.SelectSelectorConfig(options=self.opt_actions, mode='list')),
-                        })
+                vol.Required('opt_action',
+                            default=self._action_default_text('save')):
+                            selector.SelectSelector(selector.SelectSelectorConfig(
+                                options=self.opt_actions, mode='list')),
+                })
 
         #------------------------------------------------------------------------
         elif step_id == 'delete_device':
@@ -3296,11 +3363,11 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             self.opt_actions[0] = self.opt_actions[0].replace('Delete this device', device_info)
 
             schema = vol.Schema({
-                        vol.Required('opt_action',
-                                    default=self._action_default_text('delete_device_cancel')):
-                                    selector.SelectSelector(
-                                        selector.SelectSelectorConfig(options=self.opt_actions, mode='list')),
-                        })
+                vol.Required('opt_action',
+                            default=self._action_default_text('delete_device_cancel')):
+                            selector.SelectSelector(
+                                selector.SelectSelectorConfig(options=self.opt_actions, mode='list')),
+                })
 
         #------------------------------------------------------------------------
         elif step_id == 'actions':
@@ -3314,50 +3381,41 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             else:
                 action_screen_items_key_text.pop('rawdata_stop')
             self.opt_actions  = [text for text in action_screen_items_key_text.values()]
-            # self.opt_actions = ACTIONS_SCREEN_ITEMS_TEXT.copy()
+
             schema = vol.Schema({
-                        vol.Required('opt_action',
-                                    default=self._action_default_text('return')):
-                                    selector.SelectSelector(
-                                        selector.SelectSelectorConfig(options=self.opt_actions, mode='list')),
-                        })
+                vol.Required('opt_action',
+                            default=self._action_default_text('return', opt_actions_key_text=action_screen_items_key_text)):
+                            selector.SelectSelector(selector.SelectSelectorConfig(
+                                options=self.opt_actions, mode='list')),
+                })
         #------------------------------------------------------------------------
         elif step_id == 'event_log_configuration':
             schema = vol.Schema({
-                        vol.Required(CONF_LOG_LEVEL,
-                                    default=self._option_parm_to_text(CONF_LOG_LEVEL, LOG_LEVEL_ITEMS_KEY_TEXT)):
-                                    selector.SelectSelector(
-                                        selector.SelectSelectorConfig(
-                                                options=dict_value_to_list(LOG_LEVEL_ITEMS_KEY_TEXT), mode='dropdown')),
-                        vol.Required(CONF_DISPLAY_ZONE_FORMAT,
-                                    default=self._option_parm_to_text(
-                                        CONF_DISPLAY_ZONE_FORMAT, DISPLAY_ZONE_FORMAT_ITEMS_KEY_TEXT)):
-                                    selector.SelectSelector(
-                                        selector.SelectSelectorConfig(
-                                                options=dict_value_to_list(
-                                                    DISPLAY_ZONE_FORMAT_ITEMS_KEY_TEXT), mode='dropdown')),
-                        vol.Required(CONF_UNIT_OF_MEASUREMENT,
-                                    default=self._option_parm_to_text(
-                                        CONF_UNIT_OF_MEASUREMENT, UNIT_OF_MEASUREMENT_ITEMS_KEY_TEXT)):
-                                    selector.SelectSelector(
-                                        selector.SelectSelectorConfig(
-                                                options=dict_value_to_list(
-                                                    UNIT_OF_MEASUREMENT_ITEMS_KEY_TEXT), mode='dropdown')),
-                        vol.Required(CONF_TIME_FORMAT,
-                                    default=self._option_parm_to_text(CONF_TIME_FORMAT, TIME_FORMAT_ITEMS_KEY_TEXT)):
-                                    selector.SelectSelector(
-                                        selector.SelectSelectorConfig(
-                                                options=dict_value_to_list(TIME_FORMAT_ITEMS_KEY_TEXT), mode='dropdown')),
-                        vol.Required(CONF_EVLOG_CARD_DIRECTORY,
-                                    default=self._parm_or_error_msg(CONF_EVLOG_CARD_DIRECTORY, conf_group=CF_PROFILE)):
-                                    selector.SelectSelector(
-                                        selector.SelectSelectorConfig(
-                                                options=dict_value_to_list(self.opt_www_directory_list), mode='dropdown')),
-                        vol.Required('opt_action',
-                                    default=self._action_default_text('save')):
-                                    selector.SelectSelector(
-                                        selector.SelectSelectorConfig(options=self.opt_actions, mode='list')),
-                        })
+                vol.Required(CONF_LOG_LEVEL,
+                            default=self._option_parm_to_text(CONF_LOG_LEVEL, LOG_LEVEL_ITEMS_KEY_TEXT)):
+                            selector.SelectSelector(selector.SelectSelectorConfig(
+                                options=dict_value_to_list(LOG_LEVEL_ITEMS_KEY_TEXT), mode='dropdown')),
+                vol.Required(CONF_DISPLAY_ZONE_FORMAT,
+                            default=self._option_parm_to_text(CONF_DISPLAY_ZONE_FORMAT, DISPLAY_ZONE_FORMAT_ITEMS_KEY_TEXT)):
+                            selector.SelectSelector(selector.SelectSelectorConfig(
+                                options=dict_value_to_list(DISPLAY_ZONE_FORMAT_ITEMS_KEY_TEXT), mode='dropdown')),
+                vol.Required(CONF_UNIT_OF_MEASUREMENT,
+                            default=self._option_parm_to_text(CONF_UNIT_OF_MEASUREMENT, UNIT_OF_MEASUREMENT_ITEMS_KEY_TEXT)):
+                            selector.SelectSelector(selector.SelectSelectorConfig(
+                                options=dict_value_to_list( UNIT_OF_MEASUREMENT_ITEMS_KEY_TEXT), mode='dropdown')),
+                vol.Required(CONF_TIME_FORMAT,
+                            default=self._option_parm_to_text(CONF_TIME_FORMAT, TIME_FORMAT_ITEMS_KEY_TEXT)):
+                            selector.SelectSelector(selector.SelectSelectorConfig(
+                                options=dict_value_to_list(TIME_FORMAT_ITEMS_KEY_TEXT), mode='dropdown')),
+                vol.Required(CONF_EVLOG_CARD_DIRECTORY,
+                            default=self._parm_or_error_msg(CONF_EVLOG_CARD_DIRECTORY, conf_group=CF_PROFILE)):
+                            selector.SelectSelector(selector.SelectSelectorConfig(
+                                options=dict_value_to_list(self.opt_www_directory_list), mode='dropdown')),
+                vol.Required('opt_action',
+                            default=self._action_default_text('save')):
+                            selector.SelectSelector(selector.SelectSelectorConfig(
+                                options=self.opt_actions, mode='list')),
+                })
 
         #------------------------------------------------------------------------
         elif step_id == 'display_text_as':
@@ -3381,15 +3439,15 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             self.opt_actions.extend(OPT_ACTION_BASE)
 
             schema = vol.Schema({
-                        vol.Required(CONF_DISPLAY_TEXT_AS,
-                                default=self.dta_working_copy[self.dta_selected_idx]):
-                                selector.SelectSelector(
-                                        selector.SelectSelectorConfig(options=dta_page_display_list)),
-                        vol.Required('opt_action',
+                vol.Required(CONF_DISPLAY_TEXT_AS,
+                            default=self.dta_working_copy[self.dta_selected_idx]):
+                            selector.SelectSelector(selector.SelectSelectorConfig(
+                                options=dta_page_display_list)),
+                vol.Required('opt_action',
                             default=self._action_default_text('select_text_as')):
-                            selector.SelectSelector(
-                                        selector.SelectSelectorConfig(options=self.opt_actions, mode='list')),
-                        })
+                            selector.SelectSelector(selector.SelectSelectorConfig(
+                                options=self.opt_actions, mode='list')),
+                })
 
         #------------------------------------------------------------------------
         elif step_id == 'display_text_as_update':
@@ -3405,87 +3463,85 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 text_to   = ''
 
             schema = vol.Schema({
-                            vol.Optional('text_from', default=text_from):
-                                    selector.TextSelector(),
-                            vol.Optional('text_to'  , default=text_to):
-                                    selector.TextSelector(),
-                            vol.Required('opt_action',
-                                    default=self._action_default_text('save')):
-                                    selector.SelectSelector(
-                                        selector.SelectSelectorConfig(options=self.opt_actions, mode='list')),
-                            })
+                vol.Optional('text_from',
+                            default=text_from):
+                            selector.TextSelector(),
+                vol.Optional('text_to'  ,
+                            default=text_to):
+                            selector.TextSelector(),
+                vol.Required('opt_action',
+                            default=self._action_default_text('save')):
+                            selector.SelectSelector(selector.SelectSelectorConfig(
+                                options=self.opt_actions, mode='list')),
+                })
 
         #------------------------------------------------------------------------
         elif step_id == 'other_parms':
             schema = vol.Schema({
-                        vol.Required(CONF_LOG_LEVEL,
-                                    default=self._option_parm_to_text(CONF_LOG_LEVEL, LOG_LEVEL_ITEMS_KEY_TEXT)):
-                                    selector.SelectSelector(
-                                        selector.SelectSelectorConfig(
-                                                options=dict_value_to_list(LOG_LEVEL_ITEMS_KEY_TEXT), mode='dropdown')),
-                        vol.Required(CONF_GPS_ACCURACY_THRESHOLD,
-                                    default=Gb.conf_general[CONF_GPS_ACCURACY_THRESHOLD]):
-                                    selector.NumberSelector(
-                                        selector.NumberSelectorConfig(
-                                            min=1, mode=selector.NumberSelectorMode.BOX, unit_of_measurement='m')),
-                        vol.Required(CONF_OLD_LOCATION_THRESHOLD,
-                                    default=self._hhmmss_to_duration(CONF_OLD_LOCATION_THRESHOLD)):
-                                    selector.DurationSelector(),
-                        vol.Required(CONF_MAX_INTERVAL,
-                                    default=self._hhmmss_to_duration(CONF_MAX_INTERVAL)):
-                                    selector.DurationSelector(),
-                        vol.Required(CONF_TFZ_TRACKING_MAX_DISTANCE,
-                                    default=Gb.conf_general[CONF_TFZ_TRACKING_MAX_DISTANCE]):
-                                    selector.NumberSelector(
-                                        selector.NumberSelectorConfig(
-                                            min=1, mode=selector.NumberSelectorMode.BOX, unit_of_measurement='Km')),
-                        vol.Required(CONF_OFFLINE_INTERVAL,
-                                    default=self._hhmmss_to_duration(CONF_OFFLINE_INTERVAL)):
-                                    selector.DurationSelector(),
-                        vol.Required(CONF_TRAVEL_TIME_FACTOR,
-                                    default=self._parm_or_error_msg(CONF_TRAVEL_TIME_FACTOR)):
-                                    selector.NumberSelector(
-                                        selector.NumberSelectorConfig(
-                                                min=.1, step=.1, max = 1, mode=selector.NumberSelectorMode.BOX)),
-                        vol.Required('opt_action',
-                                    default=self._action_default_text('save')):
-                                    selector.SelectSelector(
-                                        selector.SelectSelectorConfig(options=self.opt_actions, mode='list')),
-                        })
+                vol.Required(CONF_LOG_LEVEL,
+                            default=self._option_parm_to_text(CONF_LOG_LEVEL, LOG_LEVEL_ITEMS_KEY_TEXT)):
+                            selector.SelectSelector(selector.SelectSelectorConfig(
+                                options=dict_value_to_list(LOG_LEVEL_ITEMS_KEY_TEXT), mode='dropdown')),
+                vol.Required(CONF_GPS_ACCURACY_THRESHOLD,
+                            default=Gb.conf_general[CONF_GPS_ACCURACY_THRESHOLD]):
+                            selector.NumberSelector(selector.NumberSelectorConfig(
+                                min=1, mode=selector.NumberSelectorMode.BOX, unit_of_measurement='m')),
+                vol.Required(CONF_OLD_LOCATION_THRESHOLD,
+                            default=self._hhmmss_to_duration(CONF_OLD_LOCATION_THRESHOLD)):
+                            selector.DurationSelector(),
+                vol.Required(CONF_MAX_INTERVAL,
+                            default=self._hhmmss_to_duration(CONF_MAX_INTERVAL)):
+                            selector.DurationSelector(),
+                vol.Required(CONF_TFZ_TRACKING_MAX_DISTANCE,
+                            default=Gb.conf_general[CONF_TFZ_TRACKING_MAX_DISTANCE]):
+                            selector.NumberSelector(selector.NumberSelectorConfig(
+                                min=1, mode=selector.NumberSelectorMode.BOX, unit_of_measurement='Km')),
+                vol.Required(CONF_OFFLINE_INTERVAL,
+                            default=self._hhmmss_to_duration(CONF_OFFLINE_INTERVAL)):
+                            selector.DurationSelector(),
+                vol.Required(CONF_TRAVEL_TIME_FACTOR,
+                            default=self._parm_or_error_msg(CONF_TRAVEL_TIME_FACTOR)):
+                            selector.NumberSelector(selector.NumberSelectorConfig(
+                                min=.1, step=.1, max = 1, mode=selector.NumberSelectorMode.BOX)),
+                vol.Required('opt_action',
+                            default=self._action_default_text('save')):
+                            selector.SelectSelector(selector.SelectSelectorConfig(
+                                options=self.opt_actions, mode='list')),
+                })
 
         #------------------------------------------------------------------------
         elif step_id == 'inzone_intervals':
             schema = vol.Schema({
-                        vol.Required(IPHONE,
-                                    default=self._hhmmss_to_duration(IPHONE, CONF_INZONE_INTERVALS)):
-                                    selector.DurationSelector(),
-                        vol.Required(IPAD,
-                                    default=self._hhmmss_to_duration(IPAD, CONF_INZONE_INTERVALS)):
-                                    selector.DurationSelector(),
-                        vol.Required(WATCH,
-                                    default=self._hhmmss_to_duration(WATCH, CONF_INZONE_INTERVALS)):
-                                    selector.DurationSelector(),
-                        vol.Required(AIRPODS,
-                                    default=self._hhmmss_to_duration(AIRPODS, CONF_INZONE_INTERVALS)):
-                                    selector.DurationSelector(),
-                        vol.Required(NO_IOSAPP,
-                                    default=self._hhmmss_to_duration(NO_IOSAPP, CONF_INZONE_INTERVALS)):
-                                    selector.DurationSelector(),
-                        vol.Required(OTHER,
-                                    default=self._hhmmss_to_duration(OTHER, CONF_INZONE_INTERVALS)):
-                                    selector.DurationSelector(),
-                        vol.Required(CONF_CENTER_IN_ZONE,
-                                    default=Gb.conf_general[CONF_CENTER_IN_ZONE]):
-                                    selector.BooleanSelector(),
-                        vol.Required(CONF_DISCARD_POOR_GPS_INZONE,
-                                    default=Gb.conf_general[CONF_DISCARD_POOR_GPS_INZONE]):
-                                    selector.BooleanSelector(),
+                vol.Required(IPHONE,
+                            default=self._hhmmss_to_duration(IPHONE, CONF_INZONE_INTERVALS)):
+                            selector.DurationSelector(),
+                vol.Required(IPAD,
+                            default=self._hhmmss_to_duration(IPAD, CONF_INZONE_INTERVALS)):
+                            selector.DurationSelector(),
+                vol.Required(WATCH,
+                            default=self._hhmmss_to_duration(WATCH, CONF_INZONE_INTERVALS)):
+                            selector.DurationSelector(),
+                vol.Required(AIRPODS,
+                            default=self._hhmmss_to_duration(AIRPODS, CONF_INZONE_INTERVALS)):
+                            selector.DurationSelector(),
+                vol.Required(NO_IOSAPP,
+                            default=self._hhmmss_to_duration(NO_IOSAPP, CONF_INZONE_INTERVALS)):
+                            selector.DurationSelector(),
+                vol.Required(OTHER,
+                            default=self._hhmmss_to_duration(OTHER, CONF_INZONE_INTERVALS)):
+                            selector.DurationSelector(),
+                vol.Required(CONF_CENTER_IN_ZONE,
+                            default=Gb.conf_general[CONF_CENTER_IN_ZONE]):
+                            selector.BooleanSelector(),
+                vol.Required(CONF_DISCARD_POOR_GPS_INZONE,
+                            default=Gb.conf_general[CONF_DISCARD_POOR_GPS_INZONE]):
+                            selector.BooleanSelector(),
 
-                        vol.Required('opt_action',
-                                    default=self._action_default_text('save')):
-                                    selector.SelectSelector(
-                                        selector.SelectSelectorConfig(options=self.opt_actions, mode='list')),
-                        })
+                vol.Required('opt_action',
+                            default=self._action_default_text('save')):
+                            selector.SelectSelector(selector.SelectSelectorConfig(
+                                options=self.opt_actions, mode='list')),
+                })
 
         #------------------------------------------------------------------------
         elif step_id == 'waze_main':
@@ -3493,49 +3549,43 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             # self.opt_actions.extend([OPT_ACTION_ITEMS_KEY_TEXT['cancel']])
 
             schema = vol.Schema({
-                        vol.Optional(CONF_WAZE_USED,
-                                    default=Gb.conf_general[CONF_WAZE_USED]):
-                                                selector.BooleanSelector(),
-                        vol.Optional(CONF_WAZE_SERVER,
-                                    default=self._option_parm_to_text(CONF_WAZE_SERVER, WAZE_SERVER_ITEMS_KEY_TEXT)):
-                                    selector.SelectSelector(
-                                        selector.SelectSelectorConfig(
-                                                options=dict_value_to_list(WAZE_SERVER_ITEMS_KEY_TEXT), mode='dropdown')),
-                        vol.Optional(CONF_WAZE_MIN_DISTANCE,
-                                    default=Gb.conf_general[CONF_WAZE_MIN_DISTANCE]):
-                                    selector.NumberSelector(
-                                        selector.NumberSelectorConfig(
-                                            min=1, mode=selector.NumberSelectorMode.BOX, unit_of_measurement='km')),
-                        vol.Optional(CONF_WAZE_MAX_DISTANCE,
-                                    default=Gb.conf_general[CONF_WAZE_MAX_DISTANCE]):
-                                    selector.NumberSelector(
-                                        selector.NumberSelectorConfig(
-                                            min=1, mode=selector.NumberSelectorMode.BOX, unit_of_measurement='km')),
-                        vol.Optional(CONF_WAZE_REALTIME,
-                                    default=Gb.conf_general[CONF_WAZE_REALTIME]):
-                                    selector.BooleanSelector(),
+                vol.Optional(CONF_WAZE_USED,
+                            default=Gb.conf_general[CONF_WAZE_USED]):
+                            selector.BooleanSelector(),
+                vol.Optional(CONF_WAZE_SERVER,
+                            default=self._option_parm_to_text(CONF_WAZE_SERVER, WAZE_SERVER_ITEMS_KEY_TEXT)):
+                            selector.SelectSelector(selector.SelectSelectorConfig(
+                                options=dict_value_to_list(WAZE_SERVER_ITEMS_KEY_TEXT), mode='dropdown')),
+                vol.Optional(CONF_WAZE_MIN_DISTANCE,
+                            default=Gb.conf_general[CONF_WAZE_MIN_DISTANCE]):
+                            selector.NumberSelector(selector.NumberSelectorConfig(
+                                min=1, mode=selector.NumberSelectorMode.BOX, unit_of_measurement='km')),
+                vol.Optional(CONF_WAZE_MAX_DISTANCE,
+                            default=Gb.conf_general[CONF_WAZE_MAX_DISTANCE]):
+                            selector.NumberSelector(selector.NumberSelectorConfig(
+                                min=1, mode=selector.NumberSelectorMode.BOX, unit_of_measurement='km')),
+                vol.Optional(CONF_WAZE_REALTIME,
+                            default=Gb.conf_general[CONF_WAZE_REALTIME]):
+                            selector.BooleanSelector(),
 
-                        vol.Required(CONF_WAZE_HISTORY_DATABASE_USED,
-                                    default=Gb.conf_general[CONF_WAZE_HISTORY_DATABASE_USED]):
-                                    selector.BooleanSelector(),
-                        vol.Required(CONF_WAZE_HISTORY_MAX_DISTANCE,
-                                    default=Gb.conf_general[CONF_WAZE_HISTORY_MAX_DISTANCE]):
-                                    selector.NumberSelector(
-                                        selector.NumberSelectorConfig(
-                                            min=0, mode=selector.NumberSelectorMode.BOX, unit_of_measurement='km')),
-                        vol.Required(CONF_WAZE_HISTORY_TRACK_DIRECTION,
-                                    default=self._option_parm_to_text(CONF_WAZE_HISTORY_TRACK_DIRECTION,
-                                                                        WAZE_HISTORY_TRACK_DIRECTION_ITEMS_KEY_TEXT)):
-                                    selector.SelectSelector(
-                                        selector.SelectSelectorConfig(
-                                                options=dict_value_to_list(
-                                                    WAZE_HISTORY_TRACK_DIRECTION_ITEMS_KEY_TEXT), mode='dropdown')),
+                vol.Required(CONF_WAZE_HISTORY_DATABASE_USED,
+                            default=Gb.conf_general[CONF_WAZE_HISTORY_DATABASE_USED]):
+                            selector.BooleanSelector(),
+                vol.Required(CONF_WAZE_HISTORY_MAX_DISTANCE,
+                            default=Gb.conf_general[CONF_WAZE_HISTORY_MAX_DISTANCE]):
+                            selector.NumberSelector(selector.NumberSelectorConfig(
+                                min=0, mode=selector.NumberSelectorMode.BOX, unit_of_measurement='km')),
+                vol.Required(CONF_WAZE_HISTORY_TRACK_DIRECTION,
+                            default=self._option_parm_to_text(CONF_WAZE_HISTORY_TRACK_DIRECTION,
+                                                                WAZE_HISTORY_TRACK_DIRECTION_ITEMS_KEY_TEXT)):
+                            selector.SelectSelector(selector.SelectSelectorConfig(
+                                options=dict_value_to_list(WAZE_HISTORY_TRACK_DIRECTION_ITEMS_KEY_TEXT), mode='dropdown')),
 
-                        vol.Required('opt_action',
-                                    default=self._action_default_text('save')):
-                                    selector.SelectSelector(
-                                        selector.SelectSelectorConfig(options=self.opt_actions, mode='list')),
-                        })
+                vol.Required('opt_action',
+                            default=self._action_default_text('save')):
+                            selector.SelectSelector(selector.SelectSelectorConfig(
+                                options=self.opt_actions, mode='list')),
+                })
 
         #------------------------------------------------------------------------
         elif step_id == 'special_zones':
@@ -3547,94 +3597,149 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             track_from_zone_home = (Gb.conf_general[CONF_TRACK_FROM_BASE_ZONE] == HOME)
 
             schema = vol.Schema({
-                        vol.Optional('passthru_zone_header',
-                                    default=pass_thru_zone_used):
-                                    selector.BooleanSelector(),
-                        vol.Required(CONF_PASSTHRU_ZONE_TIME,
-                                    default=self._hhmmss_to_duration(CONF_PASSTHRU_ZONE_TIME)):
-                                    selector.DurationSelector(),
+                vol.Optional('passthru_zone_header',
+                            default=pass_thru_zone_used):
+                            selector.BooleanSelector(),
+                vol.Required(CONF_PASSTHRU_ZONE_TIME,
+                            default=self._hhmmss_to_duration(CONF_PASSTHRU_ZONE_TIME)):
+                            selector.DurationSelector(),
 
-                        vol.Optional('stat_zone_header',
-                                    default=stat_zone_used):
-                                    selector.BooleanSelector(),
-                        vol.Required(CONF_STAT_ZONE_FNAME,
-                                    default=self._parm_or_error_msg(CONF_STAT_ZONE_FNAME)):
-                                    selector.TextSelector(),
-                        vol.Required(CONF_STAT_ZONE_STILL_TIME,
-                                    default=self._hhmmss_to_duration(CONF_STAT_ZONE_STILL_TIME)):
-                                    selector.DurationSelector(),
-                        vol.Required(CONF_STAT_ZONE_INZONE_INTERVAL,
-                                    default=self._hhmmss_to_duration(CONF_STAT_ZONE_INZONE_INTERVAL)):
-                                    selector.DurationSelector(),
-                        vol.Optional('base_offset_header',
-                                    default=stat_zone_used):
-                                    selector.BooleanSelector(),
-                        vol.Required(CONF_STAT_ZONE_BASE_LATITUDE,
-                                    default=self._parm_or_error_msg(CONF_STAT_ZONE_BASE_LATITUDE)):
-                                    selector.TextSelector(),
-                        vol.Required(CONF_STAT_ZONE_BASE_LONGITUDE,
-                                    default=self._parm_or_error_msg(CONF_STAT_ZONE_BASE_LONGITUDE)):
-                                    selector.TextSelector(),
+                vol.Optional('stat_zone_header',
+                            default=stat_zone_used):
+                            selector.BooleanSelector(),
+                vol.Required(CONF_STAT_ZONE_FNAME,
+                            default=self._parm_or_error_msg(CONF_STAT_ZONE_FNAME)):
+                            selector.TextSelector(),
+                vol.Required(CONF_STAT_ZONE_STILL_TIME,
+                            default=self._hhmmss_to_duration(CONF_STAT_ZONE_STILL_TIME)):
+                            selector.DurationSelector(),
+                vol.Required(CONF_STAT_ZONE_INZONE_INTERVAL,
+                            default=self._hhmmss_to_duration(CONF_STAT_ZONE_INZONE_INTERVAL)):
+                            selector.DurationSelector(),
+                vol.Optional('base_offset_header',
+                            default=stat_zone_used):
+                            selector.BooleanSelector(),
+                vol.Required(CONF_STAT_ZONE_BASE_LATITUDE,
+                            default=self._parm_or_error_msg(CONF_STAT_ZONE_BASE_LATITUDE)):
+                            selector.TextSelector(),
+                vol.Required(CONF_STAT_ZONE_BASE_LONGITUDE,
+                            default=self._parm_or_error_msg(CONF_STAT_ZONE_BASE_LONGITUDE)):
+                            selector.TextSelector(),
 
-                        vol.Optional('track_from_zone_header',
-                                    default=track_from_zone_home):
-                                    selector.BooleanSelector(),
-                        vol.Required(CONF_TRACK_FROM_BASE_ZONE,
-                                    default=self._option_parm_to_text(
-                                        CONF_TRACK_FROM_BASE_ZONE, self.opt_zone_name_key_text)):
-                                    selector.SelectSelector(
-                                        selector.SelectSelectorConfig(
-                                                options=dict_value_to_list(self.opt_zone_name_key_text), mode='dropdown')),
-                        vol.Optional(CONF_TRACK_FROM_HOME_ZONE,
-                                    default=Gb.conf_general[CONF_TRACK_FROM_HOME_ZONE]):
-                                    selector.BooleanSelector(),
+                vol.Optional('track_from_zone_header',
+                            default=track_from_zone_home):
+                            selector.BooleanSelector(),
+                vol.Required(CONF_TRACK_FROM_BASE_ZONE,
+                            default=self._option_parm_to_text(CONF_TRACK_FROM_BASE_ZONE, self.opt_zone_name_key_text)):
+                            selector.SelectSelector(selector.SelectSelectorConfig(
+                                options=dict_value_to_list(self.opt_zone_name_key_text), mode='dropdown')),
+                vol.Optional(CONF_TRACK_FROM_HOME_ZONE,
+                            default=Gb.conf_general[CONF_TRACK_FROM_HOME_ZONE]):
+                            selector.BooleanSelector(),
 
-                        vol.Required('opt_action',
-                                    default=self._action_default_text('save')):
-                                    selector.SelectSelector(
-                                        selector.SelectSelectorConfig(options=self.opt_actions, mode='list')),
-                        })
+                vol.Required('opt_action',
+                            default=self._action_default_text('save')):
+                            selector.SelectSelector(selector.SelectSelectorConfig(
+                                options=self.opt_actions, mode='list')),
+                })
 
         #------------------------------------------------------------------------
         elif step_id == 'sensors':
+            self.opt_actions = [OPT_ACTION_ITEMS_KEY_TEXT['exclude_sensors']]
+            self.opt_actions.extend(OPT_ACTION_BASE)
+
             if HOME_DISTANCE not in Gb.conf_sensors[CONF_SENSORS_TRACKING_DISTANCE]:
                 Gb.conf_sensors[CONF_SENSORS_TRACKING_DISTANCE].append(HOME_DISTANCE)
 
             schema = vol.Schema({
-                        vol.Required(CONF_SENSORS_MONITORED_DEVICES,
-                                    default=Gb.conf_sensors[CONF_SENSORS_MONITORED_DEVICES]):
-                                        cv.multi_select(CONF_SENSORS_MONITORED_DEVICES_KEY_TEXT),
-                        vol.Required(CONF_SENSORS_DEVICE,
-                                    default=Gb.conf_sensors[CONF_SENSORS_DEVICE]):
-                                        cv.multi_select(CONF_SENSORS_DEVICE_KEY_TEXT),
-                        vol.Required(CONF_SENSORS_TRACKING_UPDATE,
-                                    default=Gb.conf_sensors[CONF_SENSORS_TRACKING_UPDATE]):
-                                        cv.multi_select(CONF_SENSORS_TRACKING_UPDATE_KEY_TEXT),
-                        vol.Required(CONF_SENSORS_TRACKING_TIME,
-                                    default=Gb.conf_sensors[CONF_SENSORS_TRACKING_TIME]):
-                                        cv.multi_select(CONF_SENSORS_TRACKING_TIME_KEY_TEXT),
-                        vol.Required(CONF_SENSORS_TRACKING_DISTANCE,
-                                    default=Gb.conf_sensors[CONF_SENSORS_TRACKING_DISTANCE]):
-                                        cv.multi_select(CONF_SENSORS_TRACKING_DISTANCE_KEY_TEXT),
-                        vol.Required(CONF_SENSORS_TRACK_FROM_ZONES,
-                                    default=Gb.conf_sensors[CONF_SENSORS_TRACK_FROM_ZONES]):
-                                        cv.multi_select(CONF_SENSORS_TRACK_FROM_ZONES_KEY_TEXT),
-                        vol.Required(CONF_SENSORS_TRACKING_OTHER,
-                                    default=Gb.conf_sensors[CONF_SENSORS_TRACKING_OTHER]):
-                                        cv.multi_select(CONF_SENSORS_TRACKING_OTHER_KEY_TEXT),
-                        vol.Required(CONF_SENSORS_ZONE,
-                                    default=Gb.conf_sensors[CONF_SENSORS_ZONE]):
-                                        cv.multi_select(CONF_SENSORS_ZONE_KEY_TEXT),
-                        vol.Required(CONF_SENSORS_OTHER,
-                                    default=Gb.conf_sensors[CONF_SENSORS_OTHER]):
-                                        cv.multi_select(CONF_SENSORS_OTHER_KEY_TEXT),
+                vol.Required(CONF_SENSORS_MONITORED_DEVICES,
+                            default=Gb.conf_sensors[CONF_SENSORS_MONITORED_DEVICES]):
+                            cv.multi_select(CONF_SENSORS_MONITORED_DEVICES_KEY_TEXT),
+                vol.Required(CONF_SENSORS_DEVICE,
+                            default=Gb.conf_sensors[CONF_SENSORS_DEVICE]):
+                            cv.multi_select(CONF_SENSORS_DEVICE_KEY_TEXT),
+                vol.Required(CONF_SENSORS_TRACKING_UPDATE,
+                            default=Gb.conf_sensors[CONF_SENSORS_TRACKING_UPDATE]):
+                            cv.multi_select(CONF_SENSORS_TRACKING_UPDATE_KEY_TEXT),
+                vol.Required(CONF_SENSORS_TRACKING_TIME,
+                            default=Gb.conf_sensors[CONF_SENSORS_TRACKING_TIME]):
+                            cv.multi_select(CONF_SENSORS_TRACKING_TIME_KEY_TEXT),
+                vol.Required(CONF_SENSORS_TRACKING_DISTANCE,
+                            default=Gb.conf_sensors[CONF_SENSORS_TRACKING_DISTANCE]):
+                            cv.multi_select(CONF_SENSORS_TRACKING_DISTANCE_KEY_TEXT),
+                vol.Required(CONF_SENSORS_TRACK_FROM_ZONES,
+                            default=Gb.conf_sensors[CONF_SENSORS_TRACK_FROM_ZONES]):
+                            cv.multi_select(CONF_SENSORS_TRACK_FROM_ZONES_KEY_TEXT),
+                vol.Required(CONF_SENSORS_TRACKING_OTHER,
+                            default=Gb.conf_sensors[CONF_SENSORS_TRACKING_OTHER]):
+                            cv.multi_select(CONF_SENSORS_TRACKING_OTHER_KEY_TEXT),
+                vol.Required(CONF_SENSORS_ZONE,
+                            default=Gb.conf_sensors[CONF_SENSORS_ZONE]):
+                            cv.multi_select(CONF_SENSORS_ZONE_KEY_TEXT),
+                vol.Required(CONF_SENSORS_OTHER,
+                            default=Gb.conf_sensors[CONF_SENSORS_OTHER]):
+                            cv.multi_select(CONF_SENSORS_OTHER_KEY_TEXT),
+                vol.Optional(CONF_EXCLUDED_SENSORS,
+                            default=Gb.conf_sensors[CONF_EXCLUDED_SENSORS]):
+                            selector.SelectSelector(selector.SelectSelectorConfig(
+                                options=Gb.conf_sensors[CONF_EXCLUDED_SENSORS], mode='list', multiple=True)),
 
-                        vol.Required('opt_action',
-                                default=self._action_default_text('save')):
-                                selector.SelectSelector(
-                                        selector.SelectSelectorConfig(options=self.opt_actions, mode='list')),
-                        })
+                vol.Required('opt_action',
+                            default=self._action_default_text('save')):
+                            selector.SelectSelector(selector.SelectSelectorConfig(
+                                options=self.opt_actions, mode='list')),
+                })
+        #------------------------------------------------------------------------
+        elif step_id == 'exclude_sensors':
+            self.opt_actions = [OPT_ACTION_ITEMS_KEY_TEXT['filter_sensors']]
+            self.opt_actions.extend(OPT_ACTION_BASE)
 
+            if self.sensors_list_filter == '?':
+                filtered_sensors_fname_list = [f"None Displayed - Enter a Filter or `all` \
+                                to display all sensors ({len(self.sensors_fname_list)} Sensors)"]
+                filtered_sensors_list_default = []
+            else:
+                self.sensors_list_filter.replace('?', '')
+                if self.sensors_list_filter.lower() == 'all':
+                    filtered_sensors_fname_list = [sensor_fname
+                                    for sensor_fname in self.sensors_fname_list
+                                    if sensor_fname not in self.excluded_sensors]
+                else:
+                    filtered_sensors_fname_list = list(set([sensor_fname
+                                    for sensor_fname in self.sensors_fname_list
+                                    if ((instr(sensor_fname.lower(), self.sensors_list_filter)
+                                        and sensor_fname not in self.excluded_sensors))]))
+
+                filtered_sensors_list_default = list(set([sensor_fname
+                                    for sensor_fname in filtered_sensors_fname_list
+                                    if sensor_fname in self.excluded_sensors]))
+
+                filtered_sensors_fname_list.sort()
+                if filtered_sensors_fname_list == []:
+                    filtered_sensors_fname_list = [f"No Sensors found containing \
+                                                        '{self.sensors_list_filter}'"]
+
+            schema = vol.Schema({
+                vol.Optional(CONF_EXCLUDED_SENSORS,
+                            default=self.excluded_sensors):
+                            selector.SelectSelector(selector.SelectSelectorConfig(
+                                options=self.excluded_sensors, mode='list', multiple=True)),
+                vol.Optional('filter',
+                            default=self.sensors_list_filter):
+                            # description={'suggested_value': 'all'}):
+                            selector.TextSelector(),
+                vol.Optional('filtered_sensors',
+                            default=filtered_sensors_list_default):
+                            selector.SelectSelector(selector.SelectSelectorConfig(
+                                options=filtered_sensors_fname_list, mode='list', multiple=True)),
+
+                vol.Required('opt_action',
+                            default=self._action_default_text('filter_sensors')):
+                            selector.SelectSelector(selector.SelectSelectorConfig(
+                                options=self.opt_actions, mode='list')),
+                })
+
+        #------------------------------------------------------------------------
         elif step_id == '':
             pass
 

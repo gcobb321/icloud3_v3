@@ -1,3 +1,41 @@
+Beta 9 - 1/22/2023
+~~~~~~~~~~~~~~~~~~~~
+1.  Fixed a problem selecting several of the Actions from the Configurator.
+2.  Fixed a problem where the zone was not being displayed in the _badge sensor and the zone's
+    friendly name was not being displayed on the Event Log (and other places) correctly.
+3.  Added the Battery Level to the Info sensor for the device. Also fixed a problem getting the
+    battery level from the iOS App when the iOS App was reporting a 'not_set' value and  reworked the
+    reporting of changes to the battery status (charging, not charging, etc).
+4.  Fixed a problem with the v2 --> v3 configuration migration with a message ha_country_code not
+    found.
+5.  Fixed another problem determing if a near by device's tracking results can be used that was causing
+    iCloud3 to hang and stop tracking all devices. The problem was caused by a circular loop where
+    A > B > C > D > B > C > D etc. The A, B, C and D are devices that are scanned in sequence to see
+    if they are near by and could be used. A check is made, following the path of devices that are
+    already being used, trying to find the end. In this case, the end did not exist and iCloud3 died.
+    An additional timer check was added to stop liiking after 5-secs.
+6.  Added a code to the Near By devices that are not eligible to explain the reason it is not eligible.
+    (a-GPS Accuracy, lb-Would Loop Back to itself, sz-Stationary Zone)
+7.  Fixed a problem calling the iCloud3 update service with the 'device_name' parameter,
+8.  Added the ability to exclude a specific device sensor from being created when iCloud3 started.
+    Select Exclude Sensors from the Configurator > Sensors screen, then select the actual sensor to
+    be excluded. A Filter can be used to limit the sensors displayed and the Excluded Devices are
+    displayed on the Sensors and Exclude Sensors screen. An HA restart is required to complete
+    the process.
+9.  Fixed a couple of problems with the iCloud Account interface (pyicloud_ic3).
+10. The Alert messages generated when iCloud3 is starting are redisplayed in the Event Log when
+    the startup process has completed. This summarizes all alerts in one place to help prevent
+    then from being missed.
+11. Event Log:
+        1. Changed the Event Log to better indicate when Debug & Rawdata logging are on. The Debug
+        level is now displayed in the tracking results header area in the time field. This also
+        shows when it was turned on and off.
+        2. Reordered some of the Action items.
+        3. Changed some Event Log messages for clarity.
+        4. Cleaned up some code.
+    REQUIRES A BROWSER REFRESH ON ALL DEVICES
+
+
 Beta 8 - 1/14/2023
 ~~~~~~~~~~~~~~~~~~~~
 1.  Fixed the bug accessing the iCloud3 Devices screen. Again. I hope. It is a timing issue and an

@@ -107,7 +107,7 @@ SENSOR_DEFINITION = {
                 'Badge',
                 'badge',
                 'mdi:shield-account',
-                [NAME, BATTERY, ZONE_FNAME,
+                [NAME, BATTERY, ZONE, ZONE_FNAME, ZONE_NAME,
                 HOME_DISTANCE, DISTANCE_TO_DEVICES,
                 MAX_DISTANCE, TRAVEL_TIME, DIR_OF_TRAVEL, INTERVAL,
                 ZONE_DATETIME,

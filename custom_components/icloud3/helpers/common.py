@@ -34,7 +34,7 @@ def list_to_str(list_value, separator=None):
     separator_str = separator if separator else ', '
     list_str = separator_str.join(list_value)
 
-    if separator.startswith(CRLF):
+    if separator_str.startswith(CRLF):
         return f"{separator_str}{list_str}"
     else:
         return list_str
@@ -165,10 +165,6 @@ def format_gps(latitude, longitude, accuracy, latitude_to=None, longitude_to=Non
         gps_text      = f"({latitude:.5f}, {longitude:.5f}{accuracy_text}{gps_to_text}"
 
     return gps_text
-
-#--------------------------------------------------------------------
-def format_battery_status(battery_status):
-    return BATTERY_STATUS_FNAME.get(battery_status, battery_status.title())
 
 #--------------------------------------------------------------------
 def format_list(arg_list):

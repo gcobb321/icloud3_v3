@@ -567,7 +567,7 @@ class iCloud3_v2v3ConfigMigration(object):
         elif 'distance_method' in self.config_parm_general:
             Gb.conf_general[CONF_WAZE_USED]              = self.config_parm_general['distance_method'].lower() == 'waze'
         # Gb.conf_general[CONF_WAZE_REGION]                = self.config_parm_general[CONF_WAZE_REGION].lower()
-        Gb.conf_general[CONF_WAZE_REGION]                = WAZE_SERVERS_BY_COUNTRY_CODE.get(Gb.ha_country_code, 'row')
+        Gb.conf_general[CONF_WAZE_REGION]                = WAZE_SERVERS_BY_COUNTRY_CODE.get(Gb.country_code, 'row')
         Gb.conf_general[CONF_WAZE_MIN_DISTANCE]          = self.config_parm_general[CONF_WAZE_MIN_DISTANCE]
         Gb.conf_general[CONF_WAZE_MAX_DISTANCE]          = self.config_parm_general[CONF_WAZE_MAX_DISTANCE]
         Gb.conf_general[CONF_WAZE_REALTIME]              = self.config_parm_general[CONF_WAZE_REALTIME]

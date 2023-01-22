@@ -3,7 +3,7 @@ from ..global_variables import GlobalVariables as Gb
 from ..const            import ( HIGH_INTEGER, NOT_SET,
                                 HOME, UTC_TIME, IOS_TRIGGER_ABBREVIATIONS,
                                 TRACE_ICLOUD_ATTRS_BASE, TRACE_ATTRS_BASE,
-                                BATTERY_STATUS, BATTERY_STATUS_REFORMAT,
+                                BATTERY_LEVEL, BATTERY_STATUS, BATTERY_STATUS_REFORMAT,
                                 LOCATION, ATTRIBUTES, TRIGGER, RAW_MODEL)
 from .common            import (instr,  )
 from .messaging         import (log_debug_msg, log_exception, log_debug_msg, log_error_msg, log_rawdata,
@@ -30,8 +30,12 @@ def get_state(entity_id):
         else:
             state = Gb.state_to_zone.get(entity_state, entity_state.lower())
 
+        # if instr(entity_id,'battery'):
+        #     _traceha(f"{entity_id=} {state=}")
         if instr(entity_id, BATTERY_STATUS):
             state = BATTERY_STATUS_REFORMAT.get(state.lower(), state.lower())
+        if instr(entity_id, BATTERY_LEVEL) and state == 'not_set':
+            state = 0
 
     except Exception as err:
         #When starting iCloud3, the device_tracker for the iosapp might

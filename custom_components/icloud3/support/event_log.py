@@ -17,6 +17,7 @@ from ..const                import (HOME,
                                     EVENT_LOG_CLEAR_CNT, EVLOG_TABLE_MAX_CNT_ZONE,
                                     EVLOG_TIME_RECD, EVLOG_HIGHLIGHT, EVLOG_MONITOR,
                                     EVLOG_ERROR, EVLOG_ALERT, EVLOG_UPDATE_START, EVLOG_UPDATE_END,
+                                    EVLOG_IC3_STARTING, EVLOG_IC3_STAGE_HDR,
                                     CRLF, CRLF_DOT, CRLF_CHK, RARROW, DOT,
                                     )
 
@@ -58,7 +59,8 @@ class EventLog(object):
     def initialize(self):
         self.display_text_as         = {}
         self.evlog_table             = []   # Device event recds
-        self.evlog_table_startup     = []   # Event recds when ic3 is starting
+        self.evlog_table_startup     = []   # All Event recds during startup
+        self.evlog_startup_alerts    = []   # Alert Event recds during startup
         self.evlog_table_max_cnt     = EVLOG_TABLE_MAX_CNT_BASE
 
         self.devicename              = ''
@@ -189,17 +191,39 @@ class EventLog(object):
                 pass
 
             try:
-                this_update_time = dt_util.now().strftime('%H:%M:%S')
-                this_update_time = time_to_12hrtime(this_update_time)
+                # Alerts are saved during startup. If there are any, reinsert them into the EvLog table
+                # so all alerts are redisplayed when the startup complete event record is being processed.
+                if (event_text.startswith(EVLOG_IC3_STARTING)
+                        and instr(event_text, 'Complete')
+                        and self.evlog_startup_alerts != []):
+                    for alert_recd in self.evlog_startup_alerts:
+                        self.evlog_table.insert(0, alert_recd)
+                    self.evlog_startup_alerts = []
 
-                # Display Track-from-Zone in time field if not Home
-                if devicename.startswith('*') is False:
-                    Device = Gb.Devices_by_devicename.get(devicename)
-                    if Device:
-                        Device.last_evlog_msg_secs = time_now_secs()
-                        if (Device.DeviceFmZoneCurrent.from_zone != HOME
-                                or event_text.startswith(EVLOG_TIME_RECD)):
-                            this_update_time = (f"»{Device.DeviceFmZoneCurrent.from_zone_display_as[:6]}")
+
+                if (event_text.startswith(EVLOG_UPDATE_START)
+                        or event_text.startswith(EVLOG_UPDATE_END)
+                        or event_text.startswith(EVLOG_IC3_STARTING)
+                        or event_text.startswith(EVLOG_IC3_STAGE_HDR)):
+                    if Gb.log_rawdata_flag:
+                        this_update_time = 'Rawdata'
+                    elif Gb.log_debug_flag:
+                        this_update_time = 'Debug'
+                    else:
+                        this_update_time = ''
+
+                else:
+                    this_update_time = dt_util.now().strftime('%H:%M:%S')
+                    this_update_time = time_to_12hrtime(this_update_time)
+
+                    # Display Track-from-Zone in time field if not Home
+                    if devicename.startswith('*') is False:
+                        Device = Gb.Devices_by_devicename.get(devicename)
+                        if Device:
+                            Device.last_evlog_msg_secs = time_now_secs()
+                            if (Device.DeviceFmZoneCurrent.from_zone != HOME
+                                    or event_text.startswith(EVLOG_TIME_RECD)):
+                                this_update_time = (f"»{Device.DeviceFmZoneCurrent.from_zone_display_as[:6]}")
 
             except Exception as err:
                 log_exception(err)
@@ -304,8 +328,8 @@ class EventLog(object):
 
         try:
             log_attr_text = ""
-            if Gb.evlog_trk_monitors_flag: log_attr_text += 'evlog,'
-            if Gb.log_debug_flag:          log_attr_text += 'halog,'
+            if Gb.evlog_trk_monitors_flag: log_attr_text += 'monitor,'
+            if Gb.log_debug_flag:          log_attr_text += 'debug,'
             if Gb.log_rawdata_flag:        log_attr_text += 'rawdata,'
 
             self.evlog_attrs['log_level_debug'] = log_attr_text
@@ -474,8 +498,12 @@ class EventLog(object):
 
         # Add the startup and alert events to a non-clearable table
         if (Gb.start_icloud3_inprocess_flag
-                or Gb.initial_icloud3_loading_flag
-                or event_recd[ELR_TEXT].startswith(EVLOG_ALERT)):
+                or Gb.initial_icloud3_loading_flag):
+            self.evlog_table_startup.insert(0, event_recd)
+            if event_recd[ELR_TEXT].startswith(EVLOG_ALERT):
+                self.evlog_startup_alerts.append(event_recd)
+
+        elif event_recd[ELR_TEXT].startswith(EVLOG_ALERT):
             self.evlog_table_startup.insert(0, event_recd)
 
         self.evlog_table.insert(0, event_recd)

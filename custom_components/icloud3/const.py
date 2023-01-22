@@ -4,7 +4,7 @@
 #
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-VERSION                         = '3.0.0b8a'
+VERSION                         = '3.0.0b9'
 DOMAIN                          = 'icloud3'
 ICLOUD3                         = 'iCloud3'
 MODE_PLATFORM                   = -1
@@ -214,11 +214,15 @@ CIRCLE_LETTERS_DARK =  {'a':'🅐', 'b':'🅑', 'c':'🅒', 'd':'🅓', 'e':'�
                         'h':'🅗', 'i':'🅘', 'j':'🅙', 'k':'🅚', 'l':'🅛', 'm':'🅜', 'n':'🅝',
                         'q':'🅞', 'p':'🅟', 'q':'🅠', 'r':'🅡', 's':'🅢', 't':'🅣', 'u':'🅤',
                         'v':'🅥', 'w':'🅦', 'x':'🅧', 'y':'🅨', 'z':'🅩', 'other': '✪'}
+CIRCLE_LETTERS_LITE =  {'a':'Ⓐ', 'b':'Ⓑ', 'c':'Ⓒ', 'd':'Ⓓ', 'e':'Ⓔ', 'f':'Ⓕ', 'g':'Ⓖ',
+                        'h':'Ⓗ', 'i':'Ⓘ', 'j':'Ⓙ', 'k':'Ⓚ', 'l':'Ⓛ', 'm':'Ⓜ', 'n':'Ⓝ',
+                        'q':'Ⓞ', 'p':'Ⓟ', 'q':'Ⓠ', 'r':'Ⓡ', 's':'Ⓢ', 't':'Ⓣ', 'u':'Ⓤ',
+                        'v':'Ⓥ', 'w':'Ⓦ', 'x':'Ⓧ', 'y':'Ⓨ', 'z':'Ⓩ', 'other': '✪'}
 '''
-dark_circled_letters = "Ⓐ Ⓑ Ⓒ Ⓓ Ⓔ Ⓕ Ⓖ Ⓗ Ⓘ Ⓙ Ⓚ Ⓛ Ⓜ Ⓝ Ⓞ Ⓟ Ⓠ Ⓡ Ⓢ Ⓣ Ⓤ Ⓥ Ⓦ Ⓧ Ⓨ Ⓩ"
+lite_circled_letters = "Ⓐ Ⓑ Ⓒ Ⓓ Ⓔ Ⓕ Ⓖ Ⓗ Ⓘ Ⓙ Ⓚ Ⓛ Ⓜ Ⓝ Ⓞ Ⓟ Ⓠ Ⓡ Ⓢ Ⓣ Ⓤ Ⓥ Ⓦ Ⓧ Ⓨ Ⓩ"
+dark_circled_letters = "🅐 🅑 🅒 🅓 🅔 🅕 🅖 🅗 🅘 🅙 🅚 🅛 🅜 🅝 🅞 🅟 🅠 🅡 🅢 🅣 🅤 🅥 🅦 🅧 🅨 🅩 ✪"
 Symbols = ▪•●▬⊗⊘✓×ø¦ ▶◀ ►◄▲▼ ∙▪ »« oPhone=►▶→⟾➤➟➜➔➤🡆🡪🡺⟹🡆➔ᐅ◈
   — – ⁃ » ━▶━➤🡺 —> > > ❯↦ … 🡪ᗕ ᗒ ᐳ ─🡢 ──ᗒ 🡢 ─ᐅ ↣ ➙ →《》◆◈◉●▐‖
- white_circled_letters = "🅐 🅑 🅒 🅓 🅔 🅕 🅖 🅗 🅘 🅙 🅚 🅛 🅜 🅝 🅞 🅟 🅠 🅡 🅢 🅣 🅤 🅥 🅦 🅧 🅨 🅩"
  ⣇⠈⠉⠋⠛⠟⠿⡿⣿       https://www.fileformat.info/info/unicode/block/braille_patterns/utf8test.htm
 '''
 NBSP              = '⠈' #'&nbsp;'
@@ -729,6 +733,8 @@ TRIGGER                     = "trigger"
 WAZE_DISTANCE               = "waze_distance"
 CALC_DISTANCE               = "calc_distance"
 
+CONF_EXCLUDED_SENSORS       = "excluded_sensors"
+
 DISTANCE           = 'distance'
 CONF_SENSORS_ZONE  = 'zone'
 ZONE_INFO          = 'zone_info'
@@ -891,6 +897,7 @@ DEFAULT_SENSORS_CONF = {
         CONF_SENSORS_ZONE: [
                 ZONE_NAME],
         CONF_SENSORS_OTHER: [],
+        CONF_EXCLUDED_SENSORS: [],
 }
 
 DEFAULT_DATA_CONF =  {

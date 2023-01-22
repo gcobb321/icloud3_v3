@@ -238,7 +238,7 @@ class iCloud3_DeviceTracker(TrackerEntity):
     @property
     def source_type(self):
         """Return the source type, eg gps or router, of the device."""
-        return f"gps/{self._get_sensor_value(LOCATION_SOURCE)} (iCloud3)"
+        return "gps"
 
     @property
     def icon(self):
@@ -267,6 +267,7 @@ class iCloud3_DeviceTracker(TrackerEntity):
         try:
             extra_attrs = {}
 
+            extra_attrs['data_source']         = f"{self._get_sensor_value(LOCATION_SOURCE)} (iCloud3)"
             extra_attrs[DEVICE_STATUS]         = self._get_sensor_value(DEVICE_STATUS)
             extra_attrs[NAME]                  = self._get_sensor_value(NAME)
             extra_attrs[PICTURE]               = self._get_sensor_value(PICTURE)
@@ -277,7 +278,7 @@ class iCloud3_DeviceTracker(TrackerEntity):
             extra_attrs[LAST_UPDATE_DATETIME]  = self._get_sensor_value(LAST_UPDATE_DATETIME)
             extra_attrs[HOME_DISTANCE]         = self._get_sensor_value(HOME_DISTANCE)
             extra_attrs[DISTANCE_TO_DEVICES]   = self._get_sensor_value(DISTANCE_TO_DEVICES)
-            # if self.tracking_mode == TRACK_DEVICE:
+
             if self.Device and self.Device.is_tracked:
                 extra_attrs[NEXT_UPDATE_DATETIME]  = self._get_sensor_value(NEXT_UPDATE_DATETIME)
                 extra_attrs[TRIGGER]               = self._get_sensor_value(TRIGGER)

@@ -19,7 +19,7 @@
 
 
 from ..global_variables     import GlobalVariables as Gb
-from ..const                import (HOME, NOT_HOME , NOT_SET, HIGH_INTEGER, CHECK_MARK,
+from ..const                import (HOME, NOT_HOME , NOT_SET, HIGH_INTEGER, CHECK_MARK, CIRCLE_LETTERS_LITE,
                                     STATIONARY, STATIONARY_FNAME,
                                     AWAY_FROM, TOWARDS, PAUSED,
                                     ERROR,
@@ -50,7 +50,7 @@ from ..helpers.messaging    import (post_event, post_error_msg,
                                     log_info_msg, log_error_msg, log_exception, _trace, _traceha, )
 from ..helpers.time_util    import (secs_to_time, secs_to_time_str, secs_to_time_age_str, waze_mins_to_time_str,
                                     secs_since, time_to_12hrtime, secs_to_datetime, secs_to, secs_to_age_str,
-                                    datetime_now, time_now, )
+                                    datetime_now, time_now, time_now_secs, )
 from ..helpers.dist_util    import (km_to_mi, km_to_mi_str, format_dist_km,  format_dist_m, )
 
 
@@ -1118,6 +1118,19 @@ def update_nearby_device_info(Device):
         _Device = Gb.Devices_by_devicename[devicename]
 
         dist_m, gps_accuracy_factor, display_text = dist_to_other_devices
+        reason_symbol = ''
+        if gps_accuracy_factor > NEAR_DEVICE_DISTANCE:
+            reason_symbol = 'a' #CIRCLE_LETTERS_LITE['a']
+        # elif display_text == '0m/±0m':
+        #     reason_symbol = 'z' #CIRCLE_LETTERS_LITE['z']
+        elif _Device.NearDevice is Device:
+            reason_symbol = 'lb' #CIRCLE_LETTERS_LITE['l']
+        elif _check_near_device_circular_loop(_Device, Device) is False:
+            reason_symbol = 'lb' #CIRCLE_LETTERS_LITE['u']
+        elif Device.is_inzone_stationary:
+            reason_symbol = 'sz' #CIRCLE_LETTERS_LITE['s']
+        elif _Device.is_inzone_stationary:
+            reason_symbol = 'sz' #CIRCLE_LETTERS_LITE['s']
 
         if (dist_m > NEAR_DEVICE_DISTANCE
                 or gps_accuracy_factor > NEAR_DEVICE_DISTANCE
@@ -1130,10 +1143,12 @@ def update_nearby_device_info(Device):
         else:
             nearby_symbol = ''
 
-        Device.dist_apart_msg += f"{nearby_symbol}{_Device.fname_devtype}-{display_text}, "
+        Device.dist_apart_msg += f"{nearby_symbol}{_Device.fname_devtype}-{display_text}({reason_symbol}), "
 
         # The nearby devices can not point to each other and other criteria
-        if (((Device.is_tracked and _Device.is_tracked) or _Device.is_monitored)
+        # if (((Device.is_tracked and _Device.is_tracked) or _Device.is_monitored)
+        if (Device.is_tracked
+                and _Device.is_tracked
                 and nearby_symbol == ''
                 and _Device.DeviceFmZoneHome.interval_secs > 0
                 and _Device.old_loc_poor_gps_cnt == 0
@@ -1158,37 +1173,64 @@ def _check_near_device_circular_loop(_Device, Device):
     if _Device.NearDevice is None:
         return True
 
-    cnt = 0
     next_Device_to_check = _Device.NearDevice
-    near_devices = f"{_Device.devicename}{RARROW}{next_Device_to_check.devicename}"
+    checked_Devices = []
+    near_devices_msg = f"{_Device.devicename}{RARROW}{next_Device_to_check.devicename}"
     log_debug_base_msg = f"Check Nearby Device-{_Device.devicename}"
+    reason_msg = ''
 
-    while next_Device_to_check is not Device:
+    check_start_time_secs = time_now_secs()
+    cnt = 0
+    can_use_device = False
+
+    while can_use_device is False:     #next_Device_to_check is not Device:
         # Make sure the loop will not hang
         cnt += 1
         if cnt > len(Gb.Devices):
-            log_debug_msg(Device.devicename, f"CanNotUse, DeviceCnt-{cnt} > {len(Gb.Devices)}")
-            return False
+            reason_msg = f"DeviceCnt-{cnt} > {len(Gb.Devices)}"
+            break
 
-        # If the NearDevice cycle ends, it's OK to use the current _Device
-        if (next_Device_to_check is None
-                or next_Device_to_check.NearDevice is None):
-            near_devices += f"{RARROW}None"
-            log_debug_msg(Device.devicename, f"{log_debug_base_msg}, CanUse, {near_devices}")
-            return True
+        # Make sure the loop does not hang by only running 5-secs
+        if secs_since(check_start_time_secs) > 5:
+            reason_msg = 'Running more than 10-secs'
+            break
 
-        near_devices += f"{RARROW}{next_Device_to_check.NearDevice.devicename}"
-        next_Device_to_check = next_Device_to_check.NearDevice
+        # If the next_NearDevice will loop back to a device that has already been checked,
+        # do not use the _Device.NearDevice
+        if next_Device_to_check.NearDevice in checked_Devices:
+            near_devices_msg += f"{RARROW}{_Device.devicename}"
+            reason_msg = 'Looped back to itself'
+            break
 
         # If the next_NearDevice circles back to the _Device originally being checked,
         # do not use the _Device.NearDevice
         if next_Device_to_check.NearDevice is _Device:
-            near_devices += f"{RARROW}{_Device.devicename}"
-            log_debug_msg(Device.devicename, f"{log_debug_base_msg}, CanNotUse, LoopedBack, {near_devices}")
-            return False
+            near_devices_msg += f"{RARROW}{_Device.devicename}"
+            reason_msg = 'Looped back to start'
+            break
 
-    # If the next_NearDevice circles back to the Device being updated,
-    # do not use the _Device.NearDevice
-    near_devices += f"{RARROW}{_Device.devicename}"
-    log_debug_msg(Device.devicename, f"{log_debug_base_msg}, CanNotUse, LoopedBack, {near_devices}")
-    return False
+        # If the NearDevice cycle ends, it's OK to use the current _Device
+        if (next_Device_to_check is None
+                or next_Device_to_check.NearDevice is None):
+            near_devices_msg += f"{RARROW}None"
+            can_use_device = True
+            break
+
+        near_devices_msg += f"{RARROW}{next_Device_to_check.NearDevice.devicename}"
+        next_Device_to_check = next_Device_to_check.NearDevice
+        checked_Devices.append(next_Device_to_check.NearDevice)
+        log_msg = ( f"{log_debug_base_msg}, Checking, "
+                    f"Cnt-{cnt}, "
+                    f"Timer-{secs_since(check_start_time_secs)} secs, "
+                    f"{near_devices_msg}")
+        log_debug_msg(Device.devicename, log_msg)
+
+    # The loop was broken out of
+    can_cannot_msg = 'CanUse' if can_use_device else f"CanNotUse, {reason_msg}"
+    log_msg = ( f"{log_debug_base_msg}, "
+                f"{can_cannot_msg}, "
+                f"Cnt-{cnt}, "
+                f"Timer-{secs_since(check_start_time_secs)} secs, "
+                f"{near_devices_msg}")
+    log_debug_msg(Device.devicename, log_msg)
+    return can_use_device

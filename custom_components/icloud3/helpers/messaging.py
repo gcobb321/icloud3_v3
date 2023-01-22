@@ -102,8 +102,12 @@ def post_event(devicename, event_msg='+'):
 
     devicename, event_msg = resolve_system_event_msg(devicename, event_msg)
 
-    if event_msg.endswith(', '):
-        event_msg = event_msg[:-2]
+    try:
+        if event_msg.endswith(', '):
+            event_msg = event_msg[:-2]
+    except:
+        Gb.HALogger.info(event_msg)
+        pass
 
     Gb.EvLog.post_event(devicename, event_msg)
 
@@ -186,6 +190,7 @@ def open_ic3_debug_log_file(new_debug_log=False):
                 False - Create a new file
     '''
     if Gb.iC3DebugLogFile:
+        write_ic3_debug_log_recd(f"{'-'*25} Debug Log File Already Open {'-'*25}")
         return
 
     if new_debug_log:
@@ -199,14 +204,17 @@ def open_ic3_debug_log_file(new_debug_log=False):
     Gb.ic3_debug_log_file_last_write_secs = 0
     Gb.ic3_debug_log_update_flag = False
 
+    # write_ic3_debug_log_recd(f"\n{'-'*25} Opened by Event Log  {'-'*25}")
+
     if new_debug_log is False:
         return
 
-    # Write the ic3 configuration (general & devices) to the debug log file
     write_ic3_debug_log_recd(f"iCloud3 v{Gb.version}, "
                             f"Debug Log File: {dt_util.now().strftime(DATETIME_FORMAT)[0:19]}\n")
 
+    # Write the ic3 configuration (general & devices) to the debug log file
     write_ic3_debug_log_recd(f"General Configuration:\n{DEBUG_LOG_LINE_TABS}{Gb.conf_general}")
+    write_ic3_debug_log_recd(f"{DEBUG_LOG_LINE_TABS}{Gb.ha_location_info}")
     write_ic3_debug_log_recd("")
 
     for conf_device in Gb.conf_devices:
@@ -237,7 +245,7 @@ def close_reopen_ic3_debug_log_file(closed_by=None):
     '''
     Close and reopen the debug log file to commit the newly written records
     '''
-    if Gb.ic3_debug_log_update_flag:
+    if Gb.ic3_debug_log_update_flag is False:
         return
 
     if closed_by:
@@ -247,9 +255,9 @@ def close_reopen_ic3_debug_log_file(closed_by=None):
     open_ic3_debug_log_file()
 
 #------------------------------------------------------------------------------
-def write_ic3_debug_log_recd(recd):
+def write_ic3_debug_log_recd(recd, force_write=False):
 
-    if Gb.log_debug_flag is False:
+    if Gb.log_debug_flag is False and force_write is False:
         return
 
     if Gb.iC3DebugLogFile is None:
@@ -603,10 +611,9 @@ def _traceha(log_text, v1='+++', v2='', v3='', v4='', v5=''):
         else:
             trace_msg = (f"{Gb.trace_prefix} ::: TRACE ::: {log_text}, {log_msg}")
 
-        if Gb.iC3DebugLogFile:
-            write_ic3_debug_log_recd(trace_msg)
-        else:
-            Gb.HALogger.info(trace_msg)
+        Gb.HALogger.info(trace_msg)
+        # if Gb.iC3DebugLogFile:
+        write_ic3_debug_log_recd(trace_msg, force_write=True)
 
     except Exception as err:
         log_exception(err)
@@ -632,4 +639,4 @@ def _called_from():
     caller_filename = f"{caller_path.split('/')[-1]}........"
     caller_lineno = caller.lineno
 
-    return f"[{caller_filename[:8]}:{caller_lineno:04}] "
+    return f"[{caller_filename[:12]}:{caller_lineno:04}] "

@@ -11,7 +11,7 @@ from ..support              import start_ic3 as start_ic3
 from ..support.pyicloud_ic3 import (PyiCloudService, PyiCloudFailedLoginException, PyiCloudNoDevicesException,
                                     PyiCloudAPIResponseException, PyiCloud2FARequiredException,)
 
-from ..helpers.common       import (instr, is_statzone, )
+from ..helpers.common       import (instr, is_statzone, list_to_str, )
 from ..helpers.messaging    import (post_event, post_error_msg, post_monitor_msg,
                                     log_info_msg, log_exception, log_error_msg, internal_error_msg2, _trace, _traceha, )
 from ..helpers.time_util    import (time_now_secs, secs_to_time, secs_to_datetime, secs_to_time_str, format_age,
@@ -87,30 +87,34 @@ def verify_pyicloud_setup_status():
     if Gb.PyiCloud:
         return
 
-    # Gb.PyiCloudInit.init_stage['complete'] = False
-    # Gb.PyiCloudInit.init_stage['authenticate'] = False
-    # Gb.PyiCloudInit.init_stage['setup_famshr'] = False
-    # Gb.PyiCloudInit.init_stage['setup_fmf'] = False
-
     # PyiCloud is started early in __init__ and set up is complete
-    if (Gb.PyiCloudInit and Gb.PyiCloudInit.init_stage.get('complete', False)):
+    if Gb.PyiCloudInit and 'Complete' in Gb.PyiCloudInit.init_step_complete:
         Gb.PyiCloud = Gb.PyiCloudInit
-        post_event('iCloud Location Services Interface > Started during iCloud3 '
-                    'initialization completed successfully')
+        event_msg =(f"iCloud Location Svcs Interface > Started during initialization"
+                    f"{CRLF_DOT}All steps completed")
+        post_event(event_msg)
 
-    # Autenticate is completed, continue with setup of FamShr and FmF objects
-    elif (Gb.PyiCloudInit and Gb.PyiCloudInit.init_stage.get('authenticate', False)):
+    # Authenticate is completed, continue with setup of FamShr and FmF objects
+    elif Gb.PyiCloudInit and 'Authenticate' in Gb.PyiCloudInit.init_step_complete:
         Gb.PyiCloud = Gb.PyiCloudInit
+
+        event_msg =(f"iCloud Location Svcs Interface > Started during initialization"
+                    f"{CRLF_DOT}Completed: {list_to_str(Gb.PyiCloud.init_step_complete)}"
+                    f"{CRLF_DOT}Working on now: {list_to_str(Gb.PyiCloud.init_step_needed)}")
+        post_event(event_msg)
+
         Gb.PyiCloud.__init__(Gb.username, Gb.password,
                                     cookie_directory=Gb.icloud_cookies_dir,
                                     session_directory=(f"{Gb.icloud_cookies_dir}/session"),
                                     called_from='start_ic3')
 
-        post_event('iCloud Location Services Interface > Started during iCloud3 '
-                    'initialization completed successfully')
-
     else:
         # __init__ set up was not authenticated, start all over
+        event_msg =(f"iCloud Location Svcs Interface > Started during initialization"
+                    f"{CRLF_DOT}Completed: None"
+                    f"{CRLF_DOT}Working on now: {list_to_str(Gb.PyiCloud.init_step_needed)}")
+        post_event(event_msg)
+
         create_PyiCloudService(Gb.PyiCloud, called_from='start_ic3')
 
 #--------------------------------------------------------------------
@@ -134,7 +138,7 @@ def authenticate_icloud_account(PyiCloud, called_from='unknown', initial_setup=F
 
     try:
         Gb.pyicloud_auth_started_secs = time.time()
-        if PyiCloud and PyiCloud.init_stage['complete']:
+        if PyiCloud and 'Complete' in Gb.PyiCloudInit.init_step_complete:
             PyiCloud.authenticate(refresh_session=True, service='find')
 
         elif PyiCloud:

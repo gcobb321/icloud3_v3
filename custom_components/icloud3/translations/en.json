@@ -74,7 +74,9 @@
       "iosapp_search_error": "WARNING: Search Failure - No iOS App device that starts with the iCloud3 or FamShr devicename was found. Select 'None' or the device to be used.",
       "duplicate_other_devicename": "This name is already used in another integration or platform",
       "action_completed": "Requested Action has been completed",
-      "action_cancelled": "Requested Action has been cancelled"
+      "action_cancelled": "Requested Action has been cancelled",
+      "excluded_sensors_ha_restart": "Excluded Sensors were Updated. An HA restart is required"
+
     },
     "step": {
       "menu": {
@@ -185,22 +187,9 @@
         },
         "title": "Update Event Log 'Display Text As' Value"
       },
-      "action_menu": {
-        "menu_options": {
-          "action_divider1": "━━━━━━━━━━ ICLOUD3 CONTROL ACTIONS ━━━━━━━━━━ ",
-          "action_restart": "◈ RESTART > Restart iCloud3",
-          "action_pause": "◈ PAUSE > Pause polling on all devices",
-          "action_resume": "◈ RESUME > Resume Polling on all devices, Refresh all locations",
-          "action_divider2": "━━━━━━━━━━ ICLOUD ACCOUNT ACTIONS ━━━━━━━━━━ ",
-          "action_reauth": "◈ ENTER APPLE ID VERIFICATION CODE > Enter the Apple 6-digit Verification Code",
-          "action_reset_icloud": "◈ RESET AND REAUTHENTICATE ACCOUNT > Request New Auth Code",
-          "action_divider3": "━━━━━━━━━━━━ OTHER COMMANDS ━━━━━━━━━━━━ ",
-          "action_evlog_export": "◈ EXPORT EVENT LOG > Export Event Log data",
-          "action_waze_db_recalc": "◈ WAZE HIST DATABASE > Recalc time/distance data at midnight",
-          "action_waze_db_track": "◈ WAZE HIST MAP TRACK > Load route locations for map display",
-          "action_erase_all_devices": "◈ ERASE ALL DEVICES > Reinitialize the iCloud3 Device List",
-          "action_divider4": "═══════════════════════════════════════════════ ",
-          "action_exit": "◈ MAIN MENU > Return to the Main Menu"
+      "actions": {
+        "data": {
+          "opt_action": ""
         },
         "title": "iCloud3 Action Commands"
       },
@@ -263,13 +252,13 @@
           "track_from_base_zone": "PRIMARY 'HOME' ZONE - Use another zone if you are away from Home for an extended period (Global Override)",
           "track_from_home_zone": "ALSO TRACK FROM HOME ZONE - Continue to track from the Home zone when the Primary Home Zone is not Home",
           "stat_zone_header":       "════════════════ STATIONARY ZONE ══════════════════",
+          "base_offset_header":     "═══════════ STATIONARY ZONE BASE LOCATION ═════════",
           "stat_zone_fname": "FRIENDLY NAME - Name to display when in a Stat Zone. ",
           "stat_zone_still_time": "NO MOVEMENT TIME - Time at the same location before moving into a Stationary Zone",
           "stat_zone_inzone_interval": "INZONE INTERVAL - Time interval between location requests when in a Stationary Zone",
-          "base_offset_header":     "══════════ STATIONARY ZONE BASE LOCATION ════════",
           "stat_zone_base_latitude": "BASE LOCATION NORTH-SOUTH OFFSET - Dist (±km) north-south of the Home Zone (or it's GPS Latitude)",
           "stat_zone_base_longitude": "BASE LOCATION EAST/WEST OFFSET - Dist (±km) east-west of the Home Zone (or it's GPS Longitude)",
-          "opt_action":             "═════════════════════════════════════════════════════"
+          "opt_action":             "═══════════════════════════════════════════════════"
         },
         "data_description": {
           "passthru_zone_header": "You may be driving through a non-tracked zone but not stopping at tne zone. The iOS App issues a Enter Zone trigger when the device enters the zone and changes the device_tracker entity state to the Zone. iCloud3 does not process the Enter Zone trigger until the delay time has passed. This prevents processing a Zone Enter trigger that is immediately followed by a Zone Exit trigger and from cycling the iCloud3 device_tracker and zone sensors from Away (not_home) to the Zone and then back to Away",
@@ -291,9 +280,19 @@
           "tracking_other": "OTHER TRACKING SENSORS - Not normally used but available",
           "zone": "ZONE SENSORS - Device zone status and information",
           "other": "OTHER SENSORS - Sensors not in the above areas",
+          "excluded_sensors": "EXCLUDED SENSORS - Sensors that will not be created when iCloud3 starts",
           "opt_action": "═════════════════════════════════════════════════════"
         },
         "title": "Device and Tracking Sensors created by iCloud3"
+      },
+      "exclude_sensors": {
+        "data": {
+          "excluded_sensors": "EXCLUDED SENSORS - Sensors that will not be created when iCloud3 starts",
+          "filter": "FILTER DISPLAYED SENSORS - Select the Sensors that should be displayed",
+          "filtered_sensors": "ICLOUD3 SENSORS - A list of Sensors that are created when iCloud3 starts",
+          "opt_action": "═════════════════════════════════════════════════════"
+        },
+        "title": "Exclude Sensors"
       }
     }
   }

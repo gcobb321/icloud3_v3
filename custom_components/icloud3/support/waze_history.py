@@ -1,7 +1,6 @@
 from ..global_variables     import GlobalVariables as Gb
-from ..const                import (EVLOG_NOTICE, EVLOG_ALERT,
-                                    CRLF_DOT, CRLF,
-                                    RARROW2, DATETIME_ZERO,
+from ..const                import (EVLOG_NOTICE, EVLOG_ALERT, CRLF_DOT, CRLF, RARROW2, DATETIME_ZERO,
+                                    CONF_TRACK_FROM_ZONES
                                     )
 from ..helpers.messaging    import (broadcast_info_msg,
                                     post_event, post_internal_error, post_monitor_msg,
@@ -506,8 +505,8 @@ class WazeRouteHistory(object):
         zones table. Save the zone_id that will be used to access the data in locations table.
         - If not, add it.
         - If it is there, check the location to see if it is different than the one used to
-          get the waze route distances & times.
-          - If it has been changed, the zone's locations need to be updated with new distances
+            get the waze route distances & times.
+        - If it has been changed, the zone's locations need to be updated with new distances
             & times or deleted.
         '''
 
@@ -517,6 +516,8 @@ class WazeRouteHistory(object):
         try:
             # Check to see if all tracked from zones are in the zones table
             Gb.wazehist_zone_id = {}
+
+            # for from_zone, Zone in Gb.TrackedZones_by_zone.items():
             for from_zone, Zone in Gb.TrackedZones_by_zone.items():
                 # criteria = (f"zone='{from_zone}'")
                 criteria = (f"entity_id='{Zone.entity_id}'")
@@ -540,14 +541,12 @@ class WazeRouteHistory(object):
                     if zone_distance_check > .005:
                         Gb.wazehist_zone_id[from_zone] = wazehist_zone_recd[ZON_ID] * -1
 
-                        event_msg =(f"{EVLOG_ALERT}Waze History Database Zone Location Changed > "
-                                    f"Zone-{Zone.display_as}, "
-                                    f"Distance from last location-{format_dist_km(zone_distance_check)}"
-                                    f"{CRLF}The zone location has changed by more than 5m. "
-                                    f"The Waze History >  will not be used for this zone "
-                                    f"until the history for this zone has been recalculated. "
-                                    f"{CRLF_DOT}Select `Event Log > Action > WazeHistory-"
-                                    f"Recalculate Route Time/Dist` to do this now or,"
+                        event_msg =(f"{EVLOG_ALERT}Waze History Database Zone Location Change ({Zone.display_as}) > "
+                                    f"This zone`s location is {format_dist_km(zone_distance_check)} from it`s "
+                                    f"last location (>5m). The Waze History will not be used for this zone "
+                                    f"until the time/distance data has been recalculated. "
+                                    f"{CRLF_DOT}To Do this, select `Event Log > Action > WazeHistory-"
+                                    f"Recalculate Route Time/Dist` or,"
                                     f"{CRLF_DOT}This will be done automatically tonight "
                                     f"at midnight.")
                         post_event(event_msg)

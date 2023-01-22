@@ -16,6 +16,7 @@ from ..const                import (
                                     CONF_SENSORS_DEVICE, BATTERY_STATUS,
                                     CONF_WAZE_USED, CONF_WAZE_REGION, CONF_DISTANCE_METHOD,
                                     WAZE_SERVERS_BY_COUNTRY_CODE, WAZE_SERVERS_FNAME,
+                                    CONF_EXCLUDED_SENSORS,
                                     )
 
 from ..support              import start_ic3
@@ -166,6 +167,9 @@ def config_file_special_maintenance():
         _insert_into_conf_tracking(CONF_SETUP_ICLOUD_SESSION_EARLY, True)
         update_config_file_flag = True
 
+    if CONF_EXCLUDED_SENSORS not in Gb.conf_sensors:
+        Gb.conf_sensors[CONF_EXCLUDED_SENSORS] = ['None']
+
     # v3.0.0 beta 8 - Convert waze region code to us/il/row based on country code
     # correct_server = WAZE_SERVERS_BY_COUNTRY_CODE.get(Gb.ha_country_code, 'row')
     # correct_server_fname = WAZE_SERVERS_FNAME.get(correct_server, correct_server)
@@ -307,7 +311,6 @@ def load_icloud3_ha_config_yaml(ha_config_yaml):
 
 
     Gb.ha_config_yaml_icloud3_platform = {}
-    # _traceha(f"{ha_config_yaml=} ")
     if ha_config_yaml == '':
         return
 
@@ -320,8 +323,6 @@ def load_icloud3_ha_config_yaml(ha_config_yaml):
             break
 
     Gb.ha_config_yaml_icloud3_platform = ordereddict_to_dict(ic3_ha_config_yaml)
-    # _traceha(f"{ic3_ha_config_yaml=} ")
-    # _traceha(f"{Gb.ha_config_yaml_icloud3_platform=} ")
 
 #--------------------------------------------------------------------
 def build_initial_config_file_structure():

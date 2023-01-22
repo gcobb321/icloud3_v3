@@ -37,7 +37,7 @@ from .const_sensor      import (SENSOR_DEFINITION, SENSOR_GROUPS,
                                 SENSOR_FNAME, SENSOR_TYPE, SENSOR_ICON,
                                 SENSOR_ATTRS, SENSOR_DEFAULT, SENSOR_LIST_DISTANCE, )
 
-from .helpers.common    import (instr, format_battery_status, )
+from .helpers.common    import (instr,  )
 from .helpers.messaging import (log_info_msg, log_debug_msg, log_error_msg, log_exception,
                                 _trace, _traceha, )
 from .helpers.time_util import (time_to_12hrtime, time_remove_am_pm, secs_to_time_str, mins_to_time_str,
@@ -61,7 +61,6 @@ import homeassistant.util.dt as dt_util
 import logging
 # _LOGGER = logging.getLogger(__name__)
 _LOGGER = logging.getLogger(f"icloud3")
-
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities):
     '''Set up iCloud3 sensors'''
@@ -106,8 +105,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
 
         # Set the total count of the sensors that will be created
         if Gb.sensors_cnt == 0:
+            excluded_sensors_list = _excluded_sensors_list()
             Gb.sensors_cnt = len(NewSensors)
-            log_info_msg(f'Sensor entities created: {Gb.sensors_cnt}')
+            log_info_msg(f'Sensor entities created:  {len(NewSensors)}')
+            log_info_msg(f'Sensor entities excluded: {len(excluded_sensors_list)}')
 
         if NewSensors != []:
             async_add_entities(NewSensors, True)
@@ -128,7 +129,6 @@ def create_tracked_device_sensors(devicename, conf_device, new_sensors_list=None
     Add icloud3 sensors that have been selected via config_flow and
     arein the Gb.conf_sensors for each device
     '''
-
     try:
         NewSensors = []
 
@@ -167,7 +167,9 @@ def create_tracked_device_sensors(devicename, conf_device, new_sensors_list=None
 def _create_device_sensors(devicename, conf_device, sensors_list):
 
     NewSensors = []
-    devicename_sensors = Gb.Sensors_by_devicename.get(devicename, {})
+    devicename_sensors    = Gb.Sensors_by_devicename.get(devicename, {})
+    excluded_sensors_list = _excluded_sensors_list()
+
     # Cycle through the sensor definition names in the list of selected sensors,
     # Get the sensor entity name and create the sensor.[ic3_devicename]_[sensor_name] entity
     # The sensor_def name is the conf_sensor name set up in the Sensor_definition table.
@@ -177,6 +179,13 @@ def _create_device_sensors(devicename, conf_device, sensors_list):
     for sensor in sensors_list:
         if (sensor not in SENSOR_DEFINITION
                 or sensor.startswith('tfz_')):
+            continue
+
+        devicename_sensor = f"{devicename}_{sensor}"
+        # _traceha(f"{devicename_sensor=} {devicename_sensor in excluded_sensors_list=}")
+        if devicename_sensor in excluded_sensors_list:
+            # Gb.sensors_created_cnt += 1
+            log_debug_msg(f"Sensor entity excluded: sensor.{devicename_sensor}")
             continue
 
         Sensor = None
@@ -207,6 +216,7 @@ def _create_track_from_zone_sensors(devicename, conf_device, sensors_list):
 
     ha_zones, zone_entity_data   = entity_io.get_entity_registry_data(platform=ZONE)
     devicename_from_zone_sensors = Gb.Sensors_by_devicename_from_zone.get(devicename, {})
+    excluded_sensors_list        = _excluded_sensors_list()
 
     NewSensors = []
     for sensor in sensors_list:
@@ -228,6 +238,12 @@ def _create_track_from_zone_sensors(devicename, conf_device, sensors_list):
             Sensor = None
             sensor_zone = f"{sensor}_{from_zone}"
             devicename_sensor_zone = f"{devicename}_{sensor}_{from_zone}"
+
+            # _traceha(f"{devicename_sensor_zone=} {devicename_sensor_zone in excluded_sensors_list=}")
+            if devicename_sensor_zone in excluded_sensors_list:
+                # Gb.sensors_created_cnt += 1
+                log_debug_msg(f"Sensor entity excluded: sensor.{devicename_sensor_zone}")
+                continue
 
             if sensor_zone in devicename_from_zone_sensors:
                 continue
@@ -258,6 +274,7 @@ def create_monitored_device_sensors(devicename, conf_device, new_sensors_list=No
     '''
 
     try:
+        excluded_sensors_list = _excluded_sensors_list()
         NewSensors = []
         if new_sensors_list is None:
             new_sensors_list = []
@@ -281,6 +298,12 @@ def create_monitored_device_sensors(devicename, conf_device, new_sensors_list=No
         # suffixes.
         for sensor in sensors_list:
             Sensor = None
+
+            devicename_sensor = f"{devicename}_{sensor}"
+            if devicename_sensor in excluded_sensors_list:
+                # Gb.sensors_created_cnt += 1
+                log_debug_msg(f"Sensor entity excluded: sensor.{devicename_sensor}")
+                continue
 
             # Sensor object might exist, use it to recreate the sensor entity
             if sensor in devicename_sensors:
@@ -306,6 +329,11 @@ def create_monitored_device_sensors(devicename, conf_device, new_sensors_list=No
         log_msg = (f"►INTERNAL ERROR (UpdtSensorUpdate-{err})")
         log_error_msg(log_msg)
 
+#--------------------------------------------------------------------
+def _excluded_sensors_list():
+    return [sensor_fname.split('(')[1][:-1]
+                        for sensor_fname in Gb.conf_sensors['excluded_sensors']
+                        if instr(sensor_fname, '(')]
 #--------------------------------------------------------------------
 def _strip_sensor_def_table_item_prefix(sensor):
     '''
@@ -419,6 +447,11 @@ class SensorBase(SensorEntity):
     def devicename_sensor(self):
         '''Sensor friendly name.'''
         return f"{self.entity_id}_{self.sensor}"
+
+    @property
+    def fname_entity_name(self):
+        '''Sensor friendly name (devicename) '''
+        return f"{self.sensor_fname} ({self.entity_name})"
 
     @property
     def icon(self):
