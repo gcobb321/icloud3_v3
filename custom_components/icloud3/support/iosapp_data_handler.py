@@ -2,6 +2,7 @@
 
 from ..global_variables     import GlobalVariables as Gb
 from ..const                import (DEVICE_TRACKER, NOTIFY,
+                                    CRLF_DOT,
                                     NOT_SET, NOT_HOME, RARROW, STATIONARY,
                                     UTC_TIME, NUMERIC, HIGH_INTEGER, HHMMSS_ZERO,
                                     STAT_ZONE_NO_UPDATE, STAT_ZONE_MOVE_DEVICE_INTO, STAT_ZONE_MOVE_TO_BASE,
@@ -13,7 +14,7 @@ from ..const                import (DEVICE_TRACKER, NOTIFY,
                                     GPS_ACCURACY, VERT_ACCURACY, ALTITUDE,
                                     )
 
-from ..helpers.common       import (instr, is_statzone, zone_fname,  )
+from ..helpers.common       import (instr, is_statzone, zone_display_as,  )
 from ..helpers.messaging    import (post_event, post_monitor_msg,
                                     log_debug_msg, log_exception, log_error_msg, log_rawdata,
                                     _trace, _traceha, )
@@ -137,12 +138,12 @@ def check_iosapp_state_trigger_change(Device):
         elif Device.iosapp_data_trigger == EXIT_ZONE:
             if Device.iosapp_data_secs > Device.located_secs_plus_5:
                 Device.iosapp_data_change_reason = (f"{EXIT_ZONE}@{Device.iosapp_data_time} > "
-                                                    f"{zone_fname(Device.iosapp_zone_exit_zone)}")
+                                                    f"{zone_display_as(Device.iosapp_zone_exit_zone)}")
 
         # Enter trigger and the trigger changed from last poll overrules trigger change time
         elif (Device.iosapp_data_trigger == ENTER_ZONE):
             if Device.is_inzone_iosapp_state:
-                zone_display_as = zone_fname(Device.iosapp_zone_enter_zone)
+                zone_display_as = zone_display_as(Device.iosapp_zone_enter_zone)
             else:
                 zone_display_as = ''
             Device.iosapp_data_change_reason = (f"{ENTER_ZONE}@{Device.iosapp_data_time} > "
@@ -408,9 +409,8 @@ def update_iosapp_data_from_entity_attrs(Device, device_trkr_attrs):
     else:
         ''
 
-    monitor_msg = (f"UPDATED iOSApp, "
-                    f"{Device.devicename}, "
-                    f"{Device.iosapp_data_trigger}, "
+    monitor_msg = (f"UPDATED iOSApp > {Device.iosapp_data_trigger}, "
+                    f"{CRLF_DOT}{Device.devicename}, "
                     f"{Device.iosapp_data_time_gps}, "
                     f"{Device.iosapp_data_fgps}, "
                     f"{home_dist}")

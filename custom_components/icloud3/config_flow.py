@@ -37,10 +37,12 @@ from .const             import (DOMAIN,
                                 CONF_RAW_MODEL, CONF_MODEL, CONF_MODEL_DISPLAY_NAME, CONF_FAMSHR_DEVICE_ID,
                                 CONF_EVLOG_DISPLAY_ORDER,
                                 CONF_UNIT_OF_MEASUREMENT, CONF_TIME_FORMAT, CONF_MAX_INTERVAL, CONF_OFFLINE_INTERVAL,
-                                CONF_GPS_ACCURACY_THRESHOLD, CONF_OLD_LOCATION_THRESHOLD,
+                                CONF_GPS_ACCURACY_THRESHOLD, CONF_OLD_LOCATION_THRESHOLD, CONF_OLD_LOCATION_ADJUSTMENT,
                                 CONF_TRAVEL_TIME_FACTOR, CONF_TFZ_TRACKING_MAX_DISTANCE,
                                 CONF_PASSTHRU_ZONE_TIME, CONF_LOG_LEVEL,
-                                CONF_DISPLAY_ZONE_FORMAT, CONF_CENTER_IN_ZONE, CONF_DISCARD_POOR_GPS_INZONE,
+                                CONF_DISPLAY_ZONE_FORMAT, CONF_ZONE_SENSOR_EVLOG_FORMAT,
+                                CONF_CENTER_IN_ZONE, CONF_DISCARD_POOR_GPS_INZONE,
+                                CONF_DISTANCE_BETWEEN_DEVICES,
                                 CONF_WAZE_USED, CONF_WAZE_SERVER, CONF_WAZE_MAX_DISTANCE, CONF_WAZE_MIN_DISTANCE,
                                 CONF_WAZE_REALTIME, CONF_WAZE_HISTORY_DATABASE_USED, CONF_WAZE_HISTORY_MAX_DISTANCE,
                                 CONF_WAZE_HISTORY_TRACK_DIRECTION,
@@ -62,7 +64,7 @@ from .const             import (DOMAIN,
                                 DEFAULT_DEVICE_REINITIALIZE_CONF,
                                 )
 from .const_sensor      import (SENSOR_GROUPS )
-from .helpers.common    import (instr, isnumber, obscure_field, zone_fname, )
+from .helpers.common    import (instr, isnumber, obscure_field, zone_display_as, )
 from .helpers.messaging import (log_exception, _traceha, _trace, post_event, close_reopen_ic3_debug_log_file, )
 from .helpers           import entity_io
 from .                  import sensor as ic3_sensor
@@ -1234,9 +1236,9 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 
         if 'passthru_zone_header' in user_input:
             if user_input['passthru_zone_header'] is False:
-                user_input[CONF_PASSTHRU_ZONE_TIME] = '55:55:55'
+                user_input[CONF_PASSTHRU_ZONE_TIME] = HHMMSS_ZERO
             elif (user_input['passthru_zone_header'] is True
-                    and user_input[CONF_PASSTHRU_ZONE_TIME] == '55:55:55'):
+                    and user_input[CONF_PASSTHRU_ZONE_TIME] == HHMMSS_ZERO):
                 user_input[CONF_PASSTHRU_ZONE_TIME] = DEFAULT_GENERAL_CONF[CONF_PASSTHRU_ZONE_TIME]
 
         if 'track_from_zone_header' in user_input:
@@ -1247,9 +1249,9 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 
         if 'stat_zone_header' in user_input:
             if user_input['stat_zone_header'] is False:
-                user_input[CONF_STAT_ZONE_STILL_TIME] = '55:55:55'
+                user_input[CONF_STAT_ZONE_STILL_TIME] = HHMMSS_ZERO
             elif (user_input['stat_zone_header'] is True
-                    and user_input[CONF_STAT_ZONE_STILL_TIME] == '55:55:55'):
+                    and user_input[CONF_STAT_ZONE_STILL_TIME] == HHMMSS_ZERO):
                 user_input[CONF_STAT_ZONE_STILL_TIME] = DEFAULT_GENERAL_CONF[CONF_STAT_ZONE_STILL_TIME]
 
         if CONF_STAT_ZONE_BASE_LATITUDE not in self.errors:
@@ -2389,12 +2391,12 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             device_info +=  f", iOSApp-({conf_device_data[CONF_IOSAPP_DEVICE]})"
 
         if conf_device_data[CONF_TRACK_FROM_ZONES] != [HOME]:
-            tfz_fnames = [zone_fname(z)
+            tfz_fnames = [zone_display_as(z)
                     for z in conf_device_data[CONF_TRACK_FROM_ZONES]]
             device_info +=  f", TrackFromZones-({', '.join(tfz_fnames)})"
         if conf_device_data[CONF_TRACK_FROM_BASE_ZONE] != HOME:
             z = conf_device_data[CONF_TRACK_FROM_BASE_ZONE]
-            device_info +=  f", PrimaryHomeZone-({zone_fname(z)})"
+            device_info +=  f", PrimaryHomeZone-({zone_display_as(z)})"
 
 
         return device_info
@@ -3399,6 +3401,9 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                             default=self._option_parm_to_text(CONF_DISPLAY_ZONE_FORMAT, DISPLAY_ZONE_FORMAT_ITEMS_KEY_TEXT)):
                             selector.SelectSelector(selector.SelectSelectorConfig(
                                 options=dict_value_to_list(DISPLAY_ZONE_FORMAT_ITEMS_KEY_TEXT), mode='dropdown')),
+                vol.Required(CONF_ZONE_SENSOR_EVLOG_FORMAT,
+                            default=Gb.conf_general[CONF_ZONE_SENSOR_EVLOG_FORMAT]):
+                            selector.BooleanSelector(),
                 vol.Required(CONF_UNIT_OF_MEASUREMENT,
                             default=self._option_parm_to_text(CONF_UNIT_OF_MEASUREMENT, UNIT_OF_MEASUREMENT_ITEMS_KEY_TEXT)):
                             selector.SelectSelector(selector.SelectSelectorConfig(
@@ -3489,6 +3494,12 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 vol.Required(CONF_OLD_LOCATION_THRESHOLD,
                             default=self._hhmmss_to_duration(CONF_OLD_LOCATION_THRESHOLD)):
                             selector.DurationSelector(),
+                vol.Required(CONF_OLD_LOCATION_ADJUSTMENT,
+                            default=self._hhmmss_to_duration(CONF_OLD_LOCATION_ADJUSTMENT)):
+                            selector.DurationSelector(),
+                vol.Required(CONF_DISTANCE_BETWEEN_DEVICES,
+                            default=Gb.conf_general[CONF_DISTANCE_BETWEEN_DEVICES]):
+                            selector.BooleanSelector(),
                 vol.Required(CONF_MAX_INTERVAL,
                             default=self._hhmmss_to_duration(CONF_MAX_INTERVAL)):
                             selector.DurationSelector(),
@@ -3535,6 +3546,9 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                             selector.BooleanSelector(),
                 vol.Required(CONF_DISCARD_POOR_GPS_INZONE,
                             default=Gb.conf_general[CONF_DISCARD_POOR_GPS_INZONE]):
+                            selector.BooleanSelector(),
+                vol.Required(CONF_DISTANCE_BETWEEN_DEVICES,
+                            default=Gb.conf_general[CONF_DISTANCE_BETWEEN_DEVICES]):
                             selector.BooleanSelector(),
 
                 vol.Required('opt_action',
@@ -3591,9 +3605,8 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         elif step_id == 'special_zones':
             if self.opt_zone_name_key_text == {}:
                 self._build_opt_zone_list()
-            stat_zone_used       = (Gb.conf_general[CONF_STAT_ZONE_STILL_TIME] != '55:55:55')
-            base_offset_header   = stat_zone_used
-            pass_thru_zone_used  = (Gb.conf_general[CONF_PASSTHRU_ZONE_TIME] != '55:55:55')
+            stat_zone_used       = (Gb.conf_general[CONF_STAT_ZONE_STILL_TIME] != HHMMSS_ZERO)
+            pass_thru_zone_used  = (Gb.conf_general[CONF_PASSTHRU_ZONE_TIME] != HHMMSS_ZERO)
             track_from_zone_home = (Gb.conf_general[CONF_TRACK_FROM_BASE_ZONE] == HOME)
 
             schema = vol.Schema({

@@ -253,8 +253,8 @@ SENSOR_DEFINITION = {
 
         # CONF_SENSORS_TRACKING_OTHER
         TRIGGER: [
-                'Trigger, ha_history_exclude',
-                'text',
+                'Trigger',
+                'text, ha_history_exclude',
                 'mdi:flash-outline',
                 [],
                 BLANK_SENSOR_FIELD],

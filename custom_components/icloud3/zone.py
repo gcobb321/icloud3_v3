@@ -16,9 +16,8 @@
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 from .global_variables  import GlobalVariables as Gb
-from .const             import (HOME,
-                                STATIONARY,
-                                HIGH_INTEGER,
+from .const             import (HOME, STATIONARY, HIGH_INTEGER,
+                                ZONE, TITLE, FNAME,
                                 STAT_ZONE_NO_UPDATE, STAT_ZONE_MOVE_DEVICE_INTO, STAT_ZONE_MOVE_TO_BASE,
                                 NAME, STATIONARY_FNAME, ID,
                                 FRIENDLY_NAME, ICON,
@@ -83,7 +82,12 @@ class iCloud3_Zone(object):
 
         self.sensor_prefix = '' if self.zone == HOME else self.display_as
         self.dist_time_history = []        #Entries are a list - [lat, long, distance, travel time]
-        Gb.zone_display_as[zone] = self.display_as
+
+        if Gb.display_zone_format   == ZONE:  self.display_as = self.zone
+        elif Gb.display_zone_format == NAME:  self.display_as = self.name
+        elif Gb.display_zone_format == TITLE: self.display_as = self.title
+        elif Gb.display_zone_format == FNAME: self.display_as = self.fname
+        else: self.display_as = self.fname
 
         log_rawdata(f"Zone Data - <{zone} > ", zone_data, log_rawdata_flag=True)
 
@@ -192,7 +196,12 @@ class iCloud3_StationaryZone(iCloud3_Zone):
         self.base_attrs = {}
         self.base_attrs[NAME]          = self.zone
         self.base_attrs[ICON]          = f"mdi:alpha-{icon_name}"
-        self.base_attrs[FRIENDLY_NAME] = (f"{self.devicename}_{STATIONARY}").title()
+        stat_zone_fname = (f"{self.devicename}_{STATIONARY}").title()
+        ztitle = stat_zone_fname.replace("_S_","'s " ).replace("_", " ")
+        ztitle = ztitle.replace(' Iphone', ' iPhone')
+        ztitle = ztitle.replace(' Ipad', ' iPad')
+        ztitle = ztitle.replace(' Ipod', ' iPod')
+        self.base_attrs[FRIENDLY_NAME] = ztitle
         self.base_attrs[LATITUDE]      = self.base_latitude
         self.base_attrs[LONGITUDE]     = self.base_longitude
         self.base_attrs[RADIUS]        = 1
@@ -219,6 +228,7 @@ class iCloud3_StationaryZone(iCloud3_Zone):
             self.fname = self.display_as = Gb.stat_zone_fname.replace('[name]', Device.fname[:3])
         else:
             self.fname = self.display_as = STATIONARY_FNAME
+
         Gb.zone_display_as[self.zone] = self.display_as
 
     #---------------------------------------------------------------------
@@ -245,10 +255,10 @@ class iCloud3_StationaryZone(iCloud3_Zone):
         else:
             return HIGH_INTEGER
 
-    # Return True if the timer has expired
+    # Return True if the timer has expired, False if not expired or not using Stat Zone
     @property
     def timer_expired(self):
-        return (self.timer_left <= 0)
+        return (Gb.is_stat_zone_used and self.timer_left <= 0)
 
     @property
     def move_limit_exceeded(self):

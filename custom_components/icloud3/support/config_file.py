@@ -2,21 +2,23 @@
 from ..global_variables     import GlobalVariables as Gb
 from ..const                import (
                                     APPLE_SPECIAL_ICLOUD_SERVER_COUNTRY_CODE,
-                                    RARROW,
+                                    RARROW, HHMMSS_ZERO, NONE_FNAME,
+                                    INACTIVE_DEVICE,
                                     CONF_IC3_VERSION, VERSION, CONF_EVLOG_CARD_DIRECTORY, CONF_EVLOG_CARD_PROGRAM,
                                     CONF_UPDATE_DATE, CONF_PASSWORD, CONF_ICLOUD_SERVER_ENDPOINT_SUFFIX,
                                     CONF_DEVICES, CONF_SETUP_ICLOUD_SESSION_EARLY,
                                     CONF_UNIT_OF_MEASUREMENT, CONF_TIME_FORMAT, CONF_LOG_LEVEL,
+                                    CONF_FAMSHR_DEVICENAME, CONF_FMF_EMAIL, CONF_IOSAPP_DEVICE, CONF_TRACKING_MODE,
                                     CONF_FAMSHR_DEVICENAME2, CONF_FAMSHR_DEVICE_ID2,
                                     CONF_RAW_MODEL2, CONF_MODEL2, CONF_MODEL_DISPLAY_NAME2, CONF_IOSAPP_DEVICE2,
-                                    CF_DEFAULT_IC3_CONF_FILE,
+                                    CF_DEFAULT_IC3_CONF_FILE, CONF_ZONE_SENSOR_EVLOG_FORMAT,
                                     DEFAULT_PROFILE_CONF, DEFAULT_TRACKING_CONF, DEFAULT_GENERAL_CONF,
                                     DEFAULT_SENSORS_CONF,
                                     HOME_DISTANCE, CONF_SENSORS_TRACKING_DISTANCE,
                                     CONF_SENSORS_DEVICE, BATTERY_STATUS,
                                     CONF_WAZE_USED, CONF_WAZE_REGION, CONF_DISTANCE_METHOD,
                                     WAZE_SERVERS_BY_COUNTRY_CODE, WAZE_SERVERS_FNAME,
-                                    CONF_EXCLUDED_SENSORS,
+                                    CONF_EXCLUDED_SENSORS, CONF_OLD_LOCATION_ADJUSTMENT, CONF_DISTANCE_BETWEEN_DEVICES,
                                     )
 
 from ..support              import start_ic3
@@ -118,6 +120,7 @@ def read_storage_icloud3_configuration_file(filename_suffix=''):
             Gb.conf_tracking[CONF_PASSWORD] = decode_password(Gb.conf_tracking[CONF_PASSWORD])
 
             config_file_special_maintenance()
+            count_device_tracking_methods_configured()
 
         return True
 
@@ -126,6 +129,39 @@ def read_storage_icloud3_configuration_file(filename_suffix=''):
 
     return False
 
+#--------------------------------------------------------------------
+def count_device_tracking_methods_configured():
+    '''
+    Count the number of devices that have been configured for the famshr,
+    fmf and ios app tracking methods. This will be compared to the actual
+    number of devices returned from iCloud during setup in PyiCloud. Sometmes,
+    iCloud does not return all devices in the FamShr list and a refresh/retry
+    is needed.
+    '''
+    try:
+        Gb.conf_famshr_device_cnt = 0
+        Gb.conf_fmf_device_cnt    = 0
+        Gb.conf_iosapp_device_cnt = 0
+
+        for conf_device in Gb.conf_devices:
+            _traceha(f"{conf_device=}")
+            if conf_device[CONF_TRACKING_MODE] == INACTIVE_DEVICE:
+                _traceha(f"{conf_device[CONF_TRACKING_MODE]} {INACTIVE_DEVICE=}")
+                continue
+
+            if conf_device[CONF_FAMSHR_DEVICENAME] != NONE_FNAME:
+                Gb.conf_famshr_device_cnt += 1
+                _traceha(f"{conf_device[CONF_FAMSHR_DEVICENAME]=} {Gb.conf_famshr_device_cnt=} {Gb.conf_fmf_device_cnt=} {Gb.conf_iosapp_device_cnt=}")
+            if conf_device[CONF_FMF_EMAIL] != NONE_FNAME:
+                Gb.conf_fmf_device_cnt += 1
+                _traceha(f"{conf_device[CONF_FMF_EMAIL]=} {Gb.conf_famshr_device_cnt=} {Gb.conf_fmf_device_cnt=} {Gb.conf_iosapp_device_cnt=}")
+            if conf_device[CONF_IOSAPP_DEVICE] != NONE_FNAME:
+                Gb.conf_iosapp_device_cnt += 1
+                _traceha(f"{conf_device[CONF_IOSAPP_DEVICE]=} {Gb.conf_famshr_device_cnt=} {Gb.conf_fmf_device_cnt=} {Gb.conf_iosapp_device_cnt=}")
+
+        _traceha(f"{Gb.conf_famshr_device_cnt=} {Gb.conf_fmf_device_cnt=} {Gb.conf_iosapp_device_cnt=}")
+    except Exception as err:
+        log_exception(err)
 #--------------------------------------------------------------------
 def config_file_special_maintenance():
     '''
@@ -158,32 +194,35 @@ def config_file_special_maintenance():
             conf_device.pop(CONF_IOSAPP_DEVICE2, None)
             update_config_file_flag = True
 
-    if (CONF_IC3_VERSION not in Gb.conf_profile
-            or Gb.conf_profile[CONF_IC3_VERSION] == VERSION):
+    if Gb.conf_profile[CONF_IC3_VERSION] != VERSION:
         Gb.conf_profile[CONF_IC3_VERSION] = VERSION
         update_config_file_flag = True
 
-    if CONF_SETUP_ICLOUD_SESSION_EARLY not in Gb.conf_tracking:
-        _insert_into_conf_tracking(CONF_SETUP_ICLOUD_SESSION_EARLY, True)
-        update_config_file_flag = True
+    # if CONF_SETUP_ICLOUD_SESSION_EARLY not in Gb.conf_tracking:
+    #     _insert_into_conf_tracking(CONF_SETUP_ICLOUD_SESSION_EARLY, True)
+    #     update_config_file_flag = True
 
-    if CONF_EXCLUDED_SENSORS not in Gb.conf_sensors:
-        Gb.conf_sensors[CONF_EXCLUDED_SENSORS] = ['None']
+    update_config_file_flag = \
+        (_add_config_file_parameter(Gb.conf_tracking, CONF_SETUP_ICLOUD_SESSION_EARLY, True)
+            or update_config_file_flag)
 
-    # v3.0.0 beta 8 - Convert waze region code to us/il/row based on country code
-    # correct_server = WAZE_SERVERS_BY_COUNTRY_CODE.get(Gb.ha_country_code, 'row')
-    # correct_server_fname = WAZE_SERVERS_FNAME.get(correct_server, correct_server)
-    # config_server    = Gb.conf_general[CONF_WAZE_REGION]
-    # config_server_fname = WAZE_SERVERS_FNAME.get(config_server, config_server)
-    # if (config_server not in WAZE_SERVERS_BY_COUNTRY_CODE
-    #         or config_server != correct_server):
-    #     log_msg = ( f"iCloud3 Warning: Current Waze Route Server "
-    #                 f"({config_server_fname}) "
-    #                 f"might not match the server for your country "
-    #                 f"({Gb.ha_country_code.upper()}). "
-    #                 f"Changing the configuration to the correct value "
-    #                 f"({correct_server_fname})")
-        # Gb.conf_general[CONF_WAZE_REGION] = correct_server
+    update_config_file_flag = \
+        (_add_config_file_parameter(Gb.conf_sensors, CONF_EXCLUDED_SENSORS, ['None'])
+            or update_config_file_flag)
+
+    update_config_file_flag = \
+        (_add_config_file_parameter(Gb.conf_general, CONF_OLD_LOCATION_ADJUSTMENT, HHMMSS_ZERO)
+            or update_config_file_flag)
+
+    update_config_file_flag = \
+        (_add_config_file_parameter(Gb.conf_general, CONF_DISTANCE_BETWEEN_DEVICES, True)
+            or update_config_file_flag)
+
+    update_config_file_flag = \
+        (_add_config_file_parameter(Gb.conf_general, CONF_ZONE_SENSOR_EVLOG_FORMAT, False)
+            or update_config_file_flag)
+
+
     if Gb.conf_general[CONF_WAZE_REGION].lower() in ['na']:
         Gb.conf_general[CONF_WAZE_REGION] = 'us'
         update_config_file_flag = True
@@ -193,6 +232,25 @@ def config_file_special_maintenance():
 
     if update_config_file_flag:
         write_storage_icloud3_configuration_file()
+
+#--------------------------------------------------------------------
+def _add_config_file_parameter(conf_section, conf_parameter, default_value):
+    '''
+    Update the configuration file with a new field if it is not in the file.
+
+    Return:
+        True - File was updated
+        False - File was not updated
+    '''
+
+    if conf_parameter not in conf_section:
+        if conf_section is Gb.conf_tracking:
+            _insert_into_conf_tracking(conf_parameter, default_value)
+        else:
+            conf_section[conf_parameter] = default_value
+        return True
+
+    return False
 
 #--------------------------------------------------------------------
 def _insert_into_conf_tracking(new_item, initial_value):

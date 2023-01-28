@@ -150,7 +150,7 @@ def obscure_field(field):
     return obscure_field
 
 #--------------------------------------------------------------------
-def zone_fname(zone):
+def zone_display_as(zone):
     return Gb.zone_display_as.get(zone, zone.title())
 
 #--------------------------------------------------------------------

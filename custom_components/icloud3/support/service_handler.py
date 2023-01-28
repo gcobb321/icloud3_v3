@@ -263,8 +263,9 @@ def find_iphone_alert_service_handler(devicename):
     Device = Gb.Devices_by_devicename[devicename]
     if Device.tracking_method_FAMSHR:
         device_id = Device.device_id_famshr
-        if device_id and Gb.PyiCloud:
-            Gb.PyiCloud.play_sound(device_id)
+        if device_id and Gb.PyiCloud and Gb.PyiCloud.FamilySharing:
+            Gb.PyiCloud.FamilySharing.play_sound(device_id, subject="Find My iPhone Alert")
+            # Gb.PyiCloud.play_sound(device_id, subject="Find My iPhone Alert")
 
             post_event(devicename, "iCloud Find My iPhone Alert sent")
             return

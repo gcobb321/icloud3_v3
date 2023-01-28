@@ -29,9 +29,9 @@ from .const          import (DEVICENAME_IOSAPP, VERSION, NOT_SET, HOME_FNAME, HO
                             DEFAULT_GENERAL_CONF,
 
                             CONF_UNIT_OF_MEASUREMENT,
-                            CONF_DISPLAY_ZONE_FORMAT, CONF_CENTER_IN_ZONE,
+                            CONF_DISPLAY_ZONE_FORMAT, CONF_ZONE_SENSOR_EVLOG_FORMAT, CONF_CENTER_IN_ZONE,
                             CONF_TRAVEL_TIME_FACTOR, CONF_GPS_ACCURACY_THRESHOLD,
-                            CONF_DISCARD_POOR_GPS_INZONE, CONF_OLD_LOCATION_THRESHOLD,
+                            CONF_DISCARD_POOR_GPS_INZONE, CONF_OLD_LOCATION_THRESHOLD, CONF_OLD_LOCATION_ADJUSTMENT,
                             CONF_MAX_INTERVAL, CONF_OFFLINE_INTERVAL, CONF_IOSAPP_ALIVE_INTERVAL,
                             CONF_WAZE_REGION, CONF_WAZE_MAX_DISTANCE, CONF_WAZE_MIN_DISTANCE,
                             CONF_WAZE_REALTIME,
@@ -40,7 +40,7 @@ from .const          import (DEVICENAME_IOSAPP, VERSION, NOT_SET, HOME_FNAME, HO
                             CONF_STAT_ZONE_FNAME,
                             CONF_STAT_ZONE_BASE_LATITUDE, CONF_STAT_ZONE_BASE_LONGITUDE,
                             CONF_STAT_ZONE_INZONE_INTERVAL, CONF_LOG_LEVEL,
-                            CONF_IOSAPP_REQUEST_LOC_MAX_CNT,
+                            CONF_IOSAPP_REQUEST_LOC_MAX_CNT, CONF_DISTANCE_BETWEEN_DEVICES,
                             CONF_PASSTHRU_ZONE_TIME, CONF_TRACK_FROM_BASE_ZONE, CONF_TRACK_FROM_HOME_ZONE,
                             CONF_TFZ_TRACKING_MAX_DISTANCE,
 
@@ -218,6 +218,9 @@ class GlobalVariables(object):
     conf_sensors      = {}
     conf_devicenames  = []
     conf_famshr_devicenames = []
+    conf_famshr_device_cnt  = 0                   # Number of devices with FamShr tracking set up
+    conf_fmf_device_cnt     = 0                   # Number of devices with FmF tracking set up
+    conf_iosapp_device_cnt  = 0                   # Number of devices with iOS App  tracking set up
 
     sensors_cnt                 = 0               # Number of sensors that will be creted (__init__.py)
     sensors_created_cnt         = 0               # Number of sensors that have been set up (incremented in sensor.py)
@@ -239,7 +242,9 @@ class GlobalVariables(object):
     offline_interval_secs           = hhmmss_to_secs(DEFAULT_GENERAL_CONF[CONF_OFFLINE_INTERVAL])
     iosapp_alive_interval_secs      = hhmmss_to_secs(DEFAULT_GENERAL_CONF[CONF_IOSAPP_ALIVE_INTERVAL])
     old_location_threshold          = hhmmss_to_secs(DEFAULT_GENERAL_CONF[CONF_OLD_LOCATION_THRESHOLD])
+    old_location_adjustment         = hhmmss_to_secs(DEFAULT_GENERAL_CONF[CONF_OLD_LOCATION_ADJUSTMENT])
     passthru_zone_interval_secs     = hhmmss_to_secs(DEFAULT_GENERAL_CONF[CONF_PASSTHRU_ZONE_TIME])
+    is_passthru_zone_used          = (14400 > passthru_zone_interval_secs > 0)  # time > 0 and < 4 hrs
     track_from_base_zone            = DEFAULT_GENERAL_CONF[CONF_TRACK_FROM_BASE_ZONE]
     track_from_home_zone            = DEFAULT_GENERAL_CONF[CONF_TRACK_FROM_HOME_ZONE]
     gps_accuracy_threshold          = DEFAULT_GENERAL_CONF[CONF_GPS_ACCURACY_THRESHOLD]
@@ -248,7 +253,9 @@ class GlobalVariables(object):
 
     center_in_zone_flag             = DEFAULT_GENERAL_CONF[CONF_CENTER_IN_ZONE]
     display_zone_format             = DEFAULT_GENERAL_CONF[CONF_DISPLAY_ZONE_FORMAT]
+    zone_sensor_evlog_format        = DEFAULT_GENERAL_CONF[CONF_ZONE_SENSOR_EVLOG_FORMAT]
     discard_poor_gps_inzone_flag    = DEFAULT_GENERAL_CONF[CONF_DISCARD_POOR_GPS_INZONE]
+    distance_between_device_flag    = DEFAULT_GENERAL_CONF[CONF_DISTANCE_BETWEEN_DEVICES]
 
     tfz_tracking_max_distance       = DEFAULT_GENERAL_CONF[CONF_TFZ_TRACKING_MAX_DISTANCE]
 
@@ -265,7 +272,7 @@ class GlobalVariables(object):
     stat_zone_base_longitude        = DEFAULT_GENERAL_CONF[CONF_STAT_ZONE_BASE_LONGITUDE]
     stat_zone_inzone_interval_secs  = hhmmss_to_secs(DEFAULT_GENERAL_CONF[CONF_STAT_ZONE_INZONE_INTERVAL])
     stat_zone_still_time_secs       = hhmmss_to_secs(DEFAULT_GENERAL_CONF[CONF_STAT_ZONE_STILL_TIME])
-
+    is_stat_zone_used               = (14400 > stat_zone_still_time_secs > 0)   # time > 0 and < 4 hrs
     # Variables used to config the device variables when setting up
     # intervals and determining the tracking method
     inzone_interval_secs = {}

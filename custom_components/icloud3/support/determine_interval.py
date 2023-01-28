@@ -44,7 +44,7 @@ from ..const                import (HOME, NOT_HOME , NOT_SET, HIGH_INTEGER, CHEC
 
 from ..support              import iosapp_interface
 from ..helpers.common       import (instr, round_to_zero, is_inzone_zone, is_statzone, isnot_inzone_zone,
-                                    zone_fname, )
+                                    zone_display_as, )
 from ..helpers.messaging    import (post_event, post_error_msg,
                                     post_internal_error, post_monitor_msg, log_debug_msg, log_rawdata,
                                     log_info_msg, log_error_msg, log_exception, _trace, _traceha, )
@@ -842,7 +842,7 @@ def set_passthru_zone_delay(Device):
     #     DeviceFmZone.last_update_time = time_to_12hrtime(Gb.this_update_time)
 
     event_msg =(f"PassThru Zone Delay > Entered zone but may be just passing through, "
-                f"ZoneEntered-{zone_fname(Device.passthru_zone)}, "
+                f"ZoneEntered-{zone_display_as(Device.passthru_zone)}, "
                 f"UpdateIn-{secs_to_time(Device.next_update_secs)} "
                 f"({secs_to_time_str(Gb.passthru_zone_interval_secs)})")
     post_event(Device.devicename, event_msg)
@@ -852,7 +852,8 @@ def set_passthru_zone_delay(Device):
 #--------------------------------------------------------------------
 def is_passthru_zone_delay_active(Device):
 
-    if Device.passthru_zone_expire_secs == 0:
+    if (Gb.is_passthru_zone_used is False
+            or Device.passthru_zone_expire_secs == 0):
         return False
     if Device.passthru_zone_expire_secs >= Gb.this_update_secs:
         return True
@@ -1106,13 +1107,15 @@ def update_nearby_device_info(Device):
     {devicename: [dist_m, gps_accuracy_factor, display_text]}
     '''
     if (len(Gb.Devices) == 1
-            or len(Device.dist_to_other_devices) == 0):
+            or len(Device.dist_to_other_devices) == 0
+            or Gb.distance_between_device_flag is False):
         return
 
     closest_device_distance     = HIGH_INTEGER
     Device.dist_apart_msg       = ''
     Device.NearDevice           = None
     Device.near_device_distance = 0
+    Device.near_device_checked_secs = time_now_secs()
 
     for devicename, dist_to_other_devices in Device.dist_to_other_devices.items():
         _Device = Gb.Devices_by_devicename[devicename]

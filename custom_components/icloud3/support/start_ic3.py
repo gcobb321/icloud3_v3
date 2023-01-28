@@ -5,11 +5,9 @@ from ..const            import (
                                 DEBUG_TRACE_CONTROL_FLAG,
                                 STORAGE_DIR, STORAGE_KEY_ENTITY_REGISTRY, IC3LOGGER_FILENAME,
                                 DEVICE_TRACKER, DEVICE_TRACKER_DOT, NOTIFY, DOMAIN,
-                                HOME, STATIONARY,
-                                ERROR,
-                                CALC,
+                                HOME, STATIONARY, ERROR,
                                 STATE_TO_ZONE_BASE, CMD_RESET_PYICLOUD_SESSION,
-                                EVLOG_INIT_HDR, EVLOG_ALERT, EVLOG_IC3_STARTING, EVLOG_HIGHLIGHT,
+                                EVLOG_INIT_HDR, EVLOG_ALERT, EVLOG_IC3_STARTING, EVLOG_NOTICE,
                                 EVLOG_TABLE_MAX_CNT_BASE, EVLOG_TABLE_MAX_CNT_ZONE,
                                 CRLF, CRLF_DOT, CRLF_CHK, CRLF_NBSP6_DOT, DOT, DOT2, CRLF_X, CRLF_NBSP6_X,
                                 RARROW, NBSP4, NBSP6, CIRCLE_X, INFO_SEPARATOR, DASH_20, CHECK_MARK,
@@ -31,10 +29,12 @@ from ..const            import (
                                 CONF_INZONE_INTERVALS, CONF_TRACK_FROM_ZONES,
                                 CONF_UNIT_OF_MEASUREMENT, CONF_TIME_FORMAT, CONF_MAX_INTERVAL,
                                 CONF_IOSAPP_ALIVE_INTERVAL, CONF_GPS_ACCURACY_THRESHOLD, CONF_OLD_LOCATION_THRESHOLD,
+                                CONF_OLD_LOCATION_ADJUSTMENT,
                                 CONF_TFZ_TRACKING_MAX_DISTANCE, CONF_TRACK_FROM_BASE_ZONE, CONF_TRACK_FROM_HOME_ZONE,
-                                CONF_TRAVEL_TIME_FACTOR, CONF_PASSTHRU_ZONE_TIME,
+                                CONF_TRAVEL_TIME_FACTOR, CONF_PASSTHRU_ZONE_TIME, CONF_DISTANCE_BETWEEN_DEVICES,
                                 CONF_LOG_LEVEL,
-                                CONF_DISPLAY_ZONE_FORMAT, CONF_CENTER_IN_ZONE, CONF_DISCARD_POOR_GPS_INZONE,
+                                CONF_DISPLAY_ZONE_FORMAT, CONF_ZONE_SENSOR_EVLOG_FORMAT,
+                                CONF_CENTER_IN_ZONE, CONF_DISCARD_POOR_GPS_INZONE,
                                 CONF_WAZE_USED, CONF_WAZE_REGION, CONF_WAZE_MAX_DISTANCE, CONF_WAZE_MIN_DISTANCE,
                                 CONF_WAZE_REALTIME, CONF_WAZE_HISTORY_DATABASE_USED, CONF_WAZE_HISTORY_MAX_DISTANCE,
                                 CONF_WAZE_HISTORY_TRACK_DIRECTION,
@@ -58,7 +58,7 @@ from ..support              import iosapp_data_handler
 from ..support              import service_handler
 from ..support              import config_file
 from ..helpers              import entity_io
-from ..helpers.common       import (instr, format_gps, circle_letter, zone_fname, list_to_str, )
+from ..helpers.common       import (instr, format_gps, circle_letter, zone_display_as, list_to_str, )
 from ..helpers.messaging    import (broadcast_info_msg,
                                     post_event, post_error_msg, post_monitor_msg,
                                     log_info_msg, log_debug_msg, log_warning_msg, log_rawdata, log_exception,
@@ -200,6 +200,7 @@ def initialize_global_variables():
     # Configuration parameters
     Gb.center_in_zone_flag             = DEFAULT_GENERAL_CONF[CONF_CENTER_IN_ZONE]
     Gb.display_zone_format             = DEFAULT_GENERAL_CONF[CONF_DISPLAY_ZONE_FORMAT]
+    Gb.zone_sensor_evlog_format        = DEFAULT_GENERAL_CONF[CONF_ZONE_SENSOR_EVLOG_FORMAT]
     Gb.distance_method_waze_flag       = True
     Gb.max_interval_secs               = hhmmss_to_secs(DEFAULT_GENERAL_CONF[CONF_MAX_INTERVAL])
     Gb.iosapp_alive_interval_secs      = hhmmss_to_secs(DEFAULT_GENERAL_CONF[CONF_IOSAPP_ALIVE_INTERVAL])
@@ -208,6 +209,7 @@ def initialize_global_variables():
     Gb.track_from_home_zone            = DEFAULT_GENERAL_CONF[CONF_TRACK_FROM_HOME_ZONE]
     Gb.gps_accuracy_threshold          = DEFAULT_GENERAL_CONF[CONF_GPS_ACCURACY_THRESHOLD]
     Gb.old_location_threshold          = hhmmss_to_secs(DEFAULT_GENERAL_CONF[CONF_OLD_LOCATION_THRESHOLD])
+    Gb.old_location_adjustment         = hhmmss_to_secs(DEFAULT_GENERAL_CONF[CONF_OLD_LOCATION_ADJUSTMENT])
     Gb.log_level                       = 'info'
 
     Gb.tfz_tracking_max_distance      = DEFAULT_GENERAL_CONF[CONF_TFZ_TRACKING_MAX_DISTANCE]
@@ -252,26 +254,31 @@ def set_global_variables_from_conf_parameters(evlog_msg=True):
         Gb.um                           = Gb.conf_general[CONF_UNIT_OF_MEASUREMENT]
         Gb.time_format_12_hour          = Gb.conf_general[CONF_TIME_FORMAT].startswith('12')
         Gb.display_zone_format          = Gb.conf_general[CONF_DISPLAY_ZONE_FORMAT]
+        Gb.zone_sensor_evlog_format     = Gb.conf_general[CONF_ZONE_SENSOR_EVLOG_FORMAT]
 
         Gb.center_in_zone_flag          = Gb.conf_general[CONF_CENTER_IN_ZONE]
         Gb.max_interval_secs            = hhmmss_to_secs(Gb.conf_general[CONF_MAX_INTERVAL])
         Gb.travel_time_factor           = Gb.conf_general[CONF_TRAVEL_TIME_FACTOR]
         Gb.passthru_zone_interval_secs  = hhmmss_to_secs(Gb.conf_general[CONF_PASSTHRU_ZONE_TIME])
+        Gb.is_passthru_zone_used       = (14400 > Gb.passthru_zone_interval_secs > 0)
         Gb.old_location_threshold       = hhmmss_to_secs(Gb.conf_general[CONF_OLD_LOCATION_THRESHOLD])
+        Gb.old_location_adjustment      = hhmmss_to_secs(Gb.conf_general[CONF_OLD_LOCATION_ADJUSTMENT])
         Gb.track_from_base_zone         = Gb.conf_general[CONF_TRACK_FROM_BASE_ZONE]
         Gb.track_from_home_zone         = Gb.conf_general[CONF_TRACK_FROM_HOME_ZONE]
         Gb.gps_accuracy_threshold       = Gb.conf_general[CONF_GPS_ACCURACY_THRESHOLD]
         Gb.discard_poor_gps_inzone_flag = Gb.conf_general[CONF_DISCARD_POOR_GPS_INZONE]
+        Gb.distance_between_device_flag = Gb.conf_general[CONF_DISTANCE_BETWEEN_DEVICES]
 
         Gb.tfz_tracking_max_distance   = Gb.conf_general[CONF_TFZ_TRACKING_MAX_DISTANCE]
 
         # Setup the Stationary Zone location and times
         # The stat_zone_base_lat/long will be adjusted after the Home zone is set up
-        Gb.stat_zone_fname              = Gb.conf_general[CONF_STAT_ZONE_FNAME]
-        Gb.stat_zone_base_latitude      = Gb.conf_general[CONF_STAT_ZONE_BASE_LATITUDE]
-        Gb.stat_zone_base_longitude     = Gb.conf_general[CONF_STAT_ZONE_BASE_LONGITUDE]
+        Gb.stat_zone_fname                = Gb.conf_general[CONF_STAT_ZONE_FNAME]
+        Gb.stat_zone_base_latitude        = Gb.conf_general[CONF_STAT_ZONE_BASE_LATITUDE]
+        Gb.stat_zone_base_longitude       = Gb.conf_general[CONF_STAT_ZONE_BASE_LONGITUDE]
         Gb.stat_zone_still_time_secs      = hhmmss_to_secs(Gb.conf_general[CONF_STAT_ZONE_STILL_TIME])
         Gb.stat_zone_inzone_interval_secs = hhmmss_to_secs(Gb.conf_general[CONF_STAT_ZONE_INZONE_INTERVAL])
+        Gb.is_stat_zone_used              = (14400 > Gb.stat_zone_still_time_secs > 0)
 
         Gb.log_level = Gb.conf_general[CONF_LOG_LEVEL]
 
@@ -774,7 +781,6 @@ def create_Zones_object():
         Gb.Zones_by_zone[zone] = Zone
 
     zone_msg = ''
-
     for zone in ha_zones:
         try:
             zone_entity_name = f"zone.{zone}"
@@ -798,11 +804,9 @@ def create_Zones_object():
                     continue
                 Zone = OldZones_by_zone[zone]
                 Zone.__init__(zone, zone_data)
-                post_monitor_msg(f"INITIALIZED Zone-{zone}")
 
             else:
                 Zone = iCloud3_Zone(zone, zone_data)
-                post_monitor_msg(f"ADDED Zone-{zone}")
 
             Gb.Zones.append(Zone)
             Gb.Zones_by_zone[zone] = Zone
@@ -818,10 +822,10 @@ def create_Zones_object():
                 Gb.state_to_zone[ztitle_w] = zone
 
             if Zone.radius_m > 0:
-                if Gb.display_zone_format   == CONF_ZONE: Zone.display_as = Zone.zone
-                elif Gb.display_zone_format == CONF_NAME: Zone.display_as = Zone.name
-                elif Gb.display_zone_format == TITLE:     Zone.display_as = Zone.title
-                elif Gb.display_zone_format == FNAME:     Zone.display_as = Zone.fname
+                # if Gb.display_zone_format   == CONF_ZONE: Zone.display_as = Zone.zone
+                # elif Gb.display_zone_format == CONF_NAME: Zone.display_as = Zone.name
+                # elif Gb.display_zone_format == TITLE:     Zone.display_as = Zone.title
+                # elif Gb.display_zone_format == FNAME:     Zone.display_as = Zone.fname
 
                 zone_msg += (f"{CRLF_DOT}{Zone.zone}/{Zone.display_as} "
                         f"(r{Zone.radius_m}m)")
@@ -830,7 +834,7 @@ def create_Zones_object():
                 Gb.HomeZone = Zone
 
                 if (float(Gb.stat_zone_base_latitude) == int(Gb.stat_zone_base_latitude)
-                    or Gb.stat_zone_base_latitude < 25):
+                        or Gb.stat_zone_base_latitude < 25):
                     offset_lat          = float(Gb.stat_zone_base_latitude) * 0.008983
                     offset_long         = float(Gb.stat_zone_base_longitude) * 0.010094
                     Gb.stat_zone_base_latitude  = Gb.HomeZone.latitude  + offset_lat
@@ -840,10 +844,10 @@ def create_Zones_object():
             log_exception(err)
 
     log_msg = (f"Set up Zones (zone/{Gb.display_zone_format}) > {zone_msg}")
-    post_event("*", log_msg)
+    post_event(log_msg)
 
     if Gb.track_from_base_zone != HOME:
-        event_msg = (   f"Primary 'Home' Zone > {zone_fname(Gb.track_from_base_zone)} "
+        event_msg = (   f"Primary 'Home' Zone > {zone_display_as(Gb.track_from_base_zone)} "
                         f"{circle_letter(Gb.track_from_base_zone)}")
         post_event(event_msg)
 
@@ -852,12 +856,19 @@ def create_Zones_object():
     min_dist_from_zone_km = round(home_zone_radius_km * 2, 2)
     dist_move_limit       = round(home_zone_radius_km * 1.5, 2)
 
-    event_msg =(f"Stationary Zone Base Information > "
-                f"BaseLocation-{format_gps(Gb.stat_zone_base_latitude, Gb.stat_zone_base_longitude, 0)}, "
-                f"Radius-{Gb.HomeZone.radius_m * 2}m, "
-                f"DistFromHome-{format_dist_km(dist)}, "
-                f"MinDistFromZone-{format_dist_km(min_dist_from_zone_km)}, "
-                f"DistMoveLimit-{format_dist_km(dist_move_limit)}")
+    event_msg = "Special Zone Setup >"
+    if Gb.is_stat_zone_used:
+        event_msg += (  f"{CRLF_DOT}Stationary Zone Base Information > "
+                        f"BaseLocation-{format_gps(Gb.stat_zone_base_latitude, Gb.stat_zone_base_longitude, 0)}, "
+                        f"Radius-{Gb.HomeZone.radius_m * 2}m, "
+                        f"DistFromHome-{format_dist_km(dist)}, "
+                        f"MinDistFromZone-{format_dist_km(min_dist_from_zone_km)}, "
+                        f"DistMoveLimit-{format_dist_km(dist_move_limit)}")
+    else:
+        event_msg += f"{CRLF_DOT}STATIONARY ZONES ARE NOT BEING USED"
+
+    if Gb.is_passthru_zone_used is False:
+        event_msg += f"{CRLF_DOT}PASSTHRU ZONE IS NOT BEING USED"
     post_event(event_msg)
 
     # Cycle thru the Device's conf and get all zones that are tracked from for all devices
@@ -988,7 +999,7 @@ def create_Devices_object():
                             f"{CRLF_NBSP6_DOT}iOSApp Entity: {iosapp_dev_msg}")
 
             if Device.track_from_base_zone != HOME:
-                event_msg += f"{CRLF_NBSP6_DOT}Primary 'Home' Zone: {zone_fname(Device.track_from_base_zone)}"
+                event_msg += f"{CRLF_NBSP6_DOT}Primary 'Home' Zone: {zone_display_as(Device.track_from_base_zone)}"
             if Device.track_from_zones != [HOME]:
                 event_msg += f"{CRLF_NBSP6_DOT}Track from Zones: {', '.join(Device.track_from_zones)}"
             post_event(event_msg)
@@ -1028,23 +1039,40 @@ def setup_tracked_devices_for_famshr(PyiCloud=None):
                     or the one created in config_flow if the username was changed.
     '''
     broadcast_info_msg(f"Stage 3 > Set up Family Share Devices")
+    if PyiCloud is None:
+        PyiCloud = Gb.PyiCloud
+    if PyiCloud is None:
+        return
 
-    if PyiCloud is None: PyiCloud = Gb.PyiCloud
+    PyiCloud = Gb.PyiCloud
     _FamShr = PyiCloud.FamilySharing
 
-    Gb.famshr_device_verified_cnt = 0
-    event_msg = "Family Sharing List devices > "
-    if _FamShr.device_fname_by_device_id == {}:
+    event_msg = "Family Sharing devices > "
+    if Gb.conf_famshr_device_cnt == 0:
+        event_msg += "No FamShr devices configured"
+        post_event(event_msg)
+        return
+
+    elif (_FamShr is None
+            or _FamShr.device_fname_by_device_id == {}):
         event_msg += "NO DEVICES FOUND"
         post_event(event_msg)
         return
+
+    for _RawData in PyiCloud.RawData_by_device_id.values():
+        if _RawData.fname_dup_suffix:
+            dup_msg = ( f"{EVLOG_NOTICE}Duplicate FamShr device name found > Reassigned"
+                        f"{CRLF_DOT}{_RawData.name}{RARROW}{_RawData.fname}")
+            post_event(dup_msg)
+
+    Gb.famshr_device_verified_cnt = 0
 
     try:
         # Cycle thru the devices from those found in the iCloud data. We are not cycling
         # through the PyiCloud_RawData so we get devices without location info
         sorted_device_id_by_device_fname = OrderedDict(sorted(_FamShr.device_id_by_device_fname.items()))
         for device_fname, device_id in sorted_device_id_by_device_fname.items():
-            exception_msg = duplicate_msg = ''
+            exception_msg = ''
 
             try:
                 raw_model, model, model_display_name = \
@@ -1081,8 +1109,7 @@ def setup_tracked_devices_for_famshr(PyiCloud=None):
             if exception_msg:
                 event_msg += (  f"{crlf_mark}"
                                 f"{device_fname}{RARROW}{exception_msg}"
-                                f"{model_display_name} ({raw_model})"
-                                f"{duplicate_msg}")
+                                f"{model_display_name} ({raw_model})")
                 continue
 
             # If no location info in pyiCloud data but tracked device is matched, refresh the
@@ -1195,11 +1222,22 @@ def setup_tracked_devices_for_fmf(PyiCloud=None):
     # fmf_email_by_device_id   = devices_desc[1]
     # device_info_by_fmf_email = devices_desc[2]
 
-    if PyiCloud is None: PyiCloud = Gb.PyiCloud
+    if PyiCloud is None:
+        PyiCloud = Gb.PyiCloud
+    if PyiCloud is None:
+        return
+
+    PyiCloud = Gb.PyiCloud
     _FmF = PyiCloud.FindMyFriends
 
     event_msg = "Find-My-Friends devices > "
-    if _FmF.device_id_by_fmf_email == {}:
+    if Gb.conf_fmf_device_cnt == 0:
+        event_msg += "No FmF devices configured"
+        post_event(event_msg)
+        return
+
+    elif (_FmF is None
+            or _FmF.device_id_by_fmf_email == {}):
         event_msg += "NO DEVICES FOUND"
         post_event(event_msg)
         return
@@ -1337,154 +1375,154 @@ def get_fmf_devices_pyicloud(PyiCloud):
             _FmF.device_info_by_fmf_email)
 
 #----------------------------------------------------------------------
-def get_famshr_devices_local(PyiCloud):
-    '''
-    Cycle through famshr data and get devices that can be tracked for the
-    icloud device selection list
-    '''
+# def get_famshr_devices_local(PyiCloud):
+#     '''
+#     Cycle through famshr data and get devices that can be tracked for the
+#     icloud device selection list
+#     '''
 
-    return
+#     return
 
-    device_id_by_device_fname   = {}    # Example: {'Gary-iPhone': 'n6ofM9CX4j...'}
-    device_fname_by_device_id   = {}    # Example: {'n6ofM9CX4j...': 'Gary-iPhone14'}
-    device_info_by_device_fname = {}    # Example: {'Gary-iPhone': 'Gary-iPhone (iPhone 14 Pro (iPhone15,2)'}
-    dup_device_fname_cnt        = {}    # Used to create a suffix for duplicate devicenames
-    device_model_info_by_fname  = {}    # {'Gary-iPhone': [raw_model,model,model_display_name]}
-                                        # {'Gary-iPhone': ['iPhone15,2', 'iPhone', 'iPhone 14 Pro']}
-    _FamShr = PyiCloud.FamilySharing
+#     device_id_by_device_fname   = {}    # Example: {'Gary-iPhone': 'n6ofM9CX4j...'}
+#     device_fname_by_device_id   = {}    # Example: {'n6ofM9CX4j...': 'Gary-iPhone14'}
+#     device_info_by_device_fname = {}    # Example: {'Gary-iPhone': 'Gary-iPhone (iPhone 14 Pro (iPhone15,2)'}
+#     dup_device_fname_cnt        = {}    # Used to create a suffix for duplicate devicenames
+#     device_model_info_by_fname  = {}    # {'Gary-iPhone': [raw_model,model,model_display_name]}
+#                                         # {'Gary-iPhone': ['iPhone15,2', 'iPhone', 'iPhone 14 Pro']}
+#     _FamShr = PyiCloud.FamilySharing
 
-    # 12/17/2022 (beta 1) - Added check for setting PyiCloud
-    if PyiCloud is None: PyiCloud = Gb.PyiCloud
+#     # 12/17/2022 (beta 1) - Added check for setting PyiCloud
+#     if PyiCloud is None: PyiCloud = Gb.PyiCloud
 
-    # 12/17 (beta 1) - Added check for no FamShr items
-    if (_FamShr is None
-            or PyiCloud.RawData_by_device_id is None):
+#     # 12/17 (beta 1) - Added check for no FamShr items
+#     if (_FamShr is None
+#             or PyiCloud.RawData_by_device_id is None):
 
-        return [device_id_by_device_fname,
-                device_fname_by_device_id,
-                device_info_by_device_fname,
-                device_model_info_by_fname]
+#         return [device_id_by_device_fname,
+#                 device_fname_by_device_id,
+#                 device_info_by_device_fname,
+#                 device_model_info_by_fname]
 
-    # Preliminary check to make sure all the conf_famshr_devicename specified have been
-    # returned from iCloud. Sometimes, they are not all returned on the initial request.
-    conf_famshr_devicenames = [device[CONF_FAMSHR_DEVICENAME]
-                                        for device in Gb.conf_devices
-                                        if device[CONF_FAMSHR_DEVICENAME] != 'None']
-    conf_famshr_device_cnt = len(conf_famshr_devicenames)
+#     # Preliminary check to make sure all the conf_famshr_devicename specified have been
+#     # returned from iCloud. Sometimes, they are not all returned on the initial request.
+#     conf_famshr_devicenames = [device[CONF_FAMSHR_DEVICENAME]
+#                                         for device in Gb.conf_devices
+#                                         if device[CONF_FAMSHR_DEVICENAME] != 'None']
+#     conf_famshr_device_cnt = len(conf_famshr_devicenames)
 
-    pyicloud_famshr_device_cnt = len([device_id
-                                        for device_id, _RawData in PyiCloud.RawData_by_device_id.items()
-                                        if _RawData.name.replace("\xa0", " ").replace("’", "'") in conf_famshr_devicenames])
+#     pyicloud_famshr_device_cnt = len([device_id
+#                                         for device_id, _RawData in PyiCloud.RawData_by_device_id.items()
+#                                         if _RawData.name.replace("\xa0", " ").replace("’", "'") in conf_famshr_devicenames])
 
-    if pyicloud_famshr_device_cnt < conf_famshr_device_cnt:
-        # 12/17 (beta 1)-Fix problem calling the wrong method. Should be Famshr, was FmF
-        _FamShr.refresh_client()
+#     if pyicloud_famshr_device_cnt < conf_famshr_device_cnt:
+#         # 12/17 (beta 1)-Fix problem calling the wrong method. Should be Famshr, was FmF
+#         _FamShr.refresh_client()
 
-        event_msg = (   f"Refreshing iCloud FamShr Data > Not all devices were returned during initialization, "
-                        f"iCloud3 FamShr Cnt-{conf_famshr_device_cnt}, "
-                        f"Returned-{pyicloud_famshr_device_cnt}")
-        post_event(event_msg)
+#         event_msg = (   f"Refreshing iCloud FamShr Data > Not all devices were returned during initialization, "
+#                         f"iCloud3 FamShr Cnt-{conf_famshr_device_cnt}, "
+#                         f"Returned-{pyicloud_famshr_device_cnt}")
+#         post_event(event_msg)
 
-    # Cycle thru _RawData and create the dictionaries for famshr devices
-    for device_id, _RawData in PyiCloud.RawData_by_device_id.items():
-        if _RawData.tracking_method_FAMSHR is False:
-            continue
+#     # Cycle thru _RawData and create the dictionaries for famshr devices
+#     for device_id, _RawData in PyiCloud.RawData_by_device_id.items():
+#         if _RawData.tracking_method_FAMSHR is False:
+#             continue
 
-        # Remove non-breakable space and right quote mark
-        device_fname = _RawData.name.replace("\xa0", " ").replace("’", "'")
+#         # Remove non-breakable space and right quote mark
+#         device_fname = _RawData.name.replace("\xa0", " ").replace("’", "'")
 
-        try:
-            if device_fname:
-                if device_fname not in dup_device_fname_cnt:
-                    dup_device_fname_cnt[device_fname] = 1
+#         try:
+#             if device_fname:
+#                 if device_fname not in dup_device_fname_cnt:
+#                     dup_device_fname_cnt[device_fname] = 1
 
-                if device_fname in device_id_by_device_fname:
-                    dup_device_fname                            = f"{device_fname}{'*'*dup_device_fname_cnt[device_fname]}"
-                    device_id_by_device_fname[dup_device_fname] = device_id_by_device_fname[device_fname]
-                    device_fname_by_device_id[device_id]        = dup_device_fname
-                    device_info_by_device_fname[dup_device_fname] = device_info_by_device_fname[device_fname]
-                    dup_device_fname_cnt[device_fname]          += 1
+#                 if device_fname in device_id_by_device_fname:
+#                     dup_device_fname                            = f"{device_fname}{'*'*dup_device_fname_cnt[device_fname]}"
+#                     device_id_by_device_fname[dup_device_fname] = device_id_by_device_fname[device_fname]
+#                     device_fname_by_device_id[device_id]        = dup_device_fname
+#                     device_info_by_device_fname[dup_device_fname] = device_info_by_device_fname[device_fname]
+#                     dup_device_fname_cnt[device_fname]          += 1
 
-            device_id_by_device_fname[device_fname] = device_id
-            device_fname_by_device_id[device_id]    = device_fname
+#             device_id_by_device_fname[device_fname] = device_id
+#             device_fname_by_device_id[device_id]    = device_fname
 
-            desc = _RawData.device_identifier.replace("’", "'")
-            device_info_by_device_fname[device_fname]  = f"{device_fname} ({desc})"
+#             desc = _RawData.device_identifier.replace("’", "'")
+#             device_info_by_device_fname[device_fname]  = f"{device_fname} ({desc})"
 
-            display_name = _RawData.device_data['deviceDisplayName'].split(' (')[0]
-            display_name = display_name.replace('Series ', '')
-            device_model_info_by_fname[device_fname]  = \
-                        [   _RawData.device_data['rawDeviceModel'].replace("_", ""),        # iPhone15,2
-                            _RawData.device_data['modelDisplayName'],      # iPhone
-                            display_name]     # iPhone 14 Pro
+#             display_name = _RawData.device_data['deviceDisplayName'].split(' (')[0]
+#             display_name = display_name.replace('Series ', '')
+#             device_model_info_by_fname[device_fname]  = \
+#                         [   _RawData.device_data['rawDeviceModel'].replace("_", ""),        # iPhone15,2
+#                             _RawData.device_data['modelDisplayName'],      # iPhone
+#                             display_name]     # iPhone 14 Pro
 
-        except Exception as err:
-            log_exception(err)
-            pass
+#         except Exception as err:
+#             log_exception(err)
+#             pass
 
-    _traceha(f"FAMShr-dev_id_by_fname-{_FamShr.device_id_by_device_fname}")
-    _traceha(f"OLDOLD-dev_id_by_fname-{device_id_by_device_fname}")
+#     _traceha(f"FAMShr-dev_id_by_fname-{_FamShr.device_id_by_device_fname}")
+#     _traceha(f"OLDOLD-dev_id_by_fname-{device_id_by_device_fname}")
 
-    _traceha(f"FAMShr-fname_bydev_id-{_FamShr.device_fname_by_device_id}")
-    _traceha(f"OLDOLD-fname_bydev_id-{device_fname_by_device_id}")
+#     _traceha(f"FAMShr-fname_bydev_id-{_FamShr.device_fname_by_device_id}")
+#     _traceha(f"OLDOLD-fname_bydev_id-{device_fname_by_device_id}")
 
-    _traceha(f"FAMShr-dev_iinfo_by_fname-{_FamShr.device_info_by_device_fname}")
-    _traceha(f"OLDOLD-dev_iinfo_by_fname-{device_info_by_device_fname}")
+#     _traceha(f"FAMShr-dev_iinfo_by_fname-{_FamShr.device_info_by_device_fname}")
+#     _traceha(f"OLDOLD-dev_iinfo_by_fname-{device_info_by_device_fname}")
 
-    _traceha(f"FAMShr-model_info_by_fname-{_FamShr.device_model_info_by_fname}")
-    _traceha(f"OLDOLD-model_info_by_fname-{device_model_info_by_fname}")
+#     _traceha(f"FAMShr-model_info_by_fname-{_FamShr.device_model_info_by_fname}")
+#     _traceha(f"OLDOLD-model_info_by_fname-{device_model_info_by_fname}")
 
-    return [device_id_by_device_fname,
-            device_fname_by_device_id,
-            device_info_by_device_fname,
-            device_model_info_by_fname]
+#     return [device_id_by_device_fname,
+#             device_fname_by_device_id,
+#             device_info_by_device_fname,
+#             device_model_info_by_fname]
 
-#----------------------------------------------------------------------
-def get_fmf_devices_local(PyiCloud):
-    '''
-    Cycle through fmf following, followers and contact details data and get
-    devices that can be tracked for the icloud device selection list
-    '''
-    return
+# #----------------------------------------------------------------------
+# def get_fmf_devices_local(PyiCloud):
+#     '''
+#     Cycle through fmf following, followers and contact details data and get
+#     devices that can be tracked for the icloud device selection list
+#     '''
+#     return
 
-    device_id_by_fmf_email      = {}
-    fmf_email_by_device_id      = {}
-    device_info_by_fmf_email    = {}
-    device_form_icloud_fmf_list = []
+#     device_id_by_fmf_email      = {}
+#     fmf_email_by_device_id      = {}
+#     device_info_by_fmf_email    = {}
+#     device_form_icloud_fmf_list = []
 
-    _FmF = PyiCloud.FindMyFriends
-    fmf_friends_data = {'emails': _FmF.contact_details,
-                        'invitationFromHandles': _FmF.followers,
-                        'invitationAcceptedHandles': _FmF.following}
+#     _FmF = PyiCloud.FindMyFriends
+#     fmf_friends_data = {'emails': _FmF.contact_details,
+#                         'invitationFromHandles': _FmF.followers,
+#                         'invitationAcceptedHandles': _FmF.following}
 
-    for fmf_email_field, Pyicloud_FmF_data in fmf_friends_data.items():
-        if Pyicloud_FmF_data is None:
-            continue
+#     for fmf_email_field, Pyicloud_FmF_data in fmf_friends_data.items():
+#         if Pyicloud_FmF_data is None:
+#             continue
 
-        for friend in Pyicloud_FmF_data:
-            friend_emails = friend.get(fmf_email_field)
-            full_name     = (f"{friend.get('firstName', '')} {friend.get('lastName', '')}")
-            full_name     = full_name.strip()
-            device_id     = friend.get('id')
+#         for friend in Pyicloud_FmF_data:
+#             friend_emails = friend.get(fmf_email_field)
+#             full_name     = (f"{friend.get('firstName', '')} {friend.get('lastName', '')}")
+#             full_name     = full_name.strip()
+#             device_id     = friend.get('id')
 
-            # extracted_fmf_devices.append((device_id, friend_emails))
-            for friend_email in friend_emails:
-                device_id_by_fmf_email[friend_email] = device_id
-                fmf_email_by_device_id[device_id]    = friend_email
-                friend_email_full_name = f"{friend_email} ({full_name})" if full_name else friend_email
-                if (friend_email not in device_info_by_fmf_email  or full_name):
-                    device_info_by_fmf_email[friend_email] = f"{friend_email_full_name}"
+#             # extracted_fmf_devices.append((device_id, friend_emails))
+#             for friend_email in friend_emails:
+#                 device_id_by_fmf_email[friend_email] = device_id
+#                 fmf_email_by_device_id[device_id]    = friend_email
+#                 friend_email_full_name = f"{friend_email} ({full_name})" if full_name else friend_email
+#                 if (friend_email not in device_info_by_fmf_email  or full_name):
+#                     device_info_by_fmf_email[friend_email] = f"{friend_email_full_name}"
 
-    _traceha(f"FMF-dev_id_by_email-{_FmF.device_id_by_fmf_email}")
-    _traceha(f"OLD-dev_id_by_email-{device_id_by_fmf_email}")
+#     _traceha(f"FMF-dev_id_by_email-{_FmF.device_id_by_fmf_email}")
+#     _traceha(f"OLD-dev_id_by_email-{device_id_by_fmf_email}")
 
-    _traceha(f"FMF-email_by_id-{_FmF.fmf_email_by_device_id}")
-    _traceha(f"OLD-email_by_id-{fmf_email_by_device_id}")
+#     _traceha(f"FMF-email_by_id-{_FmF.fmf_email_by_device_id}")
+#     _traceha(f"OLD-email_by_id-{fmf_email_by_device_id}")
 
-    _traceha(f"FMF-dev_info_by_email-{_FmF.device_info_by_fmf_email}")
-    _traceha(f"OLD-dev_info_by_email-{device_info_by_fmf_email}")
+#     _traceha(f"FMF-dev_info_by_email-{_FmF.device_info_by_fmf_email}")
+#     _traceha(f"OLD-dev_info_by_email-{device_info_by_fmf_email}")
 
-    return device_id_by_fmf_email, fmf_email_by_device_id, device_info_by_fmf_email
+#     return device_id_by_fmf_email, fmf_email_by_device_id, device_info_by_fmf_email
 
 #--------------------------------------------------------------------
 def set_device_tracking_method_iosapp():
@@ -1529,7 +1567,7 @@ def set_device_tracking_method_famshr_fmf(PyiCloud=None):
                     tracking_method = FAMSHR
                     Gb.Devices_by_icloud_device_id[device_id] = Device
                     _RawData = PyiCloud.RawData_by_device_id[device_id]
-                    _RawData.device = Device
+                    _RawData.Device = Device
                     # _RawData.devicename = devicename
                     Device.PyiCloud_RawData_famshr = _RawData
 
@@ -1540,7 +1578,7 @@ def set_device_tracking_method_famshr_fmf(PyiCloud=None):
                         tracking_method = FMF
                     Gb.Devices_by_icloud_device_id[device_id] = Device
                     _RawData = PyiCloud.RawData_by_device_id[device_id]
-                    _RawData.device = Device
+                    _RawData.Device = Device
                     # _RawData.devicename = devicename
                     Device.PyiCloud_RawData_fmf = _RawData
 
@@ -1846,7 +1884,7 @@ def remove_unverified_untrackable_devices(PyiCloud=None):
         if (Device.tracking_method is None
                 or Device.verified_flag is False):
             device_removed_flag = True
-            alert_msg +=(f"{CRLF_DOT}{devicename}, {Device.fname_devtype}")
+            alert_msg +=(f"{CRLF_DOT}{devicename} ({Device.fname_devtype})")
 
             devicename = Device.devicename
             if Device.device_id_famshr:
@@ -1859,12 +1897,12 @@ def remove_unverified_untrackable_devices(PyiCloud=None):
     if device_removed_flag:
         alert_msg +=(f"{CRLF}{DASH_20}"
                     f"{CRLF}This can be caused by:"
-                    f"{CRLF_DOT}iCloud3 Device configuration error -- No iCloud (FamShr/FmF) device and no iOS App device have been selected, or"
-                    f"{CRLF_DOT}This device is no longer in the Family Sharing list or "
-                    f"FindMyFriends list, or"
-                    f"{CRLF_DOT}iCloud or iOS App are not being used to locate devices and devices have "
-                    f"been configured to use them, or "
-                    f"{CRLF_DOT}iCloud is not responding to location requests.")
+                    f"{CRLF_DOT}iCloud3 Device configuration error"
+                    f"{CRLF_DOT}No iCloud or iOS App device have been selected"
+                    f"{CRLF_DOT}This device is no longer in the FamShr or FmF device list"
+                    f"{CRLF_DOT}iCloud or iOS App are not being used to locate devices"
+                    f"{CRLF_DOT}iCloud is not responding to location requests"
+                    f"{CRLF_DOT}An internal code error occurred")
         post_event(alert_msg)
 
 #------------------------------------------------------------------------------
@@ -1923,6 +1961,10 @@ def setup_trackable_devices():
         for _devicename, _Device in Gb.Devices_by_devicename.items():
             if devicename != _devicename:
                 Device.dist_to_other_devices[_devicename] = [0, 0, '0m/±0m']
+                Device.near_device_distance         = 0       # Distance to the NearDevice device
+                Device.near_device_checked_secs     = 0       # When the nearby devices were last updated
+                Device.dist_apart_msg               = ''      # Distance to all other devices msg set in icloud3_main
+                Device.dist_apart_msg_by_devicename = {}
 
         # Display all sensor entities early. Value displaye will be '---'
         create_Device_StationaryZone_object(Device)
@@ -1932,7 +1974,7 @@ def setup_trackable_devices():
         event_msg += f"{CRLF_DOT}{info_msg}"
 
         if Device.track_from_base_zone != HOME:
-                event_msg += f"{CRLF_DOT}Track from Base Zone: {zone_fname(Device.track_from_base_zone)}"
+                event_msg += f"{CRLF_DOT}Track from Base Zone: {zone_display_as(Device.track_from_base_zone)}"
         if Device.track_from_zones != [HOME]:
             event_msg += (f"{CRLF_DOT}Track from Zones: {', '.join(Device.track_from_zones)}")
 
@@ -1959,7 +2001,7 @@ def display_inactive_devices():
     post_event(event_msg)
 
     if len(inactive_devices) == len(Gb.conf_devices):
-        event_msg =(f"{EVLOG_ALERT}All devices are set to INCTIVE. No devices are being tracked. "
+        event_msg =(f"{EVLOG_ALERT}All devices are set to INACTIVE. No devices are being tracked. "
                     f"Review and update the devices on the `Devices & Settings > Integrations > "
                     f"iCloud3 Configuration > iCloud3 Devices` screen. For each device:"
                     f"{CRLF}1. Verify the FamShr, FmF and iOS App assigned to the device"

@@ -302,7 +302,8 @@ class iCloud3:
         # Delay the zone enter from being processed for 1-min (Gb.passthru_zone_interval_secs)
         # to see if just passing thru a zone. If still in the zone after 1-minute, it
         # will be handled normally.
-        if det_interval.is_passthru_zone_delay_active(Device):
+        if (Gb.is_passthru_zone_used
+                and det_interval.is_passthru_zone_delay_active(Device)):
             return
 
         # The iosapp may be entering or exiting another Device's Stat Zone. If so,
@@ -373,7 +374,8 @@ class iCloud3:
         # update, etc).  Delay the zone enter from being processed for 1-min
         # (Gb.passthru_zone_interval_secs) to see if just passing thru a zone.
         # If still in the zone after 1-minute, it will be handled normally.
-        if det_interval.is_passthru_zone_delay_active(Device):
+        if (Gb.is_passthru_zone_used
+                and det_interval.is_passthru_zone_delay_active(Device)):
             return
 
         if Device.icloud_acct_error_flag:
@@ -489,7 +491,12 @@ class iCloud3:
             close_reopen_ic3_debug_log_file()
 
         # Every 15-minutes
-        # if time_now_mm in ['00', '15', '30', '45']:
+        if time_now_mm in ['00', '15', '30', '45']:
+            _traceha(f"{Gb.log_debug_flag=} {len(Gb.Devices_by_devicename_tracked)=}")
+            if Gb.log_debug_flag:
+                for devicename, Device in Gb.Devices_by_devicename_tracked.items():
+                    Device.log_data_fields()
+
             # Close and reopen icloud3-debug.log file so all records are written
             # if last record was written within the last 15-minutes
             # close_reopen_ic3_debug_log_file(closed_by='iCloud3 Commit Log Records')
@@ -498,7 +505,9 @@ class iCloud3:
         if time_now_mm in ['00', '30']:
             for devicename, Device in Gb.Devices_by_devicename.items():
                 if Device.dist_apart_msg:
-                    event_msg = f"Nearby Devices (<{NEAR_DEVICE_DISTANCE}m) > {Device.dist_apart_msg}"
+                    event_msg =(f"Nearby Devices (<{NEAR_DEVICE_DISTANCE}m) > "
+                                f"{Device.dist_apart_msg}, "
+                                f"Checked-{secs_to_time(Device.near_device_checked_secs)}")
                     post_event(devicename, event_msg)
 
         if (Gb.PyiCloud is not None
@@ -714,7 +723,8 @@ class iCloud3:
             # See if the Stat Zone timer has expired or if the Device has moved a lot. Do this
             # even if the sensors are not updated to make sure the Stat Zone is set up and be
             # seleted for the Device
-            self._check_statzone_timer_expired(Device)
+            if Gb.is_stat_zone_used:
+                self._check_statzone_timer_expired(Device)
 
             # Location is good. Determine next update time and update interval,
             # next_update_time values and sensors with the good data
@@ -812,7 +822,8 @@ class iCloud3:
 
             self._get_zone(Device, display_zone_msg=True)
 
-            if (Device.passthru_zone_expire_secs > 0
+            if (Gb.is_passthru_zone_used
+                    and Device.passthru_zone_expire_secs > 0
                     and Device.loc_data_secs < \
                             Device.passthru_zone_expire_secs - Gb.passthru_zone_interval_secs):
                 return False
@@ -1001,7 +1012,8 @@ class iCloud3:
                 and zone_selected != HOME
                 and zone_selected not in Device.DeviceFmZones_by_zone
                 and Device.passthru_zone_expire_secs == 0
-                and Gb.passthru_zone_interval_secs > 0):
+                and Gb.is_passthru_zone_used):
+                # and Gb.passthru_zone_interval_secs > 0):
             Device.passthru_zone = zone_selected
             zone_selected = Device.loc_data_zone
             ZoneSelected  = Gb.Zones_by_zone[zone_selected]
@@ -1028,6 +1040,7 @@ class iCloud3:
             Reset the timer if the Device has moved further than the distance limit
             Move Device into the Stat Zone if it has not moved further than the limit
         '''
+
         calc_dist_last_poll_moved_km = calc_distance_km(Device.sensors[GPS], Device.loc_data_gps)
         Device.StatZone.update_distance_moved(calc_dist_last_poll_moved_km)
 
@@ -1091,9 +1104,9 @@ class iCloud3:
                 return Device
 
             if (Device.is_tracking_method_IOSAPP
-                    or Device.is_tracking_paused
-                    or Device.is_offline
-                    or Device.NearDevice):
+                    or Device.is_tracking_paused):
+                    # or Device.is_offline
+                    # or Device.NearDevice):
                 continue
 
             secs_to_next_update = secs_to(Device.next_update_secs)

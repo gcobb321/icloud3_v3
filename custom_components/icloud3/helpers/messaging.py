@@ -5,7 +5,8 @@ from ..const            import (DOT, ICLOUD3_ERROR_MSG, EVLOG_DEBUG, EVLOG_ERROR
                                 EVLOG_TIME_RECD, EVLOG_UPDATE_HDR, EVLOG_UPDATE_START, EVLOG_UPDATE_END,
                                 EVLOG_ALERT, EVLOG_WARNING, EVLOG_HIGHLIGHT, EVLOG_IC3_STARTING,EVLOG_IC3_STAGE_HDR,
                                 IC3LOGGER_FILENAME, EVLOG_TIME_RECD,
-                                CRLF, CRLF_DOT, DATETIME_ZERO, NBSP, NBSP6, DATETIME_FORMAT,
+                                CRLF, CRLF_DOT, NBSP, NBSP2, NBSP3, NBSP4, NBSP5, NBSP6,
+                                DATETIME_FORMAT, DATETIME_ZERO,
                                 NEXT_UPDATE_TIME, INTERVAL,
                                 CONF_IC3_DEVICENAME, CONF_FNAME, CONF_LOG_LEVEL, CONF_PASSWORD, CONF_USERNAME,
                                 LATITUDE,  LONGITUDE, LOCATION_SOURCE, TRACKING_METHOD,
@@ -189,13 +190,15 @@ def open_ic3_debug_log_file(new_debug_log=False):
         reopen  True - Open the file in append mode
                 False - Create a new file
     '''
-    if Gb.iC3DebugLogFile:
-        write_ic3_debug_log_recd(f"{'-'*25} Debug Log File Already Open {'-'*25}")
-        return
 
     if new_debug_log:
         filemode = 'w'
         Gb.ic3_debug_log_new_file_secs = int(time.time())
+
+    elif Gb.iC3DebugLogFile:
+        write_ic3_debug_log_recd(f"{'-'*25} Debug Log File Already Open {'-'*25}")
+        return
+
     else:
         filemode = 'a'
 
@@ -277,14 +280,18 @@ def _debug_recd_filter(recd):
     Filter out EVLOG_XXX control fields
     '''
 
-    if Gb.EvLog:
-        recd = Gb.EvLog.uncompress_evlog_recd_special_characters(recd)
-
     if recd.startswith('^'): recd = recd[3:]
-    extra_tabs = '\t\t\t' if recd.startswith('STAGE') else ''
+    extra_tabs = '\t\t\t   ' #if recd.startswith('STAGE') else ''
     recd = recd.replace(EVLOG_MONITOR, '')
-    recd = recd.replace(NBSP, '')
-    recd = recd.replace('* >', '').replace(CRLF, f"\n{DEBUG_LOG_LINE_TABS}{extra_tabs}")
+    recd = recd.replace(NBSP, ' ')
+    recd = recd.replace(NBSP2, ' ')
+    recd = recd.replace(NBSP3, ' ')
+    recd = recd.replace(NBSP4, ' ')
+    recd = recd.replace(NBSP5, ' ')
+    recd = recd.replace(NBSP6, ' ')
+    recd = recd.strip()
+    recd = recd.replace(CRLF, f"\n{DEBUG_LOG_LINE_TABS}{extra_tabs}")
+    recd = recd.replace('* >', '')
 
     if recd.find('^') == -1: return recd.strip()
 

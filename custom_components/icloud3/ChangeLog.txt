@@ -1,3 +1,30 @@
+Beta 10 - 1/22/2023
+~~~~~~~~~~~~~~~~~~~~
+1.  Updated the sensor and device_tracker attributes. Added 'sensor_updated' time to all sensors
+    to be able to see when a sensor was updated in the Developer Tools > States screen. Removed
+    the '_date/time' text from the attribute name for clarity.
+2.  Fixed a problem displaying the HA History for sensors showing text values (zone, battery status, etc).
+3.  Fixed a problem with more than one device in the Family Sharing List having the same name.
+4.  Sometimes, iCloud does not download all of the devices in the Family Sharing account when iCloud3 is
+    starting. This leads to a device not found error and requires a restart of iCloud3 and a new request
+    to iCloud for the Family Sharing devices. Now, iCloud3 checks to see if all of the configured Family
+    Sharing devices and Find-my-Friends devices have been received from iCloud when starting up. If not,
+    a retry request is made to iCloud (up to 2 times) before the untrackable devices error message is
+    displayed.
+5.  The HA standard is to display the device_tracker entity state value/zone name in lower case with
+    underscores like entity names ('pizza_hut'). An option has been added to the Event log Parameters configuration
+    screen to override this and display the device_tracker state value in the same format as used for
+    the Event Log (Pizza Hut, PizzaHut).
+6.  Fixed the 'Find my Phone' alert error.
+7.  The option to turn off the Passthru Zone and Stationary Zones has been made easier and a message
+    is displayed in the Event Log during startup if they are disabled.
+8.  Changed the way a NearBy zone is determined to only check tracked devices. It was checking both
+    tracked and monitored devices).
+9.  The current results of all devices are written to the icloud3-debug.log file every 15-minutes.
+    This will help determine the cause of any 'tracking stopped' errors.
+
+
+
 Beta 9 - 1/22/2023
 ~~~~~~~~~~~~~~~~~~~~
 1.  Fixed a problem selecting several of the Actions from the Configurator.

@@ -10,22 +10,22 @@ from .const             import (DOMAIN, ICLOUD3,
                                 NAME, FNAME,
                                 PICTURE,
                                 LATITUDE, LONGITUDE,
-                                DEVTRK_STATE_VALUE,
+                                DEVICE_TRACKER_STATE_VALUE,
                                 LOCATION_SOURCE, TRIGGER,
                                 ZONE, ZONE_DATETIME,  LAST_ZONE, FROM_ZONE,
                                 BATTERY,
                                 CALC_DISTANCE, WAZE_DISTANCE, HOME_DISTANCE,
                                 DEVICE_STATUS,
-                                LAST_UPDATE_DATETIME,
-                                NEXT_UPDATE_DATETIME,
-                                LAST_LOCATED_DATETIME,
+                                LAST_UPDATE, LAST_UPDATE_DATETIME,
+                                NEXT_UPDATE, NEXT_UPDATE_DATETIME,
+                                LAST_LOCATED, LAST_LOCATED_DATETIME,
                                 GPS_ACCURACY,
                                 CONF_DEVICE_TYPE, CONF_RAW_MODEL, CONF_MODEL, CONF_MODEL_DISPLAY_NAME,
                                 CONF_TRACKING_MODE,
                                 CONF_IC3_DEVICENAME,
                                 )
 
-from .helpers.common    import (instr, isnumber, is_statzone, zone_fname)
+from .helpers.common    import (instr, isnumber, is_statzone, zone_display_as)
 from .helpers.messaging import (post_event,
                                 log_info_msg, log_debug_msg, log_error_msg, log_exception,
                                 _trace, _traceha, )
@@ -211,7 +211,7 @@ class iCloud3_DeviceTracker(TrackerEntity):
             if self.state_value_not_set:
                 return self.default_value
 
-            return self._get_sensor_value(DEVTRK_STATE_VALUE)
+            return self._get_sensor_value(DEVICE_TRACKER_STATE_VALUE)
         except:
             return self.default_value
 
@@ -267,30 +267,30 @@ class iCloud3_DeviceTracker(TrackerEntity):
         try:
             extra_attrs = {}
 
-            extra_attrs['data_source']         = f"{self._get_sensor_value(LOCATION_SOURCE)} (iCloud3)"
-            extra_attrs[DEVICE_STATUS]         = self._get_sensor_value(DEVICE_STATUS)
-            extra_attrs[NAME]                  = self._get_sensor_value(NAME)
-            extra_attrs[PICTURE]               = self._get_sensor_value(PICTURE)
-            extra_attrs[ZONE]                  = self._get_sensor_value(ZONE)
-            extra_attrs[LAST_ZONE]             = self._get_sensor_value(LAST_ZONE)
-            extra_attrs[ZONE_DATETIME]         = self._get_sensor_value(ZONE_DATETIME)
-            extra_attrs[LAST_LOCATED_DATETIME] = self._get_sensor_value(LAST_LOCATED_DATETIME)
-            extra_attrs[LAST_UPDATE_DATETIME]  = self._get_sensor_value(LAST_UPDATE_DATETIME)
-            extra_attrs[HOME_DISTANCE]         = self._get_sensor_value(HOME_DISTANCE)
-            extra_attrs[DISTANCE_TO_DEVICES]   = self._get_sensor_value(DISTANCE_TO_DEVICES)
+            extra_attrs['data_source']       = f"{self._get_sensor_value(LOCATION_SOURCE)} (iCloud3)"
+            extra_attrs[DEVICE_STATUS]       = self._get_sensor_value(DEVICE_STATUS)
+            extra_attrs[NAME]                = self._get_sensor_value(NAME)
+            extra_attrs[PICTURE]             = self._get_sensor_value(PICTURE)
+            extra_attrs[ZONE]                = self._get_sensor_value(ZONE)
+            extra_attrs[LAST_ZONE]           = self._get_sensor_value(LAST_ZONE)
+            extra_attrs[ZONE_DATETIME]       = self._get_sensor_value(ZONE_DATETIME)
+            extra_attrs[LAST_LOCATED]        = self._get_sensor_value(LAST_LOCATED_DATETIME)
+            extra_attrs[LAST_UPDATE]         = self._get_sensor_value(LAST_UPDATE_DATETIME)
+            extra_attrs[HOME_DISTANCE]       = self._get_sensor_value(HOME_DISTANCE)
+            extra_attrs[DISTANCE_TO_DEVICES] = self._get_sensor_value(DISTANCE_TO_DEVICES)
 
             if self.Device and self.Device.is_tracked:
-                extra_attrs[NEXT_UPDATE_DATETIME]  = self._get_sensor_value(NEXT_UPDATE_DATETIME)
-                extra_attrs[TRIGGER]               = self._get_sensor_value(TRIGGER)
-                extra_attrs[FROM_ZONE]             = self._get_sensor_value(FROM_ZONE)
-                extra_attrs[WAZE_DISTANCE]         = self._get_sensor_value(WAZE_DISTANCE)
-                extra_attrs[CALC_DISTANCE]         = self._get_sensor_value(CALC_DISTANCE)
+                extra_attrs[NEXT_UPDATE]     = self._get_sensor_value(NEXT_UPDATE_DATETIME)
+                extra_attrs[TRIGGER]         = self._get_sensor_value(TRIGGER)
+                extra_attrs[FROM_ZONE]       = self._get_sensor_value(FROM_ZONE)
+                extra_attrs[WAZE_DISTANCE]   = self._get_sensor_value(WAZE_DISTANCE)
+                extra_attrs[CALC_DISTANCE]   = self._get_sensor_value(CALC_DISTANCE)
 
             if self.Device:
                 if  self.Device.track_from_zones != [HOME]:
                     extra_attrs['track_from_zones'] = ', '.join(self.Device.track_from_zones)
                 if  self.Device.track_from_base_zone != HOME:
-                    extra_attrs['primary_home_zone'] = zone_fname(self.Device.track_from_base_zone)
+                    extra_attrs['primary_home_zone'] = zone_display_as(self.Device.track_from_base_zone)
 
             extra_attrs['icloud3_version']     = Gb.version
             extra_attrs['event_log_version']   = Gb.version_evlog
@@ -355,7 +355,7 @@ class iCloud3_DeviceTracker(TrackerEntity):
 #-------------------------------------------------------------------------------------------
     @property
     def state_value_not_set(self):
-        state_value = self._get_sensor_value(DEVTRK_STATE_VALUE)
+        state_value = self._get_sensor_value(DEVICE_TRACKER_STATE_VALUE)
 
         if self.Device is None:
             return True

@@ -23,7 +23,7 @@ from .const             import (DEVICE_TRACKER, DEVICE_TRACKER_DOT,
                                 ICLOUD_BATTERY_LEVEL, ICLOUD_DEVICE_CLASS, ICLOUD_DEVICE_STATUS, ICLOUD_LOW_POWER_MODE, ID,
                                 FRIENDLY_NAME, PICTURE, ICON, BADGE,
                                 LATITUDE, LONGITUDE,
-                                DEVTRK_STATE_VALUE, LOCATION,
+                                DEVICE_TRACKER_STATE_VALUE, LOCATION,
                                 LOCATION_SOURCE, TRIGGER, TRACKING,
                                 ZONE, ZONE_DATETIME, LAST_ZONE, FROM_ZONE, LAST_ZONE_DATETIME,
                                 ZONE_NAME, ZONE_FNAME, LAST_ZONE_NAME, LAST_ZONE_FNAME, INTERVAL,
@@ -50,7 +50,7 @@ from .support           import determine_interval as det_interval
 from .support           import restore_state
 from .helpers           import entity_io
 
-from .helpers.common    import (instr, is_inzone_zone, is_statzone, circle_letter, format_gps, zone_fname,
+from .helpers.common    import (instr, is_inzone_zone, is_statzone, circle_letter, format_gps, zone_display_as,
                                 round_to_zero, )
 from .helpers.messaging import (post_event, post_error_msg, post_monitor_msg, log_exception, log_debug_msg,
                                 post_internal_error, _trace, _traceha, )
@@ -59,7 +59,7 @@ from .helpers.time_util import ( time_now_secs, secs_to_time, secs_to_time_str, 
                                 datetime_to_secs, secs_to_datetime, datetime_now,
                                 secs_to_age_str,  secs_to_time_age_str, hhmmss_to_secs, )
 from .helpers.dist_util import (calc_distance_m, calc_distance_km, km_to_mi_str, m_to_ft_str,
-                                format_dist_km, format_dist_m, )
+                                format_dist_km, format_dist_m, km_to_mi,)
 
 from homeassistant.components.device_tracker.config_entry import TrackerEntity
 from homeassistant.util import slugify
@@ -116,6 +116,7 @@ class iCloud3_Device(TrackerEntity):
         self.went_3km                     = False
         self.stationary_zone_update_control = STAT_ZONE_NO_UPDATE
         self.near_device_distance         = 0       # Distance to the NearDevice device
+        self.near_device_checked_secs     = 0       # When the nearby devices were last updated
         self.dist_apart_msg               = ''      # Distance to all other devices msg set in icloud3_main
         self.dist_apart_msg_by_devicename = {}      # Distance to all other devices msg set in icloud3_main
         self.last_update_loc_secs         = 0       # Located secs from the device tracker entity update
@@ -292,7 +293,7 @@ class iCloud3_Device(TrackerEntity):
                 self.sensors[sensor] = default_value
 
         # Device related sensors
-        self.sensors[DEVTRK_STATE_VALUE] = ''
+        self.sensors[DEVICE_TRACKER_STATE_VALUE] = ''
         self.sensors[NAME]               = ''
         self.sensors[PICTURE]            = ''
         self.sensors[BADGE]              = ''
@@ -570,7 +571,7 @@ class iCloud3_Device(TrackerEntity):
 
     @property
     def loc_data_zone_fname(self):
-        return zone_fname(self.loc_data_zone)
+        return zone_display_as(self.loc_data_zone)
 
     @property
     def loc_data_time_gps(self):
@@ -952,7 +953,7 @@ class iCloud3_Device(TrackerEntity):
             self.iosapp_request_loc_last_secs  = 0
             self.passthru_zone_expire_secs     = 0
 
-            if self.StatZone:
+            if Gb.is_stat_zone_used and self.StatZone:
                 self.stationary_zone_update_control = STAT_ZONE_MOVE_TO_BASE
                 self.StatZone.update_stationary_zone_location()
 
@@ -1169,11 +1170,10 @@ class iCloud3_Device(TrackerEntity):
                 info_msg +=(f"DeviceOffline@{secs_to_time_age_str(self.offline_secs)} "
                             f"({self.device_status}) ")
 
-            if (self.StatZone.timer > 0
+            if (Gb.is_stat_zone_used
+                    and self.StatZone.timer > 0
                     and self.sensors[MOVED_DISTANCE] == 0):
                 info_msg += (f"IntoStatZone@{secs_to_time(self.StatZone.timer)}, ")
-            # elif self.StatZone.timer < 0:
-            #     info_msg += (f"IntoStatZone@{secs_to_time_age_str(abs(self.StatZone.timer))}, ")
 
             elif self.zone_change_secs > 0:
                 into_exit_text = "Into" if self.is_inzone else "Exit"
@@ -1291,7 +1291,7 @@ class iCloud3_Device(TrackerEntity):
             # interval). Set threshold to 15-secs so the location will be updated
             # immediately.
             if self.is_approaching_tracked_zone:
-                self.old_loc_threshold_secs = 30
+                self.old_loc_threshold_secs = 30 + Gb.old_location_adjustment
                 return
 
             # Get smallest interval of all zones being tracked from
@@ -1323,7 +1323,8 @@ class iCloud3_Device(TrackerEntity):
             if (Gb.old_location_threshold > 0
                     and threshold_secs > Gb.old_location_threshold):
                 threshold_secs = Gb.old_location_threshold
-            self.old_loc_threshold_secs = threshold_secs
+
+            self.old_loc_threshold_secs = threshold_secs + Gb.old_location_adjustment
 
         except Exception as err:
             log_exception(err)
@@ -1610,25 +1611,79 @@ class iCloud3_Device(TrackerEntity):
 
             # Zone related sensors
             if self.loc_data_zone != self.sensor_zone:
-                last_zone = self.sensors[ZONE]
-                self.sensors[LAST_ZONE]      = last_zone
-                self.sensors[LAST_ZONE_NAME] = Gb.Zones_by_zone.get(last_zone, last_zone.title()).name
-                self.sensors[LAST_ZONE_FNAME]= Gb.Zones_by_zone.get(last_zone, last_zone.title()).fname
+                self.sensors[LAST_ZONE]      = self.sensors[ZONE]
+                self.sensors[LAST_ZONE_NAME] = self.sensors[ZONE_NAME]
+                self.sensors[LAST_ZONE_FNAME]= self.sensors[ZONE_FNAME]
                 self.sensors[ZONE_DATETIME]  = self.zone_change_datetime
 
-            self.sensors[ZONE]               = self.loc_data_zone
-            self.sensors[ZONE_NAME]          = Gb.Zones_by_zone.get(self.loc_data_zone, self.loc_data_zone.title()).name
-            self.sensors[ZONE_FNAME]         = Gb.Zones_by_zone.get(self.loc_data_zone, self.loc_data_zone.title()).fname
+            try:
+                Zone = Gb.Zones_by_zone[self.loc_data_zone]
+                self.sensors[ZONE] = Zone.display_as if Gb.zone_sensor_evlog_format else self.loc_data_zone
+            except:
+                self.sensors[ZONE] = self.loc_data_zone
+            self.sensors[ZONE_NAME]  = Zone.name
+            self.sensors[ZONE_FNAME] = Zone.fname
 
-            self.sensors[DEVTRK_STATE_VALUE] = self.loc_data_zone
+            self.sensors[DEVICE_TRACKER_STATE_VALUE] = self.sensors[ZONE]
 
             if self.sensors[FROM_ZONE] != HOME:
                 self.sensors_um[ZONE_DISTANCE] = (f"{Gb.um} "
                                         f"{circle_letter(self.DeviceFmZoneTracked.from_zone)}")
-            if self.StatZone:
+            if Gb.is_stat_zone_used and self.StatZone:
                 self.StatZone.update_stationary_zone_location()
 
             self.last_update_loc_secs = self.loc_data_secs
 
         except Exception as err:
             post_internal_error('Set Attributes', traceback.format_exc)
+
+#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+    def log_data_fields(self):
+
+        if self.NearDevice:
+            near_devicename = self.NearDevice.devicename
+        else:
+            near_devicename = 'None'
+
+        log_msg = ( f"Device Status > {self.devicename} > "
+                    f"NearDevice-{near_devicename}, "
+                    f"iOSAppZone-{self.iosapp_data_state}, "
+                    f"iC3Zone-{self.loc_data_zone}, ")
+        if self.DeviceFmZoneHome:
+            log_msg += (f"Interval-{self.sensors[INTERVAL]}, "
+                        f"TravTime-{self.sensors[TRAVEL_TIME]}, "
+                        f"Dist-{self.sensors[HOME_DISTANCE]} {Gb.um}, "
+                        f"NextUpdt-{self.sensors[NEXT_UPDATE]}, "
+                        f"Dir-{self.sensors[DIR_OF_TRAVEL]}, ")
+        log_msg += (f"Moved-{self.sensors[MOVED_DISTANCE]}, "
+                    f"LastUpdate-{self.sensors[LAST_UPDATE_TIME]}, "
+                    f"IntoStatZone@{secs_to_time(self.StatZone.timer)}, "
+                    f"GPS-{self.loc_data_fgps}, "
+                    f"LocAge-{secs_to_age_str(self.loc_data_secs)}, "
+                    f"OldThreshold-{secs_to_time_str(self.old_loc_threshold_secs)}, "
+                    f"LastEvLogMsg-{secs_to_time(self.last_evlog_msg_secs)}, "
+                    f"Battery-{self.format_battery_level_status_source})")
+
+        log_debug_msg(log_msg)
+        # log_msg = ( f"Device Status > {self.devicename} > "
+        #             f"NearDevice-{near_devicename}, "
+        #             f"iOSAppZone-{self.iosapp_data_state}, "
+        #             f"iC3Zone-{self.loc_data_zone}, ")
+        # if self.DeviceFmZoneHome:
+        #     log_msg += (f"Interval-{self.DeviceFmZoneHome.interval_str}, "
+        #                 f"TravTime-{self.DeviceFmZoneHome.last_tavel_time}, "
+        #                 f"Dist-{km_to_mi(self.DeviceFmZoneHome.zone_dist)} {Gb.um}, "
+        #                 f"NextUpdt-{self.DeviceFmZoneHome.next_update_time}, "
+        #                 f"Dir-{self.DeviceFmZoneHome.dir_of_travel}, ")
+        # log_msg += (f"Moved-{format_dist_km(self.StatZone.moved_dist)}, "
+        #             f"LastUpdate-{secs_to_time(self.last_data_update_secs)}, "
+        #             f"IntoStatZone@{secs_to_time(self.StatZone.timer)}, "
+        #             f"GPS-{self.loc_data_fgps}, "
+        #             f"LocAge-{secs_to_age_str(self.loc_data_secs)}, "
+        #             f"OldThreshold-{secs_to_time_str(self.old_loc_threshold_secs)}, "
+        #             f"LastEvLogMsg-{secs_to_time(self.last_evlog_msg_secs)}, "
+        #             f"Battery-{self.dev_data_battery_level}%, "
+        #             f"{self.dev_data_battery_status} "
+        #             f"({self.dev_data_battery_source})")
+
+        # log_debug_msg(log_msg)

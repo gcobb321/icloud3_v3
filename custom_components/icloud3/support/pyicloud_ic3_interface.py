@@ -12,7 +12,7 @@ from ..support.pyicloud_ic3 import (PyiCloudService, PyiCloudFailedLoginExceptio
                                     PyiCloudAPIResponseException, PyiCloud2FARequiredException,)
 
 from ..helpers.common       import (instr, is_statzone, list_to_str, )
-from ..helpers.messaging    import (post_event, post_error_msg, post_monitor_msg,
+from ..helpers.messaging    import (post_event, post_error_msg, post_monitor_msg, log_debug_msg,
                                     log_info_msg, log_exception, log_error_msg, internal_error_msg2, _trace, _traceha, )
 from ..helpers.time_util    import (time_now_secs, secs_to_time, secs_to_datetime, secs_to_time_str, format_age,
                                     secs_to_time_age_str, )
@@ -87,41 +87,43 @@ def verify_pyicloud_setup_status():
     if Gb.PyiCloud:
         return
 
+    log_debug_msg(  f"PyiCloud Init Steps > "
+                    f"Needed-{Gb.PyiCloudInit.init_step_needed=}, "
+                    f"Complete-{Gb.PyiCloudInit.init_step_needed=}")
+
     # PyiCloud is started early in __init__ and set up is complete
+    event_msg = f"iCloud Location Svcs Interface > Started during initialization"
     if Gb.PyiCloudInit and 'Complete' in Gb.PyiCloudInit.init_step_complete:
         Gb.PyiCloud = Gb.PyiCloudInit
-        event_msg =(f"iCloud Location Svcs Interface > Started during initialization"
-                    f"{CRLF_DOT}All steps completed")
-        post_event(event_msg)
+        event_msg += f"{CRLF_DOT}All steps completed"
+        # post_event(event_msg)
 
     # Authenticate is completed, continue with setup of FamShr and FmF objects
     elif Gb.PyiCloudInit and 'Authenticate' in Gb.PyiCloudInit.init_step_complete:
         Gb.PyiCloud = Gb.PyiCloudInit
 
-        event_msg =(f"iCloud Location Svcs Interface > Started during initialization"
-                    f"{CRLF_DOT}Completed: {list_to_str(Gb.PyiCloud.init_step_complete)}"
-                    f"{CRLF_DOT}Working on now: {list_to_str(Gb.PyiCloud.init_step_needed)}")
-        post_event(event_msg)
+        event_msg += (  f"{CRLF_DOT}Completed: {list_to_str(Gb.PyiCloud.init_step_complete)}"
+                        f"{CRLF_DOT}Working on now: {list_to_str(Gb.PyiCloud.init_step_needed)}")
+        # post_event(event_msg)
 
         Gb.PyiCloud.__init__(Gb.username, Gb.password,
                                     cookie_directory=Gb.icloud_cookies_dir,
                                     session_directory=(f"{Gb.icloud_cookies_dir}/session"),
-                                    called_from='start_ic3')
+                                    called_from='stage4')
 
     else:
         if Gb.PyiCloudInit:
             # __init__ set up was not authenticated, start all over
-            event_msg =(f"iCloud Location Svcs Interface > Started during initialization"
-                        f"{CRLF_DOT}Completed: None"
-                        f"{CRLF_DOT}Working on now: {list_to_str(Gb.PyiCloudInit.init_step_needed)}")
-            post_event(event_msg)
+            event_msg += (  f"{CRLF_DOT}Completed: None"
+                            f"{CRLF_DOT}Working on now: {list_to_str(Gb.PyiCloudInit.init_step_needed)}")
+            # post_event(event_msg)
         else:
-            event_msg =(f"iCloud Location Svcs Interface > Started during initialization"
-                        f"{CRLF_DOT}Completed: None"
-                        f"{CRLF_DOT}Working on now: Restarting the interface now")
-            post_event(event_msg)
+            event_msg += (  f"{CRLF_DOT}Completed: None"
+                            f"{CRLF_DOT}Working on now: Restarting the interface now")
+            # post_event(event_msg)
+        post_event(event_msg)
 
-        create_PyiCloudService(Gb.PyiCloud, called_from='start_ic3')
+        create_PyiCloudService(Gb.PyiCloud, called_from='stage4')
 
 #--------------------------------------------------------------------
 def authenticate_icloud_account(PyiCloud, called_from='unknown', initial_setup=False):
@@ -337,11 +339,11 @@ def pyicloud_reset_session():
         _cookies_file_rename('session', Gb.PyiCloud.session_directory_filename)
 
         post_event(f"iCloud initializing interface")
-        Gb.PyiCloud.__init__(Gb.username, Gb.password,
-                        cookie_directory=Gb.icloud_cookies_dir,
-                        session_directory=(f"{Gb.icloud_cookies_dir}/session"),
-                        with_family=True,
-                        called_from='reset')
+        Gb.PyiCloud.__init__(   Gb.username, Gb.password,
+                                cookie_directory=Gb.icloud_cookies_dir,
+                                session_directory=(f"{Gb.icloud_cookies_dir}/session"),
+                                with_family=True,
+                                called_from='reset')
 
         Gb.PyiCloud = None
         Gb.verification_code = None
@@ -362,7 +364,7 @@ def create_PyiCloudService_secondary(username, password, called_from):
     authentication test routines. This is used by config_flow to open a second
     PyiCloud session
     '''
-    return PyiCloudService(username, password,
+    return PyiCloudService( username, password,
                             cookie_directory=Gb.icloud_cookies_dir,
                             session_directory=(f"{Gb.icloud_cookies_dir}/session"),
                             called_from=called_from)

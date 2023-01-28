@@ -41,7 +41,7 @@ from .helpers.common    import (instr,  )
 from .helpers.messaging import (log_info_msg, log_debug_msg, log_error_msg, log_exception,
                                 _trace, _traceha, )
 from .helpers.time_util import (time_to_12hrtime, time_remove_am_pm, secs_to_time_str, mins_to_time_str,
-                                time_now_secs, )
+                                time_now_secs, datetime_now, )
 from .helpers.dist_util import (km_to_mi, )
 from .helpers           import entity_io
 from .support           import start_ic3
@@ -412,17 +412,19 @@ class SensorBase(SensorEntity):
             self.sensor_fname    = (f"{conf_device[FNAME]} "
                                     f"{self._get_sensor_definition(sensor_base, SENSOR_FNAME)}"
                                     f"{self.from_zone_fname}")
-            self._attr_native_unit_of_measurement = ''
+            self._attr_native_unit_of_measurement = None
 
             self._state = self._get_restore_or_default_value(sensor_base)
+            self.current_state_value = ''
 
             # Add this sensor to the HA Recorder history exclude entity list
             try:
                 if instr(self.sensor_type, 'ha_history_exclude'):
                     ha_history_recorder = Gb.hass.data['recorder_instance']
                     ha_history_recorder.entity_filter._exclude_e.add(self.entity_id)
-
-            except:
+                    
+            except Exception as err:
+                log_exception(err)
                 pass
 
             Gb.sensors_created_cnt += 1
@@ -484,16 +486,17 @@ class SensorBase(SensorEntity):
         Get the extra attributes for the sensor defined in the
         SENSOR_DEFINITION dictionary
         '''
-        extra_attrs = {'data_source': 'iCloud3'}
+        extra_attrs = {}
+        extra_attrs['data_source'] = 'iCloud3'
+        extra_attrs['sensor_updated'] = datetime_now()
 
         if instr(self.sensor_type, 'distance'):
             extra_attrs["Units"] = UM_FNAME.get(Gb.um, Gb.um)
 
         for _sensor in self._get_sensor_definition(sensor, SENSOR_ATTRS):
             _sensor_value = self._get_sensor_value(_sensor)
-            # if _sensor == BATTERY_STATUS:
-            #     _sensor_value = format_battery_status(_sensor_value)
-            extra_attrs[_sensor] = _sensor_value
+            _sensor_attr_name = _sensor.replace('_date/time', '')
+            extra_attrs[_sensor_attr_name] = _sensor_value
 
         if (self.Device is None or sensor not in SENSOR_LIST_DISTANCE):
             return extra_attrs
@@ -795,8 +798,11 @@ class SensorBase(SensorEntity):
 
 #-------------------------------------------------------------------------------------------
     def write_ha_sensor_state(self):
-        """Update the entity's state."""
+        """Update the entity's state if the state value has changed."""
+
         try:
+            # if self.current_state_value != self.native_value:
+                # self.current_state_value = self.native_value
             self.async_write_ha_state()
 
         except Exception as err:
@@ -822,7 +828,7 @@ class Sensor_Badge(SensorBase):
     @property
     def native_value(self):
 
-        return  self._get_sensor_value(BADGE)
+        return  str(self._get_sensor_value(BADGE))
 
     @property
     def extra_state_attributes(self):
@@ -840,7 +846,7 @@ class Sensor_ZoneInfo(SensorBase):
 
     @property
     def native_value(self):
-        return  self._get_sensor_value(ZONE_INFO)
+        return  str(self._get_sensor_value(ZONE_INFO))
 
     @property
     def extra_state_attributes(self):
@@ -897,7 +903,7 @@ class Sensor_Info(SensorBase):
             return Gb.broadcast_info_msg
 
         elif self.sensor_not_set:
-            return (f"{DOT}{DOT} Starting iCloud3 {DOT}{DOT}")
+            return f"{DOT}{DOT} Starting iCloud3 {DOT}{DOT}"
 
         else:
             return self.sensor_value
@@ -1077,6 +1083,7 @@ class Sensor_Zone(SensorBase):
             sensor_value = Zone.fname
         else:
             sensor_value = Zone.name
+
         return sensor_value
 
     @property
@@ -1111,6 +1118,7 @@ class Support_SensorBase(SensorEntity):
         self.entity_id         = f"sensor.{self.entity_name}"
         self._unsub_dispatcher = None
         self._device           = f"{DOMAIN}"
+        self.current_state_value = ''
 
         Gb.sensors_created_cnt += 1
         log_debug_msg(f'Sensor entity created: {self.entity_id}, #{Gb.sensors_created_cnt}')
@@ -1155,9 +1163,13 @@ class Support_SensorBase(SensorEntity):
 
 #-------------------------------------------------------------------------------------------
     def async_update_sensor(self):
-        """Update the entity's state."""
+        """Update the entity's state if the state value has changed."""
+
         try:
+            # if self.current_state_value != self.native_value:
+                # self.current_state_value = self.native_value
             self.async_write_ha_state()
+
         except Exception as err:
             log_exception(err)
 
