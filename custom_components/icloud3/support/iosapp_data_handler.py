@@ -137,17 +137,14 @@ def check_iosapp_state_trigger_change(Device):
         # Exit trigger and the trigger changed from last poll overrules trigger change time
         elif Device.iosapp_data_trigger == EXIT_ZONE:
             if Device.iosapp_data_secs > Device.located_secs_plus_5:
-                Device.iosapp_data_change_reason = (f"{EXIT_ZONE}@{Device.iosapp_data_time} > "
-                                                    f"{zone_display_as(Device.iosapp_zone_exit_zone)}")
+                Device.iosapp_data_change_reason = (f"{EXIT_ZONE}@{Device.iosapp_data_time} "
+                                                    f"({zone_display_as(Device.iosapp_zone_exit_zone)})")
 
         # Enter trigger and the trigger changed from last poll overrules trigger change time
         elif (Device.iosapp_data_trigger == ENTER_ZONE):
+            Device.iosapp_data_change_reason = f"{ENTER_ZONE}@{Device.iosapp_data_time} "
             if Device.is_inzone_iosapp_state:
-                zone_display_as = zone_display_as(Device.iosapp_zone_enter_zone)
-            else:
-                zone_display_as = ''
-            Device.iosapp_data_change_reason = (f"{ENTER_ZONE}@{Device.iosapp_data_time} > "
-                                                f"{zone_display_as}")
+                Device.iosapp_data_change_reason += f"({zone_display_as(Device.iosapp_zone_enter_zone)})"
 
         elif (Device.iosapp_data_trigger not in [ENTER_ZONE, EXIT_ZONE]
                 and Device.iosapp_data_secs > Device.located_secs_plus_5

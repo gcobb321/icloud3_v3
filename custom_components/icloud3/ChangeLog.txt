@@ -1,4 +1,10 @@
-Beta 10 - 1/22/2023
+Beta 10a - 1/29/2023
+~~~~~~~~~~~~~~~~~~~~
+1.  Fixed a problem when entering a zone that was generating the error message "local variable
+    'zone_display_as" referenced before assignment'. This was generated when creating the zone enter
+    trigger reason message.
+
+Beta 10 - 1/28/2023
 ~~~~~~~~~~~~~~~~~~~~
 1.  Updated the sensor and device_tracker attributes. Added 'sensor_updated' time to all sensors
     to be able to see when a sensor was updated in the Developer Tools > States screen. Removed
