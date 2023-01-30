@@ -1,0 +1,261 @@
+Beta 11 - mm/dd/2023
+~~~~~~~~~~~~~~~~~~~~
+1.  Added a Stationary Zone name parameter on the Update iCloud3 Devices parameter screen - Each device
+    can now have it's own Stationary Zone friendly name. This overrides the generic friendly name on the
+    Special Zones screen for the Stationary Zone.
+
+    The default name is 'Stationary'. It can be customized on the Special Zones screen to [name]StatZone
+    (GarStatZone, LilStatZone). It can now be set by device (GaryZone, LillianZone).
+2.  Fixed a problem where 'Statioary' was always used for the device_tracker state for a Stationary Zone
+    instead of the friendly name that was set up on the Special Zones/Stationary Zone screen. Also set the
+    Stationary Zone state to 0 when it was created so the person counter would work.
+
+Beta 10a - 1/29/2023
+~~~~~~~~~~~~~~~~~~~~
+1.  Fixed a problem in beta 10 that was generating the error message "local variable 'zone_display_as'
+    referenced before assignment when entering a zone. This was generated when creating the zone enter
+    trigger reason message.
+
+Beta 10 - 1/28/2023
+~~~~~~~~~~~~~~~~~~~~
+1.  Updated the sensor and device_tracker attributes. Added 'sensor_updated' time to all sensors
+    to be able to see when a sensor was updated in the Developer Tools > States screen. Removed
+    the '_date/time' text from the attribute name for clarity.
+2.  Fixed a problem displaying the HA History for sensors showing text values (zone, battery status, etc).
+3.  Fixed a problem with more than one device in the Family Sharing List having the same name.
+4.  Sometimes, iCloud does not download all of the devices in the Family Sharing account when iCloud3 is
+    starting. This leads to a device not found error and requires a restart of iCloud3 and a new request
+    to iCloud for the Family Sharing devices. Now, iCloud3 checks to see if all of the configured Family
+    Sharing devices and Find-my-Friends devices have been received from iCloud when starting up. If not,
+    a retry request is made to iCloud (up to 2 times) before the untrackable devices error message is
+    displayed.
+5.  The HA standard is to display the device_tracker entity state value/zone name in lower case with
+    underscores like entity names ('pizza_hut'). An option has been added to the Event log Parameters configuration
+    screen to override this and display the device_tracker state value in the same format as used for
+    the Event Log (Pizza Hut, PizzaHut).
+6.  Fixed the 'Find my Phone' alert error.
+7.  The option to turn off the Passthru Zone and Stationary Zones has been made easier and a message
+    is displayed in the Event Log during startup if they are disabled.
+8.  Changed the way a NearBy zone is determined to only check tracked devices. It was checking both
+    tracked and monitored devices).
+9.  The current results of all devices are written to the icloud3-debug.log file every 15-minutes.
+    This will help determine the cause of any 'tracking stopped' errors.
+
+
+
+Beta 9 - 1/22/2023
+~~~~~~~~~~~~~~~~~~~~
+1.  Fixed a problem selecting several of the Actions from the Configurator.
+2.  Fixed a problem where the zone was not being displayed in the _badge sensor and the zone's
+    friendly name was not being displayed on the Event Log (and other places) correctly.
+3.  Added the Battery Level to the Info sensor for the device. Also fixed a problem getting the
+    battery level from the iOS App when the iOS App was reporting a 'not_set' value and  reworked the
+    reporting of changes to the battery status (charging, not charging, etc).
+4.  Fixed a problem with the v2 --> v3 configuration migration with a message ha_country_code not
+    found.
+5.  Fixed another problem determing if a near by device's tracking results can be used that was causing
+    iCloud3 to hang and stop tracking all devices. The problem was caused by a circular loop where
+    A > B > C > D > B > C > D etc. The A, B, C and D are devices that are scanned in sequence to see
+    if they are near by and could be used. A check is made, following the path of devices that are
+    already being used, trying to find the end. In this case, the end did not exist and iCloud3 died.
+    An additional timer check was added to stop liiking after 5-secs.
+6.  Added a code to the Near By devices that are not eligible to explain the reason it is not eligible.
+    (a-GPS Accuracy, lb-Would Loop Back to itself, sz-Stationary Zone)
+7.  Fixed a problem calling the iCloud3 update service with the 'device_name' parameter,
+8.  Added the ability to exclude a specific device sensor from being created when iCloud3 started.
+    Select Exclude Sensors from the Configurator > Sensors screen, then select the actual sensor to
+    be excluded. A Filter can be used to limit the sensors displayed and the Excluded Devices are
+    displayed on the Sensors and Exclude Sensors screen. An HA restart is required to complete
+    the process.
+9.  Fixed a couple of problems with the iCloud Account interface (pyicloud_ic3).
+10. The Alert messages generated when iCloud3 is starting are redisplayed in the Event Log when
+    the startup process has completed. This summarizes all alerts in one place to help prevent
+    then from being missed.
+11. Event Log:
+        1. Changed the Event Log to better indicate when Debug & Rawdata logging are on. The Debug
+        level is now displayed in the tracking results header area in the time field. This also
+        shows when it was turned on and off.
+        2. Reordered some of the Action items.
+        3. Changed some Event Log messages for clarity.
+        4. Cleaned up some code.
+    REQUIRES A BROWSER REFRESH ON ALL DEVICES
+
+
+Beta 8 - 1/14/2023
+~~~~~~~~~~~~~~~~~~~~
+1.  Fixed the bug accessing the iCloud3 Devices screen. Again. I hope. It is a timing issue and an
+    issue with accessing the iCloud Account through HA. I could make it fail yesterday but not today
+    when trying to verify that the new approach fixed it. For those that are having this problem,
+    please let me know if you are still having a problem and I'll take another crack at it.
+2.  The Waze Route Service is handled by 3-servers around the world - United States/Canada, Israel,
+    and the Rest of the World. The HA Country Code is now used to determine that
+    the appropriate server is used. It is still shown on the Waze configuration screen for
+    information only. It is verified and corrected when HA starts if the wrong server is selected.
+3.  Combined the configuration screens for the Waze Route Server and Waze History Database into one
+    screen. THIS MAY REQUIRE A BROWSER CACHE REFRESH
+4.  Added the 'iCloud3 Theme' that tweeks the field labels in the Configurator so the descriptive
+    text is a little more readable (at least for me with my old eyes). It has both a light and dark
+    mode and only a few entries. You can find the it in config/custom_components/icloud3/theme.
+
+    Move the 'iCloud3 Theme' from the 'icloud3/theme' folder to the 'config/themes' folder.
+    (1) If you are already using a theme, copy the 'icloud3_theme.yaml' file statements (both the
+        light and dark mode) into the appropriate location in your theme's yaml file. Then restart HA.
+    (2) If you are not using a theme, restart HA, open your Profile screen, then select 'iCloud3 Theme'
+    on the Themes list.
+
+    I used it when capturing screenshots for the iCloud3 documentation.
+5.  Fixed a number of problems with the battery and battery status sensors. (1) It was being updated
+    by the iOS App every 15-minutes instead of every 5-seconds. (2) The value was resetting to 0 when
+    HA or iCloud3 restarted instead of restoring it's value from the last update. (3) It was not being
+    updated when iCloud3 restarted until the next poll, which may be 2-hours if you are in a zone.
+    (4) It was only being saved to the restore_state file on the next poll, not the value when it
+    changed in the iOS App. Again, if you are in a zone, the value might be 2-hours old from the last
+    iCloud update, leading to drops and spikes in the battery sensor in the HA history.
+6.  Fixed a problem that might cause iCloud3 to hang when you are tracking 2 or more devices and they
+    are all close to eack other. The problem occured when device A was using device B tracking results
+    (distance, travel time, next update time, etc), B was using C, and C was using A. This created a
+    circular loop so every device used the same data and a new update was never done.
+7.  Addressed a problem building the picture file list for the iCloud3 Devices screen. I can not
+    reproduce the error but changed some code so the error being encountered would not occur.
+
+
+Beta 7 - 1/8/2023
+~~~~~~~~~~~~~~~~~~~~
+1.  Fixed a problem connecting to the iCloud Account when there was a delay establishing the
+    initial connection. This was causing authentication delays and eventually creating an HA
+    error about I/O being done outside of the Event Loop. Also added a configuration item to
+    delay setting up the iCloud connection untill later in the iCloud start up process.
+2.  Removed the unit of measure (mi, km) from the distance sensor distance related attributes.
+    They are now numeric values, making it much simpler to use in automation triggers and conditions.
+3.  Fixed a problem where the Max Distance attribute in the distance sensors was being set when the
+    location was old or the gps accuracy was poor. An additional check was added to only set the
+    max_distance when the interval is >= 1-minute
+4.  Added the distance to other devices to _zone_distance sensor and _home_distance sensors. It
+    displays the distance in meters and miles or kilometers. Each device has it's own attribute
+    that is available in automations and scripts. Since the underscore ('_') can not be displayed
+    in an attribute (HA limitation), the underscores ('_'s) have been converted to dashes ('-'s).
+5.  Modified the way nearby device information is reported and used to make it more reliable and
+    easier to display in the Event Log.
+6.  Fixed a problem where iCloud3 would hang if the Waze Region code was not appropriate for your
+    location. Also, the HA location country code is used to determine the correct Waze Region when
+    the conversion is done or iCloud3 is being installed for the first time.
+7.  Fixed a few problems with the icloud3-debug.log where debug logging would be stopped when it
+    shouldn't have and where the file would not always be created when iCloud3 started. Also reduced
+    time ensuring records are written to the file from 15-minutes to 1-minute
+
+Beta 6 - 12/30/2022
+~~~~~~~~~~~~~~~~~~~~
+1.  Corrected a mispelled directory name used for installing sample device images (ipad.png, watch.png).
+    The image directory nane was 'event_log_cad'. It should be 'event_log_card'.
+2.  A new icloud3-debug.log file will now be created when restarting iCloud3 from the Event Log or when
+    HA was started and the log level is debug. New records will be added to the existing log file when
+    debug is started from Event Log > Actions and the log file is less than 20-hours old.
+3.  Fixed a problem where location data from iCloud FamShr/FmF was not always being rejected due to poor
+    gps_accuracy. This could lead to location & zone errors until the next locate was processed.
+4.  Improved the performance displaying the results of the Initial Device Locate results in the Event Log.
+5.  The Event Log for the selected devices is automatically refreshed when new information is added. The
+    number of items was increased from 15 to 50 so more events are displayed without refreshing.
+6.  Added a prefilter to the rawdata debug log to make sure usernames & passwords are not displayed.
+7.  Some internal code cleanup and minor tweaking.
+
+
+Beta 5 - 12/28/2022
+~~~~~~~~~~~~~~~~~~~~
+1.  Fixed a 'log_info_msg' not defined error message in the routine that identifies the notify
+    service  used for a device. This is just an informative message indicating HA has not set it
+    up yet.
+2.  Periodically, the events currently displayed for a device is reduced from all events to less
+    than a screen. This number was increased from 1/2-screen to about 2-screens.
+3.  When the displayed events for a device were reduced (#2 above), the screen was never refreshed
+    so you would always see the old events and had to do a refresh to see the latest events. Now,
+    the device's events are automatically refreshed when they are updated.
+4.  Updated the Event Log Lovelace card to v3.0.1. This fixes a problem when the date/time should not
+    be displayed if there was an alert message was displayed.
+
+
+Beta 4 - 12/27/2022
+~~~~~~~~~~~~~~~~~~~~
+1.  Inactive/Untracked devices are listed at the end of the Startup Event Log messages.
+2.  Fixed some problems displaying the EVent Log when there were no devices to track.
+3.  Fixed problem dealing with Gb.ic3_debug_log_write_secs variable not found.
+4.  Fixed problem where the Event Log records were not displayed in a timely manner when starting.
+5.  The tracking results written to the Log file now include the zone, distance and time values.
+6.  Reworked the icloud3-debug.log file:
+        - A new file is created when:
+            - HA/iCloud3 starts and the Log Level is debug or rawdata or
+            - Starting Debug Logging from Event Log > Actions or
+            - At midnight when debug logging is on and the file is more thn 20-hours old.
+        - Otherwise debug records are added to the existing Debug Log file.
+        - If the Log Level is debug or rawdata in the Configurator > Event Log parameters and
+          Stop Debug Logging was selected on Event Log > Actions, the configuration will be changed
+          to 'info' (no debug logging).
+        - If the configuration is set to 'info' (no debug logging) and it is started on
+          Event Log > Actions, the configuration is not updated and the debug logging will remain
+          on until midnight, the next iCloud3 restart or when it is turned off.
+
+
+QUESTION: Currently the Exported Event Log file contains the date/time indicating when it was created.
+          This creates a new file for every export.
+                Example: 'icloud3-event-log_2022-12-26 18:00:00.log'
+          Another option is to not have the date/time in the file name so a new Export overrites
+          the last one.
+                Example: 'icloud3-event-log.log'
+
+          Does anyone have an opinion on this.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Beta 3 - 12/24/2022
+~~~~~~~~~~~~~~~~~~~~
+1.  Fixed a problem where the Configurator > Sensors would generate an 'Unknown Error Ocurred'
+    error message. This was caused by an invalid sensor field name ('tracking_from_zones')
+    in the configuration file.
+2.  Fixed a problem on the Configurator > Sensors screen dealing with an invalid 'battery_status'
+    error message.
+3.  Fixed a problem where error messages were displayed getting device info from the HA device
+    registry when the device was not in the registry.
+4.  Fixed a problem displaying the obscured email address if there was more than one @-sign
+    in the address.
+5.  Added 'Reinitialize All Devices' to the Configurator > iCloud3 Devices screen. With it,
+    you can remove all devices from iCloud3 or reset the selections for the iCloud FamShr & FmF
+    and the iOS App parameters to `None`. This will clear any errors due to device migration errors.
+6.  Setting up the log_level (info, debug, rawdata) a lot earlier. It is now setup when HA loads
+    iCloud3 instead of later. Debug and RawData information should now be written to the HA Log file
+    (home-assistant.log) when the iCloud Account connection is first established.
+7.  Moved `Event Log Configuration` option to Menu Page 1 and moved `Display Text As` option to Menu
+    Page 2. Also added the `Log Level` parameter to the Event Log Configuration screen. This
+    will reduce the steps needed to change the Log Level parameter when debug/rawdata logging
+    is desired. ---> YOU MAY NEED TO REFRESH YOUR BROWSER WITH THE CONFIGURATOR OPEN <---
+8.  Fixed problem changing the devices Friendly Name that would generate an error message deleting
+    tracking_from_zone sensors when they had not been created.
+9.  The device_tracker state value is now lower-case.
+10. Log level debug and rawdata records are now written to the '/config/icloud3_debug.log' file
+    instead of the HA log file. A new file is created every time HA starts.
+11. The file extension for the Event Log file was changed from '.txt' to '.log'. The file name is
+    now 'icloud3-event-log_[time].log'.
+12. Fixed problem displaying the Event Log when no devices had been configured.
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Beta 2 - 12/17/2022
+~~~~~~~~~~~~~~~~~~~~
+1.  Do not display an error messgage when trying to get the model of a device if t is
+    not in the HA device registry. (entity_io:137)
+2.  Fix a problem checking if info for all of configured devices that had been set
+    up had been returned from iCloud account during startup. If not, the FmF devices
+    were being refreshed when it should be refreshing the FamShr devices. (start_ic3:1315)
+3.  Fixed an error copying the Event Log image sample files to the custom cards directory.
+    It was copyingthe files from 'event_log' instead of 'event_log_card'. (start_ic3:722)
+4.  Added 'Erase All Devices' to the Configuration > Action menu that will reinitialize the
+    iCloud3 Devices List.
+5.  The Time Format (12/24-hour) was converted incorrectly. It was creating '12/24-hour-hour'
+    This has been fixed and the invalid parameter in the configuration file was corrrected.
+6.  Fixed a problem where a check was being made to see if 2fa authentication was needed when
+    the connection to the iCloud Location Services had not been completed, causing a problem
+    with the parameter migration (icloud_main:732).
+7.  Reformatted the items written to the icloud3_migration.log file for clarity.
+8.  Fixed a problem shrinking the Event Log (event_log:538 recursion error).
+9.  Fixed a problem when Family Sharing info from iCloud Location Services had not completely
+    loaded during initialization and was generating an error during the retry operation.
+10. Fixed a problem, hopefully, that was generating the HA Blocking error when starting up the
+    iCloud Location Services interface. This was also occurring (sometimes) when logging into a new
+    the iCloud ccount from the Configurator.
