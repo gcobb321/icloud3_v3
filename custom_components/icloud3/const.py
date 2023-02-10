@@ -4,7 +4,8 @@
 #
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-VERSION                         = '3.0.0b10a'
+VERSION                         = '3.0.0b12'
+
 DOMAIN                          = 'icloud3'
 ICLOUD3                         = 'iCloud3'
 MODE_PLATFORM                   = -1
@@ -53,6 +54,7 @@ STATIONARY_FNAME                = 'Stationary'
 AWAY_FROM                       = 'AwayFrom'
 AWAY                            = 'Away'
 TOWARDS                         = 'Towards'
+INZONE                          = 'InZone'
 PAUSED                          = 'PAUSED'
 PAUSED_CAPS                     = 'PAUSED'
 RESUMING                        = 'RESUMING'
@@ -173,7 +175,7 @@ WAZE_NO_DATA      = 4
 # poor_location_gps cnt, icloud_authentication cnt (default)
 OLD_LOC_POOR_GPS_CNT   = 1.1
 AUTH_ERROR_CNT         = 1.2
-RETRY_INTERVAL_RANGE_1 = {4:.25, 4:1, 8:5, 12:30, 16:60, 20:120, 22:240, 24:240}
+RETRY_INTERVAL_RANGE_1 = {6:.25, 4:1, 8:5, 12:30, 16:60, 20:120, 22:240, 24:240}
 IOSAPP_REQUEST_LOC_CNT = 2.1
 RETRY_INTERVAL_RANGE_2 = {4:.5, 4:2, 8:30, 12:60, 14:120, 16:180, 18:240, 20:240}
 
@@ -277,9 +279,10 @@ FNAME             = 'fname'
 TITLE             = 'title'
 RADIUS            = 'radius'
 NON_ZONE_ITEM_LIST = {
-        NOT_HOME: AWAY,
-        NOT_SET: NOT_SET_FNAME,
-        STATIONARY: STATIONARY_FNAME, }
+        'not_home': 'Away',
+        'not_set': 'NotSet',
+        'stationary': 'Stationary',
+        'unknown': 'Unknown'}
 
 #config_ic3.yaml parameter validation items
 #LIST = 1
@@ -353,13 +356,13 @@ IOS_TRIGGERS_ENTER_EXIT = [ENTER_ZONE, EXIT_ZONE, ]
 
 #Convert state non-fname value to internal zone/state value
 STATE_TO_ZONE_BASE = {
-        NOT_SET_FNAME: NOT_SET,
-        AWAY: NOT_HOME,
-        "away": NOT_HOME,
-        NOT_HOME_FNAME: NOT_HOME,
-        "nothome": NOT_HOME,
-        STATIONARY_FNAME: STATIONARY,
-        STATIONARY: STATIONARY,
+        'NotSet': 'not_set',
+        'Away': 'not_home',
+        "away": 'not_home',
+        'NotHome': 'not_home',
+        "nothome": 'not_home',
+        'Stationary': 'stationary',
+        'stationary': 'stationary',
         }
 
 #Lists to hold the group names, group objects and iCloud device configuration
@@ -513,7 +516,8 @@ CONF_LOG_LEVEL                  = 'log_level'
 
 # inZone Parameters
 CONF_DISPLAY_ZONE_FORMAT        = 'display_zone_format'
-CONF_ZONE_SENSOR_EVLOG_FORMAT   = 'zone_sensor_evlog_format'
+CONF_DEVICE_TRACKER_STATE_FORMAT= 'device_tracker_state_format'
+# CONF_ZONE_SENSOR_EVLOG_FORMAT   = 'zone_sensor_evlog_format'
 CONF_CENTER_IN_ZONE             = 'center_in_zone'
 CONF_DISCARD_POOR_GPS_INZONE    = 'discard_poor_gps_inzone'
 CONF_DISTANCE_BETWEEN_DEVICES   = 'distance_between_devices'
@@ -568,6 +572,7 @@ CONF_DEVICE_TYPE                = 'device_type'
 CONF_INZONE_INTERVAL            = 'inzone_interval'
 CONF_UNIQUE_ID                  = 'unique_id'
 CONF_EVLOG_DISPLAY_ORDER        = 'evlog_display_order'
+CONF_STAT_ZONE_FNAME            = 'stat_zone_fname'
 
 CONF_ZONE                       = 'zone'
 CONF_COMMAND                    = 'command'
@@ -666,24 +671,19 @@ DEFAULT_DEVICE_CONF = {
         CONF_EVLOG_DISPLAY_ORDER: 0,
         CONF_UNIQUE_ID: '',
         CONF_DEVICE_TYPE: 'iPhone',
-        CONF_INZONE_INTERVAL: '02:00:00',
+        CONF_INZONE_INTERVAL: 120,
         CONF_TRACKING_MODE: TRACK_DEVICE,
         CONF_FAMSHR_DEVICENAME: 'None',
         CONF_FAMSHR_DEVICE_ID: '',
         CONF_RAW_MODEL : '',
         CONF_MODEL: '',
         CONF_MODEL_DISPLAY_NAME: '',
-        #CONF_FAMSHR_DEVICENAME2: 'None',
-        #CONF_FAMSHR_DEVICE_ID2: '',
-        #CONF_RAW_MODEL2: '',
-        #CONF_MODEL2: '',
-        #CONF_MODEL_DISPLAY_NAME2: '',
         CONF_FMF_EMAIL: 'None',
         CONF_FMF_DEVICE_ID: '',
         CONF_IOSAPP_DEVICE: 'None',
-        #CONF_IOSAPP_DEVICE2: 'None',
         CONF_TRACK_FROM_BASE_ZONE: HOME,
         CONF_TRACK_FROM_ZONES: [HOME],
+        CONF_STAT_ZONE_FNAME: ' '
 }
 
 # Used in conf_flow to reinialize the Configuration Devices
@@ -703,16 +703,16 @@ DEFAULT_GENERAL_CONF = {
         CONF_UNIT_OF_MEASUREMENT: 'mi',
         CONF_TIME_FORMAT: '12-hour',
         CONF_DISPLAY_ZONE_FORMAT: 'fname',
-        CONF_ZONE_SENSOR_EVLOG_FORMAT: True,
-        CONF_MAX_INTERVAL: '04:00:00',
-        CONF_OFFLINE_INTERVAL: '00:20:00',
-        CONF_IOSAPP_ALIVE_INTERVAL: '01:00:00',
-        CONF_OLD_LOCATION_THRESHOLD: '00:03:00',
-        CONF_OLD_LOCATION_ADJUSTMENT: '00:00:00',
+        CONF_DEVICE_TRACKER_STATE_FORMAT: 'fname',
+        CONF_MAX_INTERVAL: 240,
+        CONF_OFFLINE_INTERVAL: 20,
+        CONF_IOSAPP_ALIVE_INTERVAL: 60,
+        CONF_OLD_LOCATION_THRESHOLD: 3,
+        CONF_OLD_LOCATION_ADJUSTMENT: 0,
         CONF_GPS_ACCURACY_THRESHOLD: 100,
         CONF_TRAVEL_TIME_FACTOR: .6,
         CONF_TFZ_TRACKING_MAX_DISTANCE: 8,
-        CONF_PASSTHRU_ZONE_TIME: '00:01:00',
+        CONF_PASSTHRU_ZONE_TIME: 1,
         CONF_TRACK_FROM_BASE_ZONE: HOME,
         CONF_TRACK_FROM_HOME_ZONE: True,
 
@@ -721,12 +721,12 @@ DEFAULT_GENERAL_CONF = {
         CONF_DISCARD_POOR_GPS_INZONE: False,
         CONF_DISTANCE_BETWEEN_DEVICES: True,
         CONF_INZONE_INTERVALS: {
-                IPHONE: '02:00:00',
-                IPAD: '02:00:00',
-                WATCH: '00:15:00',
-                AIRPODS: '00:15:00',
-                NO_IOSAPP: '00:15:00',
-                OTHER: '02:00:00',
+                IPHONE: 120,
+                IPAD: 120,
+                WATCH: 15,
+                AIRPODS: 15,
+                NO_IOSAPP: 15,
+                OTHER: 120,
                 },
 
         # Waze Configuration Parameters
@@ -742,8 +742,8 @@ DEFAULT_GENERAL_CONF = {
 
         # Stationary Zone Configuration Parameters
         CONF_STAT_ZONE_FNAME: 'Stationary',
-        CONF_STAT_ZONE_STILL_TIME: '00:08:00',
-        CONF_STAT_ZONE_INZONE_INTERVAL: '00:30:00',
+        CONF_STAT_ZONE_STILL_TIME: 8,
+        CONF_STAT_ZONE_INZONE_INTERVAL: 30,
         CONF_STAT_ZONE_BASE_LATITUDE: 1,
         CONF_STAT_ZONE_BASE_LONGITUDE: 0,
 
@@ -807,6 +807,7 @@ CONF_PARAMETER_TIME_STR = [
         CONF_INZONE_INTERVAL,
         CONF_MAX_INTERVAL,
         CONF_OFFLINE_INTERVAL,
+        CONF_PASSTHRU_ZONE_TIME,
         CONF_STAT_ZONE_STILL_TIME,
         CONF_STAT_ZONE_INZONE_INTERVAL,
         CONF_OLD_LOCATION_THRESHOLD,
@@ -871,9 +872,9 @@ DEVICE_STATUS_CODES = {
         '201': 'Offline',
         '203': 'Pending',
         '204': 'Unregistered',
-        '0': UNKNOWN,
+        '0': 'Unknown',
         }
-DEVICE_STATUS_ONLINE = ['Online', 'Pending', UNKNOWN, 'unknown', '']
+DEVICE_STATUS_ONLINE = ['Online', 'Pending', 'Unknown', 'unknown', '']
 DEVICE_STATUS_OFFLINE = ['Offline']
 DEVICE_STATUS_PENDING = ['Pending']
 
@@ -950,4 +951,5 @@ LOG_RAWDATA_FIELDS = [
         NAME, 'emails', 'firstName', 'laststName',
         'prsId', 'batteryLevel', 'isOld', 'isInaccurate', 'phones',
         'invitationAcceptedByEmail', 'invitationFromEmail', 'invitationSentToEmail', 'data',
+        'original_name',
         ]

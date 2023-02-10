@@ -33,7 +33,7 @@ from ..const            import (
                                 CONF_TFZ_TRACKING_MAX_DISTANCE, CONF_TRACK_FROM_BASE_ZONE, CONF_TRACK_FROM_HOME_ZONE,
                                 CONF_TRAVEL_TIME_FACTOR, CONF_PASSTHRU_ZONE_TIME, CONF_DISTANCE_BETWEEN_DEVICES,
                                 CONF_LOG_LEVEL,
-                                CONF_DISPLAY_ZONE_FORMAT, CONF_ZONE_SENSOR_EVLOG_FORMAT,
+                                CONF_DISPLAY_ZONE_FORMAT, CONF_DEVICE_TRACKER_STATE_FORMAT,
                                 CONF_CENTER_IN_ZONE, CONF_DISCARD_POOR_GPS_INZONE,
                                 CONF_WAZE_USED, CONF_WAZE_REGION, CONF_WAZE_MAX_DISTANCE, CONF_WAZE_MIN_DISTANCE,
                                 CONF_WAZE_REALTIME, CONF_WAZE_HISTORY_DATABASE_USED, CONF_WAZE_HISTORY_MAX_DISTANCE,
@@ -58,13 +58,12 @@ from ..support              import iosapp_data_handler
 from ..support              import service_handler
 from ..support              import config_file
 from ..helpers              import entity_io
-from ..helpers.common       import (instr, format_gps, circle_letter, zone_display_as, list_to_str, )
+from ..helpers.common       import (instr, format_gps, circle_letter, zone_display_as, list_to_str, is_statzone, )
 from ..helpers.messaging    import (broadcast_info_msg,
                                     post_event, post_error_msg, post_monitor_msg,
                                     log_info_msg, log_debug_msg, log_warning_msg, log_rawdata, log_exception,
                                     open_ic3_debug_log_file, close_ic3_debug_log_file,
                                     _trace, _traceha, )
-from ..helpers.time_util    import (hhmmss_to_secs, datetime_now, )
 from ..helpers.dist_util    import (format_dist_km, )
 
 import os
@@ -98,9 +97,6 @@ def initialize_directory_filenames():
 
     # Note: The Event Log  directory & filename are initialized in config_file.py
     # after the configuration file has been read
-
-    if Gb.entity_registry_file.startswith('/workspaces'):
-        Gb.entity_registry_file = Gb.entity_registry_file.replace('.storage/core.', '.storage/test.')
 
     #Set up pyicloud cookies directory & file names
     Gb.icloud_cookies_dir  = Gb.hass.config.path(STORAGE_DIR, 'icloud')
@@ -200,16 +196,17 @@ def initialize_global_variables():
     # Configuration parameters
     Gb.center_in_zone_flag             = DEFAULT_GENERAL_CONF[CONF_CENTER_IN_ZONE]
     Gb.display_zone_format             = DEFAULT_GENERAL_CONF[CONF_DISPLAY_ZONE_FORMAT]
-    Gb.zone_sensor_evlog_format        = DEFAULT_GENERAL_CONF[CONF_ZONE_SENSOR_EVLOG_FORMAT]
+    Gb.device_tracker_state_format     = DEFAULT_GENERAL_CONF[CONF_DEVICE_TRACKER_STATE_FORMAT]
+    Gb.device_tracker_state_evlog_format_flag = (Gb.device_tracker_state_format == FNAME)
     Gb.distance_method_waze_flag       = True
-    Gb.max_interval_secs               = hhmmss_to_secs(DEFAULT_GENERAL_CONF[CONF_MAX_INTERVAL])
-    Gb.iosapp_alive_interval_secs      = hhmmss_to_secs(DEFAULT_GENERAL_CONF[CONF_IOSAPP_ALIVE_INTERVAL])
+    Gb.max_interval_secs               = DEFAULT_GENERAL_CONF[CONF_MAX_INTERVAL] * 60
+    Gb.iosapp_alive_interval_secs      = DEFAULT_GENERAL_CONF[CONF_IOSAPP_ALIVE_INTERVAL] * 60
     Gb.travel_time_factor              = DEFAULT_GENERAL_CONF[CONF_TRAVEL_TIME_FACTOR]
     Gb.track_from_base_zone            = DEFAULT_GENERAL_CONF[CONF_TRACK_FROM_BASE_ZONE]
     Gb.track_from_home_zone            = DEFAULT_GENERAL_CONF[CONF_TRACK_FROM_HOME_ZONE]
     Gb.gps_accuracy_threshold          = DEFAULT_GENERAL_CONF[CONF_GPS_ACCURACY_THRESHOLD]
-    Gb.old_location_threshold          = hhmmss_to_secs(DEFAULT_GENERAL_CONF[CONF_OLD_LOCATION_THRESHOLD])
-    Gb.old_location_adjustment         = hhmmss_to_secs(DEFAULT_GENERAL_CONF[CONF_OLD_LOCATION_ADJUSTMENT])
+    Gb.old_location_threshold          = DEFAULT_GENERAL_CONF[CONF_OLD_LOCATION_THRESHOLD] * 60
+    Gb.old_location_adjustment         = DEFAULT_GENERAL_CONF[CONF_OLD_LOCATION_ADJUSTMENT] * 60
     Gb.log_level                       = 'info'
 
     Gb.tfz_tracking_max_distance      = DEFAULT_GENERAL_CONF[CONF_TFZ_TRACKING_MAX_DISTANCE]
@@ -248,21 +245,21 @@ def set_global_variables_from_conf_parameters(evlog_msg=True):
 
         set_icloud_username_password()
 
-        Gb.event_log_card_directory     = Gb.conf_profile[CONF_EVLOG_CARD_DIRECTORY]
-        Gb.event_log_card_program       = Gb.conf_profile[CONF_EVLOG_CARD_PROGRAM]
+        Gb.www_evlog_js_directory       = Gb.conf_profile[CONF_EVLOG_CARD_DIRECTORY]
+        Gb.www_evlog_js_filename        = Gb.conf_profile[CONF_EVLOG_CARD_PROGRAM]
 
         Gb.um                           = Gb.conf_general[CONF_UNIT_OF_MEASUREMENT]
         Gb.time_format_12_hour          = Gb.conf_general[CONF_TIME_FORMAT].startswith('12')
-        Gb.display_zone_format          = Gb.conf_general[CONF_DISPLAY_ZONE_FORMAT]
-        Gb.zone_sensor_evlog_format     = Gb.conf_general[CONF_ZONE_SENSOR_EVLOG_FORMAT]
+        Gb.device_tracker_state_format  = Gb.conf_general[CONF_DEVICE_TRACKER_STATE_FORMAT]
+        Gb.device_tracker_state_evlog_format_flag = (Gb.device_tracker_state_format == FNAME)
 
         Gb.center_in_zone_flag          = Gb.conf_general[CONF_CENTER_IN_ZONE]
-        Gb.max_interval_secs            = hhmmss_to_secs(Gb.conf_general[CONF_MAX_INTERVAL])
+        Gb.max_interval_secs            = Gb.conf_general[CONF_MAX_INTERVAL] * 60
         Gb.travel_time_factor           = Gb.conf_general[CONF_TRAVEL_TIME_FACTOR]
-        Gb.passthru_zone_interval_secs  = hhmmss_to_secs(Gb.conf_general[CONF_PASSTHRU_ZONE_TIME])
-        Gb.is_passthru_zone_used       = (14400 > Gb.passthru_zone_interval_secs > 0)
-        Gb.old_location_threshold       = hhmmss_to_secs(Gb.conf_general[CONF_OLD_LOCATION_THRESHOLD])
-        Gb.old_location_adjustment      = hhmmss_to_secs(Gb.conf_general[CONF_OLD_LOCATION_ADJUSTMENT])
+        Gb.passthru_zone_interval_secs  = Gb.conf_general[CONF_PASSTHRU_ZONE_TIME] * 60
+        Gb.is_passthru_zone_used        = False #(14400 > Gb.passthru_zone_interval_secs > 0)
+        Gb.old_location_threshold       = Gb.conf_general[CONF_OLD_LOCATION_THRESHOLD] * 60
+        Gb.old_location_adjustment      = Gb.conf_general[CONF_OLD_LOCATION_ADJUSTMENT] * 60
         Gb.track_from_base_zone         = Gb.conf_general[CONF_TRACK_FROM_BASE_ZONE]
         Gb.track_from_home_zone         = Gb.conf_general[CONF_TRACK_FROM_HOME_ZONE]
         Gb.gps_accuracy_threshold       = Gb.conf_general[CONF_GPS_ACCURACY_THRESHOLD]
@@ -276,8 +273,8 @@ def set_global_variables_from_conf_parameters(evlog_msg=True):
         Gb.stat_zone_fname                = Gb.conf_general[CONF_STAT_ZONE_FNAME]
         Gb.stat_zone_base_latitude        = Gb.conf_general[CONF_STAT_ZONE_BASE_LATITUDE]
         Gb.stat_zone_base_longitude       = Gb.conf_general[CONF_STAT_ZONE_BASE_LONGITUDE]
-        Gb.stat_zone_still_time_secs      = hhmmss_to_secs(Gb.conf_general[CONF_STAT_ZONE_STILL_TIME])
-        Gb.stat_zone_inzone_interval_secs = hhmmss_to_secs(Gb.conf_general[CONF_STAT_ZONE_INZONE_INTERVAL])
+        Gb.stat_zone_still_time_secs      = Gb.conf_general[CONF_STAT_ZONE_STILL_TIME] * 60
+        Gb.stat_zone_inzone_interval_secs = Gb.conf_general[CONF_STAT_ZONE_INZONE_INTERVAL] * 60
         Gb.is_stat_zone_used              = (14400 > Gb.stat_zone_still_time_secs > 0)
 
         Gb.log_level = Gb.conf_general[CONF_LOG_LEVEL]
@@ -285,13 +282,13 @@ def set_global_variables_from_conf_parameters(evlog_msg=True):
         # update the interval time for each of the interval types (i.e., ipad: 2 hrs, no_iosapp: 15 min)
         inzone_intervals = Gb.conf_general[CONF_INZONE_INTERVALS]
         Gb.inzone_interval_secs = {}
-        Gb.inzone_interval_secs[IPHONE]     = hhmmss_to_secs(inzone_intervals[IPHONE])
-        Gb.inzone_interval_secs[IPAD]       = hhmmss_to_secs(inzone_intervals[IPAD])
-        Gb.inzone_interval_secs[WATCH]      = hhmmss_to_secs(inzone_intervals[WATCH])
-        Gb.inzone_interval_secs[IPOD]       = hhmmss_to_secs(inzone_intervals[IPHONE])
-        Gb.inzone_interval_secs[AIRPODS]    = hhmmss_to_secs(inzone_intervals[AIRPODS])
-        Gb.inzone_interval_secs[NO_IOSAPP]  = hhmmss_to_secs(inzone_intervals[NO_IOSAPP])
-        Gb.inzone_interval_secs[CONF_INZONE_INTERVAL] = hhmmss_to_secs(inzone_intervals['other'])
+        Gb.inzone_interval_secs[IPHONE]     = inzone_intervals[IPHONE] * 60
+        Gb.inzone_interval_secs[IPAD]       = inzone_intervals[IPAD] * 60
+        Gb.inzone_interval_secs[WATCH]      = inzone_intervals[WATCH] * 60
+        Gb.inzone_interval_secs[IPOD]       = inzone_intervals[IPHONE] * 60
+        Gb.inzone_interval_secs[AIRPODS]    = inzone_intervals[AIRPODS] * 60
+        Gb.inzone_interval_secs[NO_IOSAPP]  = inzone_intervals[NO_IOSAPP] * 60
+        Gb.inzone_interval_secs[CONF_INZONE_INTERVAL] = inzone_intervals['other'] * 60
 
         Gb.EvLog.display_text_as = {}
         for display_text_as in Gb.conf_general[CONF_DISPLAY_TEXT_AS]:
@@ -315,6 +312,8 @@ def set_global_variables_from_conf_parameters(evlog_msg=True):
 
         evlog_table_max_cnt = set_evlog_table_max_cnt()
         config_event_msg += f"{CRLF_DOT}Set Event Log Record Limits ({evlog_table_max_cnt} Events)"
+
+        set_zone_display_as()
 
         if evlog_msg:
             post_event(config_event_msg)
@@ -497,6 +496,33 @@ def set_waze_conf_parameters():
             Gb.WazeHist.close_waze_history_database()
 
 #------------------------------------------------------------------------------
+def set_zone_display_as():
+    '''
+    Set the zone display_as config format. Refresh the display_as for each zone if the
+    config format value changed. But don't do this on the initial load. It will be
+    done when the zone is created.
+
+    '''
+    zone_display_as_changed = (Gb.display_zone_format != Gb.conf_general[CONF_DISPLAY_ZONE_FORMAT])
+    Gb.display_zone_format  = Gb.conf_general[CONF_DISPLAY_ZONE_FORMAT]
+
+
+    if Gb.initial_icloud3_loading_flag:
+        return
+
+    if zone_display_as_changed:
+        zone_msg = ''
+        for zone, Zone in Gb.Zones_by_zone.items():
+            if is_statzone(zone) is False:
+                Zone.setup_zone_display_name()
+            if Zone.radius_m > 0:
+                zone_msg += (f"{CRLF_DOT}{zone}/{Zone.display_as} (r{Zone.radius_m}m)")
+
+        log_msg = (f"Set up Zones (zone/{Gb.display_zone_format}) > {zone_msg}")
+        post_event(log_msg)
+
+
+#------------------------------------------------------------------------------
 #
 #   ICLOUD3 CONFIGURATION PARAMETERS WERE UPDATED VIA CONFIG_FLOW
 #
@@ -504,21 +530,25 @@ def set_waze_conf_parameters():
 #   devices based on the type of changes.
 #
 #------------------------------------------------------------------------------
-def process_conf_flow_parameter_updates():
+def process_config_flow_parameter_updates():
 
     if 'restart' in Gb.config_flow_updated_parms:
         set_icloud_username_password()
         Gb.start_icloud3_request_flag = True
+        if 'profile' in Gb.config_flow_updated_parms:
+            Gb.EvLog.display_user_message('The Browser may need to be refreshed')
         return
 
     if 'general' in Gb.config_flow_updated_parms:
         set_global_variables_from_conf_parameters()
 
     if 'profile' in Gb.config_flow_updated_parms:
-        post_event('processing profile update for evlog')
+        post_event('Processing Event Log Profile Update')
         check_ic3_event_log_file_version()
         Gb.hass.loop.create_task(update_lovelace_resource_event_log_js_entry())
         Gb.EvLog.setup_event_log_trackable_device_info()
+        if 'profile' in Gb.config_flow_updated_parms:
+            Gb.EvLog.display_user_message('The Browser may need to be refreshed')
 
     if 'reauth' in Gb.config_flow_updated_parms:
         Gb.evlog_action_request = CMD_RESET_PYICLOUD_SESSION
@@ -790,6 +820,7 @@ def create_Zones_object():
                     and ID in zone_entity_data[zone_entity_name]):
                 zone_data[ID] = zone_entity_data[zone_entity_name][ID]
                 zone_data['unique_id'] = zone_entity_data[zone_entity_name]['unique_id']
+                zone_data['original_name'] = zone_entity_data[zone_entity_name]['original_name']
             else:
                 zone_data[ID] = zone.lower()
                 zone_data['unique_id'] = zone.lower()
@@ -811,22 +842,7 @@ def create_Zones_object():
             Gb.Zones.append(Zone)
             Gb.Zones_by_zone[zone] = Zone
 
-            zfname = Zone.fname
-            ztitle = Zone.title
-
-            Gb.state_to_zone[zfname] = zone
-            if ztitle not in Gb.state_to_zone:
-                Gb.state_to_zone[ztitle] = zone
-            ztitle_w = ztitle.replace(' ', '')
-            if ztitle_w not in Gb.state_to_zone:
-                Gb.state_to_zone[ztitle_w] = zone
-
             if Zone.radius_m > 0:
-                # if Gb.display_zone_format   == CONF_ZONE: Zone.display_as = Zone.zone
-                # elif Gb.display_zone_format == CONF_NAME: Zone.display_as = Zone.name
-                # elif Gb.display_zone_format == TITLE:     Zone.display_as = Zone.title
-                # elif Gb.display_zone_format == FNAME:     Zone.display_as = Zone.fname
-
                 zone_msg += (f"{CRLF_DOT}{Zone.zone}/{Zone.display_as} "
                         f"(r{Zone.radius_m}m)")
 
@@ -1949,7 +1965,7 @@ def setup_trackable_devices():
             if iosapp_attrs:
                 iosapp_data_handler.update_iosapp_data_from_entity_attrs(Device, iosapp_attrs)
 
-            event_msg += (f"{CRLF_DOT}iOSApp Entity: {Device.iosapp_entity[DEVICE_TRACKER]}"
+            event_msg += (  f"{CRLF_DOT}iOSApp Entity: {Device.iosapp_entity[DEVICE_TRACKER]}"
                             f"{CRLF_DOT}Update Trigger: {Device.iosapp_entity[TRIGGER].replace('sensor.', '')}"
                             f"{CRLF_DOT}Battery: {Device.iosapp_entity[BATTERY_LEVEL].replace('sensor.', '')}")
             if Device.iosapp_entity[NOTIFY]:

@@ -422,7 +422,7 @@ class SensorBase(SensorEntity):
                 if instr(self.sensor_type, 'ha_history_exclude'):
                     ha_history_recorder = Gb.hass.data['recorder_instance']
                     ha_history_recorder.entity_filter._exclude_e.add(self.entity_id)
-                    
+
             except Exception as err:
                 log_exception(err)
                 pass
@@ -460,7 +460,7 @@ class SensorBase(SensorEntity):
         if self.Device and self.sensor_base.startswith(BATTERY):
             battery_level = self.Device.sensors[BATTERY]
             charging      = (self.Device.sensors[BATTERY_STATUS].lower() == "charging")
-            icon = icon_for_battery_level(battery_level, charging)
+            icon          = icon_for_battery_level(battery_level, charging)
 
             return icon
         else:
@@ -592,8 +592,6 @@ class SensorBase(SensorEntity):
 
                 return self._get_restore_or_default_value(sensor)
 
-            # if sensor == BATTERY_STATUS:
-            #     sensor_value = format_battery_status(sensor_value)
             return sensor_value
 
         except Exception as err:
@@ -615,6 +613,8 @@ class SensorBase(SensorEntity):
         except:
             sensor_value = self._get_sensor_definition(sensor, SENSOR_DEFAULT)
 
+        # if instr(sensor, 'battery'):
+        #     _traceha(f"RESTORESENSOR {self.devicename} {sensor} {sensor_value}")
         return sensor_value
 
 #-------------------------------------------------------------------------------------------
@@ -1044,7 +1044,10 @@ class Sensor_Battery(SensorBase):
     @property
     def native_value(self):
         self._attr_native_unit_of_measurement = '%'
-        return self._get_sensor_value(self.sensor)
+        sensor_value =  self._get_sensor_value(self.sensor)
+        # if instr(self.sensor, 'battery'):
+        #     _traceha(f"NORMALSENSOR {self.devicename} {self.sensor} {sensor_value}")
+        return sensor_value
 
     @property
     def extra_state_attributes(self):
@@ -1195,6 +1198,9 @@ class Sensor_EventLog(Support_SensorBase):
     def native_value(self):
         '''State value - (devicename:time)'''
         try:
+            if Gb.EvLog is None:
+                return 'Unavailable'
+
             time_suffix = (f"{dt_util.now().strftime('%a, %m/%d')}, "
                             f"{dt_util.now().strftime(Gb.um_time_strfmt)}."
                             f"{dt_util.now().strftime('%f')}")

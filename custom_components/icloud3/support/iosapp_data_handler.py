@@ -19,7 +19,7 @@ from ..helpers.messaging    import (post_event, post_monitor_msg,
                                     log_debug_msg, log_exception, log_error_msg, log_rawdata,
                                     _trace, _traceha, )
 from ..helpers.time_util    import (secs_to_time, secs_to_24hr_time, secs_since, format_time_age, format_age, )
-from ..helpers.dist_util    import (format_dist_km, )
+from ..helpers.dist_util    import (format_dist_km, format_dist_m, )
 from ..helpers              import entity_io
 from ..support              import iosapp_interface as iosapp_interface
 
@@ -104,6 +104,12 @@ def check_iosapp_state_trigger_change(Device):
             Device.iosapp_zone_exit_secs = iosapp_data_secs
             Device.iosapp_zone_exit_time = iosapp_data_state_time
             Device.iosapp_zone_exit_zone = Device.loc_data_zone
+            if Device.iosapp_data_state in Gb.Zones_by_zone:
+                Device.iosapp_zone_exit_zone_dist_m = \
+                        Gb.Zones_by_zone[iosapp_data_state].distance_m(
+                                Device.iosapp_data_latitude, Device.iosapp_data_longitude)
+            else:
+                Device.iosapp_zone_exit_zone_dist_m = -1
 
                 # and Device.iosapp_data_state != NOT_HOME
         if (Device.iosapp_data_trigger == ENTER_ZONE
@@ -113,6 +119,12 @@ def check_iosapp_state_trigger_change(Device):
             Device.iosapp_zone_enter_secs = iosapp_data_secs
             Device.iosapp_zone_enter_time = iosapp_data_state_time
             Device.iosapp_zone_enter_zone = iosapp_data_state
+            if Device.iosapp_data_state in Gb.Zones_by_zone:
+                Device.iosapp_zone_enter_zone_dist_m = \
+                        Gb.Zones_by_zone[iosapp_data_state].distance_m(
+                                Device.iosapp_data_latitude, Device.iosapp_data_longitude)
+            else:
+                Device.iosapp_zone_enter_zone_dist_m = -1
 
         iosapp_msg =(f"iOSApp Monitor > "
                     f"Trigger-{iosapp_data_trigger}@{iosapp_data_trigger_time} (^trig_age), "
@@ -121,6 +133,7 @@ def check_iosapp_state_trigger_change(Device):
         if iosapp_data_state_not_set_flag:
             Device.iosapp_data_change_reason = f"Initial Locate@{Gb.this_update_time}"
             Device.iosapp_data_trigger       = f"Initial Locate@{Gb.this_update_time}"
+            _traceha(f"{Device.devicename} {Device.iosapp_data_change_reason=}")
 
         elif (is_statzone(Device.iosapp_data_state)
                 and f'{Device.iosapp_data_latitude:.5f}'  == f'{Device.StatZone.base_latitude:.5f}'
@@ -138,13 +151,21 @@ def check_iosapp_state_trigger_change(Device):
         elif Device.iosapp_data_trigger == EXIT_ZONE:
             if Device.iosapp_data_secs > Device.located_secs_plus_5:
                 Device.iosapp_data_change_reason = (f"{EXIT_ZONE}@{Device.iosapp_data_time} "
-                                                    f"({zone_display_as(Device.iosapp_zone_exit_zone)})")
+                                                    f"({zone_display_as(Device.iosapp_zone_exit_zone)}")
+                if Device.iosapp_zone_exit_zone_dist_m >= 0:
+                    Device.iosapp_data_change_reason += f"/{format_dist_m(Device.iosapp_zone_exit_zone_dist_m)}"
+                Device.iosapp_data_change_reason += ')'
+            Device.iosapp_zone_exit_trigger_info = Device.iosapp_data_change_reason
 
         # Enter trigger and the trigger changed from last poll overrules trigger change time
         elif (Device.iosapp_data_trigger == ENTER_ZONE):
             Device.iosapp_data_change_reason = f"{ENTER_ZONE}@{Device.iosapp_data_time} "
             if Device.is_inzone_iosapp_state:
-                Device.iosapp_data_change_reason += f"({zone_display_as(Device.iosapp_zone_enter_zone)})"
+                Device.iosapp_data_change_reason += f"({zone_display_as(Device.iosapp_zone_enter_zone)}"
+                if Device.iosapp_zone_enter_zone_dist_m >= 0:
+                    Device.iosapp_data_change_reason += f"/{format_dist_m(Device.iosapp_zone_enter_zone_dist_m)}"
+                Device.iosapp_data_change_reason += ')'
+            Device.iosapp_zone_enter_trigger_info = Device.iosapp_data_change_reason
 
         elif (Device.iosapp_data_trigger not in [ENTER_ZONE, EXIT_ZONE]
                 and Device.iosapp_data_secs > Device.located_secs_plus_5
@@ -239,6 +260,8 @@ def check_iosapp_state_trigger_change(Device):
 
         iosapp_msg = iosapp_msg.replace("^trig_age", format_age(secs_since(Device.iosapp_data_trigger_secs)))
         iosapp_msg = iosapp_msg.replace("^state_age", format_age(secs_since(Device.iosapp_data_state_secs)))
+        iosapp_msg += f", {Device.iosapp_zone_enter_trigger_info}"
+        iosapp_msg += f", {Device.iosapp_zone_exit_trigger_info}"
         post_monitor_msg(Device.devicename, iosapp_msg)
 
         return
@@ -404,11 +427,10 @@ def update_iosapp_data_from_entity_attrs(Device, device_trkr_attrs):
     if Device.DeviceFmZoneHome:
         home_dist = format_dist_km(Device.DeviceFmZoneHome.distance_km_iosapp)
     else:
-        ''
+        home_dist = ''
 
-    monitor_msg = (f"UPDATED iOSApp > {Device.iosapp_data_trigger}, "
-                    f"{CRLF_DOT}{Device.devicename}, "
-                    f"{Device.iosapp_data_time_gps}, "
-                    f"{Device.iosapp_data_fgps}, "
-                    f"{home_dist}")
+    monitor_msg = (f"UPDATED iOSApp > {Device.devicename}, {Device.iosapp_data_trigger}, "
+                    f"{CRLF_DOT}Loc-{Device.iosapp_data_time}, "
+                    f"Home-{home_dist}, "
+                    f"{Device.iosapp_data_fgps}")
     post_monitor_msg(monitor_msg)

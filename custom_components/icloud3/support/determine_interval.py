@@ -19,9 +19,9 @@
 
 
 from ..global_variables     import GlobalVariables as Gb
-from ..const                import (HOME, NOT_HOME , NOT_SET, HIGH_INTEGER, CHECK_MARK, CIRCLE_LETTERS_LITE,
+from ..const                import (HOME, NOT_HOME, AWAY, NOT_SET, HIGH_INTEGER, CHECK_MARK, CIRCLE_LETTERS_LITE,
                                     STATIONARY, STATIONARY_FNAME,
-                                    AWAY_FROM, TOWARDS, PAUSED,
+                                    AWAY_FROM, TOWARDS, PAUSED, INZONE,
                                     ERROR,
                                     VALID_DATA,
                                     WAZE,
@@ -84,9 +84,15 @@ def determine_interval(Device, DeviceFmZone):
 
     battery10_flag       = (0 > Device.dev_data_battery_level >= 10)
     battery5_flag        = (0 > Device.dev_data_battery_level >= 5)
-    inzone_flag          = (is_inzone_zone(Device.loc_data_zone))
-    not_inzone_flag      = (isnot_inzone_zone(Device.loc_data_zone))
-    was_inzone_flag      = (Device.was_inzone)
+
+    # inzone_flag          = (is_inzone_zone(Device.loc_data_zone))       # zone != not_home
+    # not_inzone_flag      = (isnot_inzone_zone(Device.loc_data_zone))    # zone = not_home
+    # was_inzone_flag      = (Device.was_inzone)                          # sensors[ZONE] != not_home
+    inzone_flag          = (Device.loc_data_zone != NOT_HOME)
+    not_inzone_flag      = (Device.loc_data_zone == NOT_HOME)
+    was_inzone_flag      = (Device.sensors[ZONE] not in [NOT_HOME, AWAY, NOT_SET])
+    _traceha(f"{Device.devicename} {Device.sensors[ZONE]=} {Device.loc_data_zone=} {not_inzone_flag=} {was_inzone_flag=}")
+
     inzone_home_flag     = (Device.loc_data_zone == HOME)
     was_inzone_home_flag = (Device.sensor_zone == HOME)
 
@@ -235,9 +241,9 @@ def determine_interval(Device, DeviceFmZone):
             interval        = 240
 
     # Might be passing thru a zone just entered, 1-minute delay
-    elif Device.passthru_zone_expire_secs > 0:
-        interval_method = "3.PassThruZone"
-        interval        = secs_to(Device.passthru_zone_expire_secs)
+    # elif Device.passthru_zone_expire_secs > 0:
+    #     interval_method = "3.PassThruZone"
+    #     interval        = secs_to(Device.passthru_zone_expire_secs)
 
     # Exit_Zone trigger & away & exited less than 1 min ago
     elif (instr(Device.trigger, EXIT_ZONE)
@@ -512,7 +518,7 @@ def post_results_message_to_event_log(Device, DeviceFmZone):
     '''
     Post the final tracking results to the Event Log and HA log file
     '''
-
+    Device.last_update_msg_secs = time_now()
     event_msg = (f"Results: From-{DeviceFmZone.from_zone_display_as} > ")
     if Device.is_tracked:
         event_msg += (  f"NextUpdate-{DeviceFmZone.next_update_time}, "
@@ -520,7 +526,7 @@ def post_results_message_to_event_log(Device, DeviceFmZone):
     if DeviceFmZone.zone_dist > 0:
         event_msg += (  f"TravTime-{DeviceFmZone.last_tavel_time}, "
                         f"Distance-{km_to_mi(DeviceFmZone.zone_dist)} {Gb.um}, ")
-    if DeviceFmZone.dir_of_travel not in ['in_zone', '_', '___', ' ', '']:
+    if DeviceFmZone.dir_of_travel not in [INZONE, '_', '___', ' ', '']:
         event_msg +=    f"Direction-{DeviceFmZone.dir_of_travel}, "
     if Device.StatZone.timer > 0:
         event_msg +=    f"IntoStatZoneAfter-{secs_to_time(Device.StatZone.timer)}, "
@@ -669,8 +675,7 @@ def determine_interval_after_error(Device, counter=OLD_LOC_POOR_GPS_CNT):
                     "data": {"subtitle": "Tracking has been Paused"}}
                 iosapp_interface.send_message_to_device(Device, message)
 
-        if (Device.is_offline
-                and Device.offline_secs == 0):
+        if (Device.is_offline and Device.offline_secs == 0):
             Device.offline_secs = Gb.this_update_secs
 
         update_all_device_fm_zone_sensors_interval(Device, interval)
@@ -682,13 +687,12 @@ def determine_interval_after_error(Device, counter=OLD_LOC_POOR_GPS_CNT):
         next_update_secs = Gb.this_update_secs + interval
         Device.display_info_msg(Device.update_sensors_error_msg)
         event_msg = ''
-        if (Device.is_tracking_method_FAMSHR
-                and Device.is_offline):
+
+        if (Device.is_tracking_method_FAMSHR and Device.is_offline):
             event_msg =(f"{EVLOG_ALERT}Device is Offline > "
                         f"WentOfflineAt-{secs_to_time_age_str(Device.offline_secs)}, "
                         f"RetryAt-{secs_to_time(next_update_secs)}, "
                         f"DeviceStatus-{Device.device_status}")
-            post_event(devicename, event_msg)
 
         elif ((Device.old_loc_poor_gps_cnt > 0
                     and secs_since(Device.DeviceFmZoneHome.next_update_secs) < \
@@ -698,13 +702,16 @@ def determine_interval_after_error(Device, counter=OLD_LOC_POOR_GPS_CNT):
 
         elif counter == AUTH_ERROR_CNT:
             event_msg =(f"Results > RetryCounter-{Gb.icloud_acct_error_cnt}, "
-                        f"Retry in {Device.DeviceFmZoneHome.interval_str} at "
-                        f"{secs_to_time(next_update_secs)}")
-            post_event(devicename, event_msg)
+                        f"Retry at {secs_to_time(next_update_secs)} "
+                        f"({Device.DeviceFmZoneHome.interval_str})")
 
-        if event_msg != '':
-            log_info_msg(Device.devicename, f"Old Location/Other Error-{event_msg}")
-            # log_rawdata(f"{Device_devicename} - {from_zone}", DeviceFmZone.sensors)
+        if event_msg == '':
+            event_msg =(f"Rejected (#{Device.old_loc_poor_gps_cnt}) > {Device.update_sensors_error_msg}, "
+                        f"Retry at {secs_to_time(next_update_secs)} "
+                        f"({Device.DeviceFmZoneHome.interval_str})")
+        post_event(devicename, event_msg)
+        log_info_msg(Device.devicename, f"Old Location/Other Error-{event_msg}")
+        # log_rawdata(f"{Device_devicename} - {from_zone}", DeviceFmZone.sensors)
 
     except Exception as err:
         log_exception(err)
@@ -824,46 +831,40 @@ def set_passthru_zone_delay(Device):
     not staying in it. Check the passthru_zone_expire_secs to see if the 1-min zone enter delay is still
     in effect or if has expired.
     '''
-    if Gb.passthru_zone_interval_secs == 0:
-        return
+    _traceha(f"set_passthru_zone_delay {Device.devicename=}")
+    Device.set_passthru_zone_delay()
+    # if Gb.passthru_zone_interval_secs == 0:
+    #     return
 
-    update_all_device_fm_zone_sensors_interval(Device, Gb.passthru_zone_interval_secs)
+    # update_all_device_fm_zone_sensors_interval(Device, Gb.passthru_zone_interval_secs)
 
-    Device.passthru_zone_expire_secs = Gb.this_update_secs + Gb.passthru_zone_interval_secs
+    # Device.passthru_zone_expire_secs = Gb.this_update_secs + Gb.passthru_zone_interval_secs
 
-    # # Set all track from zone intervals so an update will not start while
-    # # passing thru a zone
-    # for DeviceFmZone in Device.DeviceFmZones_by_zone.values():
-    #     DeviceFmZone.interval_secs    = Gb.passthru_zone_interval_secs
-    #     DeviceFmZone.interval_str     = secs_to_time_str(Gb.passthru_zone_interval_secs)
-    #     DeviceFmZone.next_update_secs = Device.passthru_zone_expire_secs
-    #     DeviceFmZone.next_update_time = secs_to_time(Device.passthru_zone_expire_secs)
-    #     DeviceFmZone.last_update_secs = Gb.this_update_secs
-    #     DeviceFmZone.last_update_time = time_to_12hrtime(Gb.this_update_time)
+    # event_msg =(f"PassThru Zone Delay > Entered zone but may be just passing through, "
+    #             f"ZoneEntered-{zone_display_as(Device.passthru_zone)}, "
+    #             f"UpdateIn-{secs_to_time(Device.next_update_secs)} "
+    #             f"({secs_to_time_str(Gb.passthru_zone_interval_secs)})")
+    # post_event(Device.devicename, event_msg)
 
-    event_msg =(f"PassThru Zone Delay > Entered zone but may be just passing through, "
-                f"ZoneEntered-{zone_display_as(Device.passthru_zone)}, "
-                f"UpdateIn-{secs_to_time(Device.next_update_secs)} "
-                f"({secs_to_time_str(Gb.passthru_zone_interval_secs)})")
-    post_event(Device.devicename, event_msg)
-
-    return
+    # return
 
 #--------------------------------------------------------------------
 def is_passthru_zone_delay_active(Device):
 
-    if (Gb.is_passthru_zone_used is False
-            or Device.passthru_zone_expire_secs == 0):
-        return False
-    if Device.passthru_zone_expire_secs >= Gb.this_update_secs:
-        return True
+    _traceha(f"is_passthru_zone_delay_active {Device.devicename=}")
+    return Device.is_passthru_zone_delay_active
+    # if (Gb.is_passthru_zone_used is False
+    #         or Device.passthru_zone_expire_secs == 0):
+    #     return False
+    # if Device.passthru_zone_expire_secs >= Gb.this_update_secs:
+    #     return True
 
-    Device.loc_data_zone = Device.passthru_zone
-    Device.icloud_update_reason = "PassThru zone timer expired"
-    Device.passthru_zone_expire_secs = 0
-    Device.passthru_zone = ''
+    # Device.loc_data_zone = Device.passthru_zone
+    # Device.icloud_update_reason = "PassThru zone timer expired"
+    # Device.passthru_zone_expire_secs = 0
+    # Device.passthru_zone = ''
 
-    return False
+    # return False
 
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 #
@@ -884,7 +885,7 @@ def _get_distance_data(Device, DeviceFmZone):
 
     Device.display_info_msg(f"GetDistancesFrom-{DeviceFmZone.from_zone_display_as}")
 
-    if Device.loc_data_latitude == 0 or Device.loc_data_longitude == 0:
+    if Device.no_location_data:
         event_msg = "No location data available, will retry"
         post_event(Device.devicename, event_msg)
         return (ERROR, {})
@@ -912,7 +913,7 @@ def _get_distance_data(Device, DeviceFmZone):
                         0,              # waze_dist_from_zone_km,
                         0,              # calc_dist_from_zone_km,
                         0,              # waze_time_from_zone,
-                        'in_zone']
+                        INZONE]
         return  distance_data
 
     #--------------------------------------------------------------------------------
@@ -985,7 +986,7 @@ def _get_distance_data(Device, DeviceFmZone):
         dir_of_travel = STATIONARY_FNAME
 
     elif Device.is_inzone:
-        dir_of_travel = 'in_zone'
+        dir_of_travel = INZONE
 
     elif Device.sensors[ZONE] == NOT_SET:
         dir_of_travel = '___'

@@ -160,9 +160,15 @@ def waze_mins_to_time_str(waze_time_from_zone):
 
 #--------------------------------------------------------------------
 def secs_since(secs) -> int:
+    if secs == 0:
+        return 0
+
     return round(time.time() - secs)
 #--------------------------------------------------------------------
 def secs_to(secs) -> int:
+    if secs == 0:
+        return 0
+
     return round(secs - time.time())
 #--------------------------------------------------------------------
 def hhmmss_to_secs(hhmmss):
@@ -270,10 +276,12 @@ def time_str_to_secs(time_str='30 min') -> int:
         elif text_part in ('hr', 'hrs'):
             secs = time_part * 3600
         else:
-            secs = 1800      #default to 20 minutes
+            secs = 0
+
+        if secs < 0: secs = 0
 
     except:
-        secs = 1800
+        secs = 0
 
     return secs
 

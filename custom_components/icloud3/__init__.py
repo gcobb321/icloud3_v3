@@ -110,10 +110,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
         hass_data = dict(entry.data)
 
 
-        Gb.hass = hass
+        Gb.hass           = hass
         Gb.config_entry   = entry
         Gb.entry_id       = entry.entry_id
         Gb.operating_mode = MODE_INTEGRATION
+        Gb.PyiCloud       = None
+        Gb.EvLog          = event_log.EventLog(Gb.hass)
         Gb.start_icloud3_inprocess_flag = True
 
         async_get_ha_location_info()
@@ -127,6 +129,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
         start_ic3.set_icloud_username_password()
         restore_state.load_storage_icloud3_restore_state_file()
         hass.config_entries.async_setup_platforms(entry, PLATFORMS)
+        # await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
         log_info_msg(f"Setting up iCloud3 {VERSION} - Using Integration method")
         #----- hass test - start
@@ -175,8 +178,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     #     else:
     #         log_error_msg(f"iCloud3 {Gb.version} Initialization Failed")
 
-    Gb.PyiCloud = None
-    Gb.EvLog    = event_log.EventLog(Gb.hass)
+    # Gb.PyiCloud = None
+    # Gb.EvLog    = event_log.EventLog(Gb.hass)
     Gb.EvLog.display_user_message('iCloud3 is Starting')
     Gb.EvLog.post_event(f"{EVLOG_IC3_STARTING}Initializing iCloud3 v{Gb.version} > "
                 f"{dt_util.now().strftime('%A, %b %d')}")

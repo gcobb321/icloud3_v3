@@ -23,13 +23,12 @@
 #           Gb.Zones_by_zone
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-from .const          import (DEVICENAME_IOSAPP, VERSION, NOT_SET, HOME_FNAME, HOME, STORAGE_DIR, WAZE_USED, FAMSHR, FMF, FAMSHR_FMF, ICLOUD,
-                            HIGH_INTEGER,
-
+from .const          import (DEVICENAME_IOSAPP, VERSION, NOT_SET, HOME_FNAME, HOME, STORAGE_DIR, WAZE_USED,
+                            FAMSHR, FMF, FAMSHR_FMF, ICLOUD, FNAME, HIGH_INTEGER,
                             DEFAULT_GENERAL_CONF,
-
                             CONF_UNIT_OF_MEASUREMENT,
-                            CONF_DISPLAY_ZONE_FORMAT, CONF_ZONE_SENSOR_EVLOG_FORMAT, CONF_CENTER_IN_ZONE,
+                            CONF_DISPLAY_ZONE_FORMAT, CONF_DEVICE_TRACKER_STATE_FORMAT,
+                            CONF_CENTER_IN_ZONE,
                             CONF_TRAVEL_TIME_FACTOR, CONF_GPS_ACCURACY_THRESHOLD,
                             CONF_DISCARD_POOR_GPS_INZONE, CONF_OLD_LOCATION_THRESHOLD, CONF_OLD_LOCATION_ADJUSTMENT,
                             CONF_MAX_INTERVAL, CONF_OFFLINE_INTERVAL, CONF_IOSAPP_ALIVE_INTERVAL,
@@ -51,18 +50,6 @@ from .const          import (DEVICENAME_IOSAPP, VERSION, NOT_SET, HOME_FNAME, HO
 
 import logging
 _LOGGER = logging.getLogger("icloud3_cf")
-
-#<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
-def hhmmss_to_secs(hhmmss):
-    """ Convert hh:mm:ss into seconds """
-    try:
-        hh_mm_ss = hhmmss.split(":")
-        secs = int(hh_mm_ss[0]) * 3600 + int(hh_mm_ss[1]) * 60 + int(hh_mm_ss[2])
-
-    except:
-        secs = 0
-
-    return secs
 
 #<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 class GlobalVariables(object):
@@ -159,11 +146,7 @@ class GlobalVariables(object):
     start_icloud3_inprocess_flag    = False
     start_icloud3_request_flag      = False
     initial_icloud3_loading_flag    = False
-    device_update_in_process_flag   = False
     any_device_was_updated_reason   = ''
-    master_update_in_process_flag   = False
-    initial_locate_complete_flag    = False
-    update_in_process               = False
     evlog_action_request            = ''
 
 
@@ -238,13 +221,13 @@ class GlobalVariables(object):
     config_flow_updated_parms = {''}
 
     distance_method_waze_flag       = True
-    max_interval_secs               = hhmmss_to_secs(DEFAULT_GENERAL_CONF[CONF_MAX_INTERVAL])
-    offline_interval_secs           = hhmmss_to_secs(DEFAULT_GENERAL_CONF[CONF_OFFLINE_INTERVAL])
-    iosapp_alive_interval_secs      = hhmmss_to_secs(DEFAULT_GENERAL_CONF[CONF_IOSAPP_ALIVE_INTERVAL])
-    old_location_threshold          = hhmmss_to_secs(DEFAULT_GENERAL_CONF[CONF_OLD_LOCATION_THRESHOLD])
-    old_location_adjustment         = hhmmss_to_secs(DEFAULT_GENERAL_CONF[CONF_OLD_LOCATION_ADJUSTMENT])
-    passthru_zone_interval_secs     = hhmmss_to_secs(DEFAULT_GENERAL_CONF[CONF_PASSTHRU_ZONE_TIME])
-    is_passthru_zone_used          = (14400 > passthru_zone_interval_secs > 0)  # time > 0 and < 4 hrs
+    max_interval_secs               = DEFAULT_GENERAL_CONF[CONF_MAX_INTERVAL] * 60
+    offline_interval_secs           = DEFAULT_GENERAL_CONF[CONF_OFFLINE_INTERVAL] * 60
+    iosapp_alive_interval_secs      = DEFAULT_GENERAL_CONF[CONF_IOSAPP_ALIVE_INTERVAL] * 60
+    old_location_threshold          = DEFAULT_GENERAL_CONF[CONF_OLD_LOCATION_THRESHOLD] * 60
+    old_location_adjustment         = DEFAULT_GENERAL_CONF[CONF_OLD_LOCATION_ADJUSTMENT] * 60
+    passthru_zone_interval_secs     = DEFAULT_GENERAL_CONF[CONF_PASSTHRU_ZONE_TIME] * 60
+    is_passthru_zone_used           = False#    (14400 > passthru_zone_interval_secs > 0)  # time > 0 and < 4 hrs
     track_from_base_zone            = DEFAULT_GENERAL_CONF[CONF_TRACK_FROM_BASE_ZONE]
     track_from_home_zone            = DEFAULT_GENERAL_CONF[CONF_TRACK_FROM_HOME_ZONE]
     gps_accuracy_threshold          = DEFAULT_GENERAL_CONF[CONF_GPS_ACCURACY_THRESHOLD]
@@ -253,7 +236,8 @@ class GlobalVariables(object):
 
     center_in_zone_flag             = DEFAULT_GENERAL_CONF[CONF_CENTER_IN_ZONE]
     display_zone_format             = DEFAULT_GENERAL_CONF[CONF_DISPLAY_ZONE_FORMAT]
-    zone_sensor_evlog_format        = DEFAULT_GENERAL_CONF[CONF_ZONE_SENSOR_EVLOG_FORMAT]
+    device_tracker_state_format     = DEFAULT_GENERAL_CONF[CONF_DEVICE_TRACKER_STATE_FORMAT]
+    device_tracker_state_evlog_format_flag = (device_tracker_state_format == FNAME)
     discard_poor_gps_inzone_flag    = DEFAULT_GENERAL_CONF[CONF_DISCARD_POOR_GPS_INZONE]
     distance_between_device_flag    = DEFAULT_GENERAL_CONF[CONF_DISTANCE_BETWEEN_DEVICES]
 
@@ -270,8 +254,8 @@ class GlobalVariables(object):
     stat_zone_fname                 = DEFAULT_GENERAL_CONF[CONF_STAT_ZONE_FNAME]
     stat_zone_base_latitude         = DEFAULT_GENERAL_CONF[CONF_STAT_ZONE_BASE_LATITUDE]
     stat_zone_base_longitude        = DEFAULT_GENERAL_CONF[CONF_STAT_ZONE_BASE_LONGITUDE]
-    stat_zone_inzone_interval_secs  = hhmmss_to_secs(DEFAULT_GENERAL_CONF[CONF_STAT_ZONE_INZONE_INTERVAL])
-    stat_zone_still_time_secs       = hhmmss_to_secs(DEFAULT_GENERAL_CONF[CONF_STAT_ZONE_STILL_TIME])
+    stat_zone_inzone_interval_secs  = DEFAULT_GENERAL_CONF[CONF_STAT_ZONE_INZONE_INTERVAL] * 60
+    stat_zone_still_time_secs       = DEFAULT_GENERAL_CONF[CONF_STAT_ZONE_STILL_TIME] * 60
     is_stat_zone_used               = (14400 > stat_zone_still_time_secs > 0)   # time > 0 and < 4 hrs
     # Variables used to config the device variables when setting up
     # intervals and determining the tracking method

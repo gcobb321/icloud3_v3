@@ -2,16 +2,16 @@
 from ..global_variables     import GlobalVariables as Gb
 from ..const                import (
                                     APPLE_SPECIAL_ICLOUD_SERVER_COUNTRY_CODE,
-                                    RARROW, HHMMSS_ZERO, NONE_FNAME,
-                                    INACTIVE_DEVICE,
+                                    RARROW, HHMMSS_ZERO, NONE_FNAME, INACTIVE_DEVICE,
+                                    CONF_PARAMETER_TIME_STR,
+                                    CONF_INZONE_INTERVALS, CONF_MAX_INTERVAL,
                                     CONF_IC3_VERSION, VERSION, CONF_EVLOG_CARD_DIRECTORY, CONF_EVLOG_CARD_PROGRAM,
                                     CONF_UPDATE_DATE, CONF_PASSWORD, CONF_ICLOUD_SERVER_ENDPOINT_SUFFIX,
                                     CONF_DEVICES, CONF_SETUP_ICLOUD_SESSION_EARLY,
                                     CONF_UNIT_OF_MEASUREMENT, CONF_TIME_FORMAT, CONF_LOG_LEVEL,
                                     CONF_FAMSHR_DEVICENAME, CONF_FMF_EMAIL, CONF_IOSAPP_DEVICE, CONF_TRACKING_MODE,
-                                    CONF_FAMSHR_DEVICENAME2, CONF_FAMSHR_DEVICE_ID2,
-                                    CONF_RAW_MODEL2, CONF_MODEL2, CONF_MODEL_DISPLAY_NAME2, CONF_IOSAPP_DEVICE2,
-                                    CF_DEFAULT_IC3_CONF_FILE, CONF_ZONE_SENSOR_EVLOG_FORMAT,
+                                    CONF_DEVICE_TRACKER_STATE_FORMAT, CONF_STAT_ZONE_FNAME,
+                                    CF_DEFAULT_IC3_CONF_FILE,
                                     DEFAULT_PROFILE_CONF, DEFAULT_TRACKING_CONF, DEFAULT_GENERAL_CONF,
                                     DEFAULT_SENSORS_CONF,
                                     HOME_DISTANCE, CONF_SENSORS_TRACKING_DISTANCE,
@@ -56,18 +56,25 @@ def load_storage_icloud3_configuration_file():
         write_storage_icloud3_configuration_file('_backup')
 
     else:
+        datetime = datetime_now().replace('-', '.').replace(':', '.').replace(' ', '-')
+        json_errors_filename = f"{Gb.icloud3_config_filename}_errors_{datetime}"
+        log_msg = ( f"iCloud3 Error > Configuration file failed to load, JSON Errors were encountered. "
+                    f"Configuration file with errors was saved to `{json_errors_filename}`. "
+                    f"Will restore from `configuration_backup` file")
+        _LOGGER.warning(log_msg)
+        os.rename(Gb.icloud3_config_filename, json_errors_filename)
         success = read_storage_icloud3_configuration_file('_backup')
 
         if success:
-            _LOGGER.warning(f"iCloud3{RARROW}Restore from backup config file successful")
+            log_msg = ("Restore from backup configuration file was successful")
+            _LOGGER.warning(log_msg)
 
             write_storage_icloud3_configuration_file()
 
         else:
-            _LOGGER.error(f"iCloud3{RARROW}Restore config file from backup failed")
-            _LOGGER.error(f"iCloud3{RARROW}Recreating config file with default parameters-"
+            _LOGGER.error(f"iCloud3{RARROW}Restore from backup configuration file failed")
+            _LOGGER.error(f"iCloud3{RARROW}Recreating configuration file with default parameters-"
                             f"{Gb.icloud3_config_filename}")
-
             build_initial_config_file_structure()
             Gb.conf_file_data = CF_DEFAULT_IC3_CONF_FILE.copy()
             write_storage_icloud3_configuration_file()
@@ -119,7 +126,8 @@ def read_storage_icloud3_configuration_file(filename_suffix=''):
 
             Gb.conf_tracking[CONF_PASSWORD] = decode_password(Gb.conf_tracking[CONF_PASSWORD])
 
-            config_file_special_maintenance()
+            if instr(Gb.conf_profile[CONF_IC3_VERSION], 'b'):
+                config_file_special_maintenance_beta()
             count_device_tracking_methods_configured()
 
         return True
@@ -144,26 +152,22 @@ def count_device_tracking_methods_configured():
         Gb.conf_iosapp_device_cnt = 0
 
         for conf_device in Gb.conf_devices:
-            _traceha(f"{conf_device=}")
             if conf_device[CONF_TRACKING_MODE] == INACTIVE_DEVICE:
-                _traceha(f"{conf_device[CONF_TRACKING_MODE]} {INACTIVE_DEVICE=}")
                 continue
 
             if conf_device[CONF_FAMSHR_DEVICENAME] != NONE_FNAME:
                 Gb.conf_famshr_device_cnt += 1
-                _traceha(f"{conf_device[CONF_FAMSHR_DEVICENAME]=} {Gb.conf_famshr_device_cnt=} {Gb.conf_fmf_device_cnt=} {Gb.conf_iosapp_device_cnt=}")
+
             if conf_device[CONF_FMF_EMAIL] != NONE_FNAME:
                 Gb.conf_fmf_device_cnt += 1
-                _traceha(f"{conf_device[CONF_FMF_EMAIL]=} {Gb.conf_famshr_device_cnt=} {Gb.conf_fmf_device_cnt=} {Gb.conf_iosapp_device_cnt=}")
+
             if conf_device[CONF_IOSAPP_DEVICE] != NONE_FNAME:
                 Gb.conf_iosapp_device_cnt += 1
-                _traceha(f"{conf_device[CONF_IOSAPP_DEVICE]=} {Gb.conf_famshr_device_cnt=} {Gb.conf_fmf_device_cnt=} {Gb.conf_iosapp_device_cnt=}")
 
-        _traceha(f"{Gb.conf_famshr_device_cnt=} {Gb.conf_fmf_device_cnt=} {Gb.conf_iosapp_device_cnt=}")
     except Exception as err:
         log_exception(err)
 #--------------------------------------------------------------------
-def config_file_special_maintenance():
+def config_file_special_maintenance_beta():
     '''
     Fix configuration file errors or add any new fields
     '''
@@ -184,45 +188,46 @@ def config_file_special_maintenance():
         Gb.conf_sensors.pop('tracking_by_zones', None)
         update_config_file_flag = True
 
+    # Update parameters for each device
     for conf_device in Gb.conf_devices:
-        if CONF_FAMSHR_DEVICENAME2 in conf_device:
-            conf_device.pop(CONF_FAMSHR_DEVICENAME2, None)
-            conf_device.pop(CONF_FAMSHR_DEVICE_ID2, None)
-            conf_device.pop(CONF_RAW_MODEL2, None)
-            conf_device.pop(CONF_MODEL2, None)
-            conf_device.pop(CONF_MODEL_DISPLAY_NAME2, None)
-            conf_device.pop(CONF_IOSAPP_DEVICE2, None)
-            update_config_file_flag = True
+        update_config_file_flag = \
+            (_add_config_file_parameter(conf_device, CONF_STAT_ZONE_FNAME, ' ')
+                or update_config_file_flag)
 
     if Gb.conf_profile[CONF_IC3_VERSION] != VERSION:
         Gb.conf_profile[CONF_IC3_VERSION] = VERSION
         update_config_file_flag = True
 
-    # if CONF_SETUP_ICLOUD_SESSION_EARLY not in Gb.conf_tracking:
-    #     _insert_into_conf_tracking(CONF_SETUP_ICLOUD_SESSION_EARLY, True)
-    #     update_config_file_flag = True
-
+    # Add CONF_SETUP_ICLOUD_SESSION_EARLY
     update_config_file_flag = \
         (_add_config_file_parameter(Gb.conf_tracking, CONF_SETUP_ICLOUD_SESSION_EARLY, True)
             or update_config_file_flag)
 
+    # Add CONF_EXCLUDED_SENSORS
     update_config_file_flag = \
         (_add_config_file_parameter(Gb.conf_sensors, CONF_EXCLUDED_SENSORS, ['None'])
             or update_config_file_flag)
 
+    # Add CONF_OLD_LOCATION_ADJUSTMENT
     update_config_file_flag = \
         (_add_config_file_parameter(Gb.conf_general, CONF_OLD_LOCATION_ADJUSTMENT, HHMMSS_ZERO)
             or update_config_file_flag)
 
+    # Add CONF_DISTANCE_BETWEEN_DEVICES
     update_config_file_flag = \
         (_add_config_file_parameter(Gb.conf_general, CONF_DISTANCE_BETWEEN_DEVICES, True)
             or update_config_file_flag)
 
-    update_config_file_flag = \
-        (_add_config_file_parameter(Gb.conf_general, CONF_ZONE_SENSOR_EVLOG_FORMAT, False)
-            or update_config_file_flag)
+    # Remove CONF_ZONE_SENSOR_EVLOG_FORMAT, Add CONF_ZONE_SENSOR_EVLOG_FORMAT
+    if 'zone_sensor_evlog_format' in Gb.conf_general:
+        dtf = 'fname' if Gb.conf_general['zone_sensor_evlog_format'] else 'zone'
+        Gb.conf_general.pop('zone_sensor_evlog_format')
 
+        update_config_file_flag = \
+            (_add_config_file_parameter(Gb.conf_general, CONF_DEVICE_TRACKER_STATE_FORMAT, dtf)
+                or update_config_file_flag)
 
+    # Change Waze server codes
     if Gb.conf_general[CONF_WAZE_REGION].lower() in ['na']:
         Gb.conf_general[CONF_WAZE_REGION] = 'us'
         update_config_file_flag = True
@@ -230,8 +235,28 @@ def config_file_special_maintenance():
         Gb.conf_general[CONF_WAZE_REGION] = 'row'
         update_config_file_flag = True
 
+    # beta 12 - Change all time fields from hh:mm:ss to minutes
+    if instr(Gb.conf_general[CONF_MAX_INTERVAL], ':'):
+        _convert_hhmmss_to_minutes(Gb.conf_general)
+        _convert_hhmmss_to_minutes(Gb.conf_general[CONF_INZONE_INTERVALS])
+        for conf_device in Gb.conf_devices:
+            _convert_hhmmss_to_minutes(conf_device)
+        update_config_file_flag = True
+
     if update_config_file_flag:
         write_storage_icloud3_configuration_file()
+
+#--------------------------------------------------------------------
+def _convert_hhmmss_to_minutes(conf_group):
+
+    time_fields = {pname: _hhmmss_to_minutes(pvalue)
+                            for pname, pvalue in conf_group.items()
+                            if pname in CONF_PARAMETER_TIME_STR}
+    conf_group.update(time_fields)
+
+def _hhmmss_to_minutes(hhmmss):
+        hhmmss_parts = hhmmss.split(':')
+        return int(hhmmss_parts[0])*60 + int(hhmmss_parts[1])
 
 #--------------------------------------------------------------------
 def _add_config_file_parameter(conf_section, conf_parameter, default_value):

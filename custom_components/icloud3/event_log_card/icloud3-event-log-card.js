@@ -166,11 +166,18 @@ class iCloud3EventLogCard extends HTMLElement {
         btnAction.appendChild(btnActionOptG3)
 
         var btnActionOptG7 = document.createElement("option")
-        var btnActionOptG7Txt = document.createTextNode("Update All Locations")
-        btnActionOptG7.setAttribute("value", "location")
+        var btnActionOptG7Txt = document.createTextNode("Locate All Devices (FamShr, FmF)")
+        btnActionOptG7.setAttribute("value", "locate")
         btnActionOptG7.classList.add("btnActionOption")
         btnActionOptG7.appendChild(btnActionOptG7Txt)
         btnAction.appendChild(btnActionOptG7)
+
+        var btnActionOptG8 = document.createElement("option")
+        var btnActionOptG8Txt = document.createTextNode("Send Locate Request to iOS App")
+        btnActionOptG8.setAttribute("value", "location")
+        btnActionOptG8.classList.add("btnActionOption")
+        btnActionOptG8.appendChild(btnActionOptG8Txt)
+        btnAction.appendChild(btnActionOptG8)
 
 
         //---------------------------------------------------------
@@ -180,32 +187,39 @@ class iCloud3EventLogCard extends HTMLElement {
         btnAction.appendChild(btnActionOptD)
 
         var btnActionOptD1 = document.createElement("option")
-        var btnActionOptD1Txt = document.createTextNode("Pause Tracking")
+        var btnActionOptD1Txt = document.createTextNode("Pause Tracking This Device")
         btnActionOptD1.setAttribute("value", "dev-pause")
         btnActionOptD1.classList.add("btnActionOption")
         btnActionOptD1.appendChild(btnActionOptD1Txt)
         btnAction.appendChild(btnActionOptD1)
 
         var btnActionOptD2 = document.createElement("option")
-        var btnActionOptD2Txt = document.createTextNode("Resume Tracking")
+        var btnActionOptD2Txt = document.createTextNode("Resume Tracking This Device")
         btnActionOptD2.setAttribute("value", "dev-resume")
         btnActionOptD2.classList.add("btnActionOption")
         btnActionOptD2.appendChild(btnActionOptD2Txt)
         btnAction.appendChild(btnActionOptD2)
 
-        var btnActionOptD3 = document.createElement("option")
-        var btnActionOptD3Txt = document.createTextNode("Update Location")
-        btnActionOptD3.setAttribute("value", "dev-location")
-        btnActionOptD3.classList.add("btnActionOption")
-        btnActionOptD3.appendChild(btnActionOptD3Txt)
-        btnAction.appendChild(btnActionOptD3)
+        var btnActionOptD7 = document.createElement("option")
+        var btnActionOptD7Txt = document.createTextNode("Locate This Device (FamShr, FmF)")
+        btnActionOptD7.setAttribute("value", "dev-locate")
+        btnActionOptD7.classList.add("btnActionOption")
+        btnActionOptD7.appendChild(btnActionOptD7Txt)
+        btnAction.appendChild(btnActionOptD7)
 
-        var btnActionOptD4 = document.createElement("option")
-        var btnActionOptD4Txt = document.createTextNode("Send Find My iPhone Alert")
-        btnActionOptD4.setAttribute("value", "dev-find-iphone-alert")
-        btnActionOptD4.classList.add("btnActionOption")
-        btnActionOptD4.appendChild(btnActionOptD4Txt)
-        btnAction.appendChild(btnActionOptD4)
+        var btnActionOptD8 = document.createElement("option")
+        var btnActionOptD8Txt = document.createTextNode("Send Locate Request to iOS App")
+        btnActionOptD8.setAttribute("value", "dev-location")
+        btnActionOptD8.classList.add("btnActionOption")
+        btnActionOptD8.appendChild(btnActionOptD8Txt)
+        btnAction.appendChild(btnActionOptD8)
+
+        var btnActionOptD9 = document.createElement("option")
+        var btnActionOptD9Txt = document.createTextNode("Send Find My iPhone Alert (FamShr)")
+        btnActionOptD9.setAttribute("value", "dev-find-iphone-alert")
+        btnActionOptD9.classList.add("btnActionOption")
+        btnActionOptD9.appendChild(btnActionOptD9Txt)
+        btnAction.appendChild(btnActionOptD9)
 
         var btnActionOptOC = document.createElement("optGroup")
         btnActionOptOC.setAttribute("label", "Other Commands")
@@ -285,7 +299,8 @@ class iCloud3EventLogCard extends HTMLElement {
         const btnHelp = document.createElement('A')
         btnHelp.id = "btnHelp"
         btnHelp.classList.add("btnHelp")
-        btnHelp.setAttribute('href', 'https://gcobb321.github.io/icloud3_v3_docs/#/')
+        // btnHelp.setAttribute('href', 'https://gcobb321.github.io/icloud3_v3_docs/#/')
+        btnHelp.setAttribute('href', 'https://gcobb321.github.io/icloud3_v3/#/')
         btnHelp.setAttribute('target', '_blank')
         btnHelp.innerHTML = `<svg width="24px" height="24px" viewBox="0 0 24 24" fill="none" stroke="#000000" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather feather-help-circle"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" style="stroke-width:2"></path><line x1="12" y1="17" x2="12.01" y2="17" style="stroke-width:3"></line></svg>`
 
@@ -412,7 +427,7 @@ class iCloud3EventLogCard extends HTMLElement {
                                 border-bottom: 1px solid var(--light-primary-color);
                                 font-weight: 450;
                                 }
-            .updateRecdHdrTime  {color: aliceblue ;
+            .updateRecdHdrTime  {color: black;
                                 background-color: rgba(var(--rgb-primary-color), 0.85);
                                 border-top: 1px solid var(--light-primary-color);
                                 border-bottom: 1px solid var(--light-primary-color);
@@ -432,7 +447,7 @@ class iCloud3EventLogCard extends HTMLElement {
                                 border-top: 1px solid chocolate;
                                 border-bottom: 1px solid chocolate;
                                 }
-            .iC3StartingHdrTime {color: BlanchedAlmond ;
+            .iC3StartingHdrTime {color: black;
                                 background-color: chocolate;
                                 border-top: 1px solid chocolate;
                                 border-bottom: 1px solid chocolate;
@@ -443,7 +458,7 @@ class iCloud3EventLogCard extends HTMLElement {
                                 border-top: 1px solid peru;
                                 border-bottom: 1px solid peru;
                                 }
-            .stageRecdHdrTime   {color: BlanchedAlmond ;
+            .stageRecdHdrTime   {color: black;
                                 background-color: peru;
                                 border-top: 1px solid peru;
                                 border-bottom: 1px solid peru;

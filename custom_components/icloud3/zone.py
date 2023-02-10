@@ -58,6 +58,16 @@ class iCloud3_Zone(object):
     def __init__(self, zone, zone_data):
         self.zone = zone
 
+        # zfname = Zone.fname
+        # ztitle = Zone.title
+
+        # if ztitle not in Gb.state_to_zone:
+        #     Gb.state_to_zone[ztitle] = zone
+        # ztitle_w = ztitle.replace(' ', '')
+        # if ztitle_w not in Gb.state_to_zone:
+        #     Gb.state_to_zone[ztitle_w] = zone
+
+
         if NAME in zone_data:
             ztitle = zone_data[NAME].title()
         else:
@@ -66,28 +76,23 @@ class iCloud3_Zone(object):
             ztitle = ztitle.replace(' Ipad', ' iPad')
             ztitle = ztitle.replace(' Ipod', ' iPod')
 
+        # self.fname      = zone_data.get(FRIENDLY_NAME, ztitle)      # From zones_states attribute (zones config file)
+        self.fname      = zone_data.get('original_name', ztitle)    # From entity_registry
+        self.display_as = self.fname
         self.title      = ztitle
         self.name       = ztitle.replace(" ","").replace("'", "`")
-        self.display_as = self.name
-        #self.name       = self.display_as
-        self.fname      = zone_data.get(FRIENDLY_NAME, ztitle)
 
         self.latitude   = zone_data.get(LATITUDE, 0)
         self.longitude  = zone_data.get(LONGITUDE, 0)
         self.passive    = zone_data.get(PASSIVE, True)
         self.radius_m   = round(zone_data.get(RADIUS, 100))
 
-        self.entity_id  = zone_data.get(ID, zone.lower())[:6]
+        self.entity_id  = zone_data.get(ID, zone.lower()).replace('sensor.', '')
         self.unique_id  = zone_data.get('unique_id', zone.lower())
 
-        self.sensor_prefix = '' if self.zone == HOME else self.display_as
         self.dist_time_history = []        #Entries are a list - [lat, long, distance, travel time]
 
-        if Gb.display_zone_format   == ZONE:  self.display_as = self.zone
-        elif Gb.display_zone_format == NAME:  self.display_as = self.name
-        elif Gb.display_zone_format == TITLE: self.display_as = self.title
-        elif Gb.display_zone_format == FNAME: self.display_as = self.fname
-        else: self.display_as = self.fname
+        self.setup_zone_display_name()
 
         log_rawdata(f"Zone Data - <{zone} > ", zone_data, log_rawdata_flag=True)
 
@@ -96,6 +101,23 @@ class iCloud3_Zone(object):
 
     def __repr__(self):
         return (f"<Zone: {self.zone}>")
+
+    #---------------------------------------------------------------------
+    def setup_zone_display_name(self):
+        '''
+        Set the zone display_as field using the config display_as format value
+        '''
+        if Gb.display_zone_format   == ZONE:  self.display_as = self.zone
+        elif Gb.display_zone_format == FNAME: self.display_as = self.fname
+        elif Gb.display_zone_format == NAME:  self.display_as = self.name
+        elif Gb.display_zone_format == TITLE: self.display_as = self.title
+        else: self.display_as = self.fname
+
+        self.sensor_prefix = '' if self.zone == HOME else self.display_as
+
+        # Used in entity_io to change ios app state value to the actual zone entity name for internal use
+        Gb.state_to_zone[self.fname]      = self.zone
+        Gb.state_to_zone[self.display_as] = self.zone
 
     #---------------------------------------------------------------------
     @property
@@ -196,12 +218,12 @@ class iCloud3_StationaryZone(iCloud3_Zone):
         self.base_attrs = {}
         self.base_attrs[NAME]          = self.zone
         self.base_attrs[ICON]          = f"mdi:alpha-{icon_name}"
-        stat_zone_fname = (f"{self.devicename}_{STATIONARY}").title()
-        ztitle = stat_zone_fname.replace("_S_","'s " ).replace("_", " ")
-        ztitle = ztitle.replace(' Iphone', ' iPhone')
-        ztitle = ztitle.replace(' Ipad', ' iPad')
-        ztitle = ztitle.replace(' Ipod', ' iPod')
-        self.base_attrs[FRIENDLY_NAME] = ztitle
+        # stat_zone_fname = (f"{self.devicename}_{STATIONARY}").title()
+        # ztitle = stat_zone_fname.replace("_S_","'s " ).replace("_", " ")
+        # ztitle = ztitle.replace(' Iphone', ' iPhone')
+        # ztitle = ztitle.replace(' Ipad', ' iPad')
+        # ztitle = ztitle.replace(' Ipod', ' iPod')
+        self.base_attrs[FRIENDLY_NAME] = self.display_as
         self.base_attrs[LATITUDE]      = self.base_latitude
         self.base_attrs[LONGITUDE]     = self.base_longitude
         self.base_attrs[RADIUS]        = 1
@@ -224,7 +246,9 @@ class iCloud3_StationaryZone(iCloud3_Zone):
         start_ic3.set_global_variables_from_conf_parameters function that
         is run when iC3 is started and when the stat zone parameters are changed in config_flow
         '''
-        if Gb.stat_zone_fname:
+        if Device.stat_zone_fname != '':
+            self.fname = self.display_as = Device.stat_zone_fname
+        elif Gb.stat_zone_fname:
             self.fname = self.display_as = Gb.stat_zone_fname.replace('[name]', Device.fname[:3])
         else:
             self.fname = self.display_as = STATIONARY_FNAME
@@ -338,7 +362,7 @@ class iCloud3_StationaryZone(iCloud3_Zone):
             self.timer                 = 0
             self.radius_m              = self.inzone_radius
 
-            Gb.hass.states.async_set(f"zone.{self.zone}", "zoning", self.away_attrs, force_update=True)
+            Gb.hass.states.async_set(f"zone.{self.zone}", 0, self.away_attrs, force_update=True)
 
             # Set Stationary Zone at new location
             self.Device.loc_data_zone      = self.zone
@@ -371,7 +395,7 @@ class iCloud3_StationaryZone(iCloud3_Zone):
         self.radius_m = 1
 
         self.base_attrs[LATITUDE] += 20
-        Gb.hass.states.async_set(f"zone.{self.zone}", "zoning", self.base_attrs, force_update=True)
+        Gb.hass.states.async_set(f"zone.{self.zone}", 0, self.base_attrs, force_update=True)
 
         event_msg =(f"Reset Stationary Zone Location > {self.zone}, "
                     f"Moved back to Base Location-{format_gps(self.base_latitude, self.base_longitude, 1)}")

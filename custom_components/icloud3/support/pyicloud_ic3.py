@@ -1095,8 +1095,8 @@ class PyiCloud_FamilySharing():
             self.response = {}
             log_debug_msg("No data returned from fmi refresh request")
 
-        if requested_by_devicename:
-            post_monitor_msg(f"FamShr iCloudData Update RequestedBy-{requested_by_devicename}")
+        # if requested_by_devicename:
+        #     post_monitor_msg(f"FamShr iCloudData Update RequestedBy-{requested_by_devicename}")
 
         self.update_device_location_data(requested_by_devicename, self.response.get("content", {}))
 
@@ -1107,7 +1107,7 @@ class PyiCloud_FamilySharing():
         if device_data is None:
             return
 
-        monitor_msg = f"UPDATED FamShr Data >"
+        monitor_msg = f"UPDATED FamShr Data > RequestedBy-{requested_by_devicename}"
         for device_info in device_data:
             device_id   = device_info[ID]
             device_data_name  = device_info[NAME]

@@ -312,7 +312,7 @@ class iCloud3_DeviceTracker(TrackerEntity):
             not_set_value = 0 if number else BLANK_SENSOR_FIELD
 
             if self.Device is None:
-                return not_set_value
+                return self._get_restore_or_default_value(sensor, not_set_value)
 
             sensor_value = self.Device.sensors.get(sensor, None)
 
@@ -331,6 +331,23 @@ class iCloud3_DeviceTracker(TrackerEntity):
             log_error_msg(f"►INTERNAL ERROR (Create device_tracker object-{err})")
             sensor_value = not_set_value
 
+        # if instr(sensor, 'battery'):
+        #     _traceha(f"NORMALDEVTRKR {self.devicename} {sensor} {sensor_value}")
+        return sensor_value
+
+#-------------------------------------------------------------------------------------------
+    def _get_restore_or_default_value(self, sensor, not_set_value):
+        '''
+        Get a default value that is used when iCloud3 has not started or the Device for the
+        sensor has not veen created.
+        '''
+        try:
+            sensor_value = Gb.restore_state_devices[self.devicename]['sensors'][sensor]
+        except:
+            # sensor_value = self._get_sensor_definition(sensor, SENSOR_DEFAULT)
+            sensor_value = not_set_value
+        # if instr(sensor, 'battery'):
+        #     _traceha(f"RESTOREDEVTRKR {self.devicename} {sensor} {sensor_value}")
         return sensor_value
 
 #-------------------------------------------------------------------------------------------

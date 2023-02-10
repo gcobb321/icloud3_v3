@@ -1,0 +1,199 @@
+﻿<!-- theme-vue.css customization 
+
+
+-->
+
+body{
+    font-size: 14px;
+}
+.content {
+   #padding-top: 10px;
+   #padding-bottom: 10px;
+   padding: 10px 0px;
+   margin: 10pm 0px;
+   left: 250px;
+}
+.anchor span {
+    color: #446ca2;
+}
+/*---------------------------------------------------*/
+.sidebar::-webkit-scrollbar {
+    width: 6px;
+    background: #edf2f7;
+}
+.sidebar::-webkit-scrollbar-thumb {
+    background: #c9d7e8;
+    border-radius: 0px;
+}
+.sidebar::-webkit-scrollbar-thumb:vertical:hover {
+    background-color: #a5bcd9;
+}
+
+.sidebar {
+    /*font-size: 14px;*/
+    background: #F6F9FB;
+    color: #364149;
+    padding: 2px 0 0 0;
+    width: 250px;
+}
+.sidebar-toggle span {
+    background-color: red;
+}
+.sidebar>h1 {
+    margin: 5px 10px 5px 10px;
+    font-size: 1.5rem;
+    font-weight: 300;
+    text-align: center;
+    color: #a5bcd9;
+    /* border-bottom: 1px solid #a5bcd9; */
+    word-wrap: break-word;
+    white-space: normal;
+    text_decoration: underline #446ca2;
+    text-decoration-thickness: 1px;
+    -webkit-text_decoration: underline #446ca2;
+    -webkit-text-decoration-thickness: 1px;
+}
+.sidebar ul li a {
+    font-size: 14px;
+    word-wrap: break-word;
+    white-space: normal;
+    padding-left: 2px;
+    border: 1px solid transparent;
+}
+.sidebar ul li a:hover {
+    padding-left: 2px;
+    border: 1px solid #406495;
+    background: #EAF0F7;
+}
+.sidebar ul li.active>a {
+    color: #406495;
+    padding-left: 2px;
+    border: 1px solid #406495;
+    background: #D4DDE9;
+}
+.sidebar .sidebar-nav {
+    line-height: 1.4em;
+    border-top: 1px solid #33A9F4;
+}
+.sidebar-version-date {
+    font-family: Arial;
+    font-size: 13px;
+    color: darkred;
+    text-align: center;
+    border-bottom: solid darkred 1px;
+}
+
+/*---------------------------------------------------*/
+.markdown-section hr {
+    border-bottom: 1px solid #446ca2;
+    margin: 2.5em 0 -1.5em 0;
+}
+.markdown-section {
+    margin: 0 15px;
+    max-width: 800px;
+    padding: 0px 15px 40px;
+    position: relative;
+    
+}.markdown-section::-webkit-scrollbar {
+    width: 8px;
+    background: #edf2f7;
+}
+.markdown-section::-webkit-scrollbar-thumb {
+    background: #c9d7e8;
+    border-radius: 0px;
+}
+.markdown-section::-webkit-scrollbar-thumb:vertical:hover {
+    background-color: #a5bcd9;
+}
+.markdown-section h1 {
+    color: #446ca2;
+}
+.markdown-section h1, .markdown-section h2, .markdown-section h3 {
+    margin: 30px 0 -10px 0;
+}
+.markdown-section h4 {
+    margin: 30px 0 -10px 0;
+}
+.markdown-section h5 {
+    margin: 20px 0 -10px 0;
+}
+.markdown-section h6 {
+    margin: 20px 0 -20px 0;
+}
+
+.markdown-section p {
+    margin:1em 0 0 0;
+}
+.markdown-section ol, .markdown-section p, .markdown-section ul {
+    /*line-height:1.6rem; */
+    word-spacing:.05rem
+}
+.markdown-section ol,.markdown-section ul {
+    padding-left:1.5rem
+}
+
+.markdown-section p.tip {
+    background-color: #FFF6F4;
+}
+.markdown-section pre h6 {
+    margin: 20px 0 -20px 0;
+    color: dodgerblue;
+}
+.markdown-section blockquote p {
+    font-weight: 450;
+    margin: 20px 0 -20px 0;
+    font-style: italic;
+    color: dodgerblue;
+}
+.markdown-section pre {
+    -moz-osx-font-smoothing: initial;
+    -webkit-font-smoothing: initial;
+    line-height: 1.2rem;
+    margin: 1.5em 0;
+    overflow: auto;
+    padding: 0 1.5rem;
+    position: relative;
+    word-wrap: normal;
+}
+.markdown-section pre>code {
+    font-style: normal;
+    margin: 6px 0;
+    padding: 4px 0;
+}
+.markdown-section code {
+    color: black;
+    font-weight: 450;
+    background-color: #f2f2f2;
+}
+.markdown-section em {
+    color: DarkBlue;
+    margin: 0 .2rem 0 .1rem;
+}
+/*---------------------------------------------------*/
+.search {
+    wdth: 95%;
+    line-height: 20px;
+    border: 1px splid dodgerblue;
+    background-color: white;
+}
+/*---------------------------------------------------*/
+.button-base {
+    -webkit-border-radius: 28;
+    -moz-border-radius: 28;
+    border-radius: 28px;
+    font-family: Arial;
+    font-size: 15px;
+    background: #ffffff;
+    padding: 1px 20px 1px 20px;
+    text-decoration: none;
+    -webkit-box-shadow: 0px 1px 3px #94592c;
+    -moz-box-shadow: 0px 1px 3px #94592c;
+    box-shadow: 0px 1px 3px #94592c;
+    color: #94592c;
+    border: solid #94592c 1px;
+}
+.button-base:hover {
+    background: #faebe1;
+    text-decoration: none;
+}
+

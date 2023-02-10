@@ -33,6 +33,8 @@ def any_reason_to_update_ic3_device_and_sensors(Device):
     Device.icloud_update_reason = ''
     Device.icloud_no_update_reason = ''
 
+    # if Device.loc_data_latitude == 0 or Device.loc_data_longitude == 0:
+    #     Device.icloud_update_reason = f"No Location Data, GPS-{Device.loc_data_fgps}"
     if Device.outside_no_exit_trigger_flag:
         Device.icloud_update_reason = 'Verify Location'
     elif Device.is_inzone and Device.next_update_time_reached is False:
@@ -81,6 +83,7 @@ def should_ic3_device_and_sensors_be_updated(Device):
                 or Device.loc_data_latitude == 0
                 or Device.icloud_initial_locate_done is False):
             Device.icloud_update_reason = f"Initial Locate@{Gb.this_update_time}"
+            _traceha(f"{Device.devicename} {Device.icloud_update_reason=}")
 
         elif (Device.is_tracking_resumed):
             Device.icloud_update_reason = "Resuming via iCloud"
@@ -97,7 +100,8 @@ def should_ic3_device_and_sensors_be_updated(Device):
                 and Device.loc_data_longitude == Device.StatZone.base_longitude):
             Device.icloud_no_update_reason = "Stat Zone Base Location"
 
-        elif Device.passthru_zone_expire_secs > 0:
+        elif Device.is_passthru_zone_delay_active:
+            _traceha(f"PASSTHRU is_passthru_zone_delay_active check {Device.devicename=}")
             Device.icloud_no_update_reason = "Passing thru zone"
 
         # Data change older than the current data
@@ -105,19 +109,15 @@ def should_ic3_device_and_sensors_be_updated(Device):
                 and Device.icloud_initial_locate_done):
             Device.icloud_update_reason = (f"Old Location-{Device.loc_data_time}")
 
-        elif (Device.is_location_old_or_gps_poor
-                and secs_to(Device.next_update_secs) <= 15):
+        elif (Device.is_location_old_or_gps_poor and secs_to(Device.next_update_secs) <= 15):
             Device.icloud_update_reason = (f"Old Location-{Device.loc_data_time}")
 
-        elif (Device.StatZone.timer_expired
-                and Device.old_loc_poor_gps_cnt == 0):
+        elif (Device.StatZone.timer_expired and Device.old_loc_poor_gps_cnt == 0):
             Device.icloud_update_reason = "Stationary Timer Reached"
 
-        elif (Device.next_update_DeviceFmZone
-                    and Device.next_update_time_reached):
+        elif (Device.next_update_DeviceFmZone and Device.next_update_time_reached):
             Device.icloud_update_reason = f"Next Update Time Reached"
-            if (Device.isnot_inzone
-                and Device.next_update_DeviceFmZone.from_zone != HOME):
+            if (Device.isnot_inzone and Device.next_update_DeviceFmZone.from_zone != HOME):
                 Device.icloud_update_reason += (f" ({Device.next_update_DeviceFmZone.from_zone})")
 
         elif (Device.isnot_inzone
@@ -343,10 +343,17 @@ def update_device_with_latest_raw_data(Device, all_devices=False):
                                 and _Device.loc_data_time > _RawData.location_time
                                 and _Device.loc_data_gps_accuracy < _RawData.gps_accuracy)):
 
-                        event_msg =(f"Rejected ({_RawData.tracking_method}) > "
-                                    f"NewData-{_RawData.location_time}/±{_RawData.gps_accuracy:.0f}m "
-                                    f"vs {_Device.loc_data_time_gps}")
-                        post_event(_Device.devicename, event_msg)
+                        if (Device.old_loc_poor_gps_cnt % 5) == 2:
+                            if Device.no_location_data:
+                                reason_msg = f"No Location Data, "
+                            else:
+                                reason_msg = (  f"NewData-{_RawData.location_time}/±{_RawData.gps_accuracy:.0f}m "
+                                                f"vs {_Device.loc_data_time_gps}, ")
+                            event_msg =(f"Rejected  (#{Device.old_loc_poor_gps_cnt+1}) > "
+                                        f"{reason_msg}"
+                                        f"Updated-{_RawData.tracking_method} data, "
+                                        f"{Device.device_status_msg}")
+                            post_event(_Device.devicename, event_msg)
 
             if (_RawData is None
                     or _RawData.location_secs == 0 and _Device.iosapp_data_secs == 0

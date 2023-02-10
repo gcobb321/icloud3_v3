@@ -1,7 +1,80 @@
+Beta 12 2/10/2023
+~~~~~~~~~~~~~~~~~~~~
+1.  iCloud3 Configurator - The HA 2023.2.2 seems to have disabled the time entry fields (hh:mm:ss) used
+    to enter a lot of parameters (inZone Interval, Stationary Still Time, Old Location adjustment, etc).
+    The screens display but none of thse fields are showing. This may be a HA bug that needs fixing or
+    they are removing it from HA. In any case, all of the configuration parameter entry screens have
+    been modified to use another method of entering the parameters. It actually works better, is easier
+    to use and takes up less screen real estate. The fields can be entered using the keyboard or through
+    a numeric slider.
+    THIS WILL REQUIRE A BROWSER REFRESH AFTER DISPLAYING ONE OF THE CONFIGURATOR SCREENS
+2.    New 'locate' Service call - Added the 'locate' Action to the icloud3.action Service Call. This action
+    lets you locate a device (or all devices) immediately or in after a specific time has elapsed.
+    This replaces the set_interval service call in v2.
+    The following examples explains how it can be used:
+        Calling method:
+            service: icloud3.action
+            data: {action: locate xx min, device_name: xxx}
+
+        Examples:
+            - Locate gary_iphone in 4 minutes: {action: locate 4 min, device_name: gary_iphone}
+            - Locate gary_iphone immediately:  {action: locate, device_name: gary_iphone}
+            - Locate all phones in 4 minutes:  {action: locate 4 min}
+            - Locate all phones immediately:   {action: locate}
+2.  Event Log > Action - Added the above 'locate' to the Action command manu to locate a specific device or
+    all devices using the FamShr or FmF methods. Also tweaked the debug/rawdata logging text color on the
+    heading lines displayed when an update is started or completed. It is now black.
+    YOU WILL GET A NOTIFICATION TO REFRESH YOUR BROWSER
+3.  Passthru Zone - Tried to fix the problem with the passthru zone enter delay. A device that was
+    not using the iOS App (Watch) would set up the passthru zone enter delay when entering a zone but
+    the next update time was never getting triggered so the zone enter delay was never be cleared.
+    This stopped the device from being tracked and updated. On a trial run, the passthrou zone delay did
+    not work but the Watch was tracking without any issues. It is disabled in this beta until I get it
+    working and have given it a comprehensive test. It should be available in beta 13 next weekend.
+
+
+Beta 11 - 2/5/2023
+~~~~~~~~~~~~~~~~~~~~
+1.  Added a Stationary Zone name parameter on the Update iCloud3 Devices parameter screen - Each device
+    can now have it's own Stationary Zone friendly name. This overrides the generic friendly name on the
+    Special Zones screen for the Stationary Zone.
+    NOTE: A BROWSER REFRESH WILL/MAY BE NEEDED IF THE FIELD DOES NOT DISPLAY
+
+    The default name is 'Stationary'. It can be customized on the Special Zones screen to [name]StatZone
+    (GarStatZone, LilStatZone). It can now be set by device (GaryZone, LillianZone).
+2.  Fixed a problem where 'Stationary' was always used for the device_tracker state for a Stationary Zone
+    instead of the friendly name that was set up on the Special Zones/Stationary Zone screen. Also set the
+    Stationary Zone state to 0 when it was created so the person counter would work (maybe).
+3.  Because of the way iCloud location data is processed, Device updates are handled serially. Only one
+    Device can be updated at a time, the next in line must wait until the previous one is complete. The
+    method used to control this process was changed to ensure iCloud3 tracking would not hang in up waiting
+    for one device update to finish when an unknown error occurred or it was taking a very long time to
+    get location data from the iCloud account. Now, everything is reset if one device has been in an
+    update process for more than 3-minutes.
+    [LET ME KNOW IF YOU HAVE ANY PROBLEMS WHERE TRACKING STOPS FOR ALL DEVICES OR ICLOUD3 SEEMS TO BE HUNG UP]
+4.  Changed the way the Next Update Time is displayed when the update will be done in 90-secs. For example,
+    the time was formatted as '9:35:15a -45s' indicating the update would be done in 45-secs. This will
+    break in a future HA release. Now, only the time until the next update will be displayed (45 secs)
+    when the update will be done within 90-seconds.
+5.  Added a new configuration screen to change the order the devices are tracked and displayed on the
+    Event Log. They are processed in the order they were first added to iCloud3 and listed on the iCloud3
+    Devices List screen. This new screen lets you change this order. Select `Change Device Order` on the
+    iCloud3 Devices List or the Event Log Parameters screens.
+6.  If there is an error reading the configuration file when iCloud3 starts, the backup configuration file
+    is read and the configuration file with the error is overwritten. The configuration file with the
+    error is now saved with a timestamp before it is overwritten.
+7.  Fixed a problem where the latitude/longitude values for the Device were not being restored when iCloud3
+    was starting. The latitude/longitude was set to 0/0 rather than the last known position, putting it in
+    Atlantic Ocean on the equator off the coast of Africa on the HA map until the device's location was
+    updated
+8.  Fixed the problem where the battery would go from a valye to 0 and back to the value during startup.
+    Again. Really, I think I have it this time, no battery = 0 in my debug logs.
+
+
 Beta 10a - 1/29/2023
 ~~~~~~~~~~~~~~~~~~~~
-1.  Fixed a problem when entering a zone that was generating the error message "local variable
-    'zone_display_as" referenced before assignment'. This was generated when creating the zone enter
+1.  Fixed a problem in beta 10 that was generating the error message "local variable 'zone_display_as'
+    referenced before assignment when entering a zone. This was generated when creating the zone enter
     trigger reason message.
 
 Beta 10 - 1/28/2023

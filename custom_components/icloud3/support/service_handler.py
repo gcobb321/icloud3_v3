@@ -11,12 +11,13 @@ from ..const                import (DOMAIN,
                                     HHMMSS_ZERO, HIGH_INTEGER,
                                     WAZE,
                                     CMD_RESET_PYICLOUD_SESSION,
-                                    LOCATION, NEXT_UPDATE_TIME, NEXT_UPDATE,
+                                    LOCATION, NEXT_UPDATE_TIME, NEXT_UPDATE, INTERVAL,
                                     CONF_DEVICENAME, CONF_ZONE, CONF_COMMAND, CONF_LOG_LEVEL,
                                     )
 
 from ..support              import iosapp_interface
 from ..support              import config_file
+from ..support              import determine_interval as det_interval
 from ..helpers.common       import (instr, )
 from ..helpers.messaging    import (post_event, post_error_msg, post_monitor_msg,
                                     write_ic3_debug_log_recd,
@@ -24,7 +25,7 @@ from ..helpers.messaging    import (post_event, post_error_msg, post_monitor_msg
                                     open_ic3_debug_log_file, close_ic3_debug_log_file,
                                     close_reopen_ic3_debug_log_file,
                                     _trace, _traceha, )
-from ..helpers.time_util    import (secs_to_time, time_str_to_secs, datetime_now, secs_since, )
+from ..helpers.time_util    import (secs_to_time, time_str_to_secs, datetime_now, secs_since, time_now, )
 
 # EvLog Action Commands
 CMD_ERROR                  = 'error'
@@ -41,6 +42,7 @@ CMD_LOG_LEVEL              = 'log_level'
 CMD_REFRESH_EVENT_LOG      = 'refresh_event_log'
 CMD_RESTART                = 'restart'
 CMD_FIND_DEVICE_ALERT      = 'find_alert'
+CMD_LOCATE                 = 'locate'
 
 REFRESH_EVLOG_FNAME             = 'Refresh Event Log'
 HIDE_TRACKING_MONITORS_FNAME    = 'Hide Tracking Monitors'
@@ -59,7 +61,8 @@ GLOBAL_ACTIONS =  [CMD_EXPORT_EVENT_LOG,
 DEVICE_ACTIONS =  [CMD_REQUEST_LOCATION,
                     CMD_PAUSE,
                     CMD_RESUME,
-                    CMD_FIND_DEVICE_ALERT, ]
+                    CMD_FIND_DEVICE_ALERT,
+                    CMD_LOCATE, ]
 
 NO_EVLOG_ACTION_POST_EVENT = [
                     'Show Startup Log, Errors & Alerts',
@@ -69,7 +72,8 @@ NO_EVLOG_ACTION_POST_EVENT = [
                     CMD_DISPLAY_STARTUP_EVENTS, ]
 
 SERVICE_SCHEMA = vol.Schema({
-    vol.Optional(CONF_COMMAND): cv.string,
+    vol.Optional('command'): cv.string,
+    vol.Optional('action'): cv.string,
     vol.Optional(CONF_DEVICENAME): cv.slugify,
     vol.Optional('action_fname'): cv.string,
 })
@@ -84,7 +88,7 @@ from   homeassistant.util.location import distance
 def process_update_service_request(call):
     """ icloud3.update service call request """
 
-    action       = call.data.get(CONF_COMMAND)
+    action       = call.data.get('command') or call.data.get('action')
     action_fname = call.data.get('action_fname')
     devicename   = call.data.get(CONF_DEVICENAME)
 
@@ -141,28 +145,30 @@ def register_icloud3_services():
 #   ROUTINES THAT HANDLE THE INDIVIDUAL SERVICE REQUESTS
 #
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-def update_service_handler(action=None, action_fname=None, devicename=None):
+def update_service_handler(action_entry=None, action_fname=None, devicename=None):
     """
     Authenticate against iCloud and scan for devices.
 
 
     Actions:
-    - pause            = stop polling for the devicename or all devices
-    - resume           = resume polling devicename or all devices, reset
+    - pause             - stop polling for the devicename or all devices
+    - resume            - resume polling devicename or all devices, reset
                             the interval override to normal interval
                             calculations
-    - pause-resume     = same as above but toggles between pause and resume
-    - zone xxxx        = updates the devie state to xxxx and updates all
+    - pause-resume      - same as above but toggles between pause and resume
+    - zone xxxx         - updates the devie state to xxxx and updates all
                             of the iloud3 attributes. This does the see
                             service call and then an update.
-    - reset            = reset everything and rescans all of the devices
-    - location         = request location update from ios app
+    - reset             - reset everything and rescans all of the devices
+    - location          - request location update from ios app
+    - locate x mins     - locate in x minutes
     """
     # Ignore Action requests during startup. They are caused by the devicename changes
     # to the EvLog attributes indicating the startup stage.
     if Gb.start_icloud3_inprocess_flag:
         return
 
+    action = action_entry
     if action == f"{CMD_REFRESH_EVENT_LOG}+clear_alerts":
         action = CMD_REFRESH_EVENT_LOG
         Gb.EvLog.clear_alert_events()
@@ -170,29 +176,21 @@ def update_service_handler(action=None, action_fname=None, devicename=None):
     if (action == CMD_REFRESH_EVENT_LOG
             and Gb.EvLog.secs_since_refresh <= 2
             and Gb.EvLog.last_refresh_devicename == devicename):
-        post_monitor_msg(f"Service Call Action Ignored > {action_fname}, Action-{action}, {devicename}")
+        post_monitor_msg(f"Service Action Ignored > {action_fname}, Action-{action_entry}, {devicename}")
         return
 
-
     if action_fname not in NO_EVLOG_ACTION_POST_EVENT:
-        post_monitor_msg(f"Service Call Action Received > {action_fname}, Action-{action}, {devicename}")
+        post_monitor_msg(f"Service Action Received > Action-{action_entry}, {devicename}")
 
-    action        = action.replace(f"{CONF_ZONE} ", f"{CONF_ZONE}:")
-    action        = action.replace(f"{WAZE} ", f"{WAZE}:")
-    action        = action.replace('eventlog', 'monitor')
-    action        = action.replace(' ', '')
+    action_entry  = action_entry.replace('eventlog', 'monitor')
+    action_entry  = action_entry.replace(':', '')
+    action        = action_entry.split(' ')[0]
+    action_option = action_entry.replace(action, '').strip()
 
-    action_parts  = action.split(':')
-    action        = action_parts[0]
-    try:
-        action_option = action_parts[1]
-    except:
-        action_option = ''
-
-    msg_devicename = (f", Device-{devicename}") if devicename else ""
-    action_fname = action_fname if action_fname else action.replace('_', ' ').title()
-
-    event_msg =(f"iCloud3 Action Handler > {action_fname}{msg_devicename}")
+    devicename_msg = (f", Device-{devicename}") if devicename else ""
+    action_msg     = action_fname if action_fname else f"{action.title()}"
+    action_option_msg = f", Option-{action_option}" if action_option else ""
+    event_msg =(f"Service Action Handler > Action-{action_msg}{action_option_msg}{devicename_msg}")
     if action_fname not in NO_EVLOG_ACTION_POST_EVENT:
         post_event(event_msg)
 
@@ -206,8 +204,7 @@ def update_service_handler(action=None, action_fname=None, devicename=None):
         if devicename:
             Devices = [Gb.Devices_by_devicename[devicename]]
         else:
-            # Devices = [Device for Device in Gb.Devices_by_devicename.values()]
-            Devices = Gb.Devices
+            Devices = [Device for Device in Gb.Devices_by_devicename_tracked.values()]
 
         if action == CMD_PAUSE:
             Gb.all_tracking_paused_flag = (devicename is None)
@@ -220,6 +217,10 @@ def update_service_handler(action=None, action_fname=None, devicename=None):
             Gb.EvLog.display_user_message('', clear_alert=True)
             for Device in Devices:
                 Device.resume_tracking
+
+        elif action == CMD_LOCATE:
+            for Device in Devices:
+                _handle_action_device_locate(Device, action_option)
 
         elif action == CMD_REQUEST_LOCATION:
             for Device in Devices:
@@ -240,16 +241,11 @@ def update_configuration_parameters_handler():
 
     try:
 
-        Gb.hass.add_job(
-            Gb.hass.config_entries.flow.async_init(
-                    DOMAIN,
-                    context={'source': 'reauth'},
-                    data={
-                        'icloud3_service_call': True,
-                        'step_id': 'reauth',
-                    },
-                )
-            )
+        Gb.hass.add_job(Gb.hass.config_entries.flow.async_init(
+                                DOMAIN,
+                                context={'source': 'reauth'},
+                                data={'icloud3_service_call': True, 'step_id': 'reauth',},)
+                        )
 
     except Exception as err:
         log_exception(err)
@@ -393,13 +389,30 @@ def close_reopen_ic3_debug_log_file():
 
 #--------------------------------------------------------------------
 def _handle_action_device_location(Device):
+    '''
+    Request ios app location from the EvLog > Actions
+    '''
 
     Device.display_info_msg('Updating Location')
+
     if Device.iosapp_monitor_flag:
+        Device.iosapp_data_change_reason = f"Location Requested@{time_now()}"
         iosapp_interface.request_location(Device, force_request=True)
 
     Device.resume_tracking
     Device.write_ha_sensor_state(NEXT_UPDATE, 'Locating')
+
+#--------------------------------------------------------------------
+def _handle_action_device_locate(Device, minutes):
+    '''
+    Set the next update time & interval from the Action > locate service call
+    '''
+
+    interval = time_str_to_secs(minutes) if minutes != '' else 5
+    det_interval.update_all_device_fm_zone_sensors_interval(Device, interval)
+    Device.icloud_update_reason = f"Location Requested@{time_now()}"
+    post_event(Device.devicename, f"Location will be updated at {Device.sensors[NEXT_UPDATE_TIME]}")
+    Device.write_ha_sensors_state([NEXT_UPDATE, INTERVAL])
 
 #--------------------------------------------------------------------
 def set_ha_notification(title, message, issue=True):
