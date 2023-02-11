@@ -16,7 +16,7 @@ from ..const                import (
                                     DEFAULT_SENSORS_CONF,
                                     HOME_DISTANCE, CONF_SENSORS_TRACKING_DISTANCE,
                                     CONF_SENSORS_DEVICE, BATTERY_STATUS,
-                                    CONF_WAZE_USED, CONF_WAZE_REGION, CONF_DISTANCE_METHOD,
+                                    CONF_WAZE_USED, CONF_WAZE_REGION, CONF_WAZE_MAX_DISTANCE, CONF_DISTANCE_METHOD,
                                     WAZE_SERVERS_BY_COUNTRY_CODE, WAZE_SERVERS_FNAME,
                                     CONF_EXCLUDED_SENSORS, CONF_OLD_LOCATION_ADJUSTMENT, CONF_DISTANCE_BETWEEN_DEVICES,
                                     )
@@ -226,6 +226,12 @@ def config_file_special_maintenance_beta():
         update_config_file_flag = \
             (_add_config_file_parameter(Gb.conf_general, CONF_DEVICE_TRACKER_STATE_FORMAT, dtf)
                 or update_config_file_flag)
+
+    if Gb.conf_general[CONF_WAZE_MAX_DISTANCE] > DEFAULT_GENERAL_CONF[CONF_WAZE_MAX_DISTANCE]:
+        Gb.conf_general[CONF_WAZE_MAX_DISTANCE] = DEFAULT_GENERAL_CONF[CONF_WAZE_MAX_DISTANCE]
+        update_config_file_flag = True
+
+
 
     # Change Waze server codes
     if Gb.conf_general[CONF_WAZE_REGION].lower() in ['na']:

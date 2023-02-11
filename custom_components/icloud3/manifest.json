@@ -4,6 +4,8 @@
   "documentation": "https://gcobb321.github.io/icloud3_v3/#/",
   "issue_tracker": "https://github.com/gcobb321/icloud3_v3/issues",
   "dependencies": [],
+  "after_dependencies": ["history", "ios"],
+  "iot_class": "cloud_polling",
   "codeowners": ["@gcobb321"],
   "config_flow": true,
   "requirements": [],
