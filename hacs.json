@@ -2,6 +2,6 @@
   "name": "iCloud3 v3 Device Tracker",
   "zip_release": true,
   "render_readme": true,
-  "domains": ["device_tracker"],
+  "domains": ["icloud3"],
   "filename": "icloud3_v3.zip"
 }
