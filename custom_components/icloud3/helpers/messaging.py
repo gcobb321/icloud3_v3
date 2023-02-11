@@ -216,6 +216,7 @@ def open_ic3_debug_log_file(new_debug_log=False):
                             f"Debug Log File: {dt_util.now().strftime(DATETIME_FORMAT)[0:19]}\n")
 
     # Write the ic3 configuration (general & devices) to the debug log file
+    write_ic3_debug_log_recd(f"Profile:\n{DEBUG_LOG_LINE_TABS}{Gb.conf_profile}")
     write_ic3_debug_log_recd(f"General Configuration:\n{DEBUG_LOG_LINE_TABS}{Gb.conf_general}")
     write_ic3_debug_log_recd(f"{DEBUG_LOG_LINE_TABS}{Gb.ha_location_info}")
     write_ic3_debug_log_recd("")

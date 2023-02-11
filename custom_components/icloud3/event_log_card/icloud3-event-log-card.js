@@ -22,7 +22,7 @@ class iCloud3EventLogCard extends HTMLElement {
     }
     //---------------------------------------------------------------------------
     setConfig(config) {
-        const version = "3.0.3"
+        const version = "3.0.4"
         const cardTitle = "iCloud3 Event Log v3"
 
         const root = this.shadowRoot

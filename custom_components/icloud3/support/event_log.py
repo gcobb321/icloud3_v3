@@ -153,82 +153,81 @@ class EventLog(object):
         The event_log lovelace card will display the event in a special color if
         the text starts with a special character:
         '''
+        if event_text == '+':
+            event_text = devicename
+            devicename = "*" if Gb.start_icloud3_inprocess_flag else '**'
+        elif devicename is None or devicename in ['', '*']:
+            devicename = "*" if Gb.start_icloud3_inprocess_flag else '**'
+
+        if (instr(event_text, "▼") or instr(event_text, "▲")
+                or len(event_text) == 0
+                or instr(event_text, "event_log")):
+            return
+
+        # Drop duplicate event_text item that has already been displayed. Also,
+        # if a ^c^ start header is immediately follows an ^s^ header, the group is empty,
+        # delete the ^s^ header and throw the current record (^c^ header) away.
         try:
-            if event_text == '+':
-                event_text = devicename
-                devicename = "*" if Gb.start_icloud3_inprocess_flag else '**'
-            elif devicename is None or devicename in ['', '*']:
-                devicename = "*" if Gb.start_icloud3_inprocess_flag else '**'
+            if (devicename.startswith('*') is False
+                    and len(self.evlog_table) > 8):
+                in_last_few_recds = [v for v in self.evlog_table[:8] \
+                                        if (v[ELR_DEVICENAME] == devicename \
+                                            and v[ELR_TEXT] == event_text \
+                                            and v[ELR_TEXT].startswith(EVLOG_TIME_RECD) is False)]
+                if in_last_few_recds != []:
+                    return
 
-            if (instr(event_text, "▼") or instr(event_text, "▲")
-                    or len(event_text) == 0
-                    or instr(event_text, "event_log")):
-                return
+                # If this is an Update Completed msg
+                if event_text.startswith(EVLOG_UPDATE_END):
+                    # Drop previous msg if it was an Update Started msg
+                    for idx in range(0, 8):
+                        if self.evlog_table[idx][ELR_TEXT].startswith(EVLOG_UPDATE_START):
+                            self.evlog_table[idx].pop()
+                            return
+                        if self.evlog_table[idx][ELR_TEXT].startswith(EVLOG_MONITOR) is False:
+                            break
+        except Exception as err:
+            log_exception(err)
 
-            # Drop duplicate event_text item that has already been displayed. Also,
-            # if a ^c^ start header is immediately follows an ^s^ header, the group is empty,
-            # delete the ^s^ header and throw the current record (^c^ header) away.
-            try:
-                if (devicename.startswitn('*') is False
-                        and len(self.evlog_table) > 8):
-                    in_last_few_recds = [v for v in self.evlog_table[:8] \
-                                            if (v[ELR_DEVICENAME] == devicename \
-                                                and v[ELR_TEXT] == event_text \
-                                                and v[ELR_TEXT].startswith(EVLOG_TIME_RECD) is False)]
-                    if in_last_few_recds != []:
-                        return
-
-                    # If this is an Update Completed msg
-                    if event_text.startswith(EVLOG_UPDATE_END):
-                        # Drop previous msg if it was an Update Started msg
-                        for idx in range(0, 8):
-                            if self.evlog_table[idx][ELR_TEXT].startswith(EVLOG_UPDATE_START):
-                                self.evlog_table[idx].pop()
-                                return
-                            if self.evlog_table[idx][ELR_TEXT].startswith(EVLOG_MONITOR) is False:
-                                break
-            except:
-                pass
-
-            try:
-                # Alerts are saved during startup. If there are any, reinsert them into the EvLog table
-                # so all alerts are redisplayed when the startup complete event record is being processed.
-                if (event_text.startswith(EVLOG_IC3_STARTING)
-                        and instr(event_text, 'Complete')
-                        and self.evlog_startup_alerts != []):
-                    for alert_recd in self.evlog_startup_alerts:
-                        self.evlog_table.insert(0, alert_recd)
-                    self.evlog_startup_alerts = []
+        try:
+            # Alerts are saved during startup. If there are any, reinsert them into the EvLog table
+            # so all alerts are redisplayed when the startup complete event record is being processed.
+            if (event_text.startswith(EVLOG_IC3_STARTING)
+                    and instr(event_text, 'Complete')
+                    and self.evlog_startup_alerts != []):
+                for alert_recd in self.evlog_startup_alerts:
+                    self.evlog_table.insert(0, alert_recd)
+                self.evlog_startup_alerts = []
 
 
-                if (event_text.startswith(EVLOG_UPDATE_START)
-                        or event_text.startswith(EVLOG_UPDATE_END)
-                        or event_text.startswith(EVLOG_IC3_STARTING)
-                        or event_text.startswith(EVLOG_IC3_STAGE_HDR)):
-                    if Gb.log_rawdata_flag:
-                        this_update_time = 'Rawdata'
-                    elif Gb.log_debug_flag:
-                        this_update_time = 'Debug'
-                    else:
-                        this_update_time = ''
-
+            if (event_text.startswith(EVLOG_UPDATE_START)
+                    or event_text.startswith(EVLOG_UPDATE_END)
+                    or event_text.startswith(EVLOG_IC3_STARTING)
+                    or event_text.startswith(EVLOG_IC3_STAGE_HDR)):
+                if Gb.log_rawdata_flag:
+                    this_update_time = 'Rawdata'
+                elif Gb.log_debug_flag:
+                    this_update_time = 'Debug'
                 else:
-                    this_update_time = dt_util.now().strftime('%H:%M:%S')
-                    this_update_time = time_to_12hrtime(this_update_time)
+                    this_update_time = ''
 
-                    # Display Track-from-Zone in time field if not Home
-                    if devicename.startswith('*') is False:
-                        Device = Gb.Devices_by_devicename.get(devicename)
-                        if Device:
-                            Device.last_evlog_msg_secs = time_now_secs()
-                            if (Device.DeviceFmZoneCurrent.from_zone != HOME
-                                    or event_text.startswith(EVLOG_TIME_RECD)):
-                                this_update_time = (f"»{Device.DeviceFmZoneCurrent.from_zone_display_as[:6]}")
+            else:
+                this_update_time = dt_util.now().strftime('%H:%M:%S')
+                this_update_time = time_to_12hrtime(this_update_time)
 
-            except Exception as err:
-                log_exception(err)
-                pass
+                # Display Track-from-Zone in time field if not Home
+                if devicename.startswith('*') is False:
+                    Device = Gb.Devices_by_devicename.get(devicename)
+                    if Device:
+                        Device.last_evlog_msg_secs = time_now_secs()
+                        if (Device.DeviceFmZoneCurrent.from_zone != HOME
+                                or event_text.startswith(EVLOG_TIME_RECD)):
+                            this_update_time = (f"»{Device.DeviceFmZoneCurrent.from_zone_display_as[:6]}")
 
+        except Exception as err:
+            log_exception(err)
+
+        try:
             if (instr(type(event_text), 'dict') or instr(type(event_text), 'list')):
                 event_text = str(event_text)
 

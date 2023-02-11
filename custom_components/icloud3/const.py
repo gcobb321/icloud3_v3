@@ -241,6 +241,7 @@ DOT2              = '•'
 HDOT              = '◦ '
 HDOT2             = '◦'
 CRLF_DOT          = f'{CRLF}{NBSP3}•{NBSP2}'
+CRLF_HDOT         = f'{CRLF}{NBSP6}◦{NBSP2}'
 CRLF_CHK          = f'{CRLF}{NBSP3}✓{NBSP}'
 CRLF_X            = f'{CRLF}{NBSP2}✪{NBSP}'
 CRLF_NBSP6_DOT    = f'{CRLF}{NBSP3}◦{NBSP}'
@@ -248,8 +249,8 @@ CRLF_NBSP6_X      = f'{CRLF}{NBSP3}✪{NBSP}'
 
 BLANK_SENSOR_FIELD = '———'
 RARROW            = ' → '       #U+27F6 (Long Arrow Right)  ⟹ ⟾
-RARROW2           = '→'       #U+27F6 (Long Arrow Right)  ⟹ ⟾
-LARROW            = ' <-- '       #U+27F5 (Long Arrow Left) ⟸ ⟽
+RARROW2           = '→'         #U+27F6 (Long Arrow Right)  ⟹ ⟾
+LARROW            = ' <-- '     #U+27F5 (Long Arrow Left) ⟸ ⟽
 LARROW2           = '<--'       #U+27F5 (Long Arrow Left) ⟸ ⟽
 INFO_SEPARATOR    = '/' #'∻'
 

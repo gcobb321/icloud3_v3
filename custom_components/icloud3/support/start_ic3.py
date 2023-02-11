@@ -9,7 +9,7 @@ from ..const            import (
                                 STATE_TO_ZONE_BASE, CMD_RESET_PYICLOUD_SESSION,
                                 EVLOG_INIT_HDR, EVLOG_ALERT, EVLOG_IC3_STARTING, EVLOG_NOTICE,
                                 EVLOG_TABLE_MAX_CNT_BASE, EVLOG_TABLE_MAX_CNT_ZONE,
-                                CRLF, CRLF_DOT, CRLF_CHK, CRLF_NBSP6_DOT, DOT, DOT2, CRLF_X, CRLF_NBSP6_X,
+                                CRLF, CRLF_DOT, CRLF_CHK, CRLF_NBSP6_DOT, CRLF_HDOT, DOT2, CRLF_X, CRLF_NBSP6_X,
                                 RARROW, NBSP4, NBSP6, CIRCLE_X, INFO_SEPARATOR, DASH_20, CHECK_MARK,
                                 ICLOUD, FMF, FAMSHR,
                                 DEVICE_TYPE_FNAME,
@@ -600,23 +600,28 @@ def reinitialize_config_parameters():
 #------------------------------------------------------------------------------
 def check_ic3_event_log_file_version():
     try:
-        ic3_evlog_filename    = f"{Gb.icloud3_directory}/event_log_card/{Gb.conf_profile[CONF_EVLOG_CARD_PROGRAM]}"
-
-        # www_evlog_js_directory = f"{Gb.ha_config_directory}/{Gb.conf_profile[CONF_EVLOG_CARD_DIRECTORY]}"
-        # www_evlog_js_filename  = f"{www_evlog_js_directory}/{Gb.conf_profile[CONF_EVLOG_CARD_PROGRAM]}"
+        ic3_evlog_js_directory = Gb.hass.config.path(Gb.icloud3_directory, 'event_log_card')
+        ic3_evlog_js_filename  = Gb.hass.config.path(Gb.icloud3_directory, 'event_log_card',
+                                                        Gb.conf_profile[CONF_EVLOG_CARD_PROGRAM])
         www_evlog_js_directory = Gb.hass.config.path(Gb.conf_profile[CONF_EVLOG_CARD_DIRECTORY])
         www_evlog_js_filename  = Gb.hass.config.path(Gb.conf_profile[CONF_EVLOG_CARD_DIRECTORY],
                                                         Gb.conf_profile[CONF_EVLOG_CARD_PROGRAM])
 
-        ic3_version, ic3_beta_version, ic3_version_text = _read_event_log_card_js_file(ic3_evlog_filename)
+        # The _l is a html command and will stop the msg from displaying
+        ic3_evlog_js_directory_msg = "icloud3/event_log_card".replace('_log', '___log')
+        ic3_evlog_js_filename_msg  = ic3_evlog_js_filename.replace('_log', '___log')
+        www_evlog_js_directory_msg = www_evlog_js_directory.replace('_log', '___log')
+        www_evlog_js_filename_msg  = www_evlog_js_filename.replace('_log', '___log')
+
+        ic3_version, ic3_beta_version, ic3_version_text = _read_event_log_card_js_file(ic3_evlog_js_filename)
         www_version, www_beta_version, www_version_text = _read_event_log_card_js_file(www_evlog_js_filename)
 
         if ic3_version_text == 'Not Installed':
-            Gb.version_evlog = f' Not Found: {ic3_evlog_filename}'
+            Gb.version_evlog = f' Not Found: {ic3_evlog_js_filename_msg}'
             event_msg =(f"iCloud3 Event Log > "
                         f"{CRLF_DOT}Current Version Installed-v{www_version_text}"
                         f"{CRLF_DOT}WARNING: SOURCE FILE NOT FOUND"
-                        f"{CRLF_DOT}...{ic3_evlog_filename.replace('_log', '___log')}")
+                        f"{CRLF_DOT}...{ic3_evlog_js_filename_msg}")
             post_event(event_msg)
         else:
             Gb.version_evlog = ic3_version_text
@@ -645,33 +650,31 @@ def check_ic3_event_log_file_version():
                 current_version_installed_flag = False
 
         if current_version_installed_flag:
-            ic3_evl = "/icloud3/event___log"
             event_msg =(f"iCloud3 Event Log > "
                         f"{CRLF_DOT}Current Version Installed-v{www_version_text}"
-                        f"{CRLF_DOT}File-{www_evlog_js_filename.replace('_log', '___log')}")
+                        f"{CRLF_DOT}File-{www_evlog_js_filename_msg}")
             post_event(event_msg)
 
-        else:
-            _copy_image_files_to_www_directory(www_evlog_js_directory)
+            return
 
-            shutil.copy(ic3_evlog_filename, www_evlog_js_filename)
+        try:
+            _copy_image_files_to_www_directory(www_evlog_js_directory)
+            shutil.copy(ic3_evlog_js_filename, www_evlog_js_filename)
 
             event_msg =(f"{EVLOG_ALERT}"
-                        f"Event Log Alert > iCloud3 Event Log was updated:"
-                        f"{CRLF}The Event Log Card was updated to v{ic3_version_text}. "
-                        f"Refresh your browser and do the following on every tracked "
-                        f"devices running the iOS App to load the new version."
-                        f"{CRLF}1. Select `HA Sidebar > Configuration`"
-                        f"{CRLF}2. Select `Companion App` near the bottom of the HA Configuration screen"
-                        f"{CRLF}3. Select `Debugging` near the bottom of the `Settings` screen"
-                        f"{CRLF}4. Select `Reset frontend cache`. The cache on the phone/device will be cleared"
-                        f"{CRLF}5. Select `Settings`, then Select `Done`, then Close the `HA Configuration` screen"
-                        f"{CRLF}6. Display the iCloud3 Event Log, then pull down to refresh the page. "
-                        f"{CRLF}You should see the busy spinning wheel as the new version is loaded"
-                        f"{CRLF}"
+                        f"Event Log Alert > iCloud3 Event Log was updated to v{ic3_version_text}"
+                        f"{CRLF_DOT}Refresh your browser >"
+                        f"{CRLF_HDOT}Ctrl_Shift_Del, Clear Data, Refresh"
+                        f"{CRLF_DOT}Refresh the iOS App on iPhones, iPads, etc"
+                        f"{CRLF_HDOT}HA Sidebar, Configuration, Companion App"
+                        f"{CRLF_HDOT}Debugging, Reset frontend cache, Settings, Done"
+                        f"{CRLF_HDOT}Close Companion App, Redisplay iCloud3 screen"
+                        f"{CRLF_HDOT}Refresh, Pull down from the top, Spinning wheel, Done"
+                        f"{CRLF}{'-'*80}"
                         f"{CRLF_DOT}Old Version.. - v{www_version_text}"
                         f"{CRLF_DOT}New Version - v{ic3_version_text}"
-                        f"{CRLF_DOT}Copied From - .../icloud3/event_log_card/")
+                        f"{CRLF_DOT}Copied From - /config/.../{ic3_evlog_js_directory_msg}/"
+                        f"{CRLF_DOT}Copied To.... - {www_evlog_js_directory_msg}/")
             post_event(event_msg)
 
             Gb.info_notification = (f"Event Log Card updated to v{ic3_version_text}. "
@@ -685,9 +688,11 @@ def check_ic3_event_log_file_version():
                         "message": message,
                         "data": {"subtitle": "Event Log needs to be refreshed"}}
 
+        except Exception as err:
+            log_exception(err)
+
     except Exception as err:
         log_exception(err)
-        return
 
 #------------------------------------------------------------------------------
 def _read_event_log_card_js_file(evlog_filename):
@@ -755,7 +760,6 @@ def _copy_image_files_to_www_directory(www_evlog_directory):
     '''
     try:
         image_extensions = ['png', 'jpg', 'jpeg']
-        ## 12/17/2022 (beta 1) - Evlog diretory name was event_log istead of event_log_card
         image_filenames = [f'{Gb.icloud3_directory}/event_log_card/{x}'
                                     for x in os.listdir(f"{Gb.icloud3_directory}/event_log_card/")
                                     if instr(x, '.') and x.rsplit('.', 1)[1] in image_extensions]

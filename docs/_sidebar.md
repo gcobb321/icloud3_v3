@@ -2,10 +2,10 @@
   <table style="padding: 10px 0 5px 20px;">
     <tr>
       <td>
-        <a href="https://github.com/gcobb321/icloud3" class="button-base">Github</a>
+        <a href="https://github.com/gcobb321/icloud3_v3" class="button-base">Github</a>
       </td>
       <td>
-        <a href="https://github.com/gcobb321/icloud3/releases" class="button-base">Download</a>
+        <a href="https://github.com/gcobb321/icloud3_v3/releases" class="button-base">Download</a>
       </td>
     </tr>
   </table>
@@ -13,7 +13,7 @@
   <table style="padding:  0  10px  0 40px;">
     <tr>
       <td>
-        <a  class="sidebar-version-date">Version: 3.0.0, September, 2022</a>
+        <a  class="sidebar-version-date">Version: 3.0.0, February, 2023</a>
       </td>
     </tr>
   </table>
