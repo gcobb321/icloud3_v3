@@ -34,7 +34,8 @@ from .const             import (DOMAIN,
                                 CONF_PICTURE, CONF_DEVICE_TYPE, CONF_INZONE_INTERVALS,
                                 CONF_RAW_MODEL, CONF_MODEL, CONF_MODEL_DISPLAY_NAME, CONF_FAMSHR_DEVICE_ID,
                                 CONF_EVLOG_DISPLAY_ORDER,
-                                CONF_UNIT_OF_MEASUREMENT, CONF_TIME_FORMAT, CONF_MAX_INTERVAL, CONF_OFFLINE_INTERVAL,
+                                CONF_UNIT_OF_MEASUREMENT, CONF_TIME_FORMAT,
+                                CONF_MAX_INTERVAL, CONF_OFFLINE_INTERVAL, CONF_EXIT_ZONE_INTERVAL, CONF_IOSAPP_ALIVE_INTERVAL,
                                 CONF_GPS_ACCURACY_THRESHOLD, CONF_OLD_LOCATION_THRESHOLD, CONF_OLD_LOCATION_ADJUSTMENT,
                                 CONF_TRAVEL_TIME_FACTOR, CONF_TFZ_TRACKING_MAX_DISTANCE,
                                 CONF_PASSTHRU_ZONE_TIME, CONF_LOG_LEVEL,
@@ -103,17 +104,17 @@ def dict_value_to_list(key_value_dict):
 MENU_KEY_TEXT = {
         'icloud_account': 'ICLOUD ACCOUNT LOGIN CREDENTIALS  > Location Data Source, iCloud Account Username/Password',
         'device_list': 'ICLOUD3 DEVICES > Add, Change and Delete tracked and monitored devices',
-        'event_log_configuration': 'EVENT LOG CONFIGURATION > Zones Name display format, Unit of Measure, Time display format, Event Log Custom Card Directory, Change Device Order',
+        'format_settings': 'FORMAT SETTINGS > Select the display format for Zones, DeviceTracker State, Unit of Measure, Time & Distance, Change Device Order',
         'display_text_as': 'DISPLAY TEXT AS > Event Log Custom Card Text Replacement',
-        'other_parms': 'OTHER PARAMETERS > Debug Log Levels, Accuracy Thresholds, Maximum Interval, Device Offline Interval, Travel Time Interval Multiplier',
+        'other_parms': 'OTHER PARAMETERS > Select tracking calculation values - Accuracy Thresholds, Maximum Interval, Device Offline Interval, Travel Time Interval Multiplier, Event Log Custom Card Directory, etc.',
         'inzone_intervals': 'INZONE INTERVALS > Default inZone intervals for different device types, inZone Interval if the iOS App is not installed, Other inZone Controls ',
         'waze': 'WAZE ROUTE DISTANCE & TIME, WAZE HISTORY DATABASE > Route Server Location, Min/Max Intervals, Waze History Database Parameters and Controls',
-        'special_zones': 'SPECIAL ZONES - Pass Through Zone, Track From Zone, Stationary Zone',
+        'special_zones': 'SPECIAL ZONES - Pass Through Zone, Stationary Zone, Track From Zone',
         'sensors': 'SENSORS > Sensors created by iCloud3, Exclude Specific Sensors from being created',
-        'next_page_0': 'NEXT PAGE 1 > ● Location Data Source & iCloud Account, ● iCloud3 Devices, ● Sensors, ● Display Text As, ● Action Commands',
-        'next_page_1': 'NEXT PAGE 2 > ● Event Log Configuration, ● Waze Route Time & Dist, ● inZone Intervals, ● Special Zones, ● Other Parameters',
+        'next_page_0': 'NEXT PAGE 1 > ● iCloud Account Login Credentials ● iCloud3 Devices ● Sensors ● Item Format Selection ● Action Commands',
+        'next_page_1': 'NEXT PAGE 2 > ● Display Text As ● Waze Route Dist & Time, Waze History ● inZone Intervals ● Special Zones ● Other Parameters',
         'select': 'SELECT > Select the parameter update form',
-        'actions': 'ACTION COMMANDS > ● Restart/Pause/Resume Polling, ● Debug Logging, ● Export Event Log, ● Waze Utilities',
+        'actions': 'ACTION COMMANDS > ● Restart/Pause/Resume Polling ● Debug Logging ● Export Event Log ● Waze Utilities',
 
         'exit': 'EXIT AND RESTART ICLOUD3'
 }
@@ -121,7 +122,7 @@ MENU_KEY_TEXT_PAGE_0 = [
     MENU_KEY_TEXT['icloud_account'],
     MENU_KEY_TEXT['device_list'],
     MENU_KEY_TEXT['sensors'],
-    MENU_KEY_TEXT['event_log_configuration'],
+    MENU_KEY_TEXT['format_settings'],
     MENU_KEY_TEXT['actions'],
     ]
 MENU_KEY_TEXT_PAGE_1 = [
@@ -176,6 +177,14 @@ OPT_ACTION_ITEMS_KEY_TEXT = {
         "divider2": "═══════════════════════════════════════",
         "divider3": "═══════════════════════════════════════"
         }
+NEW_LINE = f"{'_'*100} "
+WAZE_USED_HEADER = f"{NEW_LINE}The Waze Route Service provides the travel time and distance information from your current location to the Home or another tracked from zone. This information is used to determine when the next location request should be made"
+WAZE_HISTORY_USED_HEADER = f"{NEW_LINE}The Waze History Data base stores 'close to zone' travel time and distance information for a GPS location (100m radius). It reduces the number of internet requests to the Waze Servers after it has been in use for a while and speed up response time when in a poor cell area"
+PASSTHRU_ZONE_HEADER = f"{NEW_LINE}You may be driving through a non-tracked zone but not stopping at tne zone. The iOS App issues a Enter Zone trigger when the device enters the zone and changes the device_tracker entity state to the Zone. iCloud3 does not process the Enter Zone trigger until the delay time has passed. This prevents processing a Zone Enter trigger that is immediately followed by a Zone Exit trigger and from cycling the iCloud3 device_tracker and zone sensors from Away (not_home) to the Zone and then back to Away)"
+STAT_ZONE_HEADER = f"{NEW_LINE}A Stationary Zone is automatically created if the device remains in the same location (store, friends house, doctor`s office, etc.) for an extended period of time"
+STAT_ZONE_BASE_HEADER = f"{NEW_LINE}The Stationary Zone is moved to it's 'Base Location' when it is not used by the device. This prevents the iOS App from moving the device into the Stationary Zone when it shouldn`t and helps prevent it from overlapping other zones"
+TRK_FROM_HOME_ZONE_HEADER = f"{NEW_LINE}Normally, the Home zone is used as the base location for all tracking (travel time, distance, etc).  However, a different zone can be used as the base location if you are away from Home for an extended period or the device is normally at another location (vacation house, second home, parent's house, etc.). This is a global setting that overrides the Base Zone assigned to an individual Device."
+
 OPT_ACTION_ITEMS_KEY_BY_TEXT = {text: key for key, text in OPT_ACTION_ITEMS_KEY_TEXT.items()}
 
 OPT_ACTION_BASE = [
@@ -184,7 +193,7 @@ OPT_ACTION_BASE = [
 
 OPT_LIST_KEY_TEXT_NONE      = {'None': 'None'}
 OPT_PICTURE_TEXT            = ['None']
-UNKNOWN_DEVICE_TEXT         = '  >=== UNKNOWN DEVICE ==='
+UNKNOWN_DEVICE_TEXT         = '  >>>>> VALUE NOT IN LIST, NEEDS REVIEW <<<<<'
 
 ICLOUD_ACCOUNT_ACTIONS = [
         OPT_ACTION_ITEMS_KEY_TEXT['log_in_icloud_acct'],
@@ -242,15 +251,17 @@ TIME_FORMAT_ITEMS_KEY_TEXT = {
         }
 DISPLAY_ZONE_FORMAT_ITEMS_KEY_TEXT = {}
 DISPLAY_ZONE_FORMAT_ITEMS_KEY_TEXT_BASE = {
+        'fname': 'HA Zone Friendly Name used by zone automation triggers (TheShores)',
         'zone': 'HA Zone entity_id (the_shores)',
-        'fname': 'HA Zone Friendly Name from the HA Zones Config screen (The Shores)',
         'name': 'iCloud3 reformated Zone entity_id (zone.the_shores → TheShores)',
         'title': 'iCloud3 reformated Zone entity_id (zone.the_shores → The Shores)'
         }
 DEVICE_TRACKER_STATE_FORMAT_KEY_TEXT = {}
 DEVICE_TRACKER_STATE_FORMAT_KEY_TEXT_BASE = {
+        'fname': 'HA Zone Friendly Name used by zone automation triggers (TheShores)',
         'zone': 'HA Zone entity_id (the_shores)',
-        'fname': 'Formatted Zone name - ZONE NAME FORMAT parameter above (The Shores)'
+        'name': 'iCloud3 reformated Zone entity_id (zone.the_shores → TheShores)',
+        'title': 'iCloud3 reformated Zone entity_id (zone.the_shores → The Shores)'
 }
 RESTART_NOW_LATER_ITEMS_KEY_TEXT = {
         'ha': 'RESTART HOME ASSISTANT - Restart HA & iCloud3 now to load the updated configuration',
@@ -636,8 +647,8 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 return await self.async_step_icloud_account()
             elif menu_item == 'device_list':
                 return await self.async_step_device_list()
-            elif menu_item == 'event_log_configuration':
-                return await self.async_step_event_log_configuration()
+            elif menu_item == 'format_settings':
+                return await self.async_step_format_settings()
             elif menu_item == 'display_text_as':
                 return await self.async_step_display_text_as()
             elif menu_item == 'other_parms':
@@ -730,8 +741,8 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 pass
             elif self.step_id == 'device_list':
                 user_input = self._get_conf_device_selected(user_input)
-            elif self.step_id == 'event_log_configuration':
-                user_input = self._validate_evlog_configuration(user_input)
+            elif self.step_id == 'format_settings':
+                user_input = self._validate_format_settings(user_input)
             elif self.step_id == "display_text_as":
                 pass
             elif self.step_id == 'other_parms':
@@ -757,16 +768,16 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         return False
 
 #-------------------------------------------------------------------------------------------
-    async def async_step_event_log_configuration(self, user_input=None, errors=None):
-        self.step_id = 'event_log_configuration'
+    async def async_step_format_settings(self, user_input=None, errors=None):
+        self.step_id = 'format_settings'
         user_input, action_item = self._action_text_to_item(user_input)
 
-        self.opt_www_directory_list = []
-        path_filters = ['/.', 'deleted', '/x-']
-        for path, dirs, files in os.walk(Gb.hass.config.path('www')):
-            if instr(path, path_filters) or path.count('/') > 4:
-                continue
-            self.opt_www_directory_list.append(path.replace('/config/', ''))
+        # self.opt_www_directory_list = []
+        # path_filters = ['/.', 'deleted', '/x-']
+        # for path, dirs, files in os.walk(Gb.hass.config.path('www')):
+        #     if instr(path, path_filters) or path.count('/') > 4:
+        #         continue
+        #     self.opt_www_directory_list.append(path.replace('/config/', ''))
 
         if action_item == 'change_device_order':
             self.cdo_devicenames = [self._format_device_info(conf_device)
@@ -819,8 +830,8 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 action_item = 'cancel'
 
             if action_item == 'cancel':
-                if self.called_from_step_id == 'event_log_configuration':
-                    return await self.async_step_event_log_configuration(errors=self.errors)
+                if self.called_from_step_id == 'format_settings':
+                    return await self.async_step_format_settings(errors=self.errors)
                 else:
                     return await self.async_step_device_list(errors=self.errors)
 
@@ -850,10 +861,10 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 #-------------------------------------------------------------------------------------------
     def _set_example_zone_name(self):
         '''
-        'zone': 'HA Zone entity_id value (`the_shores`)',
-        'fname': 'HA Zone Friendly Name from the HA Zones Config Screen (`The Shores`)',
-        'name': 'iCloud3 reformated Zone entity_id (`the_shores` → `TheShores`)',
-        'title': 'iCloud3 reformated Zone entity_id (`the_shores` → `The Shores`)'
+        'fname': 'HA Zone Friendly Name used by zone automation triggers (TheShores)',
+        'zone': 'HA Zone entity_id (the_shores)',
+        'name': 'iCloud3 reformated Zone entity_id (zone.the_shores → TheShores)',
+        'title': 'iCloud3 reformated Zone entity_id (zone.the_shores → The Shores)'
         '''
         DISPLAY_ZONE_FORMAT_ITEMS_KEY_TEXT.update(DISPLAY_ZONE_FORMAT_ITEMS_KEY_TEXT_BASE)
         DEVICE_TRACKER_STATE_FORMAT_KEY_TEXT.update(DEVICE_TRACKER_STATE_FORMAT_KEY_TEXT_BASE)
@@ -867,24 +878,28 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             exZone = Zone[0]
             self._dzf_set_example_zone_name_text(ZONE, 'the_shores', exZone.zone)
             self._dzf_set_example_zone_name_text(FNAME, 'The Shores', exZone.fname)
+            self._dzf_set_example_zone_name_text(FNAME, 'TheShores', exZone.fname)
             self._dzf_set_example_zone_name_text(NAME, 'the_shores', exZone.zone)
             self._dzf_set_example_zone_name_text(NAME, 'TheShores', exZone.name)
             self._dzf_set_example_zone_name_text(TITLE, 'the_shores', exZone.zone)
             self._dzf_set_example_zone_name_text(TITLE, 'The Shores', exZone.title)
 
-            stf_fname = Gb.conf_general[CONF_DISPLAY_ZONE_FORMAT]
-            if stf_fname == FNAME:   stf_fname = exZone.fname
-            elif stf_fname == NAME:  stf_fname = exZone.name
-            elif stf_fname == TITLE: stf_fname = exZone.title
-            else: stf_fname = exZone.zone
-            self._dtf_set_example_zone_name_text(ZONE, 'the_shores', exZone.zone)
-            self._dtf_set_example_zone_name_text(FNAME, 'The Shores', stf_fname)
+            # stf_fname = Gb.conf_general[CONF_DISPLAY_ZONE_FORMAT]
+            # if stf_fname == FNAME:   stf_fname = exZone.fname
+            # elif stf_fname == NAME:  stf_fname = exZone.name
+            # elif stf_fname == TITLE: stf_fname = exZone.title
+            # else: stf_fname = exZone.zone
+            # self._dtf_set_example_zone_name_text(ZONE, 'the_shores', exZone.zone)
+            # self._dtf_set_example_zone_name_text(FNAME, 'The Shores', stf_fname)
+            # self._dtf_set_example_zone_name_text(FNAME, 'TheShores', stf_fname)
 
     def _dzf_set_example_zone_name_text(self, key, example_text, real_text):
+        if key in DISPLAY_ZONE_FORMAT_ITEMS_KEY_TEXT:
             DISPLAY_ZONE_FORMAT_ITEMS_KEY_TEXT[key] = \
                 DISPLAY_ZONE_FORMAT_ITEMS_KEY_TEXT[key].replace(example_text, real_text)
 
-    def _dtf_set_example_zone_name_text(self, key, example_text, real_text):
+    # def _dtf_set_example_zone_name_text(self, key, example_text, real_text):
+        if key in DEVICE_TRACKER_STATE_FORMAT_KEY_TEXT:
             DEVICE_TRACKER_STATE_FORMAT_KEY_TEXT[key] = \
                 DEVICE_TRACKER_STATE_FORMAT_KEY_TEXT[key].replace(example_text, real_text)
 
@@ -892,6 +907,13 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
     async def async_step_other_parms(self, user_input=None, errors=None):
         self.step_id = 'other_parms'
         user_input, action_item = self._action_text_to_item(user_input)
+
+        self.opt_www_directory_list = []
+        path_filters = ['/.', 'deleted', '/x-']
+        for path, dirs, files in os.walk(Gb.hass.config.path('www')):
+            if instr(path, path_filters) or path.count('/') > 4:
+                continue
+            self.opt_www_directory_list.append(path.replace('/config/', ''))
 
         if self.common_form_handler(user_input, action_item, errors):
             return await self.async_step_menu()
@@ -1264,7 +1286,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         return
 
 #-------------------------------------------------------------------------------------------
-    def _validate_evlog_configuration(self, user_input):
+    def _validate_format_settings(self, user_input):
         '''
         The display_zone_format may contain '(Example: ...). If so, strip it off.
         '''
@@ -1274,6 +1296,10 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         user_input = self._option_text_to_parm(user_input, CONF_TIME_FORMAT, TIME_FORMAT_ITEMS_KEY_TEXT)
         user_input = self._option_text_to_parm(user_input, CONF_LOG_LEVEL, LOG_LEVEL_ITEMS_KEY_TEXT)
         user_input = self._strip_special_text_from_user_input(user_input)
+
+        if (Gb.display_zone_format != user_input[CONF_DISPLAY_ZONE_FORMAT]
+                or Gb.device_tracker_state_format != user_input[CONF_DEVICE_TRACKER_STATE_FORMAT]):
+            self.config_flow_updated_parms.update(['zone_formats'])
 
         return user_input
 
@@ -1329,6 +1355,8 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         user_input = self._option_text_to_parm(user_input, CONF_WAZE_HISTORY_TRACK_DIRECTION, WAZE_HISTORY_TRACK_DIRECTION_ITEMS_KEY_TEXT)
         user_input = self._validate_numeric_field(user_input)
 
+        user_input[CONF_WAZE_USED] = False if user_input[CONF_WAZE_USED] == [] else True
+        user_input[CONF_WAZE_HISTORY_DATABASE_USED] = False if user_input[CONF_WAZE_HISTORY_DATABASE_USED] == [] else True
         # If Waze Used changes, also change the History DB used
         if user_input[CONF_WAZE_USED] != Gb.conf_general[CONF_WAZE_USED]:
             user_input[CONF_WAZE_HISTORY_DATABASE_USED] = user_input[CONF_WAZE_USED]
@@ -1355,11 +1383,11 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 
         user_input = self._validate_numeric_field(user_input)
         user_input = self._option_text_to_parm(user_input, CONF_TRACK_FROM_BASE_ZONE, self.opt_zone_name_key_text)
-        _traceha(f"{user_input=}")
+
         if 'passthru_zone_header' in user_input:
-            if user_input['passthru_zone_header'] is False:
+            if user_input['passthru_zone_header'] == []:
                 user_input[CONF_PASSTHRU_ZONE_TIME] = 0
-            elif (user_input['passthru_zone_header'] is True
+            elif (user_input['passthru_zone_header'] != []
                     and user_input[CONF_PASSTHRU_ZONE_TIME] == 0):
                 user_input[CONF_PASSTHRU_ZONE_TIME] = DEFAULT_GENERAL_CONF[CONF_PASSTHRU_ZONE_TIME]
 
@@ -1370,9 +1398,9 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 user_input[CONF_TRACK_FROM_HOME_ZONE] = True
 
         if 'stat_zone_header' in user_input:
-            if user_input['stat_zone_header'] is False:
+            if user_input['stat_zone_header'] == []:
                 user_input[CONF_STAT_ZONE_STILL_TIME] = 0
-            elif (user_input['stat_zone_header'] is True
+            elif (user_input['stat_zone_header'] != []
                     and user_input[CONF_STAT_ZONE_STILL_TIME] == 0):
                 user_input[CONF_STAT_ZONE_STILL_TIME] = DEFAULT_GENERAL_CONF[CONF_STAT_ZONE_STILL_TIME]
 
@@ -1724,6 +1752,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             if (Gb.conf_tracking[CONF_USERNAME] == ''
                     or Gb.conf_tracking[CONF_PASSWORD] == ''):
                 self.menu_msg = 'icloud_acct_not_set_up'
+                return await self.async_step_icloud_account()
 
             elif (self.PyiCloud is None
                     and Gb.conf_tracking[CONF_USERNAME]
@@ -3022,7 +3051,11 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             else:
                 pvalue_key = Gb.conf_general[pname]
 
-            return option_list_key_text[pvalue_key]
+            if type(pvalue_key) is str:
+                return option_list_key_text[pvalue_key]
+
+            elif type(pvalue_key) is list:
+                return [option_list_key_text[pvalue_key_item] for pvalue_key_item in pvalue_key]
 
         except Exception as err:
             # If the parameter value is already the key to the items dict, it is ok.
@@ -3427,9 +3460,14 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 vol.Optional(CONF_STAT_ZONE_FNAME,
                             default=self._parm_or_device(CONF_STAT_ZONE_FNAME)):
                             selector.TextSelector(),
+
                 vol.Required(CONF_TRACK_FROM_ZONES,
                             default=self._parm_or_device(CONF_TRACK_FROM_ZONES)):
                             cv.multi_select(self.opt_zone_name_key_text),
+                            # default=self._option_parm_to_text(CONF_TRACK_FROM_ZONES, self.opt_zone_name_key_text, conf_device=True)):
+                            # selector.SelectSelector(selector.SelectSelectorConfig(
+                            #     options=dict_value_to_list(self.opt_zone_name_key_text), multiple=True, mode='dropdown')),
+
                 vol.Required(CONF_INZONE_INTERVAL,
                             default=self._parm_or_device(CONF_INZONE_INTERVAL, CONF_DEVICES)):
                             selector.NumberSelector(selector.NumberSelectorConfig(
@@ -3482,9 +3520,9 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                                 options=self.opt_actions, mode='list')),
                 })
         #------------------------------------------------------------------------
-        elif step_id == 'event_log_configuration':
-            self.opt_actions = [OPT_ACTION_ITEMS_KEY_TEXT['change_device_order']]
-            self.opt_actions.extend(OPT_ACTION_BASE)
+        elif step_id == 'format_settings':
+            # self.opt_actions = [OPT_ACTION_ITEMS_KEY_TEXT['change_device_order']]
+            # self.opt_actions.extend(OPT_ACTION_BASE)
 
             self._set_example_zone_name()
             schema = vol.Schema({
@@ -3508,10 +3546,10 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                             default=self._option_parm_to_text(CONF_TIME_FORMAT, TIME_FORMAT_ITEMS_KEY_TEXT)):
                             selector.SelectSelector(selector.SelectSelectorConfig(
                                 options=dict_value_to_list(TIME_FORMAT_ITEMS_KEY_TEXT), mode='dropdown')),
-                vol.Required(CONF_EVLOG_CARD_DIRECTORY,
-                            default=self._parm_or_error_msg(CONF_EVLOG_CARD_DIRECTORY, conf_group=CF_PROFILE)):
-                            selector.SelectSelector(selector.SelectSelectorConfig(
-                                options=dict_value_to_list(self.opt_www_directory_list), mode='dropdown')),
+                # vol.Required(CONF_EVLOG_CARD_DIRECTORY,
+                #             default=self._parm_or_error_msg(CONF_EVLOG_CARD_DIRECTORY, conf_group=CF_PROFILE)):
+                #             selector.SelectSelector(selector.SelectSelectorConfig(
+                #                 options=dict_value_to_list(self.opt_www_directory_list), mode='dropdown')),
                 vol.Required('opt_action',
                             default=self._action_default_text('save')):
                             selector.SelectSelector(selector.SelectSelectorConfig(
@@ -3596,6 +3634,9 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 
         #------------------------------------------------------------------------
         elif step_id == 'other_parms':
+            self.opt_actions = [OPT_ACTION_ITEMS_KEY_TEXT['change_device_order']]
+            self.opt_actions.extend(OPT_ACTION_BASE)
+
             schema = vol.Schema({
                 vol.Required(CONF_LOG_LEVEL,
                             default=self._option_parm_to_text(CONF_LOG_LEVEL, LOG_LEVEL_ITEMS_KEY_TEXT)):
@@ -3604,7 +3645,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 vol.Required(CONF_GPS_ACCURACY_THRESHOLD,
                             default=Gb.conf_general[CONF_GPS_ACCURACY_THRESHOLD]):
                             selector.NumberSelector(selector.NumberSelectorConfig(
-                                min=1, max=100, unit_of_measurement='m')),
+                                min=5, max=500, step=5, unit_of_measurement='m')),
                 vol.Required(CONF_OLD_LOCATION_THRESHOLD,
                             default=Gb.conf_general[CONF_OLD_LOCATION_THRESHOLD]):
                             selector.NumberSelector(selector.NumberSelectorConfig(
@@ -3619,7 +3660,15 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 vol.Required(CONF_MAX_INTERVAL,
                             default=Gb.conf_general[CONF_MAX_INTERVAL]):
                             selector.NumberSelector(selector.NumberSelectorConfig(
-                                min=1, max=240, step=1, unit_of_measurement='minutes')),
+                                min=15, max=240, step=1, unit_of_measurement='minutes')),
+                vol.Required(CONF_EXIT_ZONE_INTERVAL,
+                            default=Gb.conf_general[CONF_EXIT_ZONE_INTERVAL]):
+                            selector.NumberSelector(selector.NumberSelectorConfig(
+                                min=.5, max=10, step=.5, unit_of_measurement='minutes')),
+                vol.Required(CONF_IOSAPP_ALIVE_INTERVAL,
+                            default=Gb.conf_general[CONF_IOSAPP_ALIVE_INTERVAL]):
+                            selector.NumberSelector(selector.NumberSelectorConfig(
+                                min=15, max=240, step=15, unit_of_measurement='minutes')),
                 vol.Required(CONF_TFZ_TRACKING_MAX_DISTANCE,
                             default=Gb.conf_general[CONF_TFZ_TRACKING_MAX_DISTANCE]):
                             selector.NumberSelector(selector.NumberSelectorConfig(
@@ -3632,6 +3681,11 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                             default=self._parm_or_error_msg(CONF_TRAVEL_TIME_FACTOR)):
                             selector.NumberSelector(selector.NumberSelectorConfig(
                                 min=.1, step=.1, max = 1)),
+                vol.Required(CONF_EVLOG_CARD_DIRECTORY,
+                            default=self._parm_or_error_msg(CONF_EVLOG_CARD_DIRECTORY, conf_group=CF_PROFILE)):
+                            selector.SelectSelector(selector.SelectSelectorConfig(
+                                options=dict_value_to_list(self.opt_www_directory_list), mode='dropdown')),
+
                 vol.Required('opt_action',
                             default=self._action_default_text('save')):
                             selector.SelectSelector(selector.SelectSelectorConfig(
@@ -3685,10 +3739,14 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         elif step_id == 'waze_main':
             self.opt_actions = OPT_ACTION_BASE.copy()
 
+            wuh_default  = [WAZE_USED_HEADER] if Gb.conf_general[CONF_WAZE_USED] else []
+            whuh_default = [WAZE_HISTORY_USED_HEADER] if Gb.conf_general[CONF_WAZE_HISTORY_DATABASE_USED] else []
             schema = vol.Schema({
                 vol.Optional(CONF_WAZE_USED,
-                            default=Gb.conf_general[CONF_WAZE_USED]):
-                            selector.BooleanSelector(),
+                            # default=Gb.conf_general[CONF_WAZE_USED]):
+                            # selector.BooleanSelector(),
+                            default=wuh_default):
+                            cv.multi_select([WAZE_USED_HEADER]),
                 vol.Optional(CONF_WAZE_SERVER,
                             default=self._option_parm_to_text(CONF_WAZE_SERVER, WAZE_SERVER_ITEMS_KEY_TEXT)):
                             selector.SelectSelector(selector.SelectSelectorConfig(
@@ -3706,8 +3764,10 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                             selector.BooleanSelector(),
 
                 vol.Required(CONF_WAZE_HISTORY_DATABASE_USED,
-                            default=Gb.conf_general[CONF_WAZE_HISTORY_DATABASE_USED]):
-                            selector.BooleanSelector(),
+                            # default=Gb.conf_general[CONF_WAZE_HISTORY_DATABASE_USED]):
+                            # selector.BooleanSelector(),
+                            default=whuh_default):
+                            cv.multi_select([WAZE_HISTORY_USED_HEADER]),
                 vol.Required(CONF_WAZE_HISTORY_MAX_DISTANCE,
                             default=Gb.conf_general[CONF_WAZE_HISTORY_MAX_DISTANCE]):
                             selector.NumberSelector(selector.NumberSelectorConfig(
@@ -3728,22 +3788,27 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         elif step_id == 'special_zones':
             if self.opt_zone_name_key_text == {}:
                 self._build_opt_zone_list()
-            stat_zone_used       = (Gb.conf_general[CONF_STAT_ZONE_STILL_TIME] != 0)
-            pass_thru_zone_used  = (Gb.conf_general[CONF_PASSTHRU_ZONE_TIME] != 0)
+            stat_zone_used       = (Gb.conf_general[CONF_STAT_ZONE_STILL_TIME] > 0)
+            pass_thru_zone_used  = (Gb.conf_general[CONF_PASSTHRU_ZONE_TIME] > 0)
             track_from_zone_home = (Gb.conf_general[CONF_TRACK_FROM_BASE_ZONE] == HOME)
+
+            ptzh_default = [PASSTHRU_ZONE_HEADER] if pass_thru_zone_used else []
+            szh_default  = [STAT_ZONE_HEADER] if stat_zone_used else []
+            sbzh_default = [STAT_ZONE_BASE_HEADER] if stat_zone_used else []
+            tfzh_default = [TRK_FROM_HOME_ZONE_HEADER] if track_from_zone_home else []
 
             schema = vol.Schema({
                 vol.Optional('passthru_zone_header',
-                            default=pass_thru_zone_used):
-                            selector.BooleanSelector(),
+                            default=ptzh_default):
+                            cv.multi_select([PASSTHRU_ZONE_HEADER]),
                 vol.Required(CONF_PASSTHRU_ZONE_TIME,
                             default=Gb.conf_general[CONF_PASSTHRU_ZONE_TIME]):
                             selector.NumberSelector(selector.NumberSelectorConfig(
-                                min=0, max=10, unit_of_measurement='minutes')),
+                                min=0, max=5, step=.5, unit_of_measurement='minutes')),
 
-                vol.Optional('stat_zone_header',
-                            default=stat_zone_used):
-                            selector.BooleanSelector(),
+                vol.Required('stat_zone_header',
+                            default=szh_default):
+                            cv.multi_select([STAT_ZONE_HEADER]),
                 vol.Required(CONF_STAT_ZONE_FNAME,
                             default=self._parm_or_error_msg(CONF_STAT_ZONE_FNAME)):
                             selector.TextSelector(),
@@ -3755,9 +3820,10 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                             default=Gb.conf_general[CONF_STAT_ZONE_INZONE_INTERVAL]):
                             selector.NumberSelector(selector.NumberSelectorConfig(
                                 min=5, max=60, unit_of_measurement='minutes')),
+
                 vol.Optional('base_offset_header',
-                            default=stat_zone_used):
-                            selector.BooleanSelector(),
+                            default=sbzh_default):
+                            cv.multi_select([STAT_ZONE_BASE_HEADER]),
                 vol.Required(CONF_STAT_ZONE_BASE_LATITUDE,
                             default=Gb.conf_general[CONF_STAT_ZONE_BASE_LATITUDE]):
                             selector.NumberSelector(selector.NumberSelectorConfig(min=-90, max=90)),
@@ -3766,8 +3832,8 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                             selector.NumberSelector(selector.NumberSelectorConfig(min=-180, max=180)),
 
                 vol.Optional('track_from_zone_header',
-                            default=track_from_zone_home):
-                            selector.BooleanSelector(),
+                            default=tfzh_default):
+                            cv.multi_select([TRK_FROM_HOME_ZONE_HEADER]),
                 vol.Required(CONF_TRACK_FROM_BASE_ZONE,
                             default=self._option_parm_to_text(CONF_TRACK_FROM_BASE_ZONE, self.opt_zone_name_key_text)):
                             selector.SelectSelector(selector.SelectSelectorConfig(

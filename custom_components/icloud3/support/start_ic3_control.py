@@ -50,6 +50,7 @@ def stage_1_setup_variables():
             start_ic3.reinitialize_config_parameters()
             start_ic3.initialize_global_variables()
             start_ic3.set_global_variables_from_conf_parameters()
+            start_ic3.set_zone_display_as()
 
         start_ic3.define_tracking_control_fields()
 
@@ -179,6 +180,9 @@ def stage_4_setup_tracking_methods(retry=False):
         if Gb.data_source_use_icloud:
             post_event(f"iCloud Account Used > {obscure_field(Gb.username)}")
 
+            if Gb.PyiCloud is None and Gb.PyiCloudInit is None:
+                pyicloud_ic3_interface.create_PyiCloudService(Gb.PyiCloudInit, called_from='stage4')
+
             pyicloud_ic3_interface.verify_pyicloud_setup_status()
 
             if Gb.PyiCloud:
@@ -299,13 +303,11 @@ def stage_7_initial_locate():
     If there are devices that use FmF and not FamShr, the FamF data will be requested
     and those devices will be updated.
     '''
-
     Gb.trace_prefix = 'INITLOC > '
     post_event("Requesting Initial Locate")
     event_msg =(f"{EVLOG_IC3_STARTING}Initializing iCloud3 v{Gb.version} > Complete")
     post_event(event_msg)
 
-    evlog_results_displayed = False
     for Device in Gb.Devices:
         if Device.PyiCloud_RawData_famshr:
             Device.update_dev_loc_data_from_raw_data_FAMSHR_FMF(Device.PyiCloud_RawData_famshr)

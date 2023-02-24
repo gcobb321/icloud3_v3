@@ -44,12 +44,11 @@ def instr(string, substring):
     '''
     Fine a substring or a list of substrings strings in a string
     '''
-    if substring is None:
+    if string is None or substring is None:
         return False
 
     if type(substring) is str:
         substring = [substring]
-        # return (str(string).find(substring) >= 0)
 
     for substring_str in substring:
         if str(string).find(substring_str) >= 0:
@@ -82,7 +81,7 @@ def inlist(string, list_items):
 #--------------------------------------------------------------------
 def round_to_zero(value):
     if abs(value) < .001: value = 0
-    return round(value, 2)
+    return round(value, 8)
 
 #--------------------------------------------------------------------
 def is_inzone_zone(zone):

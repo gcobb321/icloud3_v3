@@ -19,11 +19,12 @@ from .global_variables  import GlobalVariables as Gb
 from .const             import (DOMAIN, VERSION,
                                 SENSOR_EVENT_LOG_NAME,
                                 SENSOR_WAZEHIST_TRACK_NAME,
-                                HOME,  NOT_SET, NOT_SET_FNAME,
+                                HOME, NOT_SET, NOT_SET_FNAME, NONE_FNAME,
                                 DATETIME_ZERO, HHMMSS_ZERO,
                                 BLANK_SENSOR_FIELD, DOT, UM_FNAME,
                                 TRACK_DEVICE, MONITOR_DEVICE, INACTIVE_DEVICE,
                                 DISTANCE_TO_OTHER_DEVICES,
+                                DIR_OF_TRAVEL,ICON_DIR_OF_TRAVEL, TOWARDS, AWAY_FROM, INZONE,
                                 NAME, FNAME, BADGE,
                                 ZONE, ZONE_INFO,
                                 BATTERY, BATTERY_STATUS, BATTERY_SOURCE,
@@ -31,13 +32,14 @@ from .const             import (DOMAIN, VERSION,
                                 DISTANCE_TO_OTHER_DEVICES_DATETIME,
                                 CONF_TRACK_FROM_ZONES,
                                 CONF_IC3_DEVICENAME, CONF_MODEL, CONF_RAW_MODEL, CONF_FNAME,
+                                CONF_FAMSHR_DEVICENAME, CONF_IOSAPP_DEVICE,
                                 CONF_TRACKING_MODE,
                                 )
 from .const_sensor      import (SENSOR_DEFINITION, SENSOR_GROUPS,
                                 SENSOR_FNAME, SENSOR_TYPE, SENSOR_ICON,
                                 SENSOR_ATTRS, SENSOR_DEFAULT, SENSOR_LIST_DISTANCE, )
 
-from .helpers.common    import (instr,  )
+from .helpers.common    import (instr,  round_to_zero, )
 from .helpers.messaging import (log_info_msg, log_debug_msg, log_error_msg, log_exception,
                                 _trace, _traceha, )
 from .helpers.time_util import (time_to_12hrtime, time_remove_am_pm, secs_to_time_str, mins_to_time_str,
@@ -113,11 +115,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
         if NewSensors != []:
             async_add_entities(NewSensors, True)
 
-        if (Gb.device_trackers_cnt > 0
-                and Gb.sensors_cnt == Gb.sensors_created_cnt
-                and Gb.device_trackers_cnt == Gb.device_trackers_created_cnt):
-            Gb.hass.bus.async_fire('start_icloud3', {})
-
     except Exception as err:
         log_exception(err)
         log_msg = (f"►INTERNAL ERROR (UpdtSensorUpdate-{err})")
@@ -180,11 +177,13 @@ def _create_device_sensors(devicename, conf_device, sensors_list):
         if (sensor not in SENSOR_DEFINITION
                 or sensor.startswith('tfz_')):
             continue
+        if (instr(sensor, BATTERY)
+                and conf_device[CONF_FAMSHR_DEVICENAME] == NONE_FNAME
+                and conf_device[CONF_IOSAPP_DEVICE] == NONE_FNAME):
+            continue
 
         devicename_sensor = f"{devicename}_{sensor}"
-        # _traceha(f"{devicename_sensor=} {devicename_sensor in excluded_sensors_list=}")
         if devicename_sensor in excluded_sensors_list:
-            # Gb.sensors_created_cnt += 1
             log_debug_msg(f"Sensor entity excluded: sensor.{devicename_sensor}")
             continue
 
@@ -239,7 +238,6 @@ def _create_track_from_zone_sensors(devicename, conf_device, sensors_list):
             sensor_zone = f"{sensor}_{from_zone}"
             devicename_sensor_zone = f"{devicename}_{sensor}_{from_zone}"
 
-            # _traceha(f"{devicename_sensor_zone=} {devicename_sensor_zone in excluded_sensors_list=}")
             if devicename_sensor_zone in excluded_sensors_list:
                 # Gb.sensors_created_cnt += 1
                 log_debug_msg(f"Sensor entity excluded: sensor.{devicename_sensor_zone}")
@@ -463,6 +461,16 @@ class SensorBase(SensorEntity):
             icon          = icon_for_battery_level(battery_level, charging)
 
             return icon
+
+        elif self.Device and self.sensor_base == DIR_OF_TRAVEL:
+            if self.Device.sensors[DIR_OF_TRAVEL].startswith('ᗒ') or self.Device.sensors[DIR_OF_TRAVEL] == TOWARDS:
+                return ICON_DIR_OF_TRAVEL[TOWARDS]
+            elif self.Device.sensors[DIR_OF_TRAVEL].endswith('ᗒ') or self.Device.sensors[DIR_OF_TRAVEL] == AWAY_FROM:
+                return ICON_DIR_OF_TRAVEL[AWAY_FROM]
+            elif self.Device.sensors[DIR_OF_TRAVEL].startswith('@') or self.Device.sensors[DIR_OF_TRAVEL] == INZONE:
+                return ICON_DIR_OF_TRAVEL[INZONE]
+            else:
+                return self._get_sensor_definition(self.sensor, SENSOR_ICON)
         else:
             return self._get_sensor_definition(self.sensor, SENSOR_ICON)
 
@@ -613,8 +621,6 @@ class SensorBase(SensorEntity):
         except:
             sensor_value = self._get_sensor_definition(sensor, SENSOR_DEFAULT)
 
-        # if instr(sensor, 'battery'):
-        #     _traceha(f"RESTORESENSOR {self.devicename} {sensor} {sensor_value}")
         return sensor_value
 
 #-------------------------------------------------------------------------------------------
@@ -928,6 +934,7 @@ class Sensor_Timestamp(SensorBase):
         self._attr_native_unit_of_measurement = sensor_um
 
         try:
+            # Drop the 'a' or 'p' so the field will fit on an iPhone
             if int(sensor_value.split(':')[0]) >= 10:
                 sensor_value = time_remove_am_pm(sensor_value)
         except:
@@ -1010,6 +1017,7 @@ class Sensor_Distance(SensorBase):
 
         sensor_value, unit_of_measurement = self._get_sensor_value_um(self.sensor)
 
+
         if unit_of_measurement:
             self._attr_native_unit_of_measurement = unit_of_measurement
         elif sensor_type_um == 'm-ft':
@@ -1020,6 +1028,26 @@ class Sensor_Distance(SensorBase):
             self._attr_native_unit_of_measurement = 'm'
         else:
             self._attr_native_unit_of_measurement = Gb.um
+
+        if self._attr_native_unit_of_measurement == 'km':
+            if sensor_value >= 25:       #25km/15mi
+                sensor_value = f"{sensor_value:.0f}"
+            elif sensor_value >= 1:        #1000m/.6mi
+                sensor_value = f"{sensor_value:.1f}"
+            else:
+                sensor_value =  f"{sensor_value*1000:.0f}"
+                self._attr_native_unit_of_measurement = 'm'
+
+        elif self._attr_native_unit_of_measurement == 'mi':
+            if sensor_value > 20:
+                sensor_value = f"{sensor_value:.1f}"
+            elif sensor_value > 1:
+                sensor_value = f"{sensor_value:.2f}"
+            elif round_to_zero(sensor_value) == 0:
+                sensor_value = 0
+            else:
+                sensor_value = f"{sensor_value:.0f}"
+
 
         try:
             if sensor_value == int(sensor_value):
@@ -1045,8 +1073,6 @@ class Sensor_Battery(SensorBase):
     def native_value(self):
         self._attr_native_unit_of_measurement = '%'
         sensor_value =  self._get_sensor_value(self.sensor)
-        # if instr(self.sensor, 'battery'):
-        #     _traceha(f"NORMALSENSOR {self.devicename} {self.sensor} {sensor_value}")
         return sensor_value
 
     @property

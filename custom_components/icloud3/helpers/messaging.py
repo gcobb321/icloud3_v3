@@ -4,7 +4,7 @@ from ..global_variables import GlobalVariables as Gb
 from ..const            import (DOT, ICLOUD3_ERROR_MSG, EVLOG_DEBUG, EVLOG_ERROR, EVLOG_INIT_HDR, EVLOG_MONITOR,
                                 EVLOG_TIME_RECD, EVLOG_UPDATE_HDR, EVLOG_UPDATE_START, EVLOG_UPDATE_END,
                                 EVLOG_ALERT, EVLOG_WARNING, EVLOG_HIGHLIGHT, EVLOG_IC3_STARTING,EVLOG_IC3_STAGE_HDR,
-                                IC3LOGGER_FILENAME, EVLOG_TIME_RECD,
+                                DEBUG_LOG_FILENAME, EVLOG_TIME_RECD,
                                 CRLF, CRLF_DOT, NBSP, NBSP2, NBSP3, NBSP4, NBSP5, NBSP6,
                                 DATETIME_FORMAT, DATETIME_ZERO,
                                 NEXT_UPDATE_TIME, INTERVAL,
@@ -202,8 +202,8 @@ def open_ic3_debug_log_file(new_debug_log=False):
     else:
         filemode = 'a'
 
-    ic3_debug_log_filename = Gb.hass.config.path(IC3LOGGER_FILENAME)
-    Gb.iC3DebugLogFile = open(ic3_debug_log_filename, filemode, encoding='utf8')
+    debug_log_file = Gb.hass.config.path(DEBUG_LOG_FILENAME)
+    Gb.iC3DebugLogFile = open(debug_log_file, filemode, encoding='utf8')
     Gb.ic3_debug_log_file_last_write_secs = 0
     Gb.ic3_debug_log_update_flag = False
 
@@ -270,10 +270,24 @@ def write_ic3_debug_log_recd(recd, force_write=False):
     date_time_now = dt_util.now().strftime(DATETIME_FORMAT)[0:19]
     recd = _debug_recd_filter(recd)
 
-    Gb.iC3DebugLogFile.write(f"{date_time_now} {_called_from()} {recd}\n")
+    try:
+        Gb.iC3DebugLogFile.write(f"{date_time_now} {_called_from()} {recd}\n")
+    except: #I/O operation on closed file:
+        pass
 
     Gb.ic3_debug_log_file_last_write_secs = int(time.time())
     Gb.ic3_debug_log_update_flag = True
+
+#--------------------------------------------------------------------
+def archive_debug_log_file():
+        debug_log_file   = Gb.hass.config.path(DEBUG_LOG_FILENAME)
+        debug_log_file_1 = Gb.hass.config.path(DEBUG_LOG_FILENAME).replace('.log', '-1.log')
+
+        if os.path.isfile(debug_log_file_1):
+            os.remove(debug_log_file_1)
+
+        if os.path.isfile(debug_log_file):
+            os.rename(debug_log_file, debug_log_file_1)
 
 #--------------------------------------------------------------------
 def _debug_recd_filter(recd):
@@ -600,6 +614,7 @@ def _trace(devicename, log_text='+'):
 
     devicename, log_text = resolve_system_event_msg(devicename, log_text)
 
+    log_text = log_text.replace('<', '《').replace('>', '》')
     header_msg = _called_from()
     post_event(devicename, f"^3^{header_msg} {log_text}")
 
@@ -620,7 +635,6 @@ def _traceha(log_text, v1='+++', v2='', v3='', v4='', v5=''):
             trace_msg = (f"{Gb.trace_prefix} ::: TRACE ::: {log_text}, {log_msg}")
 
         Gb.HALogger.info(trace_msg)
-        # if Gb.iC3DebugLogFile:
         write_ic3_debug_log_recd(trace_msg, force_write=True)
 
     except Exception as err:

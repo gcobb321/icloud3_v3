@@ -22,7 +22,7 @@ class iCloud3EventLogCard extends HTMLElement {
     }
     //---------------------------------------------------------------------------
     setConfig(config) {
-        const version = "3.0.4"
+        const version = "3.0.5"
         const cardTitle = "iCloud3 Event Log v3"
 
         const root = this.shadowRoot
@@ -60,7 +60,9 @@ class iCloud3EventLogCard extends HTMLElement {
 
         const hdrCellWidth = document.createElement("div")
         hdrCellWidth.id = "hdrCellWidth"
-        hdrCellWidth.innerText = "0,66.7px,97.8px,94.4px,80px,70px,66.7px"
+        hdrCellWidth.innerText = "0,66.67Px,92.22px,90px,76.67px,65.56px,67.22px"
+        // hdrCellWidth.innerText = "0,60.410Px,79.8036px,78.25px,64.6339px,56.8661px,46.0357px"
+        // hdrCellWidth.innerText = "0,66.7px,97.8px,94.4px,80px,70px,66.7px"
 
         const aboutVersion = document.createElement("div")
         aboutVersion.id = "aboutVersion"
@@ -1263,7 +1265,7 @@ class iCloud3EventLogCard extends HTMLElement {
                 var tTrav = zoneDistTime[3]
                 var tDist = zoneDistTime[4]
 
-                var maxStatZoneLength = 12
+                var maxStatZoneLength = 9
                 if (iPhoneP) {
                     tText = tText.replace('/icloud3', '... .../icloud3')
                     maxStatZoneLength = 9

@@ -207,8 +207,9 @@ def update_service_handler(action_entry=None, action_fname=None, devicename=None
             Devices = [Device for Device in Gb.Devices_by_devicename_tracked.values()]
 
         if action == CMD_PAUSE:
-            Gb.all_tracking_paused_flag = (devicename is None)
-            Gb.EvLog.display_user_message('Tracking is Paused', alert=True)
+            if devicename is None:
+                Gb.all_tracking_paused_flag = True
+                Gb.EvLog.display_user_message('Tracking is Paused', alert=True)
             for Device in Devices:
                 Device.pause_tracking
 
@@ -290,9 +291,7 @@ def find_iphone_alert_service_handler(devicename):
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 def _handle_global_action(global_action, action_option):
 
-    # _traceha(f'{global_action=}'')
     if global_action == CMD_RESTART:
-        #preserve debug & rawdata across restarts
         Gb.log_debug_flag_restart     = Gb.log_debug_flag
         Gb.log_rawdata_flag_restart   = Gb.log_rawdata_flag
         Gb.start_icloud3_request_flag = True

@@ -30,8 +30,6 @@ def get_state(entity_id):
         else:
             state = Gb.state_to_zone.get(entity_state, entity_state.lower())
 
-        # if instr(entity_id,'battery'):
-        #     _traceha(f"{entity_id=} {state=}")
         if instr(entity_id, BATTERY_STATUS):
             state = BATTERY_STATUS_REFORMAT.get(state.lower(), state.lower())
         if instr(entity_id, BATTERY_LEVEL) and state == 'not_set':
@@ -53,7 +51,6 @@ def get_attributes(entity_id):
     try:
         entity_data  = Gb.hass.states.get(entity_id)
         entity_attrs = entity_data.attributes
-
         retry_cnt = 0
         while retry_cnt < 10:
             if entity_attrs:

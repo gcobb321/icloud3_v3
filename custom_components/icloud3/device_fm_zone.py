@@ -29,7 +29,7 @@ from .const             import (HOME, NOT_SET,
                                 LAST_UPDATE, LAST_UPDATE_TIME, LAST_UPDATE_DATETIME,
                                 NEXT_UPDATE, NEXT_UPDATE_TIME, NEXT_UPDATE_DATETIME,
                                 )
-from .helpers.dist_util import (km_to_mi, calc_distance_km, )
+from .helpers.dist_util import (km_to_mi, calc_distance_km, format_km_to_mi,)
 from .helpers.time_util import (datetime_to_12hrtime, )
 from .helpers.messaging import (log_exception, post_internal_error, _trace, _traceha, )
 
@@ -124,7 +124,7 @@ class iCloud3_DeviceFmZone():
 
     @property
     def zone_distance_str(self):
-        return ('' if self.zone_dist == 0 else (f"{km_to_mi(self.zone_dist)} {Gb.um}"))
+        return ('' if self.zone_dist == 0 else (f"{format_km_to_mi(self.zone_dist)}"))
 
     @property
     def distance_km(self):

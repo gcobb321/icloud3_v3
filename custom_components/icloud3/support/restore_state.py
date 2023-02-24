@@ -1,7 +1,9 @@
 
 
 from ..global_variables     import GlobalVariables as Gb
-from ..const                import (RESTORE_STATE_FILE, )
+from ..const                import (RESTORE_STATE_FILE,
+                                    DISTANCE_TO_OTHER_DEVICES, DISTANCE_TO_OTHER_DEVICES_DATETIME,
+                                    HHMMSS_ZERO, )
 
 from ..helpers.common       import (instr, )
 from ..helpers.messaging    import (log_info_msg, log_debug_msg, log_exception, _trace, _traceha, )
@@ -81,11 +83,15 @@ def read_storage_icloud3_restore_state_file():
             Gb.restore_state_file_data = json.load(f)
             Gb.restore_state_profile   = Gb.restore_state_file_data['profile']
             Gb.restore_state_devices   = Gb.restore_state_file_data['devices']
+
+            for devicename, devicename_data in Gb.restore_state_devices.items():
+                devicename_data['sensors'][DISTANCE_TO_OTHER_DEVICES] = {}
+                devicename_data['sensors'][DISTANCE_TO_OTHER_DEVICES_DATETIME] = HHMMSS_ZERO
         return True
 
     except Exception as err:
+        log_exception(err)
         return False
-        # log_exception(err)
 
     return False
 

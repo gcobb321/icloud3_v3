@@ -17,6 +17,8 @@ def km_to_mi(distance):
     convert km to miles
     """
     try:
+        return distance * Gb.um_km_mi_factor
+
         mi = distance * Gb.um_km_mi_factor
 
         if mi == 0:
@@ -61,6 +63,40 @@ def calc_distance_m(from_gps, to_gps):
 
     distance_m = distance(from_lat, from_long, to_lat, to_long)
     return round(round_to_zero(distance_m))
+
+#--------------------------------------------------------------------
+def format_km_to_mi(dist_km):
+    '''
+    Reformat the distance based on it's value
+
+    dist: Distance in kilometers
+    '''
+
+    if Gb.um == 'mi':
+        mi = dist_km * Gb.um_km_mi_factor
+
+        if mi > 20:
+            return f"{mi:.1f} mi"
+        if mi > 1:
+            return f"{mi:.2f} mi"
+        if round_to_zero(mi) == 0:
+            return f"0 mi"
+        return f"{mi:.0f} mi"
+
+    if dist_km >= 25:       #25km/15mi
+        return f"{dist_km:.0f} km"
+    if dist_km >= 1:        #1000m/.6mi
+        return f"{dist_km:.1f} km"
+
+    return f"{dist_km*1000:.0f} m"
+
+
+    # if dist_km >= 25:       #25km/15mi
+    #     return f"{dist_km:.0f}km"
+    # if dist_km >= 1:        #1000m/.6mi
+    #     return f"{dist_km:.1f}km"
+
+    # return f"{dist_km*1000:.0f}m"
 
 #--------------------------------------------------------------------
 def format_dist_km(dist_km):

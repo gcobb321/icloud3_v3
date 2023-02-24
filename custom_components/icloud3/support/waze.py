@@ -311,10 +311,10 @@ class Waze(object):
             while retry_cnt < 3:
                 try:
                     retry_msg = '' if retry_cnt == 0 else (f" (#{retry_cnt})")
-                    if route_from == ZONE:
-                        Device.display_info_msg( f"GetWazeInfoFrom-{DeviceFmZone.from_zone_display_as}{retry_msg}")
-                    elif route_from == 'moved':
-                        Device.display_info_msg( f"GetWazeMovedFrom-LastLocation{retry_msg}")
+                    # if route_from == ZONE:
+                    #     Device.display_info_msg( f"GetWazeInfoFrom-{DeviceFmZone.from_zone_display_as}{retry_msg}")
+                    # elif route_from == 'moved':
+                    #     Device.display_info_msg( f"GetWazeMovedFrom-LastLocation{retry_msg}")
                     waze_call_start_time = time_now_secs()
 
                     route_time, route_dist_km = \

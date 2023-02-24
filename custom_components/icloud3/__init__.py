@@ -109,6 +109,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
             hass.config_entries.async_update_entry(entry, unique_id=DOMAIN)
         hass_data = dict(entry.data)
 
+        # Store a reference to the unsubscribe function to cleanup if an entry is unloaded.
+        # unsub_options_update_listener = entry.add_update_listener(options_update_listener)
+        # hass_data["unsub_options_update_listener"] = unsub_options_update_listener
+        # hass.data[DOMAIN][entry.entry_id] = hass_data
 
         Gb.hass           = hass
         Gb.config_entry   = entry
@@ -128,8 +132,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
 
         start_ic3.set_icloud_username_password()
         restore_state.load_storage_icloud3_restore_state_file()
-        hass.config_entries.async_setup_platforms(entry, PLATFORMS)
-        # await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+
+        # Create device_tracker and sensor entities
+        await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+        # hass.config_entries.async_setup_platforms(entry, PLATFORMS)
 
         log_info_msg(f"Setting up iCloud3 {VERSION} - Using Integration method")
         #----- hass test - start
@@ -140,8 +146,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
         # conf_version goes from:
         #     -1 --> 0 (default version installed) --> (v2 migrated to v3)
         #      0 --> 1 (configurator/config_flow opened and configuration file was accessed/updated).
-        if (Gb.conf_profile[CONF_VERSION] == -1
-                and Gb.v2v3_config_migrated is False):
+        if (Gb.conf_profile[CONF_VERSION] == -1 and Gb.v2v3_config_migrated is False):
             config_file.load_icloud3_ha_config_yaml('')
             v2v3_config_migration = iCloud3_v2v3ConfigMigration()
             v2v3_config_migration.convert_v2_config_files_to_v3()
@@ -168,21 +173,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     #   SETUP PROCESS TO START ICLOUD3
     #
     #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-    # async def start_icloud3(event=None):
-    #     Gb.initial_icloud3_loading_flag = True
-    #     log_debug_msg('START iCloud3 Initial Load Executor Job (iCloud3.start_icloud3)')
-    #     icloud3_started = await Gb.hass.async_add_executor_job(Gb.iCloud3.start_icloud3)
-
-    #     if icloud3_started:
-    #         log_info_msg(f"iCloud3 {Gb.version} started")
-    #     else:
-    #         log_error_msg(f"iCloud3 {Gb.version} Initialization Failed")
-
-    # Gb.PyiCloud = None
-    # Gb.EvLog    = event_log.EventLog(Gb.hass)
     Gb.EvLog.display_user_message('iCloud3 is Starting')
     Gb.EvLog.post_event(f"{EVLOG_IC3_STARTING}Initializing iCloud3 v{Gb.version} > "
-                f"{dt_util.now().strftime('%A, %b %d')}")
+                        f"{dt_util.now().strftime('%A, %b %d')}")
+
     Gb.iCloud3  = iCloud3()
 
     # These will run concurrently while HA is starting everything else
@@ -193,20 +187,19 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     Gb.EvLog.post_event('Start iCloud3 Services Executor Job')
     hass.async_add_executor_job(service_handler.register_icloud3_services)
 
-    if (Gb.data_source_use_icloud
-            and Gb.conf_tracking[CONF_SETUP_ICLOUD_SESSION_EARLY]):
+    if (Gb.data_source_use_icloud and Gb.conf_tracking[CONF_SETUP_ICLOUD_SESSION_EARLY]):
         Gb.EvLog.post_event('Start iCloud Account Session Executor Job')
         hass.async_add_executor_job(pyicloud_ic3_interface.create_PyiCloudService_executor_job)
 
-    if hass.state == CoreState.running:
-        Gb.EvLog.post_event('Start iCloud3 Initial Load Executor Job')
-        start_icloud3()
-    else:
-        # This is fired from sensor.py and device_tracker.py when all the sensors
-        # and device_trackers have been set up
-        hass.bus.async_listen_once('start_icloud3', start_icloud3)
+    Gb.initial_icloud3_loading_flag = True
+    log_debug_msg('START iCloud3 Initial Load Executor Job (iCloud3.start_icloud3)')
 
-    Gb.EvLog.post_event(f"{EVLOG_IC3_STAGE_HDR}Stage 0 > Set Up iCloud3 Support Environment")
+    icloud3_started = await Gb.hass.async_add_executor_job(Gb.iCloud3.start_icloud3)
+
+    if icloud3_started:
+        log_info_msg(f"iCloud3 {Gb.version} started")
+    else:
+        log_error_msg(f"iCloud3 {Gb.version} Initialization Failed")
 
     return True
 

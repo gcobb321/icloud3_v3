@@ -31,7 +31,7 @@ from .const          import (DEVICENAME_IOSAPP, VERSION, NOT_SET, HOME_FNAME, HO
                             CONF_CENTER_IN_ZONE,
                             CONF_TRAVEL_TIME_FACTOR, CONF_GPS_ACCURACY_THRESHOLD,
                             CONF_DISCARD_POOR_GPS_INZONE, CONF_OLD_LOCATION_THRESHOLD, CONF_OLD_LOCATION_ADJUSTMENT,
-                            CONF_MAX_INTERVAL, CONF_OFFLINE_INTERVAL, CONF_IOSAPP_ALIVE_INTERVAL,
+                            CONF_MAX_INTERVAL, CONF_OFFLINE_INTERVAL, CONF_EXIT_ZONE_INTERVAL, CONF_IOSAPP_ALIVE_INTERVAL,
                             CONF_WAZE_REGION, CONF_WAZE_MAX_DISTANCE, CONF_WAZE_MIN_DISTANCE,
                             CONF_WAZE_REALTIME,
                             CONF_WAZE_HISTORY_DATABASE_USED, CONF_WAZE_HISTORY_MAX_DISTANCE ,
@@ -223,11 +223,12 @@ class GlobalVariables(object):
     distance_method_waze_flag       = True
     max_interval_secs               = DEFAULT_GENERAL_CONF[CONF_MAX_INTERVAL] * 60
     offline_interval_secs           = DEFAULT_GENERAL_CONF[CONF_OFFLINE_INTERVAL] * 60
-    iosapp_alive_interval_secs      = DEFAULT_GENERAL_CONF[CONF_IOSAPP_ALIVE_INTERVAL] * 60
+    exit_zone_interval_secs         = DEFAULT_GENERAL_CONF[CONF_EXIT_ZONE_INTERVAL] * 60
+    iosapp_alive_interval_secs      = DEFAULT_GENERAL_CONF[CONF_IOSAPP_ALIVE_INTERVAL] * 3600
     old_location_threshold          = DEFAULT_GENERAL_CONF[CONF_OLD_LOCATION_THRESHOLD] * 60
     old_location_adjustment         = DEFAULT_GENERAL_CONF[CONF_OLD_LOCATION_ADJUSTMENT] * 60
     passthru_zone_interval_secs     = DEFAULT_GENERAL_CONF[CONF_PASSTHRU_ZONE_TIME] * 60
-    is_passthru_zone_used           = False#    (14400 > passthru_zone_interval_secs > 0)  # time > 0 and < 4 hrs
+    is_passthru_zone_used           = (14400 > passthru_zone_interval_secs > 0)  # time > 0 and < 4 hrs
     track_from_base_zone            = DEFAULT_GENERAL_CONF[CONF_TRACK_FROM_BASE_ZONE]
     track_from_home_zone            = DEFAULT_GENERAL_CONF[CONF_TRACK_FROM_HOME_ZONE]
     gps_accuracy_threshold          = DEFAULT_GENERAL_CONF[CONF_GPS_ACCURACY_THRESHOLD]
@@ -237,7 +238,9 @@ class GlobalVariables(object):
     center_in_zone_flag             = DEFAULT_GENERAL_CONF[CONF_CENTER_IN_ZONE]
     display_zone_format             = DEFAULT_GENERAL_CONF[CONF_DISPLAY_ZONE_FORMAT]
     device_tracker_state_format     = DEFAULT_GENERAL_CONF[CONF_DEVICE_TRACKER_STATE_FORMAT]
-    device_tracker_state_evlog_format_flag = (device_tracker_state_format == FNAME)
+    if device_tracker_state_format == 'display_as': device_tracker_state_format = display_zone_format
+
+    # device_tracker_state_evlog_format_flag = (device_tracker_state_format == FNAME)
     discard_poor_gps_inzone_flag    = DEFAULT_GENERAL_CONF[CONF_DISCARD_POOR_GPS_INZONE]
     distance_between_device_flag    = DEFAULT_GENERAL_CONF[CONF_DISTANCE_BETWEEN_DEVICES]
 

@@ -1,3 +1,43 @@
+Beta 13
+~~~~~~~~~~~~~~~~~~~~
+
+-------------------------------------------------------------------------------------------------------------------------
+VERY IMPORTANT - HA CHANGED THE WAY SENSORS AND DEVICE_TRACKERS ARE SETUP -
+THIS UPDATE MUST BE INSTALLED FOR THE 2023.3.1 HA RELEASE
+
+1.  Updated the initilization routines to use the new device_tracker and sensor entity creation methods required by HA
+    for the 2023.3.0 release.
+-------------------------------------------------------------------------------------------------------------------------
+2.  Battery entity - The battery sensors are not created if the device only uses the FmF tracking method (FamShr and
+    iOSApp are not used). The FmF tracking method does not report battery information.
+3.  iCloud Interface - There are 4-steps to set up the iCloud Account interface - Setup, Authentication, FamShr, and FmF.
+    Made some changes to this process to better report the steps (in the Event Log) that had not been completed, what was
+    in process and what still needed to be done when finalizing the set up process in Stage 4.
+4.  Changed the device's Info sensor to add details showing when the device left the Last Zone and arrived at the Current Zonea
+            At-Home-10:23:00a (2 hrs ago),
+            Left-School-3:45:50p (10 mins ago).
+    Changed the dir_of_travel sensor for Towards, AwayFrom and InZone to show the zone's name. Examples:
+            Towards: `ᗒ Home`, `ᗒ School`,
+            AwayFrom: `Home ᗒ`, 'School ᗒ',
+            InZone: `@Home`, `@School`
+5.  Added options to the way the Device_Tracker state value is set on the Format Settings. It now includes the zone entity name,
+    the zone's friendly name, and the iCloud3 reformatted names based on the entity id.
+6.  There are some issues with the source of the zone's friendly name. It is stored in the zone definition file (.storage/zone)
+    and in the entity registry for the zone. These two areas are sometimes not in sync, particulary when the name has been changed.
+    iCloud3 not gets the friendly name from the zone file, not the entity registry.
+7.  Fixed a problem with overlaping zones. When a device is in two zones, the smaller one will now be picked.
+8.  Changed the Configurator screen on menu page 1 from `Event Log Parameters` to `Format Settings` since that is what it really is.
+    Moved the Event Log directory which never gets changed to the Other Parameters screen.
+    THIS WILL REQUIRE A BROWSER REFRESH when using the configuration screen.
+9.  Adjusted the distance values when using metric values. The distance is now displayed in meters when it is less than 1 km.
+10. Fixed a problem when the device could be put into a passive zone. They are still displayed in the Zone's list when starting. Now,
+    an indicator shows it is not used.
+11. The display option and the device_tracker state values for each zone are displayed in the Event Log during Stage 2 when starting.
+12. Tweaked sone setting in the Event Log card and bumped the version to 3.0.5.
+    THIS WILL REQUIRE A BROWSER REFRESH.
+
+
+
 Beta 12 2/10/2023
 ~~~~~~~~~~~~~~~~~~~~
 1.  iCloud3 Configurator - The HA 2023.2.2 seems to have disabled the time entry fields (hh:mm:ss) used

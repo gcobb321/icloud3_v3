@@ -4,7 +4,8 @@ from ..const                import (
                                     APPLE_SPECIAL_ICLOUD_SERVER_COUNTRY_CODE,
                                     RARROW, HHMMSS_ZERO, NONE_FNAME, INACTIVE_DEVICE,
                                     CONF_PARAMETER_TIME_STR,
-                                    CONF_INZONE_INTERVALS, CONF_MAX_INTERVAL,
+                                    CONF_INZONE_INTERVALS, CONF_MAX_INTERVAL, CONF_EXIT_ZONE_INTERVAL,
+                                    CONF_IOSAPP_ALIVE_INTERVAL,
                                     CONF_IC3_VERSION, VERSION, CONF_EVLOG_CARD_DIRECTORY, CONF_EVLOG_CARD_PROGRAM,
                                     CONF_UPDATE_DATE, CONF_PASSWORD, CONF_ICLOUD_SERVER_ENDPOINT_SUFFIX,
                                     CONF_DEVICES, CONF_SETUP_ICLOUD_SESSION_EARLY,
@@ -19,6 +20,7 @@ from ..const                import (
                                     CONF_WAZE_USED, CONF_WAZE_REGION, CONF_WAZE_MAX_DISTANCE, CONF_DISTANCE_METHOD,
                                     WAZE_SERVERS_BY_COUNTRY_CODE, WAZE_SERVERS_FNAME,
                                     CONF_EXCLUDED_SENSORS, CONF_OLD_LOCATION_ADJUSTMENT, CONF_DISTANCE_BETWEEN_DEVICES,
+                                    RANGE_DEVICE_CONF, RANGE_GENERAL_CONF, MIN, MAX, STEP, RANGE_UM,
                                     )
 
 from ..support              import start_ic3
@@ -127,7 +129,8 @@ def read_storage_icloud3_configuration_file(filename_suffix=''):
             Gb.conf_tracking[CONF_PASSWORD] = decode_password(Gb.conf_tracking[CONF_PASSWORD])
 
             if instr(Gb.conf_profile[CONF_IC3_VERSION], 'b'):
-                config_file_special_maintenance_beta()
+                check_config_file_new_parameters_beta()
+            check_config_file_range_values()
             count_device_tracking_methods_configured()
 
         return True
@@ -167,12 +170,16 @@ def count_device_tracking_methods_configured():
     except Exception as err:
         log_exception(err)
 #--------------------------------------------------------------------
-def config_file_special_maintenance_beta():
+def check_config_file_new_parameters_beta():
     '''
     Fix configuration file errors or add any new fields
     '''
 
     update_config_file_flag = False
+
+    if Gb.conf_profile[CONF_IC3_VERSION] != VERSION:
+        Gb.conf_profile[CONF_IC3_VERSION] = VERSION
+        update_config_file_flag = True
 
     # v3.0.0 beta 1 - Fix time format from migration
     if instr(Gb.conf_data['general'][CONF_TIME_FORMAT], '-hour-hour'):
@@ -190,48 +197,38 @@ def config_file_special_maintenance_beta():
 
     # Update parameters for each device
     for conf_device in Gb.conf_devices:
-        update_config_file_flag = \
-            (_add_config_file_parameter(conf_device, CONF_STAT_ZONE_FNAME, ' ')
+        update_config_file_flag = (_add_config_file_parameter(conf_device, CONF_STAT_ZONE_FNAME, ' ')
                 or update_config_file_flag)
 
-    if Gb.conf_profile[CONF_IC3_VERSION] != VERSION:
-        Gb.conf_profile[CONF_IC3_VERSION] = VERSION
-        update_config_file_flag = True
-
     # Add CONF_SETUP_ICLOUD_SESSION_EARLY
-    update_config_file_flag = \
-        (_add_config_file_parameter(Gb.conf_tracking, CONF_SETUP_ICLOUD_SESSION_EARLY, True)
+    update_config_file_flag = (_add_config_file_parameter(Gb.conf_tracking, CONF_SETUP_ICLOUD_SESSION_EARLY, True)
             or update_config_file_flag)
 
     # Add CONF_EXCLUDED_SENSORS
-    update_config_file_flag = \
-        (_add_config_file_parameter(Gb.conf_sensors, CONF_EXCLUDED_SENSORS, ['None'])
+    update_config_file_flag = (_add_config_file_parameter(Gb.conf_sensors, CONF_EXCLUDED_SENSORS, ['None'])
             or update_config_file_flag)
 
     # Add CONF_OLD_LOCATION_ADJUSTMENT
-    update_config_file_flag = \
-        (_add_config_file_parameter(Gb.conf_general, CONF_OLD_LOCATION_ADJUSTMENT, HHMMSS_ZERO)
+    update_config_file_flag = (_add_config_file_parameter(Gb.conf_general, CONF_OLD_LOCATION_ADJUSTMENT, HHMMSS_ZERO)
             or update_config_file_flag)
 
     # Add CONF_DISTANCE_BETWEEN_DEVICES
-    update_config_file_flag = \
-        (_add_config_file_parameter(Gb.conf_general, CONF_DISTANCE_BETWEEN_DEVICES, True)
+    update_config_file_flag = (_add_config_file_parameter(Gb.conf_general, CONF_DISTANCE_BETWEEN_DEVICES, True)
             or update_config_file_flag)
 
+    # Add CONF_EXIT_ZONE_INTERVAL
+    update_config_file_flag = (_add_config_file_parameter(Gb.conf_general, CONF_EXIT_ZONE_INTERVAL, 3)
+            or update_config_file_flag)
+
+
     # Remove CONF_ZONE_SENSOR_EVLOG_FORMAT, Add CONF_ZONE_SENSOR_EVLOG_FORMAT
+    dtf = 'zone'
     if 'zone_sensor_evlog_format' in Gb.conf_general:
         dtf = 'fname' if Gb.conf_general['zone_sensor_evlog_format'] else 'zone'
         Gb.conf_general.pop('zone_sensor_evlog_format')
 
-        update_config_file_flag = \
-            (_add_config_file_parameter(Gb.conf_general, CONF_DEVICE_TRACKER_STATE_FORMAT, dtf)
-                or update_config_file_flag)
-
-    if Gb.conf_general[CONF_WAZE_MAX_DISTANCE] > DEFAULT_GENERAL_CONF[CONF_WAZE_MAX_DISTANCE]:
-        Gb.conf_general[CONF_WAZE_MAX_DISTANCE] = DEFAULT_GENERAL_CONF[CONF_WAZE_MAX_DISTANCE]
-        update_config_file_flag = True
-
-
+    update_config_file_flag = (_add_config_file_parameter(Gb.conf_general, CONF_DEVICE_TRACKER_STATE_FORMAT, dtf)
+            or update_config_file_flag)
 
     # Change Waze server codes
     if Gb.conf_general[CONF_WAZE_REGION].lower() in ['na']:
@@ -242,23 +239,52 @@ def config_file_special_maintenance_beta():
         update_config_file_flag = True
 
     # beta 12 - Change all time fields from hh:mm:ss to minutes
-    if instr(Gb.conf_general[CONF_MAX_INTERVAL], ':'):
-        _convert_hhmmss_to_minutes(Gb.conf_general)
-        _convert_hhmmss_to_minutes(Gb.conf_general[CONF_INZONE_INTERVALS])
-        for conf_device in Gb.conf_devices:
-            _convert_hhmmss_to_minutes(conf_device)
-        update_config_file_flag = True
+    update_config_file_flag = (_convert_hhmmss_to_minutes(Gb.conf_general)
+            or update_config_file_flag)
+    update_config_file_flag = (_convert_hhmmss_to_minutes(Gb.conf_general[CONF_INZONE_INTERVALS])
+            or update_config_file_flag)
+    for conf_device in Gb.conf_devices:
+        update_config_file_flag = (_convert_hhmmss_to_minutes(conf_device)
+                or update_config_file_flag)
 
     if update_config_file_flag:
         write_storage_icloud3_configuration_file()
+
+#--------------------------------------------------------------------
+def check_config_file_range_values():
+    '''
+    Check the min and max value of the items that have a range in config_flow to make
+    sure the actual value in the config file is within the min-max range
+    '''
+    try:
+        range_errors = {}
+        range_errors.update({pname: range[MIN]   for pname, range in RANGE_GENERAL_CONF.items()
+                                                        if Gb.conf_general[pname] < range[MIN]})
+        range_errors.update({pname: range[MAX]   for pname, range in RANGE_GENERAL_CONF.items()
+                                                        if Gb.conf_general[pname] > range[MAX]})
+        for pname, pvalue in range_errors.items():
+            log_info_msg(   f"iCloud3 Config Parameter out of range, resetting to valid value, "
+                            f"Parameter-{pname}, From-{Gb.conf_general[pname]}, To-{pvalue}")
+            Gb.conf_general[pname] = pvalue
+
+        if range_errors != {}:
+            write_storage_icloud3_configuration_file()
+
+    except Exception as err:
+        log_exception(err)
 
 #--------------------------------------------------------------------
 def _convert_hhmmss_to_minutes(conf_group):
 
     time_fields = {pname: _hhmmss_to_minutes(pvalue)
                             for pname, pvalue in conf_group.items()
-                            if pname in CONF_PARAMETER_TIME_STR}
-    conf_group.update(time_fields)
+                            if (pname in CONF_PARAMETER_TIME_STR
+                                    and instr(str(pvalue), ':'))}
+    if time_fields != {}:
+        conf_group.update(time_fields)
+        return True
+
+    return False
 
 def _hhmmss_to_minutes(hhmmss):
         hhmmss_parts = hhmmss.split(':')

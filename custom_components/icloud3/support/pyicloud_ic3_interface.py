@@ -84,27 +84,22 @@ def verify_pyicloud_setup_status():
 
     '''
 
-    if Gb.PyiCloud:
-        return
-
-    log_debug_msg(  f"PyiCloud Init Steps > "
-                    f"Needed-{Gb.PyiCloudInit.init_step_needed=}, "
-                    f"Complete-{Gb.PyiCloudInit.init_step_needed=}")
+    init_step_needed   = list_to_str(Gb.PyiCloudInit.init_step_needed)
+    init_step_complete = list_to_str(Gb.PyiCloudInit.init_step_complete)
 
     # PyiCloud is started early in __init__ and set up is complete
     event_msg = f"iCloud Location Svcs Interface > Started during initialization"
     if Gb.PyiCloudInit and 'Complete' in Gb.PyiCloudInit.init_step_complete:
         Gb.PyiCloud = Gb.PyiCloudInit
         event_msg += f"{CRLF_DOT}All steps completed"
-        # post_event(event_msg)
 
     # Authenticate is completed, continue with setup of FamShr and FmF objects
     elif Gb.PyiCloudInit and 'Authenticate' in Gb.PyiCloudInit.init_step_complete:
         Gb.PyiCloud = Gb.PyiCloudInit
 
-        event_msg += (  f"{CRLF_DOT}Completed: {list_to_str(Gb.PyiCloud.init_step_complete)}"
-                        f"{CRLF_DOT}Working on now: {list_to_str(Gb.PyiCloud.init_step_needed)}")
-        # post_event(event_msg)
+        event_msg += (  f"{CRLF_DOT}Completed: {init_step_complete}"
+                        f"{CRLF_DOT}Inprocess: {Gb.PyiCloudInit.init_step_inprocess}"
+                        f"{CRLF_DOT}Needed: {init_step_needed}")
 
         Gb.PyiCloud.__init__(Gb.username, Gb.password,
                                     cookie_directory=Gb.icloud_cookies_dir,
@@ -114,13 +109,15 @@ def verify_pyicloud_setup_status():
     else:
         if Gb.PyiCloudInit:
             # __init__ set up was not authenticated, start all over
-            event_msg += (  f"{CRLF_DOT}Completed: None"
-                            f"{CRLF_DOT}Working on now: {list_to_str(Gb.PyiCloudInit.init_step_needed)}")
-            # post_event(event_msg)
-        else:
-            event_msg += (  f"{CRLF_DOT}Completed: None"
-                            f"{CRLF_DOT}Working on now: Restarting the interface now")
-            # post_event(event_msg)
+            event_msg += (  f"{CRLF_DOT}Completed: {init_step_complete}"
+                            f"{CRLF_DOT}Inprocess: {Gb.PyiCloudInit.init_step_inprocess}"
+                            f"{CRLF_DOT}Needed: {init_step_needed}")
+
+        # else:
+        #     event_msg += (  f"{CRLF_DOT}Completed: {init_step_complete}"
+        #                     f"{CRLF_DOT}Inprocess: {Gb.PyiCloudInit.init_step_inprocess}"
+        #                     f"{CRLF_DOT}Needed: Restarting the interface now")
+
         post_event(event_msg)
 
         create_PyiCloudService(Gb.PyiCloud, called_from='stage4')

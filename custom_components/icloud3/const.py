@@ -4,7 +4,7 @@
 #
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-VERSION                         = '3.0.0b12'
+VERSION                         = '3.0.0b13'
 
 DOMAIN                          = 'icloud3'
 ICLOUD3                         = 'iCloud3'
@@ -26,6 +26,7 @@ EVLOG_CARD_WWW_JS_PROG          = 'icloud3-event-log-card.js'
 WAZE_LOCATION_HISTORY_DATABASE  = 'icloud3.waze_location_history.db'
 SENSOR_WAZEHIST_TRACK_NAME      = 'icloud3_wazehist_track'
 IC3LOGGER_FILENAME              = 'icloud3-debug.log'
+DEBUG_LOG_FILENAME              = 'icloud3-debug.log'
 
 DEVICE_TRACKER                  = 'device_tracker'
 DEVICE_TRACKER_DOT              = 'device_tracker.'
@@ -114,6 +115,12 @@ DEVICE_TYPE_ICONS = {
         WATCH: "mdi:watch-variant",
         OTHER: 'mdi:laptop'
 }
+ICON_DIR_OF_TRAVEL = {
+        TOWARDS: 'mdi:location-enter',
+        AWAY_FROM: 'mdi:location-exit',
+        INZONE: 'mdi:crosshairs-gps',
+        'other': 'mdi:compass-outline',
+}
 UM_FNAME        = {'mi': 'Miles', 'km': 'Kilometers'}
 DATETIME_FORMAT = '%Y-%m-%d %H:%M:%S'
 DATETIME_ZERO   = '0000-00-00 00:00:00'
@@ -124,6 +131,12 @@ HIGH_INTEGER    = 9999999999
 TRACKING_NORMAL  = 0
 TRACKING_PAUSED  = 1
 TRACKING_RESUMED = 2
+
+# Config Parameter Range Index (used in RANGE_DEVICE_CONF, RANGE_GENERAL_CONF lists)
+MIN      = 0
+MAX      = 1
+STEP     = 2
+RANGE_UM = 3
 
 #Other constants
 IOSAPP_DT_ENTITY = True
@@ -224,7 +237,7 @@ CIRCLE_LETTERS_LITE =  {'a':'Ⓐ', 'b':'Ⓑ', 'c':'Ⓒ', 'd':'Ⓓ', 'e':'Ⓔ', '
 lite_circled_letters = "Ⓐ Ⓑ Ⓒ Ⓓ Ⓔ Ⓕ Ⓖ Ⓗ Ⓘ Ⓙ Ⓚ Ⓛ Ⓜ Ⓝ Ⓞ Ⓟ Ⓠ Ⓡ Ⓢ Ⓣ Ⓤ Ⓥ Ⓦ Ⓧ Ⓨ Ⓩ"
 dark_circled_letters = "🅐 🅑 🅒 🅓 🅔 🅕 🅖 🅗 🅘 🅙 🅚 🅛 🅜 🅝 🅞 🅟 🅠 🅡 🅢 🅣 🅤 🅥 🅦 🅧 🅨 🅩 ✪"
 Symbols = ▪•●▬⊗⊘✓×ø¦ ▶◀ ►◄▲▼ ∙▪ »« oPhone=►▶→⟾➤➟➜➔➤🡆🡪🡺⟹🡆➔ᐅ◈
-  — – ⁃ » ━▶━➤🡺 —> > > ❯↦ … 🡪ᗕ ᗒ ᐳ ─🡢 ──ᗒ 🡢 ─ᐅ ↣ ➙ →《》◆◈◉●▐‖
+  — – ⁃ » ━▶━➤🡺 —> > > ❯↦ … 🡪ᗕ ᗒ ᐳ ─🡢 ──ᗒ 🡢 ─ᐅ ↣ ➙ →《》◆◈◉●▐‖  ▹▻▷◁◅◃▶➤➜➔❰❰❱❱
  ⣇⠈⠉⠋⠛⠟⠿⡿⣿       https://www.fileformat.info/info/unicode/block/braille_patterns/utf8test.htm
 '''
 NBSP              = '⠈' #'&nbsp;'
@@ -400,6 +413,7 @@ ID                         = 'id'
 
 # device tracker attributes
 DEVICE_TRACKER_STATE_VALUE = 'device_tracker_state_value'
+DEVICE_TRACKER_STATE_ZONE  = 'device_tracker_state_zone'
 LOCATION                   = 'location'
 ATTRIBUTES                 = 'attributes'
 RADIUS                     = 'radius'
@@ -506,6 +520,7 @@ CONF_UNIT_OF_MEASUREMENT        = 'unit_of_measurement'
 CONF_TIME_FORMAT                = 'time_format'
 CONF_MAX_INTERVAL               = 'max_interval'
 CONF_OFFLINE_INTERVAL           = 'offline_interval'
+CONF_EXIT_ZONE_INTERVAL         = 'exit_zone_interval'
 CONF_IOSAPP_ALIVE_INTERVAL      = 'iosapp_alive_interval'
 CONF_GPS_ACCURACY_THRESHOLD     = 'gps_accuracy_threshold'
 CONF_OLD_LOCATION_THRESHOLD     = 'old_location_threshold'
@@ -518,7 +533,6 @@ CONF_LOG_LEVEL                  = 'log_level'
 # inZone Parameters
 CONF_DISPLAY_ZONE_FORMAT        = 'display_zone_format'
 CONF_DEVICE_TRACKER_STATE_FORMAT= 'device_tracker_state_format'
-# CONF_ZONE_SENSOR_EVLOG_FORMAT   = 'zone_sensor_evlog_format'
 CONF_CENTER_IN_ZONE             = 'center_in_zone'
 CONF_DISCARD_POOR_GPS_INZONE    = 'discard_poor_gps_inzone'
 CONF_DISTANCE_BETWEEN_DEVICES   = 'distance_between_devices'
@@ -687,6 +701,10 @@ DEFAULT_DEVICE_CONF = {
         CONF_STAT_ZONE_FNAME: ' '
 }
 
+RANGE_DEVICE_CONF = {
+        CONF_INZONE_INTERVAL: [5, 240],
+}
+
 # Used in conf_flow to reinialize the Configuration Devices
 # Reset the FamShe FmF iOS App track_from_zone fields
 DEFAULT_DEVICE_REINITIALIZE_CONF = DEFAULT_DEVICE_CONF.copy()
@@ -707,13 +725,14 @@ DEFAULT_GENERAL_CONF = {
         CONF_DEVICE_TRACKER_STATE_FORMAT: 'fname',
         CONF_MAX_INTERVAL: 240,
         CONF_OFFLINE_INTERVAL: 20,
+        CONF_EXIT_ZONE_INTERVAL: 3,
         CONF_IOSAPP_ALIVE_INTERVAL: 60,
         CONF_OLD_LOCATION_THRESHOLD: 3,
         CONF_OLD_LOCATION_ADJUSTMENT: 0,
         CONF_GPS_ACCURACY_THRESHOLD: 100,
         CONF_TRAVEL_TIME_FACTOR: .6,
         CONF_TFZ_TRACKING_MAX_DISTANCE: 8,
-        CONF_PASSTHRU_ZONE_TIME: 1,
+        CONF_PASSTHRU_ZONE_TIME: .5,
         CONF_TRACK_FROM_BASE_ZONE: HOME,
         CONF_TRACK_FROM_HOME_ZONE: True,
 
@@ -731,7 +750,6 @@ DEFAULT_GENERAL_CONF = {
                 },
 
         # Waze Configuration Parameters
-        # CONF_DISTANCE_METHOD: 'waze',
         CONF_WAZE_USED: True,
         CONF_WAZE_REGION: 'us',
         CONF_WAZE_MIN_DISTANCE: 1,
@@ -742,14 +760,48 @@ DEFAULT_GENERAL_CONF = {
         CONF_WAZE_HISTORY_TRACK_DIRECTION: 'north_south',
 
         # Stationary Zone Configuration Parameters
-        CONF_STAT_ZONE_FNAME: 'Stationary',
+        CONF_STAT_ZONE_FNAME: '[name]Zone',
         CONF_STAT_ZONE_STILL_TIME: 8,
         CONF_STAT_ZONE_INZONE_INTERVAL: 30,
         CONF_STAT_ZONE_BASE_LATITUDE: 1,
         CONF_STAT_ZONE_BASE_LONGITUDE: 0,
 
         CONF_DISPLAY_TEXT_AS: ['#1', '#2', '#3', '#4', '#5', '#6', '#7', '#8', '#9', '#10'],
+}
 
+RANGE_GENERAL_CONF = {
+        # General Configuration Parameters
+        CONF_MAX_INTERVAL: [15, 240],
+        CONF_OFFLINE_INTERVAL: [1, 240],
+        CONF_EXIT_ZONE_INTERVAL: [.5, 10, .5],
+        CONF_IOSAPP_ALIVE_INTERVAL: [15, 240],
+        CONF_OLD_LOCATION_THRESHOLD: [1, 60],
+        CONF_OLD_LOCATION_ADJUSTMENT: [0, 60],
+        CONF_GPS_ACCURACY_THRESHOLD: [5, 250, 5, 'm'],
+        CONF_TRAVEL_TIME_FACTOR: [.1, 1, .1, ''],
+        CONF_TFZ_TRACKING_MAX_DISTANCE: [1, 1000, 1, 'km'],
+        CONF_PASSTHRU_ZONE_TIME: [0, 5],
+
+        # inZone Configuration Parameters
+        # CONF_INZONE_INTERVALS: {
+        #         IPHONE: [5, 240],
+        #         IPAD: [5, 240],
+        #         WATCH: [5, 240],
+        #         AIRPODS: [5, 240],
+        #         NO_IOSAPP: [5, 240],
+        #         OTHER: [5, 240],
+        #         },
+
+        # Waze Configuration Parameters
+        CONF_WAZE_MIN_DISTANCE: [0, 1000, 5, 'km'],
+        CONF_WAZE_MAX_DISTANCE: [0, 1000, 5, 'km'],
+        CONF_WAZE_HISTORY_MAX_DISTANCE: [0, 1000, 5, 'km'],
+
+        # Stationary Zone Configuration Parameters
+        CONF_STAT_ZONE_STILL_TIME: [0, 60],
+        CONF_STAT_ZONE_INZONE_INTERVAL: [5, 60],
+        CONF_STAT_ZONE_BASE_LATITUDE:  [-90, 90, 1, ''],
+        CONF_STAT_ZONE_BASE_LONGITUDE: [-180, 180, 1, ''],
 }
 
 # Default Create Sensor Field Parameter
@@ -808,6 +860,8 @@ CONF_PARAMETER_TIME_STR = [
         CONF_INZONE_INTERVAL,
         CONF_MAX_INTERVAL,
         CONF_OFFLINE_INTERVAL,
+        CONF_EXIT_ZONE_INTERVAL,
+        CONF_IOSAPP_ALIVE_INTERVAL,
         CONF_PASSTHRU_ZONE_TIME,
         CONF_STAT_ZONE_STILL_TIME,
         CONF_STAT_ZONE_INZONE_INTERVAL,

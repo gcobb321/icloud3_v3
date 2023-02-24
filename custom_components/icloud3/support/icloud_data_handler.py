@@ -83,7 +83,6 @@ def should_ic3_device_and_sensors_be_updated(Device):
                 or Device.loc_data_latitude == 0
                 or Device.icloud_initial_locate_done is False):
             Device.icloud_update_reason = f"Initial Locate@{Gb.this_update_time}"
-            _traceha(f"{Device.devicename} {Device.icloud_update_reason=}")
 
         elif (Device.is_tracking_resumed):
             Device.icloud_update_reason = "Resuming via iCloud"
@@ -101,7 +100,6 @@ def should_ic3_device_and_sensors_be_updated(Device):
             Device.icloud_no_update_reason = "Stat Zone Base Location"
 
         elif Device.is_passthru_zone_delay_active:
-            _traceha(f"PASSTHRU is_passthru_zone_delay_active check {Device.devicename=}")
             Device.icloud_no_update_reason = "Passing thru zone"
 
         # Data change older than the current data
@@ -313,14 +311,16 @@ def update_device_with_latest_raw_data(Device, all_devices=False):
             else:
                 continue
 
+
             # Make sure data is really a available
             try:
                 latitude = _RawData.device_data[LOCATION][LATITUDE]
             except Exception as err:
                 rawdata_msg = 'No Location data'
-                log_rawdata(f"{rawdata_msg}-{_Device.devicename}/{_Device.is_data_source_FAMSHR_FMF}",
+                if _RawData:
+                    log_rawdata(f"{rawdata_msg}-{_Device.devicename}/{_Device.is_data_source_FAMSHR_FMF}",
                                 {'filter': _RawData.device_data})
-                                # {'raw': _RawData.device_data})
+                continue
                 # log_exception(err)
 
             requesting_device_flag = (_Device.devicename == Device.devicename)

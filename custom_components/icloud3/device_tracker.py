@@ -3,16 +3,16 @@
 from .global_variables  import GlobalVariables as Gb
 from .const             import (DOMAIN, ICLOUD3,
                                 DISTANCE_TO_DEVICES,
-                                NOT_SET, NOT_SET_FNAME, HOME,
+                                NOT_SET, NOT_SET_FNAME, HOME, NOT_HOME,
                                 DEVICE_TYPE_ICONS, DEVICE_TYPE_FNAME,
                                 BLANK_SENSOR_FIELD, STATIONARY_FNAME,
                                 TRACK_DEVICE, INACTIVE_DEVICE,
                                 NAME, FNAME,
                                 PICTURE,
                                 LATITUDE, LONGITUDE,
-                                DEVICE_TRACKER_STATE_VALUE,
+                                DEVICE_TRACKER_STATE_VALUE, DEVICE_TRACKER_STATE_ZONE,
                                 LOCATION_SOURCE, TRIGGER,
-                                ZONE, ZONE_DATETIME,  LAST_ZONE, FROM_ZONE,
+                                ZONE, ZONE_DATETIME,  LAST_ZONE, FROM_ZONE, ZONE_FNAME,
                                 BATTERY,
                                 CALC_DISTANCE, WAZE_DISTANCE, HOME_DISTANCE,
                                 DEVICE_STATUS,
@@ -24,6 +24,10 @@ from .const             import (DOMAIN, ICLOUD3,
                                 CONF_TRACKING_MODE,
                                 CONF_IC3_DEVICENAME,
                                 )
+
+EVENT_ENTER = "enter"
+EVENT_LEAVE = "leave"
+EVENT_DESCRIPTION = {EVENT_ENTER: "entering", EVENT_LEAVE: "leaving"}
 
 from .helpers.common    import (instr, isnumber, is_statzone, zone_display_as)
 from .helpers.messaging import (post_event,
@@ -89,12 +93,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
         if NewDeviceTrackers is not []:
             async_add_entities(NewDeviceTrackers, True)
             _get_ha_device_ids_from_device_registry(hass)
-
-
-        if (Gb.sensors_cnt > 0
-                and Gb.sensors_cnt == Gb.sensors_created_cnt
-                and Gb.device_trackers_cnt == Gb.device_trackers_created_cnt):
-            Gb.hass.bus.async_fire('start_icloud3', {})
 
     except Exception as err:
         _LOGGER.exception(err)
@@ -178,8 +176,10 @@ class iCloud3_DeviceTracker(TrackerEntity):
                 self.default_value = Gb.restore_state_devices[devicename]['sensors'][ZONE]
             except:
                 self.default_value = BLANK_SENSOR_FIELD
-            self._state = self.default_value
 
+            self.from_state_zonee   = ''
+            self.to_state_zone      = ''
+            self._state             = self.default_value
             self._attr_force_update = True
             self._unsub_dispatcher  = None
             self._on_remove         = [self.after_removal_cleanup]
@@ -331,8 +331,6 @@ class iCloud3_DeviceTracker(TrackerEntity):
             log_error_msg(f"►INTERNAL ERROR (Create device_tracker object-{err})")
             sensor_value = not_set_value
 
-        # if instr(sensor, 'battery'):
-        #     _traceha(f"NORMALDEVTRKR {self.devicename} {sensor} {sensor_value}")
         return sensor_value
 
 #-------------------------------------------------------------------------------------------
@@ -344,10 +342,8 @@ class iCloud3_DeviceTracker(TrackerEntity):
         try:
             sensor_value = Gb.restore_state_devices[self.devicename]['sensors'][sensor]
         except:
-            # sensor_value = self._get_sensor_definition(sensor, SENSOR_DEFAULT)
             sensor_value = not_set_value
-        # if instr(sensor, 'battery'):
-        #     _traceha(f"RESTOREDEVTRKR {self.devicename} {sensor} {sensor_value}")
+
         return sensor_value
 
 #-------------------------------------------------------------------------------------------
@@ -490,11 +486,71 @@ class iCloud3_DeviceTracker(TrackerEntity):
 #-------------------------------------------------------------------------------------------
     def write_ha_device_tracker_state(self):
         """Update the entity's state."""
+
         try:
             self.async_write_ha_state()
 
+            # Save the updated zone (location_name) to see if a zone trigger enter/leave needs
+            # to be issued in device.write_ha_device_tracker_state, the function that calls
+            # this function
+            self.from_state_zone = self.to_state_zone
+            self.to_state_zone   = self._get_sensor_value(DEVICE_TRACKER_STATE_ZONE)
+
+            self._check_zone_change_trigger()
+            return
+
         except Exception as err:
             log_exception(err)
+
+#--------------------------------------------------------------------
+    def _check_zone_change_trigger(self):
+
+        # A one change triggers a zone enter/leave event. Determine the type of trigger and
+        # issue the appropriate one
+
+        # zone --> not_home = leave zone
+        # zone --> zone     = leave, enter
+        # not_home --> zone = enter zone
+
+        return
+
+        # if self.from_state_zone == self.to_state_zone:
+        #     return
+
+        # # Leaving a zone
+        # if self.from_state_zone != NOT_HOME:
+        #     self._issue_zone_change_trigger('leave')
+
+        # # entering a zone
+        # if self.to_state_value != NOT_HOME:
+        #     self._issue_zone_change_trigger('enter')
+
+#--------------------------------------------------------------------
+    # def _issue_zone_change_trigger(self, event):
+    #     msg = (f"ZoneTrigger > {event}, {self.from_state_zone} --> {self.to_state_zone} ")
+    #     _trace(self.devicename, msg)
+    #     pass
+
+    #     description = (f"{self.entity_id}, {EVENT_DESCRIPTION[event]}, "
+    #                     f"{self._get_sensor_value(ZONE_FNAME)}")
+    #     trigger_data = trigger_info["trigger_data"]
+
+    #     Gb.hass.async_run_hass_job(
+    #             job,
+    #             {
+    #                 "trigger": {
+    #                     **trigger_data,
+    #                     "platform": "zone",
+    #                     "entity_id": self.entity_id,
+    #                     "from_state": self.from_state_zone,
+    #                     "to_state": self.to_state_zone,
+    #                     "zone": self._get_sensor_value(ZONE),
+    #                     "event": event,
+    #                     "description": description,
+    #                 }
+    #             },
+    #             to_s.context if to_s else None,
+    #         )
 
 #-------------------------------------------------------------------------------------------
     def __repr__(self):

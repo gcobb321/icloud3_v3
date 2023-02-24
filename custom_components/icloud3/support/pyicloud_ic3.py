@@ -400,42 +400,49 @@ class PyiCloudService():
         except:
             self._initialize_variables()
 
-
         if 'Setup' in self.init_step_needed:
-            self.init_step_needed.remove('Setup')
+            self._set_step_inprocess('Setup')
             self._setup_password_filter(password)
             self._setup_cookie_files(cookie_directory)
             self._setup_PyiCloudSession(session_directory)
-            self.init_step_complete.append('Setup')
+            self._set_step_completed('Setup')
 
             if called_from == 'config_flow':
                 Gb.PyiCloudConfigFlow = self
             elif called_from == 'init':
                 Gb.PyiCloudInit = self
             else:
+                Gb.PyiCloudInit = self
                 Gb.PyiCloud = self
 
         if 'Authenticate' in self.init_step_needed:
-            self.init_step_needed.remove('Authenticate')
             post_monitor_msg(f"AUTHENTICATING iCloud Account Access, -{obscure_field(apple_id)} ({called_from})")
+            self._set_step_inprocess('Authenticate')
             self.authenticate()
-            if 'Authenticate' in self.init_step_needed:
-                self.init_step_complete.append('Authenticate')
+            self._set_step_completed('Authenticate')
 
         if 'FamShr' in self.init_step_needed:
-            self.init_step_needed.remove('FamShr')
+            self._set_step_inprocess('FamShr')
             self.create_FamilySharing_object()
-            if 'FamShr' not in self.init_step_needed:
-                self.init_step_complete.append('FamShr')
+            self._set_step_completed('FamShr')
 
         if 'FmF' in self.init_step_needed:
-            self.init_step_needed.remove('FmF')
+            self._set_step_inprocess('FmF')
             self.create_FindMyFriends_object()
-            if 'FmF' not in self.init_step_needed:
-                self.init_step_complete.append('FmF')
+            self._set_step_completed('FmF')
 
         if self.init_step_needed == []:
             self.init_step_complete.append('Complete')
+
+#----------------------------------------------------------------------------
+    def _set_step_inprocess(self, step):
+        self.init_step_needed.remove(step)
+        self.init_step_inprocess = step
+
+    def _set_step_completed(self, step):
+        self.init_step_inprocess = ''
+        if step not in self.init_step_needed:
+            self.init_step_complete.append(step)
 
 #----------------------------------------------------------------------------
     def _initialize_variables(self):
@@ -464,6 +471,7 @@ class PyiCloudService():
 
         self.init_step_needed   = ['Setup', 'Authenticate', 'FamShr', 'FmF']
         self.init_step_complete = []
+        self.init_step_inprocess = ''
 
 #----------------------------------------------------------------------------
     def authenticate(self, refresh_session=False, service=None):

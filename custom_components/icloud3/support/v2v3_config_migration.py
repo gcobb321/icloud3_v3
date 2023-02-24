@@ -111,7 +111,7 @@ CONF_SENSORS_OTHER_LIST             = ['gps_accuracy', 'vertical_accuracy', 'alt
 
 from ..helpers.common       import (instr, )
 from ..helpers.messaging    import (_traceha, log_info_msg, log_warning_msg, log_exception, )
-from ..helpers.time_util    import (time_str_to_secs, secs_to_hhmmss, datetime_now, )
+from ..helpers.time_util    import (time_str_to_secs, datetime_now, )
 from ..support              import waze
 from .                      import config_file
 
@@ -369,7 +369,7 @@ class iCloud3_v2v3ConfigMigration(object):
                         conf_device[CONF_PICTURE] = pvalue
 
                     elif pname == CONF_INZONE_INTERVAL:
-                        conf_device[CONF_INZONE_INTERVAL] = secs_to_hhmmss(time_str_to_secs(pvalue))
+                        conf_device[CONF_INZONE_INTERVAL] = time_str_to_secs(pvalue) / 60
                     else:
                         conf_device[pname] = pvalue
 
@@ -411,12 +411,12 @@ class iCloud3_v2v3ConfigMigration(object):
                         iztype_iztime[iztype] = iztime
 
                 inzone_intervals = {}
-                inzone_intervals['default'] = iztype_iztime.get('inzone_interval', '02:00:00')
-                inzone_intervals[IPHONE]    = iztype_iztime.get(IPHONE, '02:00:00')
-                inzone_intervals[IPAD]      = iztype_iztime.get(IPAD, '02:00:00')
-                inzone_intervals[WATCH]     = iztype_iztime.get(WATCH, '00:15:00')
-                inzone_intervals[AIRPODS]   = iztype_iztime.get(AIRPODS, '00:15:00')
-                inzone_intervals[NO_IOSAPP] = iztype_iztime.get(NO_IOSAPP, '00:15:00')
+                inzone_intervals['default'] = iztype_iztime.get('inzone_interval', 240)
+                inzone_intervals[IPHONE]    = iztype_iztime.get(IPHONE, 240)
+                inzone_intervals[IPAD]      = iztype_iztime.get(IPAD, 240)
+                inzone_intervals[WATCH]     = iztype_iztime.get(WATCH, 15)
+                inzone_intervals[AIRPODS]   = iztype_iztime.get(AIRPODS, 15)
+                inzone_intervals[NO_IOSAPP] = iztype_iztime.get(NO_IOSAPP, 15)
                 self.config_parm_general[CONF_INZONE_INTERVALS] = inzone_intervals.copy()
 
             elif pname == 'stationary_zone_offset':
@@ -553,9 +553,9 @@ class iCloud3_v2v3ConfigMigration(object):
         #12/17/2022 (beta 1) - The time format was being converted to 12_hour_hour instead of 12_hour
         Gb.conf_general[CONF_TIME_FORMAT]                = (f"{self.config_parm_general[CONF_TIME_FORMAT]}-hour").replace('-hour-hour', '-hour')
         Gb.conf_general[CONF_TRAVEL_TIME_FACTOR]         = self.config_parm_general[CONF_TRAVEL_TIME_FACTOR]
-        Gb.conf_general[CONF_MAX_INTERVAL]               = secs_to_hhmmss(time_str_to_secs(self.config_parm_general[CONF_MAX_INTERVAL]))
+        Gb.conf_general[CONF_MAX_INTERVAL]               = time_str_to_secs(self.config_parm_general[CONF_MAX_INTERVAL]) / 60
         Gb.conf_general[CONF_GPS_ACCURACY_THRESHOLD]     = self.config_parm_general[CONF_GPS_ACCURACY_THRESHOLD]
-        Gb.conf_general[CONF_OLD_LOCATION_THRESHOLD]     = secs_to_hhmmss(time_str_to_secs(self.config_parm_general[CONF_OLD_LOCATION_THRESHOLD]))
+        Gb.conf_general[CONF_OLD_LOCATION_THRESHOLD]     = time_str_to_secs(self.config_parm_general[CONF_OLD_LOCATION_THRESHOLD]) / 60
         Gb.conf_general[CONF_DISPLAY_ZONE_FORMAT]        = self.config_parm_general[CONF_DISPLAY_ZONE_FORMAT].lower()
         Gb.conf_general[CONF_CENTER_IN_ZONE]             = self.config_parm_general[CONF_CENTER_IN_ZONE]
         Gb.conf_general[CONF_DISCARD_POOR_GPS_INZONE]    = self.config_parm_general.get(CONF_DISCARD_POOR_GPS_INZONE, False)
@@ -590,11 +590,11 @@ class iCloud3_v2v3ConfigMigration(object):
         if instr(self.config_parm_general[CONF_STAT_ZONE_STILL_TIME], ':'):
             Gb.conf_general[CONF_STAT_ZONE_STILL_TIME]   = self.config_parm_general[CONF_STAT_ZONE_STILL_TIME]
         else:
-            Gb.conf_general[CONF_STAT_ZONE_STILL_TIME]   = secs_to_hhmmss(time_str_to_secs(self.config_parm_general[CONF_STAT_ZONE_STILL_TIME]))
+            Gb.conf_general[CONF_STAT_ZONE_STILL_TIME]   = time_str_to_secs(self.config_parm_general[CONF_STAT_ZONE_STILL_TIME]) / 60
         if instr(self.config_parm_general[CONF_STAT_ZONE_INZONE_INTERVAL], ':'):
             Gb.conf_general[CONF_STAT_ZONE_INZONE_INTERVAL] = self.config_parm_general[CONF_STAT_ZONE_INZONE_INTERVAL]
         else:
-            Gb.conf_general[CONF_STAT_ZONE_INZONE_INTERVAL] = secs_to_hhmmss(time_str_to_secs(self.config_parm_general[CONF_STAT_ZONE_INZONE_INTERVAL]))
+            Gb.conf_general[CONF_STAT_ZONE_INZONE_INTERVAL] = time_str_to_secs(self.config_parm_general[CONF_STAT_ZONE_INZONE_INTERVAL]) / 60
         Gb.conf_general[CONF_STAT_ZONE_BASE_LATITUDE]   = self.config_parm_general[CONF_STAT_ZONE_BASE_LATITUDE]
         Gb.conf_general[CONF_STAT_ZONE_BASE_LONGITUDE]  = self.config_parm_general[CONF_STAT_ZONE_BASE_LONGITUDE]
 
