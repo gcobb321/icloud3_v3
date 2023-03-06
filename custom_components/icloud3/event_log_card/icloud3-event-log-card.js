@@ -529,8 +529,8 @@ class iCloud3EventLogCard extends HTMLElement {
 
             /* Store the theme's primary text color in the thisButtonId field */
             .themeTextColor {
-                color: var(--primary-text-color);}
-                background-color: var(--secondary-text-color);}
+                color: var(--primary-text-color);
+                background-color: var(--secondary-text-color);
             }
 
             /* Message Bar setup - Name & Time below Name & Acion Buttons */
@@ -883,7 +883,6 @@ class iCloud3EventLogCard extends HTMLElement {
         statusBar.appendChild(statusName)
         statusBar.appendChild(statusTime)
         statusBar.appendChild(statusMsgPopup)
-        buttonBar.appendChild(statusBar)
 
         tblEvlog.appendChild(tblEvlogHdr)
         tblEvlog.appendChild(tblEvlogBody)
@@ -893,6 +892,7 @@ class iCloud3EventLogCard extends HTMLElement {
         background.appendChild(titleBar)
         background.appendChild(utilityBar)
         background.appendChild(buttonBar)
+        background.appendChild(statusBar)        
         background.appendChild(tblEvlogContainer)
         background.appendChild(cssStyle)
 
