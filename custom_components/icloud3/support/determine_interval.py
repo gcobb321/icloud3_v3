@@ -34,7 +34,8 @@ from ..const                import (HOME, NOT_HOME, AWAY, NOT_SET, HIGH_INTEGER,
                                     EXIT_ZONE,
                                     ZONE, ZONE_INFO,
                                     INTERVAL,
-                                    DISTANCE, ZONE_DISTANCE, CALC_DISTANCE, WAZE_DISTANCE, WAZE_METHOD, MAX_DISTANCE,
+                                    DISTANCE, ZONE_DISTANCE, ZONE_DISTANCE_M, ZONE_DISTANCE_M_EDGE,
+                                    MAX_DISTANCE, CALC_DISTANCE, WAZE_DISTANCE, WAZE_METHOD,
                                     TRAVEL_TIME, TRAVEL_TIME_MIN, DIR_OF_TRAVEL, MOVED_DISTANCE,
                                     LAST_LOCATED, LAST_LOCATED_TIME, LAST_LOCATED_DATETIME,
                                     LAST_UPDATE, LAST_UPDATE_TIME, LAST_UPDATE_DATETIME,
@@ -58,13 +59,14 @@ import homeassistant.util.dt as dt_util
 import traceback
 
 # location_data fields
-LD_STATUS    = 0
-LD_ZONE_DIST = 1
-LD_MOVED     = 2
-LD_WAZE_DIST = 3
-LD_CALC_DIST = 4
-LD_WAZE_TIME = 5
-LD_DIRECTION = 6
+LD_STATUS      = 0
+LD_ZONE_DIST   = 1
+LD_ZONE_DIST_M = 2
+LD_WAZE_DIST   = 3
+LD_CALC_DIST   = 4
+LD_WAZE_TIME   = 5
+LD_MOVED       = 6
+LD_DIRECTION   = 7
 
 #waze_from_zone fields
 WAZ_STATUS   = 0
@@ -146,10 +148,11 @@ def determine_interval(Device, DeviceFmZone):
         return location_data[LD_ZONE_DIST]
 
     dist_from_zone_km       = location_data[LD_ZONE_DIST]
-    dist_moved_km           = location_data[LD_MOVED]
+    dist_from_zone_m        = location_data[LD_ZONE_DIST_M]
     waze_dist_from_zone_km  = location_data[LD_WAZE_DIST]
     calc_dist_from_zone_km  = location_data[LD_CALC_DIST]
     waze_time_from_zone     = location_data[LD_WAZE_TIME]
+    dist_moved_km           = location_data[LD_MOVED]
     dir_of_travel           = location_data[LD_DIRECTION]
 
     log_msg = ( f"DistFmZome-{dist_from_zone_km}, Moved-{dist_moved_km}, "
@@ -448,16 +451,18 @@ def determine_interval(Device, DeviceFmZone):
             and Device.is_gps_poor
             and dist_moved_km < 1):
         dist_from_zone_km      = DeviceFmZone.zone_dist
+        dist_from_zone_m       = DeviceFmZone.zone_dist_m
         waze_dist_from_zone_km = DeviceFmZone.waze_dist
         calc_dist_from_zone_km = DeviceFmZone.calc_dist
         waze_time_from_zone    = DeviceFmZone.waze_time
 
     else:
         #save for next poll if poor gps
-        DeviceFmZone.zone_dist = dist_from_zone_km
-        DeviceFmZone.waze_dist = waze_dist_from_zone_km
-        DeviceFmZone.waze_time = waze_time_from_zone
-        DeviceFmZone.calc_dist = calc_dist_from_zone_km
+        DeviceFmZone.zone_dist   = dist_from_zone_km
+        DeviceFmZone.zone_dist_m = dist_from_zone_m
+        DeviceFmZone.waze_dist   = waze_dist_from_zone_km
+        DeviceFmZone.waze_time   = waze_time_from_zone
+        DeviceFmZone.calc_dist   = calc_dist_from_zone_km
 
     waze_time_msg = Gb.Waze.waze_mins_to_time_str(waze_time_from_zone)
 
@@ -489,10 +494,13 @@ def determine_interval(Device, DeviceFmZone):
     sensors[DISTANCE]             = km_to_mi(dist_from_zone_km)
     sensors[MAX_DISTANCE]         = km_to_mi(DeviceFmZone.max_dist_km)
     sensors[ZONE_DISTANCE]        = km_to_mi(dist_from_zone_km)
+    sensors[ZONE_DISTANCE_M]      = dist_from_zone_m
+    sensors[ZONE_DISTANCE_M_EDGE] = abs(dist_from_zone_m - DeviceFmZone.from_zone_radius_m)
     sensors[WAZE_DISTANCE]        = km_to_mi(waze_dist_from_zone_km)
     sensors[WAZE_METHOD]          = Gb.Waze.waze_status_fname
     sensors[CALC_DISTANCE]        = km_to_mi(calc_dist_from_zone_km)
     sensors[MOVED_DISTANCE]       = km_to_mi(dist_moved_km)
+
 
     if Device.is_inzone:
         sensors[ZONE_INFO] = f"@{Device.loc_data_zone_fname}"
@@ -569,11 +577,11 @@ def post_zone_time_dist_event_msg(Device, DeviceFmZone):
     '''
 
     if Device.iosapp_monitor_flag:
-        iosapp_state = Device.iosapp_data_state
+        iosapp_state = zone_display_as(Device.iosapp_data_state)
         if iosapp_state == NOT_SET:
             iosapp_state = '──'
-        elif iosapp_state in Gb.Zones_by_zone:
-            iosapp_state = Gb.Zones_by_zone[iosapp_state].display_as
+        # elif iosapp_state in Gb.Zones_by_zone:
+        #     iosapp_state = Gb.Zones_by_zone[iosapp_state].display_as
     else:
         iosapp_state = '──'
 
@@ -708,14 +716,17 @@ def determine_interval_after_error(Device, counter=OLD_LOC_POOR_GPS_CNT):
                         f"Retry at {secs_to_time(next_update_secs)} "
                         f"({Device.DeviceFmZoneHome.interval_str})")
 
-        if event_msg == '':
+        if event_msg == '' and Device.update_sensors_error_msg != '':
             event_msg =(f"LocationData > {Device.update_sensors_error_msg}, "
                         #f"(#{Device.old_loc_poor_gps_cnt}), "
                         f"Update-{secs_to_time(next_update_secs)} "
                         f"({Device.DeviceFmZoneHome.interval_str})")
-        post_event(devicename, event_msg)
-        log_info_msg(Device.devicename, f"Old Location/Other Error-{event_msg}")
-        # log_rawdata(f"{Device_devicename} - {from_zone}", DeviceFmZone.sensors)
+            Device.icloud_update_reason = "Newer Data is Available"
+
+        if event_msg:
+            post_event(devicename, event_msg)
+            log_info_msg(Device.devicename, f"Old Location/Other Error-{event_msg}")
+            # log_rawdata(f"{Device_devicename} - {from_zone}", DeviceFmZone.sensors)
 
     except Exception as err:
         log_exception(err)
@@ -735,9 +746,9 @@ def get_error_retry_interval(Device, counter=OLD_LOC_POOR_GPS_CNT):
     '''
     if Device.is_offline:
         if Device.sensor_zone == NOT_SET:
-            return 120, 0, 0
+            return 120, 0, 20
         else:
-            return Gb.offline_interval_secs, 0, 0
+            return Gb.offline_interval_secs, 0, 20
 
     interval = 0
 
@@ -753,9 +764,12 @@ def get_error_retry_interval(Device, counter=OLD_LOC_POOR_GPS_CNT):
         error_cnt = Device.iosapp_request_loc_retry_cnt
         range_tbl = RETRY_INTERVAL_RANGE_2
     else:
+        error_cnt = Device.old_loc_poor_gps_cnt
+        range_tbl = RETRY_INTERVAL_RANGE_1
         interval = 60
 
     max_error_cnt = int(list(range_tbl.keys())[-1])
+    if max_error_cnt < 20: max_error_cnt = 20
 
     # Retry in 10-secs if this is the first time retried
     #** 5/14 Change 10-secs to 5-secs
@@ -868,11 +882,13 @@ def _get_distance_data(Device, DeviceFmZone):
 
 
     calc_dist_from_zone_km = dist_from_zone_km   = DeviceFmZone.distance_km
+    dist_from_zone_m       = dist_from_zone_km * 1000
     waze_dist_moved_km     = dist_moved_km       = Device.loc_data_distance_moved
     waze_dist_from_zone_km = calc_dist_from_zone_km
     waze_time_from_zone    = 0
     last_dir_of_travel     = DeviceFmZone.dir_of_travel
     from_zone              = DeviceFmZone.from_zone
+
 
     #if (calc_dist_from_zone_km <= .05 or Device.loc_data_zone == from_zone):
     #    Device.loc_data_zone   = from_zone
@@ -884,12 +900,14 @@ def _get_distance_data(Device, DeviceFmZone):
         Gb.Waze.waze_status = WAZE_PAUSED
         Gb.Waze.waze_close_to_zone_pause_flag = True
         distance_data = [VALID_DATA,
-                        0,              # dist_from_zone_km,
+                        0,                          # dist_from_zone_km,
+                        dist_from_zone_m,           # # dist_from_zone_m,
+                        0,                          # waze_dist_from_zone_km,
+                        calc_dist_from_zone_km,     # calc_dist_from_zone_km,
                         dist_moved_km,
-                        0,              # waze_dist_from_zone_km,
-                        0,              # calc_dist_from_zone_km,
-                        0,              # waze_time_from_zone,
+                        0,                          # waze_time_from_zone,
                         INZONE]
+
         return  distance_data
 
     #--------------------------------------------------------------------------------
@@ -897,13 +915,14 @@ def _get_distance_data(Device, DeviceFmZone):
     waze_source_msg = ''
     if Gb.Waze.is_status_USED:
         # See if this location hasn't changed or is in the history db
-        if calc_dist_from_zone_km < Gb.WazeHist.max_distance:
+        if Gb.WazeHist.is_historydb_USED and calc_dist_from_zone_km < Gb.WazeHist.max_distance:
             waze_status, waze_time_from_zone, waze_dist_from_zone_km, dist_moved_km, \
                 hist_db_location_id, waze_source_msg = \
                 Gb.Waze.get_history_time_distance(Device, DeviceFmZone, check_hist_db=True)
         else:
             hist_db_location_id = 0
 
+        # Not in history db or history db is not used
         if hist_db_location_id == 0:
             waze_dist_from_zone_km = calc_dist_from_zone_km
             waze_time_from_zone    = 0
@@ -933,6 +952,8 @@ def _get_distance_data(Device, DeviceFmZone):
                 else:
                     waze_source_msg += f"(< {format_dist_km(Gb.Waze.waze_min_distance)})"
 
+    dist_from_zone_m = dist_from_zone_km * 1000
+
     # Get Waze travel_time & distance
     if Gb.Waze.is_status_USED:
         if hist_db_location_id == 0:
@@ -942,6 +963,7 @@ def _get_distance_data(Device, DeviceFmZone):
             Gb.Waze.waze_status = waze_status
 
         # Don't reset data if poor gps, use the best we have
+        dist_from_zone_m = dist_from_zone_km * 1000
         Device.display_info_msg( f"Finalizing-{DeviceFmZone.info_status_msg}")
         if Device.loc_data_zone == from_zone:
             dist_from_zone_km = 0
@@ -949,7 +971,11 @@ def _get_distance_data(Device, DeviceFmZone):
 
         elif Gb.Waze.is_status_USED:
             dist_from_zone_km = waze_dist_from_zone_km
+            dist_from_zone_m  = waze_dist_from_zone_km * 1000
             dist_moved_km     = waze_dist_moved_km
+    else:
+        waze_dist_from_zone_km = 0
+        # waze_dist_moved_km     = 0
 
     if waze_source_msg:
         event_msg = f"Waze Route Info > {waze_source_msg}"
@@ -1016,10 +1042,11 @@ def _get_distance_data(Device, DeviceFmZone):
 
     distance_data = [VALID_DATA,
                     dist_from_zone_km,
-                    dist_moved_km,
+                    dist_from_zone_m,
                     waze_dist_from_zone_km,
                     calc_dist_from_zone_km,
                     waze_time_from_zone,
+                    dist_moved_km,
                     dir_of_travel]
 
     return  distance_data

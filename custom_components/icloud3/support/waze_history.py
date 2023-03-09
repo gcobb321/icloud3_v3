@@ -179,6 +179,11 @@ class WazeRouteHistory(object):
             self.open_waze_history_database(wazehist_database)
 
 #--------------------------------------------------------------------
+    @property
+    def is_historydb_USED(self):
+        return self.use_wazehist_flag
+
+#--------------------------------------------------------------------
     def open_waze_history_database(self, wazehist_database):
         """
         Create a database connection to the SQLite database

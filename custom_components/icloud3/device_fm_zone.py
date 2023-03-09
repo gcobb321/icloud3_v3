@@ -21,8 +21,8 @@ from .const             import (HOME, NOT_SET,
                                 DATETIME_ZERO, HHMMSS_ZERO,
                                 TOWARDS, AWAY_FROM,
                                 INTERVAL,
-                                DISTANCE, ZONE_DISTANCE, CALC_DISTANCE, WAZE_DISTANCE,
-                                WAZE_METHOD, MAX_DISTANCE,
+                                DISTANCE, ZONE_DISTANCE, ZONE_DISTANCE_M, ZONE_DISTANCE_M_EDGE,
+                                MAX_DISTANCE, CALC_DISTANCE, WAZE_DISTANCE, WAZE_METHOD,
                                 FROM_ZONE, ZONE_INFO,
                                 TRAVEL_TIME, TRAVEL_TIME_MIN, DIR_OF_TRAVEL, MOVED_DISTANCE,
                                 LAST_LOCATED, LAST_LOCATED_TIME, LAST_LOCATED_DATETIME,
@@ -49,6 +49,7 @@ class iCloud3_DeviceFmZone():
             self.from_zone            = from_zone
             self.devicename_zone      = (f"{self.devicename}:{from_zone}")
             self.from_zone_display_as = self.FromZone.display_as
+            self.from_zone_radius_m   = self.FromZone.radius_m
 
             self.initialize()
             self.initialize_sensors()
@@ -74,6 +75,7 @@ class iCloud3_DeviceFmZone():
             self.waze_dist               = 0
             self.calc_dist               = 0
             self.zone_dist               = 0
+            self.zone_center_dist        = 0
             self.waze_results            = None
             self.home_dist               = calc_distance_km(Gb.HomeZone.gps, self.FromZone.gps)
             self.max_dist_km             = 0
@@ -106,6 +108,8 @@ class iCloud3_DeviceFmZone():
         self.sensors[DISTANCE]             = 0
         self.sensors[MAX_DISTANCE]         = 0
         self.sensors[ZONE_DISTANCE]        = 0
+        self.sensors[ZONE_DISTANCE_M]      = 0
+        self.sensors[ZONE_DISTANCE_M_EDGE] = 0
         self.sensors[WAZE_DISTANCE]        = 0
         self.sensors[WAZE_METHOD]          = ''
         self.sensors[CALC_DISTANCE]        = 0

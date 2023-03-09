@@ -368,8 +368,7 @@ def encode_password(password):
         Decoded password
     '''
     try:
-        if (password == ''
-                or Gb.encode_password_flag is False):
+        if (password == '' or Gb.encode_password_flag is False):
             return password
 
         return f"««{base64_encode(password)}»»"

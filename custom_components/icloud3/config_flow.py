@@ -18,13 +18,13 @@ _LOGGER = logging.getLogger(__name__)
 
 from .global_variables  import GlobalVariables as Gb
 from .const             import (DOMAIN,
-                                RARROW,
+                                RARROW, CRLF_DOT, EVLOG_NOTICE, EVLOG_ALERT,
                                 IPHONE_FNAME, IPHONE, IPAD, WATCH, AIRPODS, ICLOUD, OTHER, HOME,
                                 DEVICE_TYPES, DEVICE_TYPE_FNAME, DEVICE_TRACKER_DOT,
                                 IOSAPP, NO_IOSAPP,
                                 TRACK_DEVICE, MONITOR_DEVICE, INACTIVE_DEVICE,
                                 NAME,  FRIENDLY_NAME, FNAME, TITLE, BATTERY,
-                                ZONE, HOME_DISTANCE,
+                                ZONE, HOME_DISTANCE, PASSIVE,
                                 WAZE_SERVERS_BY_COUNTRY_CODE, WAZE_SERVERS_FNAME,
                                 CONF_VERSION, CONF_EVLOG_CARD_DIRECTORY,
                                 CONF_USERNAME, CONF_PASSWORD, CONF_DEVICES, CONF_SETUP_ICLOUD_SESSION_EARLY,
@@ -62,7 +62,7 @@ from .const             import (DOMAIN,
                                 DEFAULT_DEVICE_REINITIALIZE_CONF, CONF_PARAMETER_TIME_STR,
                                 )
 from .const_sensor      import (SENSOR_GROUPS )
-from .helpers.common    import (instr, isnumber, obscure_field, zone_display_as, )
+from .helpers.common    import (instr, isnumber, obscure_field, zone_display_as, list_to_str,str_to_list, )
 from .helpers.messaging import (log_exception, _traceha, _trace, post_event, close_reopen_ic3_debug_log_file, )
 from .helpers           import entity_io
 from .                  import sensor as ic3_sensor
@@ -106,7 +106,7 @@ MENU_KEY_TEXT = {
         'device_list': 'ICLOUD3 DEVICES > Add, Change and Delete tracked and monitored devices',
         'format_settings': 'FORMAT SETTINGS > Select the display format for Zones, DeviceTracker State, Unit of Measure, Time & Distance, Change Device Order',
         'display_text_as': 'DISPLAY TEXT AS > Event Log Custom Card Text Replacement',
-        'other_parms': 'OTHER PARAMETERS > Select tracking calculation values - Accuracy Thresholds, Maximum Interval, Device Offline Interval, Travel Time Interval Multiplier, Event Log Custom Card Directory, etc.',
+        'tracking_parameters': 'TRACKING & OTHER PARAMETERS > Parameters used when tracking a device - Accuracy Thresholds, Maximum Interval, Device Offline Interval, Travel Time Interval Multiplier, Event Log Custom Card Directory, etc.',
         'inzone_intervals': 'INZONE INTERVALS > Default inZone intervals for different device types, inZone Interval if the iOS App is not installed, Other inZone Controls ',
         'waze': 'WAZE ROUTE DISTANCE & TIME, WAZE HISTORY DATABASE > Route Server Location, Min/Max Intervals, Waze History Database Parameters and Controls',
         'special_zones': 'SPECIAL ZONES - Pass Through Zone, Stationary Zone, Track From Zone',
@@ -130,7 +130,7 @@ MENU_KEY_TEXT_PAGE_1 = [
     MENU_KEY_TEXT['waze'],
     MENU_KEY_TEXT['inzone_intervals'],
     MENU_KEY_TEXT['special_zones'],
-    MENU_KEY_TEXT['other_parms'],
+    MENU_KEY_TEXT['tracking_parameters'],
     ]
 menu_action = [
     MENU_KEY_TEXT['select'],
@@ -146,7 +146,7 @@ OPT_ACTION_ITEMS_KEY_TEXT = {
 
         'select_form': 'SELECT > Select the parameter update form',
 
-        'log_in_icloud_acct': 'LOGIN > Log into the iCloud Account',
+        'log_in_icloud_acct': 'LOGIN > Log into the iCloud Account. Logged Into-Not Logged In',
         'enter_verification_code': 'ENTER VERIFICATION CODE > Enter the 6-digit Verification Code',
         "icloud_acct_reauth": "RESET AND REAUTHENTICATE ACCOUNT > Request a new Verification Code",
         'show_username_password': 'SHOW/HIDE USERNAME/PASSWORD > Show or hide the Username and Password',
@@ -194,13 +194,12 @@ OPT_ACTION_BASE = [
 OPT_LIST_KEY_TEXT_NONE      = {'None': 'None'}
 OPT_PICTURE_TEXT            = ['None']
 UNKNOWN_DEVICE_TEXT         = '  >>>>> VALUE NOT IN LIST, NEEDS REVIEW <<<<<'
+LOG_IN_ICLOUD_ACCT_IDX      = 0
 
 ICLOUD_ACCOUNT_ACTIONS = [
         OPT_ACTION_ITEMS_KEY_TEXT['log_in_icloud_acct'],
         OPT_ACTION_ITEMS_KEY_TEXT['enter_verification_code'],
-        OPT_ACTION_ITEMS_KEY_TEXT['icloud_acct_reauth'],
-        OPT_ACTION_ITEMS_KEY_TEXT['divider1'],
-        OPT_ACTION_ITEMS_KEY_TEXT['show_username_password']]
+        OPT_ACTION_ITEMS_KEY_TEXT['icloud_acct_reauth']]
 DEVICE_LIST_ACTIONS = [
         OPT_ACTION_ITEMS_KEY_TEXT['update_device'],
         OPT_ACTION_ITEMS_KEY_TEXT['add_device'],
@@ -222,6 +221,11 @@ DATA_SOURCE_ITEMS_KEY_TEXT = {
         'icloud,iosapp': 'ICLOUD & IOSAPP - iCloud account and iOS App are used for location data',
         'icloud': 'ICLOUD ONLY - iOS App is not monitored on any tracked device',
         'iosapp': 'IOS APP ONLY - iCloud account is not used for location data on any tracked device'
+        }
+DATA_SOURCE_ITEMS_KEY_TEXT2 = {
+        # 'icloud,iosapp': 'ICLOUD & IOSAPP - iCloud account and iOS App are used for location data',
+        'icloud': 'iCloud account is used for location data on any tracked device',
+        'iosapp': 'iOS App is monitored on any tracked device'
         }
 ICLOUD_SERVER_ENDPOINT_SUFFIX_ITEMS_KEY_TEXT = {
         'none': 'Use normal Apple iCloud Servers',
@@ -251,15 +255,16 @@ TIME_FORMAT_ITEMS_KEY_TEXT = {
         }
 DISPLAY_ZONE_FORMAT_ITEMS_KEY_TEXT = {}
 DISPLAY_ZONE_FORMAT_ITEMS_KEY_TEXT_BASE = {
-        'fname': 'HA Zone Friendly Name used by zone automation triggers (TheShores)',
-        'zone': 'HA Zone entity_id (the_shores)',
+        'fname': 'HA Zone Friendly Name, (Home, Away, TheShores)',
+        'zone': 'HA Zone entity_id (home, not_home, the_shores)',
         'name': 'iCloud3 reformated Zone entity_id (zone.the_shores → TheShores)',
         'title': 'iCloud3 reformated Zone entity_id (zone.the_shores → The Shores)'
         }
 DEVICE_TRACKER_STATE_FORMAT_KEY_TEXT = {}
 DEVICE_TRACKER_STATE_FORMAT_KEY_TEXT_BASE = {
-        'fname': 'HA Zone Friendly Name used by zone automation triggers (TheShores)',
-        'zone': 'HA Zone entity_id (the_shores)',
+        'fname': 'HA Zone Friendly Name, (home, not_home, TheShores)',
+#        'fname/Home': 'Home (upper-case), HA Zone Friendly Name, (TheShores)',
+        'zone': 'HA Zone entity_id (home, not_home, the_shores)',
         'name': 'iCloud3 reformated Zone entity_id (zone.the_shores → TheShores)',
         'title': 'iCloud3 reformated Zone entity_id (zone.the_shores → The Shores)'
 }
@@ -578,7 +583,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         # in the exclude_sensors screen
         # Format: ('gary_iphone_zone_distance': 'Gary ZoneDistance (gary_iphone_zone_distance)')
         self.sensors_fname_list     = []
-        self.excluded_sensors       = []
+        self.excluded_sensors       = ['None']
         self.excluded_sensors_removed = []
         self.sensors_list_filter    = '?'
 
@@ -651,8 +656,8 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 return await self.async_step_format_settings()
             elif menu_item == 'display_text_as':
                 return await self.async_step_display_text_as()
-            elif menu_item == 'other_parms':
-                return await self.async_step_other_parms()
+            elif menu_item == 'tracking_parameters':
+                return await self.async_step_tracking_parameters()
             elif menu_item == 'inzone_intervals':
                 return await self.async_step_inzone_intervals()
             elif menu_item == 'waze':
@@ -745,8 +750,8 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 user_input = self._validate_format_settings(user_input)
             elif self.step_id == "display_text_as":
                 pass
-            elif self.step_id == 'other_parms':
-                user_input = self._validate_other_parms(user_input)
+            elif self.step_id == 'tracking_parameters':
+                user_input = self._validate_tracking_parameters(user_input)
             elif self.step_id == 'inzone_intervals':
                 user_input = self._validate_inzone_intervals(user_input)
             elif self.step_id == "waze_main":
@@ -771,13 +776,6 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
     async def async_step_format_settings(self, user_input=None, errors=None):
         self.step_id = 'format_settings'
         user_input, action_item = self._action_text_to_item(user_input)
-
-        # self.opt_www_directory_list = []
-        # path_filters = ['/.', 'deleted', '/x-']
-        # for path, dirs, files in os.walk(Gb.hass.config.path('www')):
-        #     if instr(path, path_filters) or path.count('/') > 4:
-        #         continue
-        #     self.opt_www_directory_list.append(path.replace('/config/', ''))
 
         if action_item == 'change_device_order':
             self.cdo_devicenames = [self._format_device_info(conf_device)
@@ -879,19 +877,11 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             self._dzf_set_example_zone_name_text(ZONE, 'the_shores', exZone.zone)
             self._dzf_set_example_zone_name_text(FNAME, 'The Shores', exZone.fname)
             self._dzf_set_example_zone_name_text(FNAME, 'TheShores', exZone.fname)
+            self._dzf_set_example_zone_name_text('fname/Home', 'TheShores', exZone.fname)
             self._dzf_set_example_zone_name_text(NAME, 'the_shores', exZone.zone)
             self._dzf_set_example_zone_name_text(NAME, 'TheShores', exZone.name)
             self._dzf_set_example_zone_name_text(TITLE, 'the_shores', exZone.zone)
             self._dzf_set_example_zone_name_text(TITLE, 'The Shores', exZone.title)
-
-            # stf_fname = Gb.conf_general[CONF_DISPLAY_ZONE_FORMAT]
-            # if stf_fname == FNAME:   stf_fname = exZone.fname
-            # elif stf_fname == NAME:  stf_fname = exZone.name
-            # elif stf_fname == TITLE: stf_fname = exZone.title
-            # else: stf_fname = exZone.zone
-            # self._dtf_set_example_zone_name_text(ZONE, 'the_shores', exZone.zone)
-            # self._dtf_set_example_zone_name_text(FNAME, 'The Shores', stf_fname)
-            # self._dtf_set_example_zone_name_text(FNAME, 'TheShores', stf_fname)
 
     def _dzf_set_example_zone_name_text(self, key, example_text, real_text):
         if key in DISPLAY_ZONE_FORMAT_ITEMS_KEY_TEXT:
@@ -904,8 +894,8 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 DEVICE_TRACKER_STATE_FORMAT_KEY_TEXT[key].replace(example_text, real_text)
 
 #-------------------------------------------------------------------------------------------
-    async def async_step_other_parms(self, user_input=None, errors=None):
-        self.step_id = 'other_parms'
+    async def async_step_tracking_parameters(self, user_input=None, errors=None):
+        self.step_id = 'tracking_parameters'
         user_input, action_item = self._action_text_to_item(user_input)
 
         self.opt_www_directory_list = []
@@ -975,6 +965,9 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
     async def async_step_sensors(self, user_input=None, errors=None):
         self.step_id = 'sensors'
         user_input, action_item = self._action_text_to_item(user_input)
+
+        if Gb.conf_sensors[CONF_EXCLUDED_SENSORS] == []:
+            Gb.conf_sensors[CONF_EXCLUDED_SENSORS] = ['None']
 
         if user_input is not None:
             if HOME_DISTANCE not in user_input[CONF_SENSORS_TRACKING_DISTANCE]:
@@ -1058,7 +1051,9 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         self.sensors_fname_list = list(set(self.sensors_fname_list))
         self.sensors_fname_list.sort()
 
-        if len(self.excluded_sensors) > 1 and 'None' in self.excluded_sensors:
+        if self.excluded_sensors == []:
+            self.excluded_sensors = ['None']
+        elif len(self.excluded_sensors) > 1 and 'None' in self.excluded_sensors:
             self.excluded_sensors.remove('None')
 
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -1304,12 +1299,12 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         return user_input
 
 #-------------------------------------------------------------------------------------------
-    def _validate_other_parms(self, user_input):
+    def _validate_tracking_parameters(self, user_input):
         '''
         The display_zone_format may contain '(Example: ...). If so, strip it off.
         '''
 
-        user_input = self._option_text_to_parm(user_input, CONF_LOG_LEVEL, LOG_LEVEL_ITEMS_KEY_TEXT)
+        # user_input = self._option_text_to_parm(user_input, CONF_LOG_LEVEL, LOG_LEVEL_ITEMS_KEY_TEXT)
 
         return user_input
 
@@ -1360,12 +1355,6 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         # If Waze Used changes, also change the History DB used
         if user_input[CONF_WAZE_USED] != Gb.conf_general[CONF_WAZE_USED]:
             user_input[CONF_WAZE_HISTORY_DATABASE_USED] = user_input[CONF_WAZE_USED]
-
-        # correct_server = WAZE_SERVERS_BY_COUNTRY_CODE.get(Gb.ha_country_code, 'row')
-        # if (CONF_WAZE_SERVER in user_input
-        #         and user_input[CONF_WAZE_SERVER] != correct_server):
-        #     self.errors[CONF_WAZE_SERVER] = f"waze_server_error_{correct_server}"
-        #     user_input[CONF_WAZE_SERVER] = correct_server
 
         return user_input
 
@@ -1448,89 +1437,70 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 
         try:
             if user_input is not None:
+                user_input[CONF_DATA_SOURCE] = list_to_str(user_input[CONF_DATA_SOURCE])
+                user_input[CONF_USERNAME] = user_input[CONF_USERNAME].lower()
+
+                if user_input['opt_action'].startswith('LOGIN'):
+                    user_input['opt_action'] = OPT_ACTION_ITEMS_KEY_TEXT['log_in_icloud_acct']
+
                 user_input, action_item = self._action_text_to_item(user_input)
                 user_input = self._option_text_to_parm(user_input, CONF_DATA_SOURCE, DATA_SOURCE_ITEMS_KEY_TEXT)
+                user_input = self._strip_spaces(user_input, [CONF_USERNAME, CONF_PASSWORD])
+                user_input = self._strip_spaces(user_input)
 
-                username_password_changed_flag = self._unobscure_username_password(user_input)
                 if action_item == 'cancel':
                     return await self.async_step_menu()
 
-                elif action_item == 'show_username_password':
-                    self.show_username_password = not self.show_username_password
-
-                elif self.errors:
-                    pass
-
-                elif action_item == 'save':
-                    if user_input[CONF_DATA_SOURCE] == IOSAPP:
-                        self._update_configuration_file(user_input)
-                        self.PyiCloud = None
-                        return await self.async_step_menu()
-
-                    if user_input[CONF_DATA_SOURCE] != Gb.conf_tracking[CONF_DATA_SOURCE]:
-                        user_input = {CONF_DATA_SOURCE: user_input[CONF_DATA_SOURCE]}
-
+                # Data Source is iOS App only, iCloud was not selected
+                if user_input[CONF_DATA_SOURCE] == IOSAPP:
                     self._update_configuration_file(user_input)
+                    self.PyiCloud = None
+                    return await self.async_step_menu()
 
-                    if username_password_changed_flag:
-                        await self._log_into_icloud_account(user_input, self.step_id)
-
-                        if (self.PyiCloud and self.PyiCloud.requires_2fa):
-                            return await self.async_step_reauth(initial_display=True)
-                    else:
-                        return await self.async_step_menu()
-
-                elif action_item == 'enter_verification_code':
+                if action_item == 'enter_verification_code':
                     return await self.async_step_reauth(initial_display=True)
 
-                elif action_item == 'icloud_acct_reauth':
+                if action_item == 'icloud_acct_reauth':
                     self.config_flow_updated_parms.update(['reauth'])
                     self.errors = {'base': 'icloud_reauth_scheduled'}
+                    return await self.async_step_menu()
+
+                if user_input[CONF_USERNAME] == '':
+                    self.errors[CONF_USERNAME] = 'required_field'
+                    self.errors_user_input[CONF_USERNAME] = ''
+                if user_input[CONF_PASSWORD] == '':
+                    self.errors[CONF_PASSWORD] = 'required_field'
+                    self.errors_user_input[CONF_PASSWORD] = ''
+
+                # Action Login or Save will login into the account if the username changed
+                if self.errors == {}:
+                    if (user_input[CONF_USERNAME] != Gb.conf_tracking[CONF_USERNAME]
+                            or user_input[CONF_PASSWORD] != Gb.conf_tracking[CONF_PASSWORD]):
+                        await self._log_into_icloud_account(user_input, self.step_id)
+                        _traceha(f"logged inro {user_input=} {self.errors=}")
+
+
+                        _traceha(f"2fa {self.PyiCloud=} {self.PyiCloud.requires_2fa=} {self.errors=}")
+                        if (self.PyiCloud and self.PyiCloud.requires_2fa):
+                            _traceha(f"going to reauth {user_input=} {self.errors=}")
+                            return await self.async_step_reauth(initial_display=True)
+
+                    # Save the login username/password
+                    if action_item == 'save' and self.errors == {}:
+                        _traceha(f"going to update_config {user_input=} {self.errors=}")
+                        self._update_configuration_file(user_input)
+                        return await self.async_step_menu()
+
+                    _traceha(f"at end redisplay {self.step_id} {user_input=} {self.errors=}")
 
         except Exception as err:
             log_exception(err)
 
         self.step_id = 'icloud_account'
+        _traceha(f"show form {self.step_id} {user_input=} {self.errors=}")
         return self.async_show_form(step_id=self.step_id,
                             data_schema=self.form_schema(self.step_id),
                             errors=self.errors)
-
-#-------------------------------------------------------------------------------------------
-    def _unobscure_username_password(self, user_input):
-        '''
-        Validate the iCloud Account credentials by logging into the iCloud Account via
-        pyicloud_ic3. This will set up the account access in the same manner as starting iCloud3.
-        The devices associated with FamShr and FmF are also retrieved so they are available
-        for selection in the Devices screen.
-
-        Returns:
-            True - username or password was changed
-        '''
-        original_username = self.username
-        original_password = self.password
-
-        # Make sure the username and password are entered.
-        username = user_input[CONF_USERNAME].strip()
-        if username == self.obscure_username:
-            username = self.username
-        password = user_input[CONF_PASSWORD].strip()
-        if password == self.obscure_password:
-            password = self.password
-
-        if username == '':
-            self.errors[CONF_USERNAME] = 'required_field'
-            self.errors_user_input[CONF_USERNAME] = ''
-        if password == '':
-            self.errors[CONF_PASSWORD] = 'required_field'
-            self.errors_user_input[CONF_PASSWORD] = ''
-
-        if not self.errors:
-            self.username = user_input[CONF_USERNAME] = username
-            self.password = user_input[CONF_PASSWORD] = password
-            self.obscure_username = obscure_field(self.username)
-            self.obscure_password = obscure_field(self.password)
-
-        return self.username != original_username or self.password != original_password
 
 
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -1570,25 +1540,36 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                     A dictionary with the devicename and identifiers
                     used in the tracking configuration devices icloud_device parameter
         '''
+        _traceha(f"{self.username=} {self.password=} {user_input=}")
         if CONF_USERNAME in user_input:
-            if user_input[CONF_USERNAME] != self.obscure_username:
-                self.username = user_input[CONF_USERNAME]
-            if user_input[CONF_PASSWORD] != self.obscure_password:
-                self.password = user_input[CONF_PASSWORD]
+            self.username = user_input[CONF_USERNAME].lower()
+            self.password = user_input[CONF_PASSWORD]
         else:
             self.username = Gb.conf_tracking[CONF_USERNAME]
             self.password = Gb.conf_tracking[CONF_PASSWORD]
-        self.obscure_username = obscure_field(self.username)
-        self.obscure_password = obscure_field(self.password)
 
+        # Already logged in with same username/password
+        if (self.PyiCloud
+                and self.username == self.PyiCloud.username
+                and self.password == self.PyiCloud.password):
+            # self.errors = {'base': 'icloud_already_logged_into'}
+            return
+
+        event_msg =(f"{EVLOG_NOTICE}Logging into iCloud Account with Configuration Wizard, "
+                    f"{CRLF_DOT}New iCloud Account > {obscure_field(self.username)}, "
+                    f"{CRLF_DOT}iCloud Account Currently Used > {obscure_field(Gb.username)}")
+        post_event(event_msg)
+
+        verify_password = user_input[CONF_USERNAME] != Gb.conf_tracking[CONF_USERNAME]
         self.called_from_step_id = called_from_step_id
-
         try:
             self.PyiCloud = await self.hass.async_add_executor_job(
                                         pyicloud_ic3_interface.create_PyiCloudService_secondary,
                                         self.username,
                                         self.password,
-                                        'config_flow')
+                                        'config_flow',
+                                        verify_password)
+
 
         except (PyiCloudFailedLoginException) as err:
             _LOGGER.error(f"Error logging into iCloud service: {err}")
@@ -1598,12 +1579,12 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                         data_schema=self.form_schema(self.step_id),
                         errors=self.errors)
 
+        except Exception as err:
+            log_exception(err)
+
+
         if self.PyiCloud.requires_2fa:
             return
-
-        if self.called_from_step_id == 'icloud_account':
-            user_input = {CONF_USERNAME: self.username, CONF_PASSWORD: self.password}
-            self._update_configuration_file(user_input)
 
         self.errors   = {'base': 'icloud_logged_into'}
         self.menu_msg = 'icloud_logged_into'
@@ -1651,15 +1632,16 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         '''
 
         user_input = self._check_if_from_svc_call(user_input)
-        if (user_input is not None
-                and 'icloud3_service_call' in user_input):
+        if (user_input is not None and 'icloud3_service_call' in user_input):
             icloud3_service_call = True
             user_input = None
         else:
             icloud3_service_call = False
 
         # Will be from config_entries if came in from the HA settings on a red configuration screen
+        _traceha(f"in reauth 1637 {self.step_id=}{user_input=} {self.errors=}")
         self.step_id = config_entries.SOURCE_REAUTH
+        _traceha(f"in reauth 1639 {self.step_id=} {user_input=} {self.errors=}")
         self.errors = errors or {}
 
         if user_input is not None and user_input != {}:
@@ -1708,8 +1690,6 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             return self.async_show_form(step_id=self.step_id,
                                             data_schema=self.form_schema(self.step_id),
                                             errors=self.errors)
-
-        # elif icloud3_service_call:
 
         schema = vol.Schema({vol.Optional(CONF_VERIFICATION_CODE):
                                 selector.TextSelector(),})
@@ -2327,7 +2307,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         """
         self.opt_famshr_text_by_fname_base = OPT_LIST_KEY_TEXT_NONE.copy()
 
-        if self.PyiCloud is None:
+        if self.PyiCloud is None or self.PyiCloud.FamilySharing is None:
             return
 
         _FamShr = self.PyiCloud.FamilySharing
@@ -2345,7 +2325,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         raw_model, model, model_display_name and device_id fields.
         '''
 
-        if self.PyiCloud is None:
+        if self.PyiCloud is None or self.PyiCloud.FamilySharing is None:
             return
 
         _FamShr = self.PyiCloud.FamilySharing
@@ -2585,6 +2565,9 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             zone_data  = entity_io.get_attributes(zone_entity)
             zone       = zone_entity.replace('zone.', '')
 
+            # if zone_data[PASSIVE]:
+            #     continue
+
             if NAME in zone_data:
                 ztitle = zone_data[NAME].title()
             else:
@@ -2756,6 +2739,9 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 
         new_sensors_list    = []
         remove_sensors_list = []     # base device sensors
+        if user_input[CONF_EXCLUDED_SENSORS] == []:
+            user_input[CONF_EXCLUDED_SENSORS] = ['None']
+
         for sensor_group, sensor_list in user_input.items():
             if (sensor_group not in Gb.conf_sensors
                     or user_input[sensor_group] == Gb.conf_sensors[sensor_group]
@@ -2903,6 +2889,20 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             menu_item = self.menu_item_selected
 
         return user_input, menu_item
+
+#--------------------------------------------------------------------
+    def _strip_spaces(self, user_input, parm_list=[]):
+        '''
+        Remove leading or trailing spaces from items in the parameter list
+
+        '''
+        parm_list = [pname  for pname, pvalue in user_input.items()
+                                if type(pvalue) is str and pvalue != '']
+
+        for parm in parm_list:
+            user_input[parm] = user_input[parm].strip()
+
+        return user_input
 
 #--------------------------------------------------------------------
     def _action_text_to_item(self, user_input):
@@ -3301,22 +3301,28 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             self.opt_actions = ICLOUD_ACCOUNT_ACTIONS.copy()
             self.opt_actions.extend(OPT_ACTION_BASE)
 
-            self.obscure_username = self.username   if self.show_username_password \
-                                                    else obscure_field(self.username)
-            self.obscure_password = self.password   if self.show_username_password \
-                                                    else obscure_field(self.password)
+            if self.username or self.password:
+                obscure_username = obscure_field(self.username) or 'None'
+                obscure_password = obscure_field(self.password) or 'None'
+                username_password = f"({obscure_username}/{obscure_password})"
+
+                logged_into_msg = self.opt_actions[LOG_IN_ICLOUD_ACCT_IDX].replace('Not Logged In', username_password)
+                self.opt_actions[LOG_IN_ICLOUD_ACCT_IDX] = logged_into_msg
+
+            data_source_list = str_to_list(Gb.conf_tracking[CONF_DATA_SOURCE])
 
             return vol.Schema({
-                vol.Required(CONF_DATA_SOURCE,
-                            default=self._option_parm_to_text(CONF_DATA_SOURCE, DATA_SOURCE_ITEMS_KEY_TEXT)):
-                            selector.SelectSelector(selector.SelectSelectorConfig(
-                                options=dict_value_to_list(DATA_SOURCE_ITEMS_KEY_TEXT), mode='dropdown')),
+                vol.Optional(CONF_DATA_SOURCE,
+                            default=data_source_list):
+                            cv.multi_select(DATA_SOURCE_ITEMS_KEY_TEXT2),
                 vol.Optional(CONF_USERNAME,
-                            default=self.obscure_username):
-                            selector.TextSelector(),
+                            default=self.username):
+                            selector.TextSelector(selector.TextSelectorConfig(
+                                type='password')),
                 vol.Optional(CONF_PASSWORD,
-                            default=self.obscure_password):
-                            selector.TextSelector(),
+                            default=self.password):
+                            selector.TextSelector(selector.TextSelectorConfig(
+                                type='password')),
                 # vol.Required(CONF_ICLOUD_SERVER_ENDPOINT_SUFFIX,
                 #             default=self._option_parm_to_text(CONF_ICLOUD_SERVER_ENDPOINT_SUFFIX, ICLOUD_SERVER_ENDPOINT_SUFFIX_ITEMS_KEY_TEXT)):
                 #             selector.SelectSelector(
@@ -3324,8 +3330,8 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 #                         options=dict_value_to_list(ICLOUD_SERVER_ENDPOINT_SUFFIX_ITEMS_KEY_TEXT), mode='dropdown')),
                 vol.Required('opt_action',
                             default=self._action_default_text('save')):
-                            selector.SelectSelector(
-                                selector.SelectSelectorConfig(options=self.opt_actions, mode='list')),
+                            selector.SelectSelector(selector.SelectSelectorConfig(
+                                options=self.opt_actions, mode='list')),
                 })
 
         #------------------------------------------------------------------------
@@ -3633,19 +3639,23 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 })
 
         #------------------------------------------------------------------------
-        elif step_id == 'other_parms':
-            self.opt_actions = [OPT_ACTION_ITEMS_KEY_TEXT['change_device_order']]
-            self.opt_actions.extend(OPT_ACTION_BASE)
-
+        elif step_id == 'tracking_parameters':
+            self.opt_actions = OPT_ACTION_BASE.copy()
+            _traceha(f"{self.opt_www_directory_list=}")
+            _traceha(f"{dict_value_to_list(self.opt_www_directory_list)=}")
+            _traceha(f"{self._parm_or_error_msg(CONF_EVLOG_CARD_DIRECTORY, conf_group=CF_PROFILE)=}")
             schema = vol.Schema({
-                vol.Required(CONF_LOG_LEVEL,
-                            default=self._option_parm_to_text(CONF_LOG_LEVEL, LOG_LEVEL_ITEMS_KEY_TEXT)):
-                            selector.SelectSelector(selector.SelectSelectorConfig(
-                                options=dict_value_to_list(LOG_LEVEL_ITEMS_KEY_TEXT), mode='dropdown')),
+                # vol.Required(CONF_LOG_LEVEL,
+                #             default=self._option_parm_to_text(CONF_LOG_LEVEL, LOG_LEVEL_ITEMS_KEY_TEXT)):
+                #             selector.SelectSelector(selector.SelectSelectorConfig(
+                #                 options=dict_value_to_list(LOG_LEVEL_ITEMS_KEY_TEXT), mode='dropdown')),
+                vol.Required(CONF_DISTANCE_BETWEEN_DEVICES,
+                            default=Gb.conf_general[CONF_DISTANCE_BETWEEN_DEVICES]):
+                            selector.BooleanSelector(),
                 vol.Required(CONF_GPS_ACCURACY_THRESHOLD,
                             default=Gb.conf_general[CONF_GPS_ACCURACY_THRESHOLD]):
                             selector.NumberSelector(selector.NumberSelectorConfig(
-                                min=5, max=500, step=5, unit_of_measurement='m')),
+                                min=5, max=250, step=5, unit_of_measurement='m')),
                 vol.Required(CONF_OLD_LOCATION_THRESHOLD,
                             default=Gb.conf_general[CONF_OLD_LOCATION_THRESHOLD]):
                             selector.NumberSelector(selector.NumberSelectorConfig(
@@ -3654,9 +3664,6 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                             default=Gb.conf_general[CONF_OLD_LOCATION_ADJUSTMENT]):
                             selector.NumberSelector(selector.NumberSelectorConfig(
                                 min=0, max=60, step=1, unit_of_measurement='minutes')),
-                vol.Required(CONF_DISTANCE_BETWEEN_DEVICES,
-                            default=Gb.conf_general[CONF_DISTANCE_BETWEEN_DEVICES]):
-                            selector.BooleanSelector(),
                 vol.Required(CONF_MAX_INTERVAL,
                             default=Gb.conf_general[CONF_MAX_INTERVAL]):
                             selector.NumberSelector(selector.NumberSelectorConfig(
@@ -3669,18 +3676,18 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                             default=Gb.conf_general[CONF_IOSAPP_ALIVE_INTERVAL]):
                             selector.NumberSelector(selector.NumberSelectorConfig(
                                 min=15, max=240, step=15, unit_of_measurement='minutes')),
-                vol.Required(CONF_TFZ_TRACKING_MAX_DISTANCE,
-                            default=Gb.conf_general[CONF_TFZ_TRACKING_MAX_DISTANCE]):
-                            selector.NumberSelector(selector.NumberSelectorConfig(
-                                min=1, max=1000, unit_of_measurement='Km')),
                 vol.Required(CONF_OFFLINE_INTERVAL,
                             default=Gb.conf_general[CONF_OFFLINE_INTERVAL]):
                             selector.NumberSelector(selector.NumberSelectorConfig(
                                 min=1, max=240, step=1, unit_of_measurement='minutes')),
+                vol.Required(CONF_TFZ_TRACKING_MAX_DISTANCE,
+                            default=Gb.conf_general[CONF_TFZ_TRACKING_MAX_DISTANCE]):
+                            selector.NumberSelector(selector.NumberSelectorConfig(
+                                min=1, max=100, unit_of_measurement='Km')),
                 vol.Required(CONF_TRAVEL_TIME_FACTOR,
                             default=self._parm_or_error_msg(CONF_TRAVEL_TIME_FACTOR)):
                             selector.NumberSelector(selector.NumberSelectorConfig(
-                                min=.1, step=.1, max = 1)),
+                                min=.1, max = 1, step=.1)),
                 vol.Required(CONF_EVLOG_CARD_DIRECTORY,
                             default=self._parm_or_error_msg(CONF_EVLOG_CARD_DIRECTORY, conf_group=CF_PROFILE)):
                             selector.SelectSelector(selector.SelectSelectorConfig(
@@ -3724,9 +3731,6 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                             selector.BooleanSelector(),
                 vol.Optional(CONF_DISCARD_POOR_GPS_INZONE,
                             default=Gb.conf_general[CONF_DISCARD_POOR_GPS_INZONE]):
-                            selector.BooleanSelector(),
-                vol.Optional(CONF_DISTANCE_BETWEEN_DEVICES,
-                            default=Gb.conf_general[CONF_DISTANCE_BETWEEN_DEVICES]):
                             selector.BooleanSelector(),
 
                 vol.Optional('opt_action',
@@ -3857,9 +3861,6 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 Gb.conf_sensors[CONF_SENSORS_TRACKING_DISTANCE].append(HOME_DISTANCE)
 
             schema = vol.Schema({
-                vol.Required(CONF_SENSORS_MONITORED_DEVICES,
-                            default=Gb.conf_sensors[CONF_SENSORS_MONITORED_DEVICES]):
-                            cv.multi_select(CONF_SENSORS_MONITORED_DEVICES_KEY_TEXT),
                 vol.Required(CONF_SENSORS_DEVICE,
                             default=Gb.conf_sensors[CONF_SENSORS_DEVICE]):
                             cv.multi_select(CONF_SENSORS_DEVICE_KEY_TEXT),
@@ -3872,18 +3873,21 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 vol.Required(CONF_SENSORS_TRACKING_DISTANCE,
                             default=Gb.conf_sensors[CONF_SENSORS_TRACKING_DISTANCE]):
                             cv.multi_select(CONF_SENSORS_TRACKING_DISTANCE_KEY_TEXT),
-                vol.Required(CONF_SENSORS_TRACK_FROM_ZONES,
-                            default=Gb.conf_sensors[CONF_SENSORS_TRACK_FROM_ZONES]):
-                            cv.multi_select(CONF_SENSORS_TRACK_FROM_ZONES_KEY_TEXT),
-                vol.Required(CONF_SENSORS_TRACKING_OTHER,
-                            default=Gb.conf_sensors[CONF_SENSORS_TRACKING_OTHER]):
-                            cv.multi_select(CONF_SENSORS_TRACKING_OTHER_KEY_TEXT),
                 vol.Required(CONF_SENSORS_ZONE,
                             default=Gb.conf_sensors[CONF_SENSORS_ZONE]):
                             cv.multi_select(CONF_SENSORS_ZONE_KEY_TEXT),
                 vol.Required(CONF_SENSORS_OTHER,
                             default=Gb.conf_sensors[CONF_SENSORS_OTHER]):
                             cv.multi_select(CONF_SENSORS_OTHER_KEY_TEXT),
+                vol.Required(CONF_SENSORS_TRACK_FROM_ZONES,
+                            default=Gb.conf_sensors[CONF_SENSORS_TRACK_FROM_ZONES]):
+                            cv.multi_select(CONF_SENSORS_TRACK_FROM_ZONES_KEY_TEXT),
+                vol.Required(CONF_SENSORS_MONITORED_DEVICES,
+                            default=Gb.conf_sensors[CONF_SENSORS_MONITORED_DEVICES]):
+                            cv.multi_select(CONF_SENSORS_MONITORED_DEVICES_KEY_TEXT),
+                vol.Required(CONF_SENSORS_TRACKING_OTHER,
+                            default=Gb.conf_sensors[CONF_SENSORS_TRACKING_OTHER]):
+                            cv.multi_select(CONF_SENSORS_TRACKING_OTHER_KEY_TEXT),
                 vol.Optional(CONF_EXCLUDED_SENSORS,
                             default=Gb.conf_sensors[CONF_EXCLUDED_SENSORS]):
                             selector.SelectSelector(selector.SelectSelectorConfig(

@@ -76,6 +76,12 @@ from .helpers.time_util import (time_now_secs, secs_to_time,  secs_to, secs_sinc
                                 secs_to_time_age_str, )
 from .helpers.dist_util import (m_to_ft_str, calc_distance_km, format_dist_km, format_dist_m, )
 
+# zone_data constants - Used in the select_zone function
+ZD_DIST_M     = 0
+ZD_ZONE       = 1
+ZD_NAME       = 2
+ZD_RADIUS     = 3
+ZD_DISPLAY_AS = 4
 
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 class iCloud3:
@@ -1109,112 +1115,58 @@ class iCloud3:
         #                         for Zone in Gb.Zones
         #                         if (Zone.passive is False and Zone.radius_m > 1)]
 
-        zones_data = [[Zone.distance_m(latitude, longitude), Zone, Zone.zone, Zone.radius_m, Zone.display_as]
+        # ZD_DIST_M     = 0
+        # ZD_ZONE       = 1
+        # ZD_NAME       = 2
+        # ZD_RADIUS     = 3
+        # ZD_DISPLAY_AS = 4
+
+        # Get a list of all the zones, their distance, size and display_as
+        zones_data = [[Zone.distance_m(latitude, longitude), Zone, Zone.zone,
+                        Zone.radius_m, Zone.display_as]
                                 for Zone in Gb.Zones
                                 if (Zone.passive is False
                                     and Zone.radius_m > 1
                                     and Device.is_my_stat_zone(Zone))]
 
-        # Select zones the device is in
-        inzone_zones = [zone_data for zone_data in zones_data if zone_data [0] <= zone_data[3]]
+        # Verify that the stat_zone was not left without an exit trigger. Reset it if it was.
+        stat_zone = [zone_data_selected[ZD_ZONE]
+                                for zone_data in zones_data
+                                if is_statzone(zone_data[ZD_NAME])
+                                    and zone_data[ZD_DIST_M] > zone_data[ZD_RADIUS]]
+
+        if stat_zone != []:
+            Device.stationary_zone_update_control = STAT_ZONE_MOVE_TO_BASE
+            Device.StatZone.update_stationary_zone_location()
+
+            zones_data = [[Zone.distance_m(latitude, longitude), Zone, Zone.zone,
+                            Zone.radius_m, Zone.display_as]
+                                for Zone in Gb.Zones
+                                if (Zone.passive is False
+                                    and Zone.radius_m > 1
+                                    and Device.is_my_stat_zone(Zone))]
+
+        # Select all the zones the device is in
+        inzone_zones = [zone_data
+                                for zone_data in zones_data
+                                if zone_data[ZD_DIST_M] <= zone_data[ZD_RADIUS]]
 
         # Get the smallest zone
         for zone_data in inzone_zones:
-            if zone_data[3] < zone_data_selected[3]:
+            if zone_data[ZD_RADIUS] < zone_data_selected[ZD_RADIUS]:
                 zone_data_selected = zone_data
 
-        ZoneSelected = zone_data_selected[1]
-        zone_selected = zone_data_selected[2]
-        zone_selected_dist_m = zone_data_selected[0]
+
+        ZoneSelected = zone_data_selected[ZD_ZONE]
+        zone_selected = zone_data_selected[ZD_NAME]
+        zone_selected_dist_m = zone_data_selected[ZD_DIST_M]
 
         # diisplay_as = Device.StatZone.dislay_as if is_statzone(zone_selected) else zone_data_selected[1]
-        zones_distance_list = [f"{int(zone_data[0]):08}| {zone_data[4]}-{format_dist_m(zone_data[0])}"
+        zones_distance_list = [f"{int(zone_data[ZD_DIST_M]):08}| {zone_data[4]}-{format_dist_m(zone_data[ZD_DIST_M])}"
                                     for zone_data in zones_data]
 
         return ZoneSelected, zone_selected, zone_selected_dist_m, zones_distance_list
 
-    def x_select_zone(self, Device, latitude=None, longitude=None):
-        '''
-        Cycle thru the zones and see if the Device is in a zone (or it's stationary zone).
-
-        Parameters:
-            latitude, longitude - Override the normally used Device.loc_data_lat/long when
-                            calculating the zone distance from the current location
-        Return:
-            ZoneSelected - Zone selected object or None
-            zone_selected - zone entity name
-            zone_selected_distance_m - distance to the zone (meters)
-            zones_distance_list - list of zone info [distance_m|zoneName-distance]
-        '''
-
-        if latitude is None:
-            latitude  = Device.loc_data_latitude
-            longitude = Device.loc_data_longitude
-
-        # iOSApp will trigger Enter Region when the edge of the devices's location area (100m)
-        # touches or is inside the zones radius. If enterina a zone, increase the zone's radius
-        # so the device will be in the zone when it is actually just outside of it.
-        # But don't do this for a Stationary Zone.
-        # if Close to zone, add 50m for iOS App Extra area
-        zone_radius_iosapp_enter_adjustment_m = 0
-        # if (Device.is_data_source_IOSAPP
-        #         and instr(Device.trigger.lower(), 'exit') is False):
-        #     zone_radius_iosapp_enter_adjustment_m = 50
-
-        # Exit if no location data is available
-        if Device.no_location_data:
-            ZoneSelected         = Gb.Zones_by_zone['unknown']
-            zone_selected        = 'unknown'
-            zone_selected_dist_m = 0
-            # Device.loc_data_zone = zone_selected
-            zones_msg = f"Zone > Unknown, GPS-{Device.loc_data_fgps}"
-            post_event(Device.devicename, zones_msg)
-            return ZoneSelected, zone_selected, 0, []
-
-        zone_selected_dist_m = HIGH_INTEGER
-        zone_selected_radius_m = HIGH_INTEGER
-        ZoneSelected         = None
-        zone_selected        = None
-        zones_distance_list  = []
-
-
-        for Zone in Gb.Zones:
-            if Zone.passive:
-                continue
-
-            zone          = Zone.zone
-            zone_radius_m = Zone.radius_m
-            zone_dist_m   = Zone.distance_m(latitude, longitude)
-
-            # if (.100 < zone_dist_m <= .150
-            #         and zone_radius_iosapp_enter_adjustment_m > 0):
-            #     zone_radius_m += zone_radius_iosapp_enter_adjustment_m
-
-            #Skip another device's stationary zone or if at base location
-            if (is_statzone(zone) and instr(zone, Device.devicename) is False):
-                continue
-
-            #Bypass stationary zone at base and Pseudo Zones (not_home, not_set, etc)
-            elif zone_radius_m <= 1:
-                continue
-
-            #Do not check Stat Zone if radius=1 (at base loc) but include in log_msg
-            in_zone_flag      = zone_dist_m <= zone_radius_m
-            closer_zone_flag  = ZoneSelected is None or zone_dist_m < zone_selected_dist_m
-            smaller_zone_flag = zone_dist_m == zone_selected_dist_m and zone_radius_m <= zone_selected_radius_m
-            # smaller_zone_flag = closer_zone_flag and ZoneSelected and zone_radius_m <= zone_selected_radius_m
-
-            if (in_zone_flag
-                    and (closer_zone_flag or smaller_zone_flag)):
-                ZoneSelected         = Zone
-                zone_selected        = zone
-                zone_selected_dist_m = zone_dist_m
-                zone_selected_radius_m = ZoneSelected.radius_m + zone_radius_iosapp_enter_adjustment_m
-
-            ThisZone = Device.StatZone if is_statzone(zone_selected) else Zone
-            zones_distance_list.append(f"{int(zone_dist_m):08}| {ThisZone.display_as}-{format_dist_m(zone_dist_m)}")
-
-        return ZoneSelected, zone_selected, zone_selected_dist_m, zones_distance_list
 
 #--------------------------------------------------------------------
     def _check_statzone_timer_expired(self, Device):
@@ -1224,7 +1176,6 @@ class iCloud3:
             Reset the timer if the Device has moved further than the distance limit
             Move Device into the Stat Zone if it has not moved further than the limit
         '''
-
         calc_dist_last_poll_moved_km = calc_distance_km(Device.sensors[GPS], Device.loc_data_gps)
         Device.StatZone.update_distance_moved(calc_dist_last_poll_moved_km)
 

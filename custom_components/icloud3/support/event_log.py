@@ -18,7 +18,7 @@ from ..const                import (HOME,
                                     EVLOG_TIME_RECD, EVLOG_HIGHLIGHT, EVLOG_MONITOR,
                                     EVLOG_ERROR, EVLOG_ALERT, EVLOG_UPDATE_START, EVLOG_UPDATE_END,
                                     EVLOG_IC3_STARTING, EVLOG_IC3_STAGE_HDR,
-                                    CRLF, CRLF_DOT, CRLF_CHK, RARROW, DOT,
+                                    CRLF, CRLF_DOT, CRLF_CHK, RARROW, DOT, LT, GT,
                                     )
 
 from ..helpers.common       import instr, is_statzone, circle_letter
@@ -235,13 +235,7 @@ class EventLog(object):
                 event_text = event_text.replace('N/A', '')
 
             if len(event_text) == 0: event_text = 'Info Message'
-            event_text = event_text.replace('__', '')
-            event_text = event_text.replace('"', '`')
-            event_text = event_text.replace("'", "`")
-            event_text = event_text.replace('~','--')
-            event_text = event_text.replace('Background','Bkgnd')
-            event_text = event_text.replace('Geographic','Geo')
-            event_text = event_text.replace('Significant','Sig')
+            event_text = self._replace_special_chars(event_text)
 
             if self.display_text_as is None:
                     self.display_text_as = {}
@@ -669,15 +663,15 @@ class EventLog(object):
             el_records.reverse()
             for record in el_records:
                 devicename = record[ELR_DEVICENAME]
-                time       = record[ELR_TIME]
+                time       = record[ELR_TIME] if record[ELR_TIME] not in ['Debug', 'Rawdata'] else ''
                 text       = record[ELR_TEXT]
 
                 # Time-record = {iosapp_state},{ic3_zone},{interval},{travel_time},{distance
                 if text.startswith(EVLOG_UPDATE_START):
-                    block_char = '\t┌─ '
+                    block_char = '\t\t\t┌─ '
                     inside_home_det_interval_flag = True
                 elif text.startswith(EVLOG_UPDATE_END):
-                    block_char = '\t└─ '
+                    block_char = '\t\t\t└─ '
                     inside_home_det_interval_flag = False
                 elif text.startswith('Results:'):
                     if time.startswith('»') and time.startswith('»Home') is False:
@@ -694,10 +688,11 @@ class EventLog(object):
                 if text.startswith(EVLOG_TIME_RECD):
                     text = text[3:]
                     item = text.split(',')
-                    text = (f"iOSAppState-{item[ELR_DEVICENAME]}, "
-                            f"iCloud3Zone-{item[ELR_TIME]}, "
-                            f"Interval-{item[ELR_TEXT]}, "
-                            f"TravelTime-{item[3]}, Distance-{item[4]}")
+                    text = (f"iOSAppState-{item[0]}, "
+                            f"iCloud3Zone-{item[1]}, "
+                            f"Interval-{item[2]}, "
+                            f"TravelTime-{item[3]}, "
+                            f"Distance-{item[4]}")
 
                 text = text.replace("'", "").replace('&nbsp;', ' ').replace('<br>', ', ')
                 text = text.replace(",  ", ",").replace('  ', ' ')
@@ -724,6 +719,20 @@ class EventLog(object):
         except Exception as err:
             log_exception(err)
 
+#--------------------------------------------------------------------
+    @staticmethod
+    def _replace_special_chars(event_text):
+        event_text = event_text.replace('<', LT)
+        # event_text = event_text.replace('>', GT)
+        event_text = event_text.replace('__', '')
+        event_text = event_text.replace('"', '`')
+        event_text = event_text.replace("'", "`")
+        event_text = event_text.replace('~','--')
+        event_text = event_text.replace('Background','Bkgnd')
+        event_text = event_text.replace('Geographic','Geo')
+        event_text = event_text.replace('Significant','Sig')
+
+        return event_text
 #--------------------------------------------------------------------
     @staticmethod
     def uncompress_evlog_recd_special_characters(recd):

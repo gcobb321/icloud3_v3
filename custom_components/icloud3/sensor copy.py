@@ -28,7 +28,7 @@ from .const             import (DOMAIN, VERSION,
                                 NAME, FNAME, BADGE,
                                 ZONE, ZONE_INFO,
                                 BATTERY, BATTERY_STATUS, BATTERY_SOURCE,
-                                ZONE_DISTANCE, ZONE_DISTANCE_M, ZONE_DISTANCE_M_EDGE,
+                                ZONE_DISTANCE,
                                 DISTANCE_TO_OTHER_DEVICES_DATETIME,
                                 CONF_TRACK_FROM_ZONES,
                                 CONF_IC3_DEVICENAME, CONF_MODEL, CONF_RAW_MODEL, CONF_FNAME,
@@ -500,23 +500,18 @@ class SensorBase(SensorEntity):
 
         attr_units_flag = False
         for _sensor in self._get_sensor_definition(sensor, SENSOR_ATTRS):
-            _sensor_attr_name = _sensor.replace('_date/time', '')
             _sensor_value = self._get_sensor_value(_sensor)
-            try:
-                _sensor_value = self._set_precision(_sensor_value)
-            except:
-                pass
+            _sensor_attr_name = _sensor.replace('_date/time', '')
 
-            if instr(_sensor_attr_name, ZONE_DISTANCE_M_EDGE):
-                extra_attrs[_sensor_attr_name] = _sensor_value
-
-                # if attr_units_flag == False:
-                    # attr_units_flag = True
-                if Gb.um == 'mi':
-                    extra_attrs['distance_units_(attributes)'] = 'mi'
-                    if self._get_sensor_value(ZONE_DISTANCE_M):
-                        sensor_value = self._get_sensor_value(ZONE_DISTANCE_M)*Gb.um_km_mi_factor/1000
-                        extra_attrs['miles_distance'] = self._set_precision(sensor_value)
+            if instr(_sensor_attr_name, 'distance'):
+                if attr_units_flag == False:
+                    attr_units_flag = True
+                    extra_attrs['distance_units_(attributes)'] = Gb.um
+                try:
+                    _sensor_value = self._set_precision(_sensor_value)
+                    #_sensor_value = self._set_precision(f"{_sensor_value:.4f}")
+                except:
+                    pass
 
             extra_attrs[_sensor_attr_name] = _sensor_value
 
@@ -1063,30 +1058,30 @@ class Sensor_Distance(SensorBase):
         if self._attr_native_unit_of_measurement == 'km':
             if round_to_zero(sensor_value) == 0:
                 sensor_value = 0
-            elif sensor_value > 20:
-                sensor_value = round(sensor_value, 0)
-            elif sensor_value >= 1:
-                sensor_value = round(sensor_value, 2)
+            elif sensor_value >= 25:       #25km/15mi
+                sensor_value = f"{sensor_value:.0f}"
+            elif sensor_value >= 1:        #1000m/.6mi
+                sensor_value = f"{sensor_value:.1f}"
             elif instr(self.sensor_type, 'm-ft'):
-                sensor_value =  round(sensor_value*1000, 2)
+                sensor_value =  f"{sensor_value*1000:.2f}"
                 self._attr_native_unit_of_measurement = 'm'
             else:
-                sensor_value =  round(sensor_value, 2)
+                sensor_value =  f"{sensor_value:.2f}"
 
         elif self._attr_native_unit_of_measurement == 'mi':
             if round_to_zero(sensor_value) == 0:
                 sensor_value = 0
             elif sensor_value > 20:
-                sensor_value = round(sensor_value, 1)
+                sensor_value = f"{sensor_value:.1f}"
             elif sensor_value > 1:
-                sensor_value = round(sensor_value, 2)
+                sensor_value = f"{sensor_value:.2f}"
             elif instr(self.sensor_type, 'm-ft'):
-                sensor_value = round(sensor_value*5280, 2)
+                sensor_value = f"{sensor_value*5280:.2f}"
                 self._attr_native_unit_of_measurement = 'ft'
             else:
-                sensor_value = round(sensor_value, 2)   #6" accuracy
+                sensor_value = f"{sensor_value:.4f}"   #6" accuracy
 
-        return sensor_value
+        return self._set_precision(sensor_value)
 
     @property
     def extra_state_attributes(self):

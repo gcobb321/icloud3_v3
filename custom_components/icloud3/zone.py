@@ -16,7 +16,7 @@
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 from .global_variables  import GlobalVariables as Gb
-from .const             import (HOME, STATIONARY, HIGH_INTEGER,
+from .const             import (HOME, NOT_HOME, STATIONARY, HIGH_INTEGER,
                                 ZONE, TITLE, FNAME, ZONE_FNAME,
                                 STAT_ZONE_NO_UPDATE, STAT_ZONE_MOVE_DEVICE_INTO, STAT_ZONE_MOVE_TO_BASE,
                                 NAME, STATIONARY_FNAME, ID,
@@ -56,8 +56,9 @@ MDI_NAME_LETTERS = {'circle-outline': '', 'box-outline': '', 'circle': '', 'box'
 class iCloud3_Zone(object):
 
     def __init__(self, zone, zone_data):
-        self.zone = zone
+        self.zone    = zone
 
+        # _traceha(f"{zone=} {zone_data=}")
         if NAME in zone_data:
             ztitle = zone_data[NAME].title()
         else:
@@ -79,7 +80,9 @@ class iCloud3_Zone(object):
         self.radius_m   = round(zone_data.get(RADIUS, 100))
         self.passive    = zone_data.get(PASSIVE, True)
 
-        self.entity_id  = zone_data.get(ID, zone.lower()).replace('sensor.', '')
+        # self.entity_id  = zone_data.get(ID, zone.lower())[:6]
+        self.er_zone_id = zone_data.get(ID, zone.lower())     # HA entity_registry id
+        self.entity_id  = self.er_zone_id[:6]
         self.unique_id  = zone_data.get('unique_id', zone.lower())
 
         self.dist_time_history = []        #Entries are a list - [lat, long, distance, travel time]
@@ -114,6 +117,8 @@ class iCloud3_Zone(object):
         if Gb.device_tracker_state_format == ZONE:
             self.device_tracker_state = self.zone
         elif Gb.device_tracker_state_format == FNAME:
+            self.device_tracker_state = self.zone if self.zone in [HOME, NOT_HOME] else self.fname
+        elif Gb.device_tracker_state_format == 'fname/Home':
             self.device_tracker_state = self.fname
         elif Gb.device_tracker_state_format == NAME:
             self.device_tracker_state = self.name
@@ -335,6 +340,7 @@ class iCloud3_StationaryZone(iCloud3_Zone):
     def move_stationary_zone_to_new_location(self):
 
         if self.Device.old_loc_poor_gps_cnt > 0:
+            post_event("Move into Stationary Zone delayed > Old Location")
             return
 
         try:
@@ -343,21 +349,24 @@ class iCloud3_StationaryZone(iCloud3_Zone):
 
             # Make sure stationary zone is not being moved to another zone's location unless it a
             # Stationary Zone
-            for Zone in Gb.Zones:
-                if Zone.radius_m <= 1:
-                    continue
+            close_zone = [{ 'name': Zone.zone,
+                            'display_as': Zone.display_as,
+                            'dist_m': Zone.distance_km(latitude, longitude)}
+                                    for Zone in Gb.Zones
+                                    if (Zone.radius_m > 1
+                                        and is_statzone(Zone.zone) is False
+                                        and Zone.passive is False
+                                        and Zone.distance_km(latitude, longitude) < self.min_dist_from_zone_km)]
 
-                zone_dist_km = Zone.distance_km(latitude, longitude)
+            if close_zone != []:
+                close_zone_1st = close_zone[0]
+                event_msg =(f"Move into stationary zone cancelled > "
+                            f"Too close to zone-{close_zone_1st['display_as']}, "
+                            f"DistFmZone-{format_dist_km(close_zone_1st['dist_m'])}")
+                post_event(self.devicename, event_msg)
+                self.timer = Gb.this_update_secs + self.still_time
 
-                if is_statzone(Zone.zone) is False:
-                    if zone_dist_km < self.min_dist_from_zone_km:   #self.inzone_radius:
-                        event_msg =(f"Move into stationary zone cancelled > "
-                                    f"Too close to zone-{Zone.display_as}, "
-                                    f"DistFmZone-{format_dist_km(zone_dist_km)}")
-                        post_event(self.devicename, event_msg)
-                        self.timer = Gb.this_update_secs + self.still_time
-
-                        return False
+                return False
 
             # Set new location, it will be updated when Device's attributes are updated in main routine
             self.latitude              = latitude

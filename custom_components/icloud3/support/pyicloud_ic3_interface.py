@@ -11,10 +11,10 @@ from ..support              import start_ic3 as start_ic3
 from ..support.pyicloud_ic3 import (PyiCloudService, PyiCloudFailedLoginException, PyiCloudNoDevicesException,
                                     PyiCloudAPIResponseException, PyiCloud2FARequiredException,)
 
-from ..helpers.common       import (instr, is_statzone, list_to_str, )
+from ..helpers.common       import (instr, is_statzone, list_to_str, delete_file, )
 from ..helpers.messaging    import (post_event, post_error_msg, post_monitor_msg, log_debug_msg,
                                     log_info_msg, log_exception, log_error_msg, internal_error_msg2, _trace, _traceha, )
-from ..helpers.time_util    import (time_now_secs, secs_to_time, secs_to_datetime, secs_to_time_str, format_age,
+from ..helpers.time_util    import (time_secs, secs_to_time, secs_to_datetime, secs_to_time_str, format_age,
                                     secs_to_time_age_str, )
 
 import os
@@ -142,7 +142,7 @@ def authenticate_icloud_account(PyiCloud, called_from='unknown', initial_setup=F
         return
 
     try:
-        Gb.pyicloud_auth_started_secs = time.time()
+        Gb.pyicloud_auth_started_secs = time_secs()
         if PyiCloud and 'Complete' in Gb.PyiCloudInit.init_step_complete:
             PyiCloud.authenticate(refresh_session=True, service='find')
 
@@ -159,7 +159,7 @@ def authenticate_icloud_account(PyiCloud, called_from='unknown', initial_setup=F
                                     session_directory=(f"{Gb.icloud_cookies_dir}/session"),
                                     called_from=called_from)
 
-        authentication_took_secs = time.time() - Gb.pyicloud_auth_started_secs
+        authentication_took_secs = time_secs() - Gb.pyicloud_auth_started_secs
         Gb.pyicloud_calls_time += authentication_took_secs
         if Gb.authentication_error_retry_secs != HIGH_INTEGER:
             Gb.authenticated_time = 0
@@ -169,13 +169,16 @@ def authenticate_icloud_account(PyiCloud, called_from='unknown', initial_setup=F
         is_authentication_2fa_code_needed(PyiCloud, initial_setup=True)
         reset_authentication_time(PyiCloud, authentication_took_secs)
 
-    except (PyiCloudAPIResponseException, PyiCloudFailedLoginException,
-                PyiCloudNoDevicesException) as err:
-        event_msg =(f"iCloud3 Error > An error occurred communicating with "
+    except PyiCloudAPIResponseException as err:
+        event_msg =(f"{EVLOG_ALERT}iCloud3 Error > An error occurred communicating with "
                     f"iCloud Account servers. This can be caused by:"
                     f"{CRLF_DOT}Your network or wifi is down, or"
                     f"{CRLF_DOT}Apple iCloud servers are down"
                     f"{CRLF}Error-{err}")
+
+    except PyiCloudFailedLoginException as err:
+        event_msg =(f"{EVLOG_ALERT}iCloud3 Error > An error occurred logging into the iCloud Account. "
+                    f"Authentication Process/Error-{Gb.PyiCloud.authenticate_method[2:]})")
         post_error_msg(event_msg)
         check_all_devices_online_status()
         return False
@@ -200,10 +203,14 @@ def reset_authentication_time(PyiCloud, authentication_took_secs):
     if authentication_method == '':
         return
 
-    Gb.pyicloud_auth_started_secs = 0
-    Gb.pyicloud_authentication_cnt += 1
     last_authenticated_time = Gb.authenticated_time
-    Gb.authenticated_time   = time_now_secs()
+    last_authenticated_age  = time_secs() - last_authenticated_time
+    if last_authenticated_age <= 1 or authentication_took_secs > 360:
+        authentication_took_secs = 0
+
+    Gb.authenticated_time = time_secs()
+    Gb.pyicloud_authentication_cnt += 1
+    Gb.pyicloud_auth_started_secs = 0
 
     event_msg =(f"iCloud Account Authenticated "
                 f"(#{Gb.pyicloud_authentication_cnt}) > LastAuth-")
@@ -211,9 +218,11 @@ def reset_authentication_time(PyiCloud, authentication_took_secs):
         event_msg += "Never (Initializing)"
     else:
         event_msg += (f"{secs_to_time(last_authenticated_time)} "
-                    f" ({format_age(time_now_secs() - last_authenticated_time)})")
-    event_msg += (f", Method-{authentication_method}, "
-                    f"Took-{secs_to_time_str(authentication_took_secs)}")
+                    f" ({format_age(last_authenticated_age)})")
+    event_msg += f", Method-{authentication_method}"
+    event_msg += f", By-{Gb.PyiCloud.update_requested_by}"
+    if authentication_took_secs > 2:
+        event_msg += f", Took-{secs_to_time_str(authentication_took_secs)}"
     post_event(event_msg)
 
 #--------------------------------------------------------------------
@@ -332,8 +341,13 @@ def pyicloud_reset_session():
     try:
         post_event(f"{EVLOG_IC3_STARTING}Apple ID Verification - Started")
 
-        _cookies_file_rename('cookies', Gb.PyiCloud.cookie_directory_filename)
-        _cookies_file_rename('session', Gb.PyiCloud.session_directory_filename)
+        cookie_directory = Gb.PyiCloud.cookie_directory
+        cookie_filename  = Gb.PyiCloud.cookie_filename
+        session_directory = f"{cookie_directory}/session"
+
+        delete_file('iCloud Acct cookies', cookie_directory,  cookie_filename, delete_old_sv_file=True)
+        delete_file('iCloud Acct session', session_directory, cookie_filename, delete_old_sv_file=True)
+        delete_file('iCloud Acct tokenpw', session_directory, f"{cookie_filename}.tpw")
 
         post_event(f"iCloud initializing interface")
         Gb.PyiCloud.__init__(   Gb.username, Gb.password,
@@ -355,7 +369,7 @@ def pyicloud_reset_session():
         log_exception(err)
 
 #--------------------------------------------------------------------
-def create_PyiCloudService_secondary(username, password, called_from):
+def create_PyiCloudService_secondary(username, password, called_from, verify_password):
     '''
     Create the PyiCloudService object without going through the error checking and
     authentication test routines. This is used by config_flow to open a second
@@ -364,29 +378,5 @@ def create_PyiCloudService_secondary(username, password, called_from):
     return PyiCloudService( username, password,
                             cookie_directory=Gb.icloud_cookies_dir,
                             session_directory=(f"{Gb.icloud_cookies_dir}/session"),
-                            called_from=called_from)
-
-
-#--------------------------------------------------------------------
-def _cookies_file_rename(file_desc, directory_filename, save_extn='sv'):
-    try:
-        file_msg = ""
-        directory_filename_sv = (f"{directory_filename}.{save_extn}")
-        filename    = directory_filename.replace(Gb.PyiCloud.cookie_directory, '')
-        filename_sv = directory_filename_sv.replace(Gb.PyiCloud.cookie_directory, '')
-
-        if os.path.isfile(directory_filename_sv):
-            os.remove(directory_filename_sv)
-            file_msg += (f"{CRLF_DOT}Delete backup file (...{filename_sv})")
-
-        if os.path.isfile(directory_filename):
-            os.rename(directory_filename, directory_filename_sv)
-            file_msg += (f"{CRLF_DOT}Rename current file to ...{filename}.{save_extn})")
-
-        if file_msg != "":
-            event_msg =(f"Current iCloud {file_desc} file > "
-                        f"{CRLF}•{directory_filename}{file_msg}")
-            post_event(event_msg)
-
-    except Exception as err:
-        log_exception(err)
+                            called_from=called_from,
+                            verify_password=verify_password)

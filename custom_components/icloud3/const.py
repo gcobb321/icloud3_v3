@@ -4,7 +4,7 @@
 #
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-VERSION                         = '3.0.0b13'
+VERSION                         = '3.0.0b14'
 
 DOMAIN                          = 'icloud3'
 ICLOUD3                         = 'iCloud3'
@@ -249,10 +249,13 @@ NBSP6             = '⠿' #'&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'
 CRLF              = '⣇' #'<br>'
 CHECK_MARK        = '✓ '
 CIRCLE_X          = '✪ '
+CIRCLE_X2         = '✪'
 DOT               = '• '
 DOT2              = '•'
 HDOT              = '◦ '
 HDOT2             = '◦'
+LT                = '&lt;'
+GT                = '&gt;'
 CRLF_DOT          = f'{CRLF}{NBSP3}•{NBSP2}'
 CRLF_HDOT         = f'{CRLF}{NBSP6}◦{NBSP2}'
 CRLF_CHK          = f'{CRLF}{NBSP3}✓{NBSP}'
@@ -290,12 +293,16 @@ INACTIVE_DEVICE   = 'inactive'
 #Zone field names
 NAME              = 'name'
 FNAME             = 'fname'
+FNAME_HOME        = 'fname/Home'
 TITLE             = 'title'
 RADIUS            = 'radius'
 NON_ZONE_ITEM_LIST = {
         'not_home': 'Away',
+        'Not_Home': 'Away',
         'not_set': 'NotSet',
+        'Not_Set': 'NotSet',
         'stationary': 'Stationary',
+        'Stationary': 'Stationary',
         'unknown': 'Unknown'}
 
 #config_ic3.yaml parameter validation items
@@ -615,11 +622,15 @@ TRAVEL_TIME                    = "travel_time"
 TRAVEL_TIME_MIN                = "travel_time_min"
 
 CONF_SENSORS_TRACKING_DISTANCE = 'tracking_distance'
+ZONE_DISTANCE_M                = 'meters_distance'
+ZONE_DISTANCE_M_EDGE           = 'meters_distance_to_zone_edge'
 ZONE_DISTANCE                  = "zone_distance"
 HOME_DISTANCE                  = "home_distance"
 DISTANCE_HOME                  = "distance_home"
 DIR_OF_TRAVEL                  = "dir_of_travel"
 MOVED_DISTANCE                 = "moved_distance"
+MOVED_TIME_FROM                = 'moved_from'
+MOVED_TIME_TO                  = 'moved_to'
 
 CONF_SENSORS_TRACK_FROM_ZONES = 'track_from_zones'
 TFZ_ZONE_INFO                 = 'tfz_zone_info'
@@ -771,15 +782,15 @@ DEFAULT_GENERAL_CONF = {
 
 RANGE_GENERAL_CONF = {
         # General Configuration Parameters
-        CONF_MAX_INTERVAL: [15, 240],
-        CONF_OFFLINE_INTERVAL: [1, 240],
-        CONF_EXIT_ZONE_INTERVAL: [.5, 10, .5],
-        CONF_IOSAPP_ALIVE_INTERVAL: [15, 240],
+        CONF_GPS_ACCURACY_THRESHOLD: [5, 250, 5, 'm'],
         CONF_OLD_LOCATION_THRESHOLD: [1, 60],
         CONF_OLD_LOCATION_ADJUSTMENT: [0, 60],
-        CONF_GPS_ACCURACY_THRESHOLD: [5, 250, 5, 'm'],
+        CONF_MAX_INTERVAL: [15, 240],
+        CONF_EXIT_ZONE_INTERVAL: [.5, 10, .5],
+        CONF_IOSAPP_ALIVE_INTERVAL: [15, 240],
+        CONF_OFFLINE_INTERVAL: [1, 240],
+        CONF_TFZ_TRACKING_MAX_DISTANCE: [1, 100, 1, 'km'],
         CONF_TRAVEL_TIME_FACTOR: [.1, 1, .1, ''],
-        CONF_TFZ_TRACKING_MAX_DISTANCE: [1, 1000, 1, 'km'],
         CONF_PASSTHRU_ZONE_TIME: [0, 5],
 
         # inZone Configuration Parameters
@@ -833,7 +844,8 @@ DEFAULT_SENSORS_CONF = {
         CONF_SENSORS_ZONE: [
                 ZONE_NAME],
         CONF_SENSORS_OTHER: [],
-        CONF_EXCLUDED_SENSORS: [],
+        CONF_EXCLUDED_SENSORS: [
+                NONE_FNAME],
 }
 
 DEFAULT_DATA_CONF =  {

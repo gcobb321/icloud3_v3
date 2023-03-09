@@ -62,7 +62,8 @@ def calc_distance_m(from_gps, to_gps):
         return 0
 
     distance_m = distance(from_lat, from_long, to_lat, to_long)
-    return round(round_to_zero(distance_m))
+    return round_to_zero(distance_m)
+    #return round(round_to_zero(distance_m))
 
 #--------------------------------------------------------------------
 def format_km_to_mi(dist_km):
@@ -75,28 +76,15 @@ def format_km_to_mi(dist_km):
     if Gb.um == 'mi':
         mi = dist_km * Gb.um_km_mi_factor
 
-        if mi > 20:
+        if mi > 10:
             return f"{mi:.1f} mi"
         if mi > 1:
             return f"{mi:.2f} mi"
         if round_to_zero(mi) == 0:
             return f"0 mi"
-        return f"{mi:.0f} mi"
+        return f"{mi:.2f} mi"
 
-    if dist_km >= 25:       #25km/15mi
-        return f"{dist_km:.0f} km"
-    if dist_km >= 1:        #1000m/.6mi
-        return f"{dist_km:.1f} km"
-
-    return f"{dist_km*1000:.0f} m"
-
-
-    # if dist_km >= 25:       #25km/15mi
-    #     return f"{dist_km:.0f}km"
-    # if dist_km >= 1:        #1000m/.6mi
-    #     return f"{dist_km:.1f}km"
-
-    # return f"{dist_km*1000:.0f}m"
+    return format_dist_km(dist_km)
 
 #--------------------------------------------------------------------
 def format_dist_km(dist_km):
@@ -105,12 +93,12 @@ def format_dist_km(dist_km):
 
     dist: Distance in kilometers
     '''
-    if dist_km >= 25:       #25km/15mi
-        return f"{dist_km:.0f}km"
+    if dist_km >= 10:       #25km/15mi
+        return f"{dist_km:.1f} km"
     if dist_km >= 1:        #1000m/.6mi
-        return f"{dist_km:.1f}km"
+        return f"{dist_km:.2f} km"
 
-    return f"{dist_km*1000:.0f}m"
+    return f"{dist_km*1000:.0f} m"
 
 #--------------------------------------------------------------------
 def format_dist_m(dist_m):
@@ -119,9 +107,9 @@ def format_dist_m(dist_m):
 
     dist: Distance in meters
     '''
-    if dist_m >= 25000:       #25km/15mi
-        return f"{dist_m/1000:.0f}km"
+    if dist_m >= 10000:       #25km/15mi
+        return f"{dist_m/1000:.1f} km"
     if dist_m >= 1000:        #1000m/.6mi
-        return f"{dist_m/1000:.1f}km"
+        return f"{dist_m/1000:.2f} km"
 
-    return f"{dist_m:.0f}m"
+    return f"{dist_m:.0f} m"

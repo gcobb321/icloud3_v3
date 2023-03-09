@@ -349,7 +349,7 @@ def update_device_with_latest_raw_data(Device, all_devices=False):
                             else:
                                 reason_msg = (  f"NewData-{_RawData.location_time}/±{_RawData.gps_accuracy:.0f}m "
                                                 f"vs {_Device.loc_data_time_gps}, ")
-                            event_msg =(f"Rejected  (#{Device.old_loc_poor_gps_cnt+1}) > "
+                            event_msg =(f"Rejected  (#{Device.old_loc_poor_gps_cnt}) > "
                                         f"{reason_msg}"
                                         f"Updated-{_RawData.tracking_method} data, "
                                         f"{Device.device_status_msg}")

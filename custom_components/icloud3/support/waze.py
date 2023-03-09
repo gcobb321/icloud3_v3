@@ -71,6 +71,10 @@ class Waze(object):
                 and Gb.Waze.distance_method_waze_flag)
 
     @property
+    def is_historydb_USED(self):
+        return Gb.WazeHist.use_wazehist_flag
+
+    @property
     def is_status_NOT_USED(self):
         return self.waze_status == WAZE_NOT_USED
 
@@ -130,11 +134,12 @@ class Waze(object):
                 waze_source_msg   = ""
                 location_id       = 0
 
-                waze_status, route_time, route_dist_km, dist_moved_km, \
-                        location_id, waze_source_msg = \
-                        self.get_history_time_distance(Device, DeviceFmZone, check_hist_db=True)
+                if self.is_historydb_USED:
+                    waze_status, route_time, route_dist_km, dist_moved_km, \
+                            location_id, waze_source_msg = \
+                            self.get_history_time_distance(Device, DeviceFmZone, check_hist_db=True)
 
-                # Get data from Waze if not in history and not being reused
+                # Get data from Waze if not in history and not being reused or if history is not used
                 if location_id == 0:
                     waze_status, route_time, route_dist_km = \
                                     self.get_waze_distance(
@@ -155,7 +160,7 @@ class Waze(object):
 
                     # Add a time/distance record to the waze history database
                     try:
-                        if (Gb.waze_history_database_used
+                        if (self.is_historydb_USED
                                 and Gb.wazehist_zone_id
                                 and DeviceFmZone.distance_km < Gb.WazeHist.max_distance
                                 and route_time > .25
@@ -258,7 +263,7 @@ class Waze(object):
             location_id = -2
             waze_source_msg = "Using Previous Waze Location Info "
 
-        elif check_hist_db is False or Gb.WazeHist.use_wazehist_flag is False:
+        elif check_hist_db is False or self.is_historydb_USED is False:
             location_id = 0
 
         else:
@@ -325,7 +330,8 @@ class Waze(object):
                         continue
 
                     route_time    = round(route_time, 2)
-                    route_dist_km = round(route_dist_km, 2)
+                    # route_dist_km = round(route_dist_km, 2)
+                    route_dist_km = route_dist_km
 
                     Device.count_waze_locates += 1
                     Device.time_waze_calls += (time_now_secs() - waze_call_start_time)

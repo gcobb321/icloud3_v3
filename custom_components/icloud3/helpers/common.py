@@ -4,6 +4,7 @@ from ..global_variables import GlobalVariables as Gb
 from ..const            import (NOT_HOME, STATIONARY, CIRCLE_LETTERS_DARK, UNKNOWN, CRLF_DOT, CRLF,
                                 BATTERY_STATUS_FNAME,)
 from collections        import OrderedDict
+import os
 
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 #
@@ -38,6 +39,15 @@ def list_to_str(list_value, separator=None):
         return f"{separator_str}{list_str}"
     else:
         return list_str
+
+#--------------------------------------------------------------------
+def str_to_list(str_value):
+    '''
+    Create a list of a comma separated strings
+    str_value   - ('icloud,iosapp')
+    Return      - ['icloud','iosapp']
+    '''
+    return list(str_value.split((',')))
 
 #--------------------------------------------------------------------
 def instr(string, substring):
@@ -80,7 +90,7 @@ def inlist(string, list_items):
 
 #--------------------------------------------------------------------
 def round_to_zero(value):
-    if abs(value) < .001: value = 0
+    if abs(value) < .0001: value = 0
     return round(value, 8)
 
 #--------------------------------------------------------------------
@@ -130,7 +140,7 @@ def obscure_field(field):
     Return:
         The obscured field
     '''
-    if field == '':
+    if field == '' or field is None:
         return ''
 
     if instr(field, '@'):
@@ -140,12 +150,9 @@ def obscure_field(field):
         email_domain  = field_parts[1]
         obscure_field = (   f"{email_name[0:2]}{'.'*(len(email_name)-2)}@"
                             f"{email_domain[0:2]}{'.'*(len(email_domain)-2)}")
-        # obscure_field = (   f"{email_name[0:2]}{'.'*(len(email_name)-2)}{email_name[-2:]}@"
-        #                     f"{email_domain[0:2]}{'.'*(len(email_domain)-2)}{email_domain[-2:]}")
         return obscure_field
 
     obscure_field = (f"{field[0:2]}{'.'*(len(field)-2)}")
-    # obscure_field = (f"{field[0:2]}{'.'*(len(field)-2)}{field[-2:]}")
     return obscure_field
 
 #--------------------------------------------------------------------
@@ -177,3 +184,48 @@ def format_list(arg_list):
 #--------------------------------------------------------------------
 def format_cnt(desc, n):
     return f", {desc}(#{n})" if n > 1 else ''
+
+#--------------------------------------------------------------------
+def delete_file(file_desc, directory, filename, backup_extn=None, delete_old_sv_file=False):
+    '''
+    Delete a file.
+    Parameters:
+        directory   - directory containing the file to be deleted
+        filename    - file to be deleted
+        backup_extn - rename the filename to this extension before deleting
+        delete_old_sv_file - Some files were previously renamed to .sv before deleting
+                    They should be deleted if they exist.
+    '''
+    try:
+        file_msg = ""
+        directory_filename = (f"{directory}/{filename}")
+
+        if backup_extn:
+            filename_bu = f"{filename.split('.')[0]}.{backup_extn}"
+            directory_filename_bu = (f"{directory}/{filename_bu}")
+
+            if os.path.isfile(directory_filename_bu):
+                os.remove(directory_filename_bu)
+                file_msg += (f"{CRLF_DOT}Deleted backup file (...{filename_bu})")
+
+            os.rename(directory_filename, directory_filename_bu)
+            file_msg += (f"{CRLF_DOT}Rename current file to ...{filename}.{backup_extn})")
+
+        if os.path.isfile(directory_filename):
+            os.remove(directory_filename)
+            file_msg += (f"{CRLF_DOT}Deleted file (...{filename})")
+
+        if delete_old_sv_file:
+            filename = f"{filename.split('.')[0]}.sv"
+            directory_filename = f"{directory_filename.split('.')[0]}.sv"
+            if os.path.isfile(directory_filename):
+                os.remove(directory_filename)
+                file_msg += (f"{CRLF_DOT}Deleted file (...{filename})")
+
+        if file_msg != "":
+            event_msg =(f"{file_desc} file > ({directory})"
+                        f"{CRLF}•{file_msg}")
+            Gb.EvLog.post_event(event_msg)
+
+    except Exception as err:
+        Gb.HALogger.exception(err)

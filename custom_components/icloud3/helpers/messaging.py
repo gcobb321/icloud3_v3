@@ -31,7 +31,7 @@ from inspect import getframeinfo, stack
 import traceback
 from .common import obscure_field
 
-FILTER_DATA_DICTS = ['data', 'userInfo', 'dsid', 'dsInfo', 'webservices', 'locations',]
+FILTER_DATA_DICTS = ['items', 'userInfo', 'dsid', 'dsInfo', 'webservices', 'locations',]
 FILTER_DATA_LISTS = ['devices', 'content', 'followers', 'following', 'contactDetails',]
 FILTER_FIELDS = [
         ICLOUD3_VERSION, AUTHENTICATED,
@@ -52,11 +52,12 @@ FILTER_FIELDS = [
         'deviceModel', 'rawDeviceModel', 'deviceDisplayName', 'modelDisplayName', 'deviceClass',
         'isOld', 'isInaccurate', 'timeStamp', 'altitude', 'location', 'latitude', 'longitude',
         'horizontalAccuracy', 'verticalAccuracy',
-        'hsaVersion', 'hsaEnabled', 'hsaTrustedBrowser', 'locale', 'appleIdEntries', 'statusCode',
+        'hsaVersion', 'hsaEnabled', 'hsaTrustedBrowser', 'hsaChallengeRequired',
+        'locale', 'appleIdEntries', 'statusCode',
         'familyEligible', 'findme', 'requestInfo',
         'invitationSentToEmail', 'invitationAcceptedByEmail', 'invitationFromHandles',
         'invitationFromEmail', 'invitationAcceptedHandles',
-        'data', 'userInfo', 'dsid', 'dsInfo', 'webservices', 'locations',
+        'items', 'userInfo', 'dsid', 'dsInfo', 'webservices', 'locations',
         'devices', 'content', 'followers', 'following', 'contactDetails', ]
 
 
@@ -73,7 +74,7 @@ def broadcast_info_msg(info_msg):
         return
 
 
-    Gb.broadcast_info_msg = f"{DOT}{info_msg}"
+    Gb.broadcast_info_msg = f"{info_msg}"
 
     try:
         for conf_device in Gb.conf_devices:
@@ -424,6 +425,8 @@ def log_rawdata(title, rawdata, log_rawdata_flag=False):
     if Gb.log_rawdata_flag is False or rawdata is None:
         return
 
+    filtered_dicts = {}
+    filtered_lists = {}
     filtered_data = {}
     rawdata_data = {}
 
@@ -433,24 +436,31 @@ def log_rawdata(title, rawdata, log_rawdata_flag=False):
             log_debug_msg(rawdata)
             return
 
+        rawdata_items = {k: v for k, v in rawdata['filter'].items()
+                                        if type(v) not in [dict, list]}
         rawdata_data['filter'] = {k: v for k, v in rawdata['filter'].items()
                                         if k in FILTER_FIELDS}
     except:
+        rawdata_items = {k: v for k, v in rawdata.items()
+                                        if type(v) not in [dict, list]}
         rawdata_data['filter'] = {k: v for k, v in rawdata.items()
                                         if k in FILTER_FIELDS}
 
+    rawdata_data['filter']['items'] = rawdata_items
     if rawdata_data['filter']:
         for data_dict in FILTER_DATA_DICTS:
             filter_results = _filter_data_dict(rawdata_data['filter'], data_dict)
             if filter_results:
-                filtered_data[f"◤{data_dict.upper()}◥ ({data_dict})"] = filter_results
+                filtered_dicts[f"▶{data_dict.upper()}◀ ({data_dict})"] = filter_results
 
         for data_list in FILTER_DATA_LISTS:
             if data_list in rawdata_data['filter']:
                 filter_results = _filter_data_list(rawdata_data['filter'][data_list])
                 if filter_results:
-                    filtered_data[f"◤{data_list.upper()}◥ ({data_list})"] = filter_results
+                    filtered_lists[f"▶{data_list.upper()}◀ ({data_list})"] = filter_results
 
+        filtered_data.update(filtered_dicts)
+        filtered_data.update(filtered_lists)
     try:
         log_msg = None
         if filtered_data:
@@ -480,7 +490,6 @@ def _filter_data_dict(rawdata_data, data_dict_items):
     try:
         filter_results = {k: v for k, v in rawdata_data[data_dict_items].items()
                                     if k in FILTER_FIELDS}
-
         if 'id' in filter_results and len(filter_results['id']) > 10:
             filter_results['id'] = f"{filter_results['id'][:10]}..."
 
@@ -615,8 +624,8 @@ def _trace(devicename, log_text='+'):
     devicename, log_text = resolve_system_event_msg(devicename, log_text)
 
     log_text = log_text.replace('<', '《').replace('>', '》')
-    header_msg = _called_from()
-    post_event(devicename, f"^3^{header_msg} {log_text}")
+    called_from = _called_from()
+    post_event(devicename, f"^3^{called_from} {log_text}")
 
 #--------------------------------------------------------------------
 def _traceha(log_text, v1='+++', v2='', v3='', v4='', v5=''):
@@ -624,15 +633,18 @@ def _traceha(log_text, v1='+++', v2='', v3='', v4='', v5=''):
     Display a message or variable in the HA log file
     '''
     try:
+        called_from = _called_from() if Gb.log_level == 'info' else ''
         if v1 == '+++':
             log_msg = ''
         else:
             log_msg = (f"|{v1}|-|{v2}|-|{v3}|-|{v4}|-|{v5}|")
 
-        if log_text in Gb.Devices_by_devicename:
-            trace_msg = (f"{Gb.trace_prefix}{log_text} ::: TRACE ::: {log_msg}")
+        if type(log_text) is str and log_text in Gb.Devices_by_devicename:
+            trace_msg = (f"{called_from}{log_text} ::: TRACE ::: {log_msg}")
+            # trace_msg = (f"{Gb.trace_prefix}{log_text} ::: TRACE ::: {log_msg}")
         else:
-            trace_msg = (f"{Gb.trace_prefix} ::: TRACE ::: {log_text}, {log_msg}")
+            trace_msg = (f"{called_from} ::: TRACE ::: {log_text}, {log_msg}")
+            # trace_msg = (f"{Gb.trace_prefix} ::: TRACE ::: {log_text}, {log_msg}")
 
         Gb.HALogger.info(trace_msg)
         write_ic3_debug_log_recd(trace_msg, force_write=True)

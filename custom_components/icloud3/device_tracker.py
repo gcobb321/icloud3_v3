@@ -9,17 +9,17 @@ from .const             import (DOMAIN, ICLOUD3,
                                 TRACK_DEVICE, INACTIVE_DEVICE,
                                 NAME, FNAME,
                                 PICTURE,
-                                LATITUDE, LONGITUDE,
+                                LATITUDE, LONGITUDE, GPS,
                                 DEVICE_TRACKER_STATE_VALUE, DEVICE_TRACKER_STATE_ZONE,
                                 LOCATION_SOURCE, TRIGGER,
                                 ZONE, ZONE_DATETIME,  LAST_ZONE, FROM_ZONE, ZONE_FNAME,
-                                BATTERY,
+                                BATTERY, BATTERY_LEVEL,
                                 CALC_DISTANCE, WAZE_DISTANCE, HOME_DISTANCE,
                                 DEVICE_STATUS,
                                 LAST_UPDATE, LAST_UPDATE_DATETIME,
                                 NEXT_UPDATE, NEXT_UPDATE_DATETIME,
                                 LAST_LOCATED, LAST_LOCATED_DATETIME,
-                                GPS_ACCURACY,
+                                GPS_ACCURACY, ALTITUDE, VERT_ACCURACY,
                                 CONF_DEVICE_TYPE, CONF_RAW_MODEL, CONF_MODEL, CONF_MODEL_DISPLAY_NAME,
                                 CONF_TRACKING_MODE,
                                 CONF_IC3_DEVICENAME,
@@ -34,12 +34,16 @@ from .helpers.messaging import (post_event,
                                 log_info_msg, log_debug_msg, log_error_msg, log_exception,
                                 _trace, _traceha, )
 from .support           import start_ic3
+from .support           import config_file
 
 from homeassistant.components.device_tracker.config_entry import TrackerEntity
+from homeassistant.components.device_tracker import device_trigger
 from homeassistant.config_entries       import ConfigEntry
 from homeassistant.core                 import HomeAssistant
 from homeassistant.helpers.entity       import DeviceInfo
 from homeassistant.helpers              import entity_registry as er, device_registry as dr
+from homeassistant.const                import (CONF_DEVICE_ID, CONF_DOMAIN, CONF_ENTITY_ID, CONF_EVENT,
+                                                CONF_PLATFORM, CONF_TYPE, CONF_ZONE, )
 
 import logging
 # _LOGGER = logging.getLogger(__name__)
@@ -68,7 +72,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
         if Gb.conf_file_data == {}:
             Gb.hass = hass
             start_ic3.initialize_directory_filenames()
-            start_ic3.load_storage_icloud3_configuration_file()
+            config_file.load_storage_icloud3_configuration_file()
 
         NewDeviceTrackers = []
         for conf_device in Gb.conf_devices:
@@ -92,7 +96,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
 
         if NewDeviceTrackers is not []:
             async_add_entities(NewDeviceTrackers, True)
-            _get_ha_device_ids_from_device_registry(hass)
+            _get_dr_device_ids_from_device_registry(hass)
 
     except Exception as err:
         _LOGGER.exception(err)
@@ -101,7 +105,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
         log_error_msg(log_msg)
 
 #-------------------------------------------------------------------------------------------
-def _get_ha_device_ids_from_device_registry(hass):
+def _get_dr_device_ids_from_device_registry(hass):
     '''
     Cycle thru the ha device registry, extract the iCloud3 entries and associate the
     ha device_id with the ic3_devicename parameters
@@ -110,19 +114,20 @@ def _get_ha_device_ids_from_device_registry(hass):
     '''
     try:
         dev_reg = dr.async_get(hass)
-        Gb.ha_device_id_by_devicename = {}
+        Gb.dr_device_id_by_devicename = {}
+        Gb.dr_area_id_by_devicename   = {}
 
         for device, device_entry in dev_reg.deleted_devices.items():
-            _get_ha_device_id_from_device_entry(hass, device, device_entry)
+            _get_dr_device_id_from_device_entry(hass, device, device_entry)
         for device, device_entry in dev_reg.devices.items():
-            _get_ha_device_id_from_device_entry(hass, device, device_entry)
+            _get_dr_device_id_from_device_entry(hass, device, device_entry)
 
     except Exception as err:
         log_exception(err)
         pass
 
 #-------------------------------------------------------------------------------------------
-def _get_ha_device_id_from_device_entry(hass, device, device_entry):
+def _get_dr_device_id_from_device_entry(hass, device, device_entry):
     '''
     For each entry in the device registry, determine if it is an iCloud3 entry (iCloud3 is in
     the device_entry.identifiers field. If so, check the other items, determine if one is a
@@ -134,7 +139,7 @@ def _get_ha_device_id_from_device_entry(hass, device, device_entry):
         configuration_url=None, connections=set(), disabled_by=None, entry_type=None,
         hw_version=None,
         id='306278916dc4a3b7bcc73b66dcd565b3',
-        identifiers={('iCloud3', 'gary_iphone', 'iPhone 14 Pro')}, manufacturer='Apple',
+        identifiers={('icloud3', 'gary_iphone')}, manufacturer='Apple',
         model='iPhone 14 Pro', name_by_user=None, name='Gary', suggested_area=None, sw_version=None,
         via_device_id=None, is_new=False)
     DeletedDeviceEntry(config_entries={'4ff81e71befd8994712d56eadf7232ae'},
@@ -144,20 +149,24 @@ def _get_ha_device_id_from_device_entry(hass, device, device_entry):
     try:
         de_identifiers = device_entry.identifiers
         for identifiers in de_identifiers:
-            if 'iCloud3' in identifiers:
+            if 'icloud3' in identifiers or 'iCloud3' in identifiers:
+                # Search thru identifier items for the devicename
                 for item in identifiers:
                     if item in Gb.conf_devicenames:
-                        Gb.ha_device_id_by_devicename[item] = device_entry.id
+                        Gb.dr_device_id_by_devicename[item] = device_entry.id
+                        Gb.dr_area_id_by_devicename[item]   = device_entry.area_id
                         break
 
-    except:
+    except Exception as err:
+        log_exception(err)
         pass
+
 
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 class iCloud3_DeviceTracker(TrackerEntity):
     """iCloud3 device_tracker entity definition."""
 
-    def __init__(self, devicename, conf_device):
+    def __init__(self, devicename, conf_device, data=None):
         """Set up the iCloud3 device_tracker entity."""
 
         try:
@@ -165,6 +174,8 @@ class iCloud3_DeviceTracker(TrackerEntity):
             self.devicename    = devicename
             self.Device        = None   # Filled in after Device object has been created in start_ic3
             self.entity_id     = f"device_tracker.{devicename}"
+            self.dr_device_id  = Gb.dr_device_id_by_devicename.get(self.devicename)
+
             self.device_fname  = conf_device[FNAME]
             self.device_type   = conf_device[CONF_DEVICE_TYPE]
             self.tracking_mode = conf_device[CONF_TRACKING_MODE]
@@ -177,9 +188,11 @@ class iCloud3_DeviceTracker(TrackerEntity):
             except:
                 self.default_value = BLANK_SENSOR_FIELD
 
+            self.triggers           = None
             self.from_state_zonee   = ''
             self.to_state_zone      = ''
             self._state             = self.default_value
+            self._data              = data          # Used by .see to issue change triggers
             self._attr_force_update = True
             self._unsub_dispatcher  = None
             self._on_remove         = [self.after_removal_cleanup]
@@ -207,13 +220,14 @@ class iCloud3_DeviceTracker(TrackerEntity):
     @property
     def location_name(self):
         """Return the location name of the device."""
-        try:
-            if self.state_value_not_set:
-                return self.default_value
+        return None
+        # try:
+        #     if self.state_value_not_set:
+        #         return self.default_value
 
-            return self._get_sensor_value(DEVICE_TRACKER_STATE_VALUE)
-        except:
-            return self.default_value
+        #     return self._get_sensor_value(DEVICE_TRACKER_STATE_VALUE)
+        # except:
+        #     return self.default_value
 
     @property
     def location_accuracy(self):
@@ -223,12 +237,19 @@ class iCloud3_DeviceTracker(TrackerEntity):
     @property
     def latitude(self):
         """Return latitude value of the device."""
-        return str(self._get_sensor_value(LATITUDE, number=True))
+        # return self.Device.sensors[LATITUDE]
+        return self._get_sensor_value(LATITUDE, number=True)
 
     @property
     def longitude(self):
         """Return longitude value of the device."""
-        return str(self._get_sensor_value(LONGITUDE, number=True))
+        # return self.Device.sensors[LONGITUDE]
+        return self._get_sensor_value(LONGITUDE, number=True)
+
+    # @property
+    # def gps(self):
+    #     """Return gps value of the device."""
+    #     return (self.latitude, self.longitude)
 
     @property
     def battery_level(self):
@@ -259,6 +280,7 @@ class iCloud3_DeviceTracker(TrackerEntity):
                             model        = self.raw_model,
                             name         = f"{self.device_fname} ({self.devicename})",
                         )
+
 #-------------------------------------------------------------------------------------------
     def _get_extra_attributes(self):
         '''
@@ -267,6 +289,7 @@ class iCloud3_DeviceTracker(TrackerEntity):
         try:
             extra_attrs = {}
 
+            extra_attrs[GPS]                 = f"({self.latitude}, {self.longitude})"
             extra_attrs['data_source']       = f"{self._get_sensor_value(LOCATION_SOURCE)} (iCloud3)"
             extra_attrs[DEVICE_STATUS]       = self._get_sensor_value(DEVICE_STATUS)
             extra_attrs[NAME]                = self._get_sensor_value(NAME)
@@ -317,20 +340,21 @@ class iCloud3_DeviceTracker(TrackerEntity):
             sensor_value = self.Device.sensors.get(sensor, None)
 
             if number and instr(sensor_value, ' '):
-                sensor_value = sensor_value.split(' ')[0]
+                sensor_value = float(sensor_value.split(' ')[0])
 
             number = isnumber(sensor_value)
-            if number is False:
+            if number is False and type(sensor_value) is str:
                 if sensor_value is None or sensor_value.strip() == '' or sensor_value == NOT_SET:
                     sensor_value = BLANK_SENSOR_FIELD
                 elif is_statzone(sensor_value):
                     sensor_value = STATIONARY_FNAME
 
         except Exception as err:
-            log_exception(err)
             log_error_msg(f"►INTERNAL ERROR (Create device_tracker object-{err})")
             sensor_value = not_set_value
 
+        # Numeric fields are displayed in the attributes with 2-decimal places, Fix for gps
+        # return str(sensor_value) if sensor in [LATITUDE, LONGITUDE] else sensor_value
         return sensor_value
 
 #-------------------------------------------------------------------------------------------
@@ -386,8 +410,7 @@ class iCloud3_DeviceTracker(TrackerEntity):
     def update_entity_attribute(self, new_fname=None):
         """ Update entity definition attributes """
 
-        if (new_fname is None
-                or self.Device.ha_device_id == ''):
+        if new_fname is None or self.Device.dr_device_id == '':
             return
 
         self.device_fname = new_fname
@@ -426,7 +449,7 @@ class iCloud3_DeviceTracker(TrackerEntity):
         kwargs['name_by_user'] = ""
 
         device_registry = dr.async_get(Gb.hass)
-        dr_entry = device_registry.async_update_device(self.Device.ha_device_id, **kwargs)
+        dr_entry = device_registry.async_update_device(self.Device.dr_device_id, **kwargs)
 
 #-------------------------------------------------------------------------------------------
     def remove_device_tracker(self):
@@ -486,71 +509,23 @@ class iCloud3_DeviceTracker(TrackerEntity):
 #-------------------------------------------------------------------------------------------
     def write_ha_device_tracker_state(self):
         """Update the entity's state."""
-
         try:
-            self.async_write_ha_state()
-
-            # Save the updated zone (location_name) to see if a zone trigger enter/leave needs
-            # to be issued in device.write_ha_device_tracker_state, the function that calls
-            # this function
-            self.from_state_zone = self.to_state_zone
-            self.to_state_zone   = self._get_sensor_value(DEVICE_TRACKER_STATE_ZONE)
-
-            self._check_zone_change_trigger()
-            return
+            # Pass gps data to the HA .see which handles zone triggers
+            if self.Device and self.Device.sensors[LATITUDE] != 0:
+                data = {LATITUDE: self.Device.sensors[LATITUDE],
+                        LONGITUDE: self.Device.sensors[LONGITUDE],
+                        GPS: (self.Device.sensors[LATITUDE], self.Device.sensors[LONGITUDE]),
+                        GPS_ACCURACY: self.Device.sensors[GPS_ACCURACY],
+                        BATTERY: self.Device.sensors[BATTERY],
+                        ALTITUDE: self.Device.sensors[ALTITUDE],
+                        VERT_ACCURACY: self.Device.sensors[VERT_ACCURACY]}
+                self._data = data
 
         except Exception as err:
             log_exception(err)
+            self._data = None
 
-#--------------------------------------------------------------------
-    def _check_zone_change_trigger(self):
-
-        # A one change triggers a zone enter/leave event. Determine the type of trigger and
-        # issue the appropriate one
-
-        # zone --> not_home = leave zone
-        # zone --> zone     = leave, enter
-        # not_home --> zone = enter zone
-
-        return
-
-        # if self.from_state_zone == self.to_state_zone:
-        #     return
-
-        # # Leaving a zone
-        # if self.from_state_zone != NOT_HOME:
-        #     self._issue_zone_change_trigger('leave')
-
-        # # entering a zone
-        # if self.to_state_value != NOT_HOME:
-        #     self._issue_zone_change_trigger('enter')
-
-#--------------------------------------------------------------------
-    # def _issue_zone_change_trigger(self, event):
-    #     msg = (f"ZoneTrigger > {event}, {self.from_state_zone} --> {self.to_state_zone} ")
-    #     _trace(self.devicename, msg)
-    #     pass
-
-    #     description = (f"{self.entity_id}, {EVENT_DESCRIPTION[event]}, "
-    #                     f"{self._get_sensor_value(ZONE_FNAME)}")
-    #     trigger_data = trigger_info["trigger_data"]
-
-    #     Gb.hass.async_run_hass_job(
-    #             job,
-    #             {
-    #                 "trigger": {
-    #                     **trigger_data,
-    #                     "platform": "zone",
-    #                     "entity_id": self.entity_id,
-    #                     "from_state": self.from_state_zone,
-    #                     "to_state": self.to_state_zone,
-    #                     "zone": self._get_sensor_value(ZONE),
-    #                     "event": event,
-    #                     "description": description,
-    #                 }
-    #             },
-    #             to_s.context if to_s else None,
-    #         )
+        self.async_write_ha_state()
 
 #-------------------------------------------------------------------------------------------
     def __repr__(self):

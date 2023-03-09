@@ -89,6 +89,8 @@ def read_storage_icloud3_restore_state_file():
                 devicename_data['sensors'][DISTANCE_TO_OTHER_DEVICES_DATETIME] = HHMMSS_ZERO
         return True
 
+    except JSONDecodeError:
+        pass
     except Exception as err:
         log_exception(err)
         return False

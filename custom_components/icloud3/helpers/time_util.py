@@ -22,8 +22,17 @@ def time_now():
 #--------------------------------------------------------------------
 def time_now_secs():
     ''' Return the current timestamp seconds '''
-
     return int(time.time())
+
+#--------------------------------------------------------------------
+def time_secs():
+    ''' Return the current timestamp seconds '''
+    return int(time.time())
+
+#--------------------------------------------------------------------
+def time_msecs():
+    ''' Return the current timestamp milli-seconds '''
+    return time.time()
 
 #--------------------------------------------------------------------
 def datetime_now():

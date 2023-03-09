@@ -108,16 +108,20 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
         if entry.unique_id is None:
             hass.config_entries.async_update_entry(entry, unique_id=DOMAIN)
         hass_data = dict(entry.data)
+        # _traceha(f"{hass.data=}")
 
         # Store a reference to the unsubscribe function to cleanup if an entry is unloaded.
         # unsub_options_update_listener = entry.add_update_listener(options_update_listener)
         # hass_data["unsub_options_update_listener"] = unsub_options_update_listener
         # hass.data[DOMAIN][entry.entry_id] = hass_data
 
+
         Gb.hass           = hass
         Gb.config_entry   = entry
         Gb.entry_id       = entry.entry_id
         Gb.operating_mode = MODE_INTEGRATION
+        log_info_msg(f"Setting up iCloud3 {VERSION} - Using Integration method")
+
         Gb.PyiCloud       = None
         Gb.EvLog          = event_log.EventLog(Gb.hass)
         Gb.start_icloud3_inprocess_flag = True
@@ -137,9 +141,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
         await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
         # hass.config_entries.async_setup_platforms(entry, PLATFORMS)
 
-        log_info_msg(f"Setting up iCloud3 {VERSION} - Using Integration method")
         #----- hass test - start
-
 
         #----- hass test - end
 
@@ -240,5 +242,10 @@ async def async_get_ha_location_info():
             "use_metric": location_info.use_metric,
         }
 
-        Gb.country_code = Gb.ha_location_info.country_code.lower()
-        Gb.use_metric   = Gb.ha_location_info.use_metric
+        try:
+            # Gb.country_code = Gb.ha_location_info[country_code].lower()
+            # Gb.use_metric   = Gb.ha_location_info[use_metric]
+            Gb.country_code = Gb.ha_location_info.country_code.lower()
+            Gb.use_metric   = Gb.ha_location_info.use_metric
+        except Exception as err:
+            log_exception(err)

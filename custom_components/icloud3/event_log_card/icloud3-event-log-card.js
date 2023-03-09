@@ -22,8 +22,8 @@ class iCloud3EventLogCard extends HTMLElement {
     }
     //---------------------------------------------------------------------------
     setConfig(config) {
-        const version = "3.0.5"
-        const cardTitle = "iCloud3 Event Log v3"
+        const version = "3.0.6"
+        const cardTitle = "iCloud3 v3 - Event Log"
 
         const root = this.shadowRoot
         const hass = this._hass
@@ -47,7 +47,7 @@ class iCloud3EventLogCard extends HTMLElement {
 
         const thisButtonId = document.createElement("div")
         thisButtonId.id = "thisButtonId"
-        thisButtonId.classList.add("themeTextColor")
+        // thisButtonId.classList.add("themeTextColor")
         thisButtonId.innerText = "setup"
 
         const logRecdCnt = document.createElement("div")
@@ -296,6 +296,12 @@ class iCloud3EventLogCard extends HTMLElement {
         var btnActionOptAboutVersion = document.createTextNode(version)
         btnActionOptAbout.appendChild(btnActionOptAboutTxt)
         btnAction.appendChild(btnActionOptAbout)
+
+        const btnRefresh = document.createElement('btnName')
+        btnRefresh.id = "btnRefresh"
+        btnRefresh.classList.add("btnRefresh")
+        btnRefresh.innerHTML = `<svg width="24px" height="24px" viewBox="0 0 24 24" fill="none" stroke="#000000" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather feather-rotate-cw"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>`
+
         //-------------------------------------------------------------
         // SVG Icons source -- https://heroicons.com/
         const btnHelp = document.createElement('A')
@@ -306,11 +312,6 @@ class iCloud3EventLogCard extends HTMLElement {
         btnHelp.setAttribute('target', '_blank')
         btnHelp.innerHTML = `<svg width="24px" height="24px" viewBox="0 0 24 24" fill="none" stroke="#000000" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather feather-help-circle"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" style="stroke-width:2"></path><line x1="12" y1="17" x2="12.01" y2="17" style="stroke-width:3"></line></svg>`
 
-        const btnRefresh = document.createElement('btnName')
-        btnRefresh.id = "btnRefresh"
-        btnRefresh.classList.add("btnRefresh")
-        btnRefresh.innerHTML = `<svg width="24px" height="24px" viewBox="0 0 24 24" fill="none" stroke="#000000" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather feather-rotate-cw"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>`
-
         const btnIssues = document.createElement('A')
         btnIssues.id = "btnIssues"
         btnIssues.classList.add("btnIssues")
@@ -319,7 +320,13 @@ class iCloud3EventLogCard extends HTMLElement {
         btnIssues.innerHTML = `<svg width="24px" height="24px" fill="none" viewBox="0 0 24 24" stroke-width="1" stroke="#000000" >
         <path stroke-linecap="round" stroke-linejoin="round" d="M12 12.75c1.148 0 2.278.08 3.383.237 1.037.146 1.866.966 1.866 2.013 0 3.728-2.35 6.75-5.25 6.75S6.75 18.728 6.75 15c0-1.046.83-1.867 1.866-2.013A24.204 24.204 0 0112 12.75zm0 0c2.883 0 5.647.508 8.207 1.44a23.91 23.91 0 01-1.152 6.06M12 12.75c-2.883 0-5.647.508-8.208 1.44.125 2.104.52 4.136 1.153 6.06M12 12.75a2.25 2.25 0 002.248-2.354M12 12.75a2.25 2.25 0 01-2.248-2.354M12 8.25c.995 0 1.971-.08 2.922-.236.403-.066.74-.358.795-.762a3.778 3.778 0 00-.399-2.25M12 8.25c-.995 0-1.97-.08-2.922-.236-.402-.066-.74-.358-.795-.762a3.734 3.734 0 01.4-2.253M12 8.25a2.25 2.25 0 00-2.248 2.146M12 8.25a2.25 2.25 0 012.248 2.146M8.683 5a6.032 6.032 0 01-1.155-1.002c.07-.63.27-1.222.574-1.747m.581 2.749A3.75 3.75 0 0115.318 5m0 0c.427-.283.815-.62 1.155-.999a4.471 4.471 0 00-.575-1.752M4.921 6a24.048 24.048 0 00-.392 3.314c1.668.546 3.416.914 5.223 1.082M19.08 6c.205 1.08.337 2.187.392 3.314a23.882 23.882 0 01-5.223 1.082" /></svg>`
 
-
+        const btnStar = document.createElement('A')
+        btnStar.id = "btnStar"
+        btnStar.classList.add("btnStar")
+        btnStar.setAttribute('href', 'https://github.com/gcobb321/icloud3_v3/stargazers')
+        btnStar.setAttribute('target', '_blank')
+        btnStar.innerHTML = `<svg  width="24px" height="24px" fill="none" viewBox="0 0 24 24" stroke-width="1" stroke="#000000">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" /></svg>`
 
         const btnConfig = document.createElement('btnName')
         btnConfig.id = "btnConfig"
@@ -329,6 +336,8 @@ class iCloud3EventLogCard extends HTMLElement {
         btnConfig.innerHTML = `<svg width="29px" height="29px" viewBox="0 0 24 24" fill="none" stroke="#000000">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>`
+
+
 
         // Message Bar
         const statusBar = document.createElement("div")
@@ -517,6 +526,7 @@ class iCloud3EventLogCard extends HTMLElement {
                 /*font-size: 2px;*/
                 visiblity: hidden;
                 color: transparent;
+                /*color: red;*/
                 width: 5px;
                 float: left;
                 /*border: 1px solid green;*/
@@ -528,10 +538,11 @@ class iCloud3EventLogCard extends HTMLElement {
             }
 
             /* Store the theme's primary text color in the thisButtonId field */
-            .themeTextColor {
+            /* .themeTextColor {
                 color: var(--primary-text-color);
                 background-color: var(--secondary-text-color);
-            }
+                visiblity: hidden;
+            } */
 
             /* Message Bar setup - Name & Time below Name & Acion Buttons */
             #statusBar {
@@ -715,6 +726,21 @@ class iCloud3EventLogCard extends HTMLElement {
                 background-color: transparent;
                 box-shadow: transparent;
             }
+            #btnStar {
+                dispay: none;
+                /*display: inline-block;*/
+                /*visibility: visible;*/
+                color: var(--primary-text-color);
+                background-color: transparent;
+                margin: 0px 0px 1px 7px;
+                float: right;
+            }
+
+            .btnStar {
+                border: 0px solid transparent;
+                background-color: transparent;
+                box-shadow: transparent;
+            }
             svg         {stroke: #ff4d4d;}
             svg:hover   {stroke: var(--primary-color);}
 
@@ -855,6 +881,7 @@ class iCloud3EventLogCard extends HTMLElement {
         // Build title
         titleBar.appendChild(title)
         titleBar.appendChild(btnHelp)
+        titleBar.appendChild(btnStar)
         titleBar.appendChild(btnIssues)
         titleBar.appendChild(btnRefresh)
 
@@ -892,7 +919,7 @@ class iCloud3EventLogCard extends HTMLElement {
         background.appendChild(titleBar)
         background.appendChild(utilityBar)
         background.appendChild(buttonBar)
-        background.appendChild(statusBar)        
+        background.appendChild(statusBar)
         background.appendChild(tblEvlogContainer)
         background.appendChild(cssStyle)
 
@@ -921,6 +948,8 @@ class iCloud3EventLogCard extends HTMLElement {
         // btnIssues.addEventListener("mousedown", event => { this._commandButtonPress("btnIssues"); })
         btnIssues.addEventListener("mouseover", event => { this._btnClassMouseOver("btnIssues"); })
         btnIssues.addEventListener("mouseout", event => { this._btnClassMouseOut("btnIssues"); })
+        btnStar.addEventListener("mouseover", event => { this._btnClassMouseOver("btnStar"); })
+        btnStar.addEventListener("mouseout", event => { this._btnClassMouseOut("btnStar"); })
 
         // Add to root
         this._config = config
@@ -1265,10 +1294,10 @@ class iCloud3EventLogCard extends HTMLElement {
                 var tTrav = zoneDistTime[3]
                 var tDist = zoneDistTime[4]
 
-                var maxStatZoneLength = 9
+                var maxStatZoneLength = 10
                 if (iPhoneP) {
                     tText = tText.replace('/icloud3', '... .../icloud3')
-                    maxStatZoneLength = 9
+                    maxStatZoneLength = 10
                     if (tStat == 'stationary') { tStat = 'stationry' }
                     if (tZone == 'stationary') { tZone = 'stationry' }
                     if (tStat == 'Stationary') { tStat = 'Stationry' }
@@ -1591,7 +1620,8 @@ class iCloud3EventLogCard extends HTMLElement {
                     hdrCellWidthStr += cellWidthBCR + 'px,'
                     tblEvlog.rows[0].cells[i].style.width = cellWidthBCR + 'px'
                 }
-                //alert(hdrCellWidth.innerText = row + ',' + hdrCellWidthStr)
+                // alert(hdrCellWidth.innerText = row + ',' + hdrCellWidthStr)
+                // alert(hdrCellWidthStr)
                 return
             }
         }
@@ -1865,6 +1895,10 @@ class iCloud3EventLogCard extends HTMLElement {
             button.style.setProperty('border', '0px')
             this._displayInfoText("GitHub Issue")
 
+        } else if (buttonId == "btnStar") {
+            button.style.setProperty('border', '0px')
+            this._displayInfoText("Be an iCloud3 v3 Stargazer → Go, then click the ☆ (top-right corner)")
+
         } else if (buttonId == "btnAction") {
             this._displayTimeMsgR("Show Action Command List")
         }
@@ -1891,6 +1925,9 @@ class iCloud3EventLogCard extends HTMLElement {
             this._displayInfoText('')
 
         } else if (buttonId == 'btnIssues') {
+            this._displayInfoText('')
+
+        } else if (buttonId == 'btnStar') {
             this._displayInfoText('')
         }
 

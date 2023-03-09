@@ -4,10 +4,10 @@
 #
 #------------------------------------------------------------------------------
 from .global_variables  import GlobalVariables as Gb
-from .const             import (DEVICE_TRACKER, DEVICE_TRACKER_DOT,
+from .const             import (DEVICE_TRACKER, DEVICE_TRACKER_DOT, CIRCLE_X2, LT, GT,
                                 NOTIFY, DISTANCE_TO_DEVICES, NEAR_DEVICE_DISTANCE,
                                 DISTANCE_TO_OTHER_DEVICES, DISTANCE_TO_OTHER_DEVICES_DATETIME,
-                                HOME, NOT_HOME, NOT_SET, AWAY, UNKNOWN, DOT, RARROW, INFO_SEPARATOR,
+                                HOME, HOME_FNAME, NOT_HOME, NOT_SET, AWAY, UNKNOWN, DOT, RARROW, INFO_SEPARATOR,
                                 PAUSED, TOWARDS, AWAY_FROM, INZONE, PAUSED_CAPS, RESUMING,
                                 DATETIME_ZERO, HHMMSS_ZERO, HIGH_INTEGER,
                                 TRACKING_NORMAL, TRACKING_PAUSED, TRACKING_RESUMED,
@@ -28,8 +28,10 @@ from .const             import (DEVICE_TRACKER, DEVICE_TRACKER_DOT,
                                 ZONE, ZONE_DATETIME, LAST_ZONE, FROM_ZONE, LAST_ZONE_DATETIME,
                                 ZONE_NAME, ZONE_FNAME, LAST_ZONE_NAME, LAST_ZONE_FNAME, INTERVAL,
                                 BATTERY_SOURCE, BATTERY, BATTERY_LEVEL, BATTERY_STATUS, BATTERY_STATUS_FNAME,
-                                ZONE_DISTANCE, CALC_DISTANCE, WAZE_DISTANCE, WAZE_METHOD, HOME_DISTANCE, MAX_DISTANCE,
-                                TRAVEL_TIME, TRAVEL_TIME_MIN, DIR_OF_TRAVEL, MOVED_DISTANCE,
+                                ZONE_DISTANCE, ZONE_DISTANCE_M, ZONE_DISTANCE_M_EDGE, HOME_DISTANCE, MAX_DISTANCE,
+                                CALC_DISTANCE, WAZE_DISTANCE, WAZE_METHOD,
+                                TRAVEL_TIME, TRAVEL_TIME_MIN, DIR_OF_TRAVEL,
+                                MOVED_DISTANCE, MOVED_TIME_FROM, MOVED_TIME_TO,
                                 DEVICE_STATUS, LOW_POWER_MODE, RAW_MODEL, MODEL, MODEL_DISPLAY_NAME,
                                 LAST_UPDATE, LAST_UPDATE_TIME, LAST_UPDATE_DATETIME,
                                 NEXT_UPDATE, NEXT_UPDATE_TIME, NEXT_UPDATE_DATETIME,
@@ -73,6 +75,8 @@ class iCloud3_Device(TrackerEntity):
     def __init__(self, devicename, conf_device):
         self.conf_device           = conf_device
         self.devicename            = devicename
+        self.dr_device_id          = ''      # ha device_registry device_id
+
         self.fname                 = devicename.title()
         self.StatZone              = None
         self.stationary_zonename   = (f"{self.devicename}_stationary")
@@ -103,7 +107,6 @@ class iCloud3_Device(TrackerEntity):
         self.device_type                  = 'iPhone'
         self.raw_model                    = DEVICE_TYPE_FNAME.get(self.device_type, self.device_type)      # iPhone15,2
         self.model                        = DEVICE_TYPE_FNAME.get(self.device_type, self.device_type)      # iPhone
-        self.ha_device_id                 = ''      # ha device_registry device_id
         self.model_display_name           = DEVICE_TYPE_FNAME.get(self.device_type, self.device_type)      # iPhone 14 Pro
         self.tracking_method              = None
         self.tracking_status              = TRACKING_NORMAL
@@ -265,6 +268,8 @@ class iCloud3_Device(TrackerEntity):
         self.loc_data_isold          = False
         self.loc_data_ispoorgps      = False
         self.loc_data_distance_moved = 0.0
+        self.loc_data_moved_time_from = DATETIME_ZERO
+        self.loc_data_moved_time_to   = DATETIME_ZERO
         self.last_loc_data_time_gps = f"{HHMMSS_ZERO}/0m"
 
         self.sensor_prefix            = (f"sensor.{self.devicename}_")
@@ -337,13 +342,17 @@ class iCloud3_Device(TrackerEntity):
         self.sensors[TRAVEL_TIME]           = 0
         self.sensors[TRAVEL_TIME_MIN]       = 0
         self.sensors[ZONE_DISTANCE]         = 0
-        self.sensors[MAX_DISTANCE]          = 0
+        self.sensors[ZONE_DISTANCE_M]       = 0
+        self.sensors[ZONE_DISTANCE_M_EDGE]  = 0
         self.sensors[HOME_DISTANCE]         = 0
+        self.sensors[MAX_DISTANCE]          = 0
         self.sensors[WAZE_DISTANCE]         = 0
         self.sensors[WAZE_METHOD]           = 0
         self.sensors[CALC_DISTANCE]         = 0
         self.sensors[DIR_OF_TRAVEL]         = NOT_SET
         self.sensors[MOVED_DISTANCE]        = 0
+        self.sensors[MOVED_TIME_FROM] = DATETIME_ZERO
+        self.sensors[MOVED_TIME_TO]   = DATETIME_ZERO
 
         # Zone related items
         self.sensors[ZONE]               = NOT_SET
@@ -358,25 +367,23 @@ class iCloud3_Device(TrackerEntity):
         # Initialize the Device sensors[xxx] value from the restore_state file if
         # the sensor is in the file. Otherwise, initialize to this value. This will preserve
         # non-tracking sensors across restarts
-        # for sensor, default_value in USE_RESTORE_STATE_VALUE_ON_STARTUP.items():
-        #     if (self.devicename in Gb.restore_state_devices
-        #             and 'sensor' in Gb.restore_state_devices[self.devicename]
-        #             and sensor in Gb.restore_state_devices[self.devicename]['sensors']):
-        #         self.sensors[sensor] = Gb.restore_state_devices[self.devicename]['sensors'][sensor]
-        #     else:
-        #         self.sensors[sensor] = default_value
         self._restore_sensors_from_restore_state_file()
 
+        self._link_device_entities_sensor_device_tracker()
 
+#------------------------------------------------------------------------------
+    def _link_device_entities_sensor_device_tracker(self):
         # The DeviceTracker & Sensors entities are created before the Device object
         # using the configuration parameters. Cycle thru them now to set there
-        # self.Device variable to this evice object. This permits access to the
-        # sensors & attrs values.
+        # self.Device, device_id and area_id variables to this Device object.
+        # This permits access to the sensors & attrs values.
 
         # Link the DeviceTracker-Device objects
         if self.devicename in Gb.DeviceTrackers_by_devicename:
             self.DeviceTracker = Gb.DeviceTrackers_by_devicename[self.devicename]
-            self.DeviceTracker.Device = self
+            self.DeviceTracker.Device    = self
+            self.DeviceTracker.device_id = Gb.dr_device_id_by_devicename[self.devicename]
+            self.DeviceTracker.area_id   = Gb.dr_area_id_by_devicename[self.devicename]
 
         # Cycle through all sensors for this device.
         # Link the Sensor-Device objects to provide access the sensors dictionary
@@ -427,7 +434,6 @@ class iCloud3_Device(TrackerEntity):
 
         # Validate zone name and get Zone Object for a valid zone
         self.inzone_interval_secs = conf_device.get(CONF_INZONE_INTERVAL, 30) * 60
-
 
         # Get and validate track from zone config
         self.track_from_base_zone = conf_device.get(CONF_TRACK_FROM_BASE_ZONE, HOME)
@@ -504,7 +510,13 @@ class iCloud3_Device(TrackerEntity):
                                     f"Update `Track From Zone` parameter using the "
                                     f"iCloud3 Configurator")
                     post_event(alert_msg)
+                    continue
 
+                Zone = Gb.Zones_by_zone[zone]
+                if Zone.passive:
+                    idx = self.track_from_zones.index(zone)
+                    self.track_from_zones[idx] = f"{LT}{zone}-Passive>"
+                    # self.track_from_zones[zone] = f"{CIRCLE_X2}{self.track_from_zones[zone]}"
                     continue
 
                 if zone in old_DeviceFmZones_by_zone:
@@ -1153,18 +1165,23 @@ class iCloud3_Device(TrackerEntity):
             self.loc_data_distance_moved = 0
         else:
             self.loc_data_distance_moved = calc_distance_km(self.sensors[GPS], self.loc_data_gps)
+        self.loc_data_moved_time_from = self.sensors[LAST_LOCATED_DATETIME]
+        self.loc_data_moved_time_to   = self.loc_data_datetime
+
 
 #--------------------------------------------------------------------
     def distance_m(self, to_latitude, to_longitude):
         to_gps = (to_latitude, to_longitude)
         distance = calc_distance_m(self.loc_data_gps, to_gps)
-        distance = 0 if distance < .2 else distance
+        distance = 0 if distance < .002 else distance
+
         return distance
 
     def distance_km(self, to_latitude, to_longitude):
         to_gps = (to_latitude, to_longitude)
         distance = calc_distance_km(self.loc_data_gps, to_gps)
-        distance = 0 if distance < .002 else distance
+        distance = 0 if distance < .00002 else distance
+
         return distance
 
 #--------------------------------------------------------------------
@@ -1344,8 +1361,8 @@ class iCloud3_Device(TrackerEntity):
             if self.tracking_method != self.dev_data_source.lower():
                 info_msg += (f"DataSource-{self.dev_data_source}, ")
 
-            if self.dev_data_battery_level > 0:
-                info_msg += f"Battery-{self.format_battery_level}, "
+            # if self.dev_data_battery_level > 0:
+            #     info_msg += f"Battery-{self.format_battery_level}, "
 
             if self.is_gps_poor:
                 info_msg += (f"Poor GPS Accuracy, Dist-{self.loc_data_gps_accuracy}m "
@@ -1726,15 +1743,18 @@ class iCloud3_Device(TrackerEntity):
             self.sensors[GPS]                  = (self.loc_data_latitude, self.loc_data_longitude)
             self.sensors[LATITUDE]             = self.loc_data_latitude
             self.sensors[LONGITUDE]            = self.loc_data_longitude
-            self.sensors[GPS_ACCURACY]         = m_to_ft_str(self.loc_data_gps_accuracy)
-            self.sensors[ALTITUDE]             = m_to_ft_str(self.loc_data_altitude)
-            self.sensors[VERT_ACCURACY]        = m_to_ft_str(self.loc_data_vert_accuracy)
+            self.sensors[GPS_ACCURACY]         = self.loc_data_gps_accuracy
+            self.sensors[ALTITUDE]             = self.loc_data_altitude
+            self.sensors[VERT_ACCURACY]        = self.loc_data_vert_accuracy
             self.sensors[LOCATION_SOURCE]      = self.dev_data_source
             self.sensors[TRIGGER]              = self.trigger
             self.sensors[LAST_LOCATED_DATETIME]= self.loc_data_datetime
             self.sensors[LAST_LOCATED_TIME]    = self.loc_data_time
             self.sensors[LAST_LOCATED]         = self.loc_data_time
             self.sensors[DISTANCE_TO_DEVICES]  = self.dist_apart_msg.rstrip(', ')
+            self.sensors[MOVED_DISTANCE]       = self.loc_data_distance_moved
+            self.sensors[MOVED_TIME_FROM]      = self.loc_data_moved_time_from
+            self.sensors[MOVED_TIME_TO]        = self.loc_data_moved_time_to
 
             self.next_update_secs              = self.DeviceFmZoneTracked.next_update_secs
             self.next_update_DeviceFmZone      = self.DeviceFmZoneTracked
@@ -1750,12 +1770,14 @@ class iCloud3_Device(TrackerEntity):
             self.sensors[TRAVEL_TIME_MIN]      = self.DeviceFmZoneTracked.sensors[TRAVEL_TIME_MIN]
             self.sensors[TRAVEL_TIME]          = self.DeviceFmZoneTracked.sensors[TRAVEL_TIME]
             self.sensors[ZONE_DISTANCE]        = self.DeviceFmZoneTracked.sensors[ZONE_DISTANCE]
+            self.sensors[ZONE_DISTANCE_M]      = self.DeviceFmZoneTracked.sensors[ZONE_DISTANCE_M]
+            self.sensors[ZONE_DISTANCE_M_EDGE] = self.DeviceFmZoneTracked.sensors[ZONE_DISTANCE_M_EDGE]
             self.sensors[MAX_DISTANCE]         = self.DeviceFmZoneTracked.sensors[MAX_DISTANCE]
             self.sensors[WAZE_DISTANCE]        = self.DeviceFmZoneTracked.sensors[WAZE_DISTANCE]
             self.sensors[WAZE_METHOD]          = self.DeviceFmZoneTracked.sensors[WAZE_METHOD]
             self.sensors[CALC_DISTANCE]        = self.DeviceFmZoneTracked.sensors[CALC_DISTANCE]
-            self.sensors[MOVED_DISTANCE]       = self.DeviceFmZoneTracked.sensors[MOVED_DISTANCE]
             self.sensors[HOME_DISTANCE]        = self.DeviceFmZoneHome.sensors[ZONE_DISTANCE]
+            # self.sensors[MOVED_DISTANCE]       = self.DeviceFmZoneTracked.sensors[MOVED_DISTANCE]
 
             # If moving towards a tracked from zone, change the direction to 'To-[zonename]'
             # _trace(f"{self.devicename} {self.DeviceFmZoneTracked.from_zone} {self.DeviceFmZoneTracked.sensors[DIR_OF_TRAVEL]}")
@@ -1794,6 +1816,8 @@ class iCloud3_Device(TrackerEntity):
 
             self.sensors[DEVICE_TRACKER_STATE_VALUE] = Zone.device_tracker_state
             self.sensors[DEVICE_TRACKER_STATE_ZONE]  = Zone.zone
+            # if self.sensors[DEVICE_TRACKER_STATE_VALUE] == HOME_FNAME:
+            #     self.sensors[DEVICE_TRACKER_STATE_VALUE] = HOME
 
             if Gb.is_stat_zone_used and self.StatZone:
                 self.StatZone.update_stationary_zone_location()

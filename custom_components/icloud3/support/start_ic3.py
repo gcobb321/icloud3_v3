@@ -66,6 +66,7 @@ from ..helpers.messaging    import (broadcast_info_msg,
                                     open_ic3_debug_log_file, close_ic3_debug_log_file,
                                     _trace, _traceha, )
 from ..helpers.dist_util    import (format_dist_km, )
+from ..helpers.time_util    import (secs_to_time_str, )
 
 import os
 import json
@@ -317,8 +318,6 @@ def set_global_variables_from_conf_parameters(evlog_msg=True):
         evlog_table_max_cnt = set_evlog_table_max_cnt()
         config_event_msg += f"{CRLF_DOT}Set Event Log Record Limits ({evlog_table_max_cnt} Events)"
 
-        # set_zone_display_as()
-
         if evlog_msg:
             post_event(config_event_msg)
 
@@ -355,7 +354,7 @@ def set_icloud_username_password():
     '''
     Set up icloud username/password and devices from the configuration parameters
     '''
-    Gb.username                     = Gb.conf_tracking[CONF_USERNAME]
+    Gb.username                     = Gb.conf_tracking[CONF_USERNAME].lower()
     Gb.username_base                = Gb.username.split('@')[0]
     Gb.password                     = Gb.conf_tracking[CONF_PASSWORD]
     Gb.encode_password_flag         = Gb.conf_tracking[CONF_ENCODE_PASSWORD]
@@ -512,12 +511,11 @@ def set_zone_display_as():
         return
 
     zone_msg = ''
-    Gb.zone_display_as = {}
+    Gb.zone_display_as = NON_ZONE_ITEM_LIST.copy()
 
     for zone, Zone in Gb.Zones_by_zone.items():
         if is_statzone(zone) is False:
             Zone.setup_zone_display_name()
-            Gb.zone_display_as[zone] = Zone.display_as
 
         if Zone.radius_m > 1:
             crlf_dot_x = CRLF_X if Zone.passive else CRLF_DOT
@@ -805,38 +803,40 @@ def create_Zones_object():
     #log_msg = (f"Reloading Zone.yaml config file")
     #log_debug_msg(log_msg)
 
-    # zone_entities = Gb.hass.states.entity_ids(ZONE)
-    ha_zones, zone_entity_data = entity_io.get_entity_registry_data(platform=ZONE)
+    zone_entities = Gb.hass.states.entity_ids(ZONE)
+    er_zones, zone_entity_data = entity_io.get_entity_registry_data(platform=ZONE)
 
     Gb.state_to_zone = STATE_TO_ZONE_BASE.copy()
     OldZones_by_zone = Gb.Zones_by_zone.copy()
 
     Gb.Zones = []
     Gb.Zones_by_zone = {}
-    Gb.zone_display_as = {}
+    Gb.zone_display_as = NON_ZONE_ITEM_LIST.copy()
 
     # Add away, not_set, not_home, stationary, etc. so display_name is set
     # for these zones/states. Radius=0 is used to ypass normal zone processing.
     for zone, display_as in NON_ZONE_ITEM_LIST.items():
+        # if zone.lower() in Gb.Zones_by_zone:
+        #     continue
+
         if zone in OldZones_by_zone:
             Zone = OldZones_by_zone[zone]
         else:
-            zone_data ={NAME: display_as, TITLE: display_as, FNAME: display_as,
+            zone_data ={ZONE: zone, NAME: display_as, TITLE: display_as, FNAME: display_as,
                         FRIENDLY_NAME: display_as, RADIUS: 0}
             Zone = iCloud3_Zone(zone, zone_data)
-            # Zone.display_as = display_as
+
         Gb.Zones.append(Zone)
         Gb.Zones_by_zone[zone] = Zone
-        _traceha(f"{Zone.name=} {Zone.fname=} {Zone.title=} {Zone.display_as=}")
-        _traceha(f"{Gb.zone_display_as=}")
 
     zone_msg = ''
-    for zone in ha_zones:
+    for zone in er_zones:
         try:
             zone_entity_name = f"zone.{zone}"
             zone_data = entity_io.get_attributes(zone_entity_name)
             if (zone_entity_name in zone_entity_data
                     and ID in zone_entity_data[zone_entity_name]):
+                zone_data[ZONE] = zone
                 zone_data[ID] = zone_entity_data[zone_entity_name][ID]
                 zone_data['unique_id'] = zone_entity_data[zone_entity_name]['unique_id']
                 zone_data['original_name'] = zone_entity_data[zone_entity_name]['original_name']
@@ -889,26 +889,30 @@ def create_Zones_object():
                         f"{circle_letter(Gb.track_from_base_zone)}")
         post_event(event_msg)
 
+
+    event_msg = "Special Zone Setup >"
+    if Gb.is_passthru_zone_used:
+        event_msg += f"{CRLF_DOT}PassThru Zone > Delay-{secs_to_time_str(Gb.passthru_zone_interval_secs)}"
+    else:
+        event_msg += f"{CRLF_DOT}PASSTHRU ZONE IS NOT BEING USED"
+
     dist = Gb.HomeZone.distance_km(Gb.stat_zone_base_latitude, Gb.stat_zone_base_longitude)
     home_zone_radius_km   = Gb.HomeZone.radius_km
     min_dist_from_zone_km = round(home_zone_radius_km * 2, 2)
     dist_move_limit       = round(home_zone_radius_km * 1.5, 2)
 
-    event_msg = "Special Zone Setup >"
     if Gb.is_stat_zone_used:
-        event_msg += (  f"{CRLF_DOT}Stationary Zone Base Information > "
-                        f"BaseLocation-{format_gps(Gb.stat_zone_base_latitude, Gb.stat_zone_base_longitude, 0)}, "
+        event_msg += (  f"{CRLF_DOT}Stationary Zone > "
                         f"Radius-{Gb.HomeZone.radius_m * 2}m, "
-                        f"DistFromHome-{format_dist_km(dist)}, "
-                        f"MinDistFromZone-{format_dist_km(min_dist_from_zone_km)}, "
-                        f"DistMoveLimit-{format_dist_km(dist_move_limit)}")
+                        f"DistMoveLimit-{format_dist_km(dist_move_limit)}, "
+                        f"MinDistFromAnotherZone-{format_dist_km(min_dist_from_zone_km)}, "
+                        f"BaseDistFromHome-{format_dist_km(dist)}, "
+                        f"BaseLocation-{format_gps(Gb.stat_zone_base_latitude, Gb.stat_zone_base_longitude, 0)}")
     else:
         event_msg += f"{CRLF_DOT}STATIONARY ZONES ARE NOT BEING USED"
 
-    if Gb.is_passthru_zone_used is False:
-        event_msg += f"{CRLF_DOT}PASSTHRU ZONE IS NOT BEING USED"
-    post_event(event_msg)
-
+    post_event(event_msg
+    )
     # Cycle thru the Device's conf and get all zones that are tracked from for all devices
     Gb.TrackedZones_by_zone = {}
     for conf_device in Gb.conf_devices:
@@ -1056,13 +1060,11 @@ def create_Devices_object():
 
     return
 
-
-#########################################################
+#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 #
-#   INITIALIZE PYICLOUD DEVICE API
-#   DEVICE SETUP SUPPORT FUNCTIONS FOR MODES FMF, FAMSHR, IOSAPP
+#   ICLOUD3 STARTUP MODULES -- STAGE 4
 #
-#########################################################
+#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 def setup_tracked_devices_for_famshr(PyiCloud=None):
     '''
@@ -1090,8 +1092,7 @@ def setup_tracked_devices_for_famshr(PyiCloud=None):
         post_event(event_msg)
         return
 
-    elif (_FamShr is None
-            or _FamShr.device_fname_by_device_id == {}):
+    elif _FamShr is None or _FamShr.device_fname_by_device_id == {}:
         event_msg += "NO DEVICES FOUND"
         post_event(event_msg)
         return
@@ -1273,8 +1274,7 @@ def setup_tracked_devices_for_fmf(PyiCloud=None):
         post_event(event_msg)
         return
 
-    elif (_FmF is None
-            or _FmF.device_id_by_fmf_email == {}):
+    elif _FmF is None or _FmF.device_id_by_fmf_email == {}:
         event_msg += "NO DEVICES FOUND"
         post_event(event_msg)
         return
@@ -1730,35 +1730,13 @@ def setup_notify_service_name_for_iosapp_devices(post_event_msg=False):
 #
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-def display_object_lists():
-    '''
-    Display the object list values
-    '''
-    broadcast_info_msg(f"Logging Initial Monitor Info")
-    monitor_msg = (f"StatZones-{Gb.StatZones_by_devicename}")
-    post_monitor_msg(monitor_msg)
-
-    monitor_msg = (f"Devices-{Gb.Devices_by_devicename}")
-    post_monitor_msg(monitor_msg)
-
-    for Device in Gb.Devices:
-        monitor_msg = (f"Device-{Device.devicename}, "
-                        f"DeviceFmZones-{Device.DeviceFmZones_by_zone}")
-        post_monitor_msg(monitor_msg)
-
-    monitor_msg = (f"Zones-{Gb.Zones_by_zone}")
-    post_monitor_msg(monitor_msg)
-
-
-#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-#
-#   ICLOUD3 STARTUP MODULES -- STAGE 4
-#
-#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-
 def remove_unverified_untrackable_devices(PyiCloud=None):
 
-    if PyiCloud is None: PyiCloud = Gb,PyiCloud
+    if PyiCloud is None: PyiCloud = Gb.PyiCloud
+    if PyiCloud is None:
+        return
+    if PyiCloud.FamilySharing is None and PyiCloud.FindMyFriends is None:
+        return
 
     _Devices_by_devicename = Gb.Devices_by_devicename.copy()
     device_removed_flag = False
@@ -1856,7 +1834,7 @@ def setup_trackable_devices():
         create_Device_StationaryZone_object(Device)
 
         info_msg = f"Stationary Zone: {Device.stationary_zonename} ({Device.StatZone.display_as})"
-        Device.display_info_msg(f"{DOT2}{info_msg}")
+        Device.display_info_msg(f"{info_msg}")
         event_msg += f"{CRLF_DOT}{info_msg}"
 
         if Device.track_from_base_zone != HOME:
@@ -1894,6 +1872,26 @@ def display_inactive_devices():
                     f"{CRLF}2. Change the `Tracking Mode` from INACTIVE to Tracked"
                     f"{CRLF}3. Exit the Configuration and Restart iCloud3")
         post_event(event_msg)
+
+#------------------------------------------------------------------------------
+def display_object_lists():
+    '''
+    Display the object list values
+    '''
+    broadcast_info_msg(f"Logging Initial Monitor Info")
+    monitor_msg = (f"StatZones-{Gb.StatZones_by_devicename}")
+    post_monitor_msg(monitor_msg)
+
+    monitor_msg = (f"Devices-{Gb.Devices_by_devicename}")
+    post_monitor_msg(monitor_msg)
+
+    for Device in Gb.Devices:
+        monitor_msg = (f"Device-{Device.devicename}, "
+                        f"DeviceFmZones-{Device.DeviceFmZones_by_zone}")
+        post_monitor_msg(monitor_msg)
+
+    monitor_msg = (f"Zones-{Gb.Zones_by_zone}")
+    post_monitor_msg(monitor_msg)
 
 #------------------------------------------------------------------------------
 def create_Device_StationaryZone_object(Device):
