@@ -75,6 +75,7 @@ class iCloud3_DeviceFmZone():
             self.waze_dist               = 0
             self.calc_dist               = 0
             self.zone_dist               = 0
+            self.zone_dist_m             = 0
             self.zone_center_dist        = 0
             self.waze_results            = None
             self.home_dist               = calc_distance_km(Gb.HomeZone.gps, self.FromZone.gps)
