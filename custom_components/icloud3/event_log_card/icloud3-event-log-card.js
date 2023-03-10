@@ -547,8 +547,9 @@ class iCloud3EventLogCard extends HTMLElement {
             /* Message Bar setup - Name & Time below Name & Acion Buttons */
             #statusBar {
                 position: relative;
-                /*width: 100%;*/
-                /*border: 1px solid dodgerblue;*/
+                display: inline-block;
+                margin: 2px 0px -10px 0px;
+                width: 100%;
             }
             #statusName {
                 width: 55%;
@@ -661,22 +662,22 @@ class iCloud3EventLogCard extends HTMLElement {
             .tblEvlogBody tr:nth-child(odd) {background-color: var(--primary-background-color);}
 
             /* Browser Text */
-            .colTime        {width: 66.67px; vertical-align: text-top;}
-            .colStat        {width: 92.22px; vertical-align: text-top;}
-            .colZone        {width: 90.00px; vertical-align: text-top;}
-            .colIntv        {width: 76.67px; vertical-align: text-top;}
-            .colTrav        {width: 65.56px; vertical-align: text-top;}
-            .colDist        {width: 62.22px; vertical-align: text-top;}
+            .colTime        {vertical-align: text-top;}
+            .colStat        {vertical-align: text-top;}
+            .colZone        {vertical-align: text-top;}
+            .colIntv        {vertical-align: text-top;}
+            .colTrav        {vertical-align: text-top;}
+            .colDist        {vertical-align: text-top;}
             .colTimeTextRow {color: rgba(var(--rgb-primary-text-color), 0.5); vertical-align: text-top;}
             .colText        {color: var(--primary-text-color)}
 
             /* Browser Header */
-            .hTime        {width: 64.6px; text-align: left; color: var(--primary-text-color); padding-left: 4px;}
-            .hStat        {width: 90.2px; text-align: left; color: var(--primary-text-color);}
-            .hZone        {width: 88.0px; text-align: left; color: var(--primary-text-color);}
-            .hIntv        {width: 73.6px; text-align: left; color: var(--primary-text-color);}
-            .hTrav        {width: 63.6px; text-align: left; color: var(--primary-text-color);}
-            .hDist        {width: 59.1px; text-align: left; color: var(--primary-text-color);}
+            .hTime        {text-align: left; color: var(--primary-text-color); padding-left: 4px;}
+            .hStat        {text-align: left; color: var(--primary-text-color);}
+            .hZone        {text-align: left; color: var(--primary-text-color);}
+            .hIntv        {text-align: left; color: var(--primary-text-color);}
+            .hTrav        {text-align: left; color: var(--primary-text-color);}
+            .hDist        {text-align: left; color: var(--primary-text-color);}
             .hdrBase      {text-align: left; color: var(--primary-text-color);}
 
             /* Helph Select Button */
