@@ -898,6 +898,8 @@ class PyiCloudService():
 
             return needs_2sa_flag
 
+        except AttributeError:
+            return False
         except:
             return False
 
@@ -908,6 +910,8 @@ class PyiCloudService():
             needs_2fa_flag = (self.data.get("dsInfo", {}).get("hsaVersion", 0) == 2
                                 and (self.is_challenge_required or self.is_trusted_browser is False))
 
+        except AttributeError:
+            return False
         except Exception as err:
             log_exception(err)
             return False

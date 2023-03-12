@@ -185,7 +185,6 @@
           "opt_action": "═════════════════════════════════════════════════════"
         },
         "data_description": {
-          "zone_sensor_evlog_format": "The HA entity value standard is to display the state value in lower_case with underscores ('_'). This overides that standard and displays the Zone Name Format selected above"
         }
       },
       "display_text_as": {
