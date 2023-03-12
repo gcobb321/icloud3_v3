@@ -185,7 +185,6 @@
           "opt_action": "═════════════════════════════════════════════════════"
         },
         "data_description": {
-          "zone_sensor_evlog_format": "The HA entity value standard is to display the state value in lower_case with underscores ('_'). This overides that standard and displays the Zone Name Format selected above"
         }
       },
       "display_text_as": {
@@ -222,7 +221,7 @@
           "old_location_adjustment": "OLD LOCATION ADJUSTMENT",
           "distance_between_devices": "USE LOCATION RESULTS FROM A NEAR-BY DEVICE",
           "max_interval": "MAXIMUM INTERVAL",
-          "exit_zone_interval": "EXIT_ZONE_INTERVAL",
+          "exit_zone_interval": "EXIT ZONE INTERVAL",
           "iosapp_alive_interval": "REQUEST IOSAPP LOCATION INTERVAL",
           "tfz_tracking_max_distance": "TRACK-FROM-ZONE DISPLAY DISTANCE",
           "offline_interval": "DEVICE OFFLINE INTERVAL",
