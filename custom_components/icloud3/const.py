@@ -4,7 +4,7 @@
 #
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-VERSION                         = '3.0.0b14a'
+VERSION                         = '3.0.0b15'
 
 DOMAIN                          = 'icloud3'
 ICLOUD3                         = 'iCloud3'
@@ -496,6 +496,7 @@ STORAGE_VERSION = 1
 # Platform
 CONF_VERSION                    = 'version'
 CONF_IC3_VERSION                = 'ic3_version'
+CONF_VERSION_INSTALL_DATE       = 'version_install_date'
 CONF_UPDATE_DATE                = 'config_update_date'
 CONF_EVLOG_CARD_DIRECTORY       = 'event_log_card_directory'
 CONF_EVLOG_CARD_PROGRAM         = 'event_log_card_program'
@@ -675,7 +676,8 @@ CF_DATA_SENSORS    = 'sensors'
 DEFAULT_PROFILE_CONF = {
         CONF_VERSION: -1,
         CONF_IC3_VERSION: VERSION,
-        CONF_UPDATE_DATE: '',
+        CONF_VERSION_INSTALL_DATE: DATETIME_ZERO,
+        CONF_UPDATE_DATE: DATETIME_ZERO,
         CONF_EVLOG_CARD_DIRECTORY: EVLOG_CARD_WWW_DIRECTORY,
         CONF_EVLOG_CARD_PROGRAM: EVLOG_CARD_WWW_JS_PROG,
 }
@@ -857,7 +859,8 @@ DEFAULT_DATA_CONF =  {
 CF_DEFAULT_IC3_CONF_FILE = {
         CF_PROFILE: {
                 CONF_VERSION: -1,
-                CONF_UPDATE_DATE: '',
+                CONF_VERSION_INSTALL_DATE: DATETIME_ZERO,
+                CONF_UPDATE_DATE: DATETIME_ZERO,
                 CONF_EVLOG_CARD_DIRECTORY: EVLOG_CARD_WWW_DIRECTORY,
                 CONF_EVLOG_CARD_PROGRAM: EVLOG_CARD_WWW_JS_PROG,
         },

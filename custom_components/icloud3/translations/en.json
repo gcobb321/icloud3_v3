@@ -40,7 +40,7 @@
     },
     "error": {
       "update_aborted": "Update aborted, an error was detected in one of the data fields",
-      "conf_updated": "iCloud3 Configuration was Data Updated",
+      "conf_updated": "iCloud3 Configuration Parameters were updated successfully",
       "conf_reloaded": "iCloud3 Configuration File was Reloaded",
       "icloud_logging_into": "Logging into iCloud Account",
       "icloud_logged_into": "Successfully Logged into the iCloud Account",
@@ -51,6 +51,12 @@
       "send_verification_code": "Failed to send the Apple ID Verification Code",
       "verification_code_accepted": "The Apple ID Verification Code was Accepted",
       "invalid_verification_code": "The Apple ID Verification Code is not correct",
+      "inactive_device": "Device is INACTIVE. Change to `Track` to locate and track this device",
+      "inactive_all_devices": "✪ ✪ ALL DEVICES ARE INACTIVE. NO DEVICES WILL BE TRACKED ✪ ✪",
+      "inactive_most_devices": "MOST Devices are INACTIVE and will not be located or tracked",
+      "inactive_some_devices": "Some Devices are INACTIVE and will not be located or tracked",
+      "inactive_few_devices": "A Few Devices are INACTIVE and will not be located or tracked",
+      "inactive_no_devices": "No Devices have been set up, nothing will be located or tracked",
       "review_filledin_fields": "Review the 'Filled in' fields",
       "not_numeric": "The value entered is not numeric",
       "stat_zone_base_lat_range_error": "The value must be between -90 and 90",
@@ -62,7 +68,21 @@
       "required_field_device": "At least one device (Family Share List, Find-my-Friends, iOS App device must be specified",
       "unknown_devicename": "The device that was previously selected can no longer be identified. It`s name may have been changed or it may have been deleted. Reselect the device to be tracked or monitored",
       "unknown_value": "The value of this parameter in the iCloud3 configuration file is unknown or invalid. It must be selected again",
-      "unknown_famshr_fmf_iosapp_picture": "Check the FamShr, FmF, iOS App or Picture parameter value (Not found or Invalid). Reset to `None`",
+      "unknown_famshr": "Check the FamShr parameter value (Not found or Invalid)",
+      "unknown_famshr_fmf": "Check the FamShr and FmF parameter values (Not found or Invalid)",
+      "unknown_famshr_fmf_iosapp": "Check the FamShr, FmF and iOS App parameter values (Not found or Invalid)",
+      "unknown_famshr_fmf_iosapp_picture": "Check the FamShr, FmF, iOS App and Picture parameter values (Not found or Invalid)",
+      "unknown_famshr_iosapp": "Check the FamShr and iOS App parameter values (Not found or Invalid)",
+      "unknown_famshr_iosapp_picture": "Check the FamShr, iOS App and Picture parameter values (Not found or Invalid)",
+      "unknown_famshr_picture": "Check the FamShr and Picture parameter values (Not found or Invalid)",
+      "unknown_fmf": "Check the FmF parameter value (Not found or Invalid)",
+      "unknown_fmf_iosapp": "Check the FmF and iOS App parameter values (Not found or Invalid)",
+      "unknown_fmf_iosapp_picture": "Check the FmF, iOS App and Picture parameter values (Not found or Invalid)",
+      "unknown_fmf_picture": "Check the FmFand Picture parameter values (Not found or Invalid)",
+      "unknown_iosapp": "Check the iOS App parameter value (Not found or Invalid)",
+      "unknown_iosapp_picture": "Check the iOS App and Picture parameter values (Not found or Invalid)",
+      "unknown_picture": "Check the Picture parameter value (Not found or Invalid)",
+
       "tfz_selection_invalid": "The value must be a zone that is being tracked from",
       "time_factor_invalid_range": "The 'travel_time_factor' must be between .1 and .9",
       "display_text_as_no_gtsign": "The '>' between the ActualText and DisplayAsText is missing",
@@ -91,7 +111,7 @@
         "title": "Confirm Restarting iCloud3",
         "description": "Note: Changes to tracked devices require restarting iCloud3",
         "data": {
-          "restart_now_later": ""
+          "opt_action": ""
         }
       },
       "icloud_account": {
@@ -118,9 +138,9 @@
       },
       "device_list": {
         "title": "iCloud3 Device Tracker Entities",
-        "description": "All of the devices that are tracked or monitored by iCloud3 are listed on this screen. Here, new devices are added and existing devices are selected for updating or deletion.",
+        "description": "All of the devices that are tracked or monitored by iCloud3 are listed on this screen. You can add new devices and update or delete existing devices.",
         "data": {
-          "devices": "iCloud3 devices",
+          "devices": "",
           "opt_action": "═════════════════════════════════════════════════════"
         }
       },
@@ -164,6 +184,14 @@
         "title": "Delete Device(s), Other Device Maintenance",
         "data": {
           "opt_action": ""
+        }
+      },
+      "review_inactive_devices": {
+        "title": "Review Untracked (Inactive) Devices",
+        "description": "The 'Tracking Mode' of devices are set to 'Inactive' and will not be located or tracked.",
+        "data": {
+          "inactive_devices": "",
+          "opt_action": "═════════════════════════════════════════════════════"
         }
       },
       "change_device_order": {
@@ -244,7 +272,7 @@
       },
       "inzone_intervals": {
         "title": "inZone Parameters and Default Intervals",
-        "description": "An inZone interval is the time between location requests when the Device is in a zone. This screen sets the default values for different types of devices. This value is assigned to a device when it is added and can then be changed on the Update Device screen",
+        "description": "An inZone interval is the time between location requests when the Device is in a zone. This screen sets the default values for different types of devices. This value is assigned to a device when it is added. You can then change it on the Update Device screen ",
         "data": {
           "iphone": "IPHONE & IPOD",
           "ipad": "IPAD",

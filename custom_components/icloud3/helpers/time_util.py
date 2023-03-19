@@ -50,7 +50,7 @@ def secs_to_time_str(secs):
 
     try:
         if secs >= 86400:
-            time_str = secs_to_dhms_str(secs)
+            time_str = f"{secs/86400:.2f} days"   #secs_to_dhms_str(secs)
         elif secs < 60:
             time_str = f"{secs:.0f} sec"
         elif secs < 3600:
@@ -93,13 +93,13 @@ def mins_to_time_str(mins):
 #--------------------------------------------------------------------
 def secs_to_hrs_mins_secs_str(secs):
     """ Create # hrs, # mins, # secs string """
+    return f"{secs/86400:.2f} days"
+    #hms_str = secs_to_dhms_str(secs)
+    #hms_str = hms_str.replace('s', ' secs')
+    #hms_str = hms_str.replace('m', ' mins, ')
+    #hms_str = hms_str.replace('h', ' hrs, ')
 
-    hms_str = secs_to_dhms_str(secs)
-    hms_str = hms_str.replace('s', ' secs')
-    hms_str = hms_str.replace('m', ' mins, ')
-    hms_str = hms_str.replace('h', ' hrs, ')
-
-    return hms_str
+    #return hms_str
 
 #---------------------------------------------------------
 def secs_to_hhmmss(secs):
@@ -125,24 +125,26 @@ def secs_to_hhmmss(secs):
 def secs_to_dhms_str(secs):
     """ Create the time 0w0d0h0m0s time string from seconds """
 
-    try:
-        secs_dhms = float(secs)
-        dhms_str = ""
-        if (secs >= 31557600):
-            return f"{round(secs_dhms/31557600, 2)}y "
+    return f"{secs/86400:.2f} days"
 
-        if (secs >= 604800): dhms_str += f"{secs_dhms // 604800}w "
-        secs_dhms = secs_dhms % 604800
-        if (secs >= 86400): dhms_str += f"{secs_dhms // 86400}d "
-        secs_dhms = secs_dhms % 86400
-        if (secs >= 3600): dhms_str += f"{secs_dhms / 3600:.1f}h"
+    #try:
+    #    secs_dhms = float(secs)
+    #    dhms_str = ""
+    #    if (secs >= 31557600):
+    #        return f"{round(secs_dhms/31557600, 2)}y "
 
-        dhms_str = dhms_str.replace('.0', '')
+    #    if (secs >= 604800): dhms_str += f"{secs_dhms // 604800}w "
+    #    secs_dhms = secs_dhms % 604800
+    #    if (secs >= 86400): dhms_str += f"{secs_dhms // 86400}d "
+    #    secs_dhms = secs_dhms % 86400
+    #    if (secs >= 3600): dhms_str += f"{secs_dhms / 3600:.1f}h"
 
-    except:
-        dhms_str = ""
+    #    dhms_str = dhms_str.replace('.0', '')
 
-    return dhms_str
+    #except:
+    #    dhms_str = ""
+
+    #return dhms_str
 
 #--------------------------------------------------------------------
 def waze_mins_to_time_str(waze_time_from_zone):

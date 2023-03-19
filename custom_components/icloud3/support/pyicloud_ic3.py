@@ -513,7 +513,7 @@ class PyiCloudService():
             # try:
             if self._validate_token():
                 login_successful = True
-                self.authenticate_method += ", ValidateToken"
+                self.authenticate_method += ", Token"
 
 
             # except PyiCloudAPIResponseException:
@@ -543,7 +543,7 @@ class PyiCloudService():
             if self.verify_password is False:
                 # Verify that the Token is still valid, if it is we are done
                 if self._authenticate_with_token():
-                    self.authenticate_method += ", TrustToken"
+                    self.authenticate_method += ", Token"
                     login_successful = True
 
             if login_successful is False or self.verify_password:
@@ -564,7 +564,7 @@ class PyiCloudService():
 
                 if self._authenticate_with_token():
                     login_successful = True
-                    self.authenticate_method += "+TrustToken"
+                    self.authenticate_method += "+Token"
 
         if login_successful == False:
             self.authenticate_method += ", ERROR-Invalid username/password"
@@ -1014,7 +1014,7 @@ class PyiCloudService():
             self.Session.get(f"{self.AUTH_ENDPOINT}/2sv/trust", headers=headers,)
 
             if self._authenticate_with_token():
-                self.authenticate_method += "+TrustToken"
+                self.authenticate_method += "+Token"
                 self.requires_2fa = self._check_2fa_needed
             return True
 

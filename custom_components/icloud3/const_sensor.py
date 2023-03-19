@@ -142,7 +142,7 @@ SENSOR_DEFINITION = {
                 'timer, secs',
                 'mdi:clock-start',
                 [LAST_LOCATED_DATETIME, LAST_UPDATE_DATETIME, NEXT_UPDATE_DATETIME],
-                BLANK_SENSOR_FIELD],
+                0],
         LAST_LOCATED: [
                 'LastLocated',
                 'timestamp, ha_history_exclude',
@@ -197,7 +197,7 @@ SENSOR_DEFINITION = {
                 'mdi:map-marker-distance',
                 [FROM_ZONE, ZONE_DISTANCE_M, ZONE_DISTANCE_M_EDGE,
                 MAX_DISTANCE, CALC_DISTANCE, WAZE_DISTANCE, WAZE_METHOD],
-                '0'],
+                0],
         DIR_OF_TRAVEL: [
                 'Direction',
                 'text, title',
@@ -244,14 +244,14 @@ SENSOR_DEFINITION = {
                 'mdi:map-marker-distance',
                 [FROM_ZONE, ZONE_DISTANCE_M, ZONE_DISTANCE_M_EDGE,
                 MAX_DISTANCE, CALC_DISTANCE, WAZE_DISTANCE, WAZE_METHOD],
-                '0 mi'],
+                0],
         TFZ_ZONE_DISTANCE: [
                 'ZoneDistance',
                 'distance, km-mi',
                 'mdi:map-marker-distance',
                 [FROM_ZONE, ZONE_DISTANCE_M, ZONE_DISTANCE_M_EDGE,
                 MAX_DISTANCE, CALC_DISTANCE, WAZE_DISTANCE, WAZE_METHOD],
-                '0 mi'],
+                0],
         TFZ_DIR_OF_TRAVEL: [
                 'Direction',
                 'text, title',

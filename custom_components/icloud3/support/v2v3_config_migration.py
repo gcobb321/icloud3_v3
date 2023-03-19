@@ -20,7 +20,7 @@ from ..const            import (
                                 LAST_LOCATED,
                                 INFO, GPS_ACCURACY, POLL_COUNT, VERTICAL_ACCURACY, ALTITUDE,
                                 ZONE_NAME, ZONE_FNAME, LAST_ZONE_NAME, LAST_ZONE_FNAME,
-                                CONFIG_IC3,
+                                CONFIG_IC3, CONF_VERSION_INSTALL_DATE,
                                 CONF_CONFIG_IC3_FILE_NAME,
                                 CONF_VERSION, CONF_EVLOG_CARD_DIRECTORY, CONF_EVLOG_CARD_PROGRAM,
                                 CONF_USERNAME, CONF_PASSWORD, CONF_DEVICES, CONF_TRACKING_METHOD,
@@ -177,6 +177,9 @@ class iCloud3_v2v3ConfigMigration(object):
         config_ic3_records = self._get_config_ic3_records()
         self._extract_config_parameters(config_ic3_records)
         self._set_data_fields_from_config_parameter_dictionary()
+
+        Gb.conf_profile[CONF_VERSION_INSTALL_DATE] = datetime_now()
+
 
         try:
             self.write_migration_log_msg("\nMigration Complete, Writing Configuration File")

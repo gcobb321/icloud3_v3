@@ -22,7 +22,7 @@ class iCloud3EventLogCard extends HTMLElement {
     }
     //---------------------------------------------------------------------------
     setConfig(config) {
-        const version = "3.0.6"
+        const version = "3.0.7"
         const cardTitle = "iCloud3 v3 - Event Log"
 
         const root = this.shadowRoot
@@ -679,68 +679,26 @@ class iCloud3EventLogCard extends HTMLElement {
             .hDist        {width: 59.1px; text-align: left; color: var(--primary-text-color);}
             .hdrBase      {text-align: left; color: var(--primary-text-color);}
 
-            /* Helph Select Button */
-            #btnHelp {
+            /* Base Select Button */
+            #btnHelp, #btnRefresh, #btnStar, #btnConfig, #btnIssues {
                 display: inline-block;
-                /*visibility: visible;*/
                 color: var(--primary-text-color);
                 background-color: transparent;
-                margin: 0px 0px 0px 6px;
+                margin: 0px 0px 0px 3px;
                 float: right;
             }
-            .btnHelp {
+            .btnHelp .btnRefresh, .btnStar, .btnConfig, .btnIssues {
                 border: 0px solid transparent;
                 background-color: transparent;
                 box-shadow: transparent;
             }
+            /*                   Top Rt  Bot Left*/
+            #btnRefresh {margin: 2px 1px 0px 0px;}
+            #btnConfig  {margin: 0px 0px 3px 1px;}
+            #btnIssues  {margin: 2px 0px 2px 1px;}
+            #btnStar    {margin: 1px 0px 0px 1px;}
+            #btnHelp    {margin: 0px 0px 0px 2px;}
 
-            /* Refresh Select Button */
-            #btnRefresh {
-                display: inline-block;
-                /*visibility: visible;*/
-                color: var(--primary-text-color);
-                background-color: transparent;
-                margin: 0px 0px 0px 4px;
-                float: right;
-            }
-
-            .btnRefresh {
-                border: 0px solid transparent;
-                background-color: transparent;
-                box-shadow: transparent;
-            }
-
-            /* Config Select Button */
-            #btnIssues {
-                dispay: none;
-                /*display: inline-block;*/
-                /*visibility: visible;*/
-                color: var(--primary-text-color);
-                background-color: transparent;
-                margin: 0px 0px 1px 7px;
-                float: right;
-            }
-
-            .btnIssues {
-                border: 0px solid transparent;
-                background-color: transparent;
-                box-shadow: transparent;
-            }
-            #btnStar {
-                dispay: none;
-                /*display: inline-block;*/
-                /*visibility: visible;*/
-                color: var(--primary-text-color);
-                background-color: transparent;
-                margin: 0px 0px 1px 7px;
-                float: right;
-            }
-
-            .btnStar {
-                border: 0px solid transparent;
-                background-color: transparent;
-                box-shadow: transparent;
-            }
             svg         {stroke: #ff4d4d;}
             svg:hover   {stroke: var(--primary-color);}
 
@@ -883,6 +841,7 @@ class iCloud3EventLogCard extends HTMLElement {
         titleBar.appendChild(btnHelp)
         titleBar.appendChild(btnStar)
         titleBar.appendChild(btnIssues)
+        // titleBar.appendChild(btnConfig)
         titleBar.appendChild(btnRefresh)
 
         utilityBar.appendChild(thisButtonId)
@@ -944,6 +903,10 @@ class iCloud3EventLogCard extends HTMLElement {
         btnRefresh.addEventListener("mousedown", event => { this._commandButtonPress("btnRefresh"); })
         btnRefresh.addEventListener("mouseover", event => { this._btnClassMouseOver("btnRefresh"); })
         btnRefresh.addEventListener("mouseout", event => { this._btnClassMouseOut("btnRefresh"); })
+
+        btnConfig.addEventListener("mousedown", event => { this._commandButtonPress("btnConfig"); })
+        btnConfig.addEventListener("mouseover", event => { this._btnClassMouseOver("btnConfig"); })
+        btnConfig.addEventListener("mouseout", event => { this._btnClassMouseOut("btnConfig"); })
 
         // btnIssues.addEventListener("mousedown", event => { this._commandButtonPress("btnIssues"); })
         btnIssues.addEventListener("mouseover", event => { this._btnClassMouseOver("btnIssues"); })
@@ -1275,286 +1238,289 @@ class iCloud3EventLogCard extends HTMLElement {
         var alertErrorMsg = ""
 
         for (var i = 0; i < logEntries.length - 1; i++) {
-            var thisRecd = logEntries[i].split("', '", 10)
-            var nextRecd = logEntries[i + 1].split("', '", 10)
-            var nText = nextRecd[1].slice(0, -1)
+            try {
+                var thisRecd = logEntries[i].split("', '", 10)
+                var nextRecd = logEntries[i + 1].split("', '", 10)
+                var nText = nextRecd[1].slice(0, -1)
 
-            var recdType = 'text'
-            var tTime = thisRecd[0].slice(1)
-            var tText = thisRecd[1].slice(0, -1)
+                var recdType = 'text'
+                var tTime = thisRecd[0].slice(1)
+                var tText = thisRecd[1].slice(0, -1)
 
-            // ^t^ = zone, interval, travel time, distance item
-            if (tText.startsWith("^t^")) {
-                tText = tText.slice(3)
-                var recdType = 'zoneDistTime'
-                var zoneDistTime = tText.split(",", 10)
-                var tStat = zoneDistTime[0]
-                var tZone = zoneDistTime[1]
-                var tIntv = zoneDistTime[2]
-                var tTrav = zoneDistTime[3]
-                var tDist = zoneDistTime[4]
+                // ^t^ = zone, interval, travel time, distance item
+                if (tText.startsWith("^t^")) {
+                    tText = tText.slice(3)
+                    var recdType = 'zoneDistTime'
+                    var zoneDistTime = tText.split(",", 10)
+                    var tStat = zoneDistTime[0]
+                    var tZone = zoneDistTime[1]
+                    var tIntv = zoneDistTime[2]
+                    var tTrav = zoneDistTime[3]
+                    var tDist = zoneDistTime[4]
 
-                var maxStatZoneLength = 10
-                if (iPhoneP) {
-                    tText = tText.replace('/icloud3', '... .../icloud3')
-                    maxStatZoneLength = 10
-                    if (tStat == 'stationary') { tStat = 'stationry' }
-                    if (tZone == 'stationary') { tZone = 'stationry' }
-                    if (tStat == 'Stationary') { tStat = 'Stationry' }
-                    if (tZone == 'Stationary') { tZone = 'Stationry' }
+                    var maxStatZoneLength = 10
+                    if (iPhoneP) {
+                        tText = tText.replace('/icloud3', '... .../icloud3')
+                        maxStatZoneLength = 10
+                        if (tStat == 'stationary') { tStat = 'stationry' }
+                        if (tZone == 'stationary') { tZone = 'stationry' }
+                        if (tStat == 'Stationary') { tStat = 'Stationry' }
+                        if (tZone == 'Stationary') { tZone = 'Stationry' }
 
-                    tIntv = tIntv.replace(' sec', 's')
-                    tIntv = tIntv.replace(' min', 'm')
-                    tIntv = tIntv.replace(' hrs', 'h')
-                    tIntv = tIntv.replace(' hr', 'h')
+                        tIntv = tIntv.replace(' sec', 's')
+                        tIntv = tIntv.replace(' min', 'm')
+                        tIntv = tIntv.replace(' hrs', 'h')
+                        tIntv = tIntv.replace(' hr', 'h')
 
-                    tTrav = tTrav.replace(' sec', 's')
-                    tTrav = tTrav.replace(' min', 'm')
-                    tTrav = tTrav.replace(' hrs', 'h')
-                    tTrav = tTrav.replace(' hr', 'h')
+                        tTrav = tTrav.replace(' sec', 's')
+                        tTrav = tTrav.replace(' min', 'm')
+                        tTrav = tTrav.replace(' hrs', 'h')
+                        tTrav = tTrav.replace(' hr', 'h')
 
-                    tDist = tDist.replace(' mi', 'mi')
-                    tDist = tDist.replace(' km', 'km')
+                        tDist = tDist.replace(' mi', 'mi')
+                        tDist = tDist.replace(' km', 'km')
 
-                    if (txtTblFlag) {
-                        tText = tText.replace("App Updates", "App Updts")
-                        tText = tText.replace("Rqsts", "")
-                        tText = tText.replace("Trigger Chgs", "Trig Chg")
-                        tText = tText.replace("Locate", "Loc")
+                        if (txtTblFlag) {
+                            tText = tText.replace("App Updates", "App Updts")
+                            tText = tText.replace("Rqsts", "")
+                            tText = tText.replace("Trigger Chgs", "Trig Chg")
+                            tText = tText.replace("Locate", "Loc")
+                        }
+                    }
+                    if (tStat.length > maxStatZoneLength) {
+                        tStat = tStat.substr(0, maxStatZoneLength) + "<br>" + tStat.substr(maxStatZoneLength, tStat.length)
+                        if (tStat.length > maxStatZoneLength * 2) { tStat = tStat.substr(0, maxStatZoneLength * 2 + 3) + "..." }
+                    }
+                    if (tZone.length > maxStatZoneLength) {
+                        tZone = tZone.substr(0, maxStatZoneLength) + "<br>" + tZone.substr(maxStatZoneLength, tZone.length)
+                        if (tZone.length > maxStatZoneLength * 2) { tZone = tZone.substr(0, maxStatZoneLength * 2 + 3) + "..." }
                     }
                 }
-                if (tStat.length > maxStatZoneLength) {
-                    tStat = tStat.substr(0, maxStatZoneLength) + "<br>" + tStat.substr(maxStatZoneLength, tStat.length)
-                    if (tStat.length > maxStatZoneLength * 2) { tStat = tStat.substr(0, maxStatZoneLength * 2 + 3) + "..." }
+
+                if (tText == nText) {
+                    ++sameTextCnt
+                    if (sameTextCnt == 1) { var firstTime = tTime }
+                    continue
                 }
-                if (tZone.length > maxStatZoneLength) {
-                    tZone = tZone.substr(0, maxStatZoneLength) + "<br>" + tZone.substr(maxStatZoneLength, tZone.length)
-                    if (tZone.length > maxStatZoneLength * 2) { tZone = tZone.substr(0, maxStatZoneLength * 2 + 3) + "..." }
+                if (sameTextCnt > 10) {
+                    tTime = firstTime
+                    tText += ' (+' + sameTextCnt + ' more times)'
+                    sameTextCnt = 0
                 }
-            }
 
-            if (tText == nText) {
-                ++sameTextCnt
-                if (sameTextCnt == 1) { var firstTime = tTime }
-                continue
-            }
-            if (sameTextCnt > 10) {
-                tTime = firstTime
-                tText += ' (+' + sameTextCnt + ' more times)'
-                sameTextCnt = 0
-            }
+                var classTime = 'colTime'
+                var classStat = 'colStat'
+                var classZone = 'colZone'
+                var classIntv = 'colIntv'
+                var classTrav = 'colTrav'
+                var classDist = 'colDist'
+                var classText = 'colText'
 
-            var classTime = 'colTime'
-            var classStat = 'colStat'
-            var classZone = 'colZone'
-            var classIntv = 'colIntv'
-            var classTrav = 'colTrav'
-            var classDist = 'colDist'
-            var classText = 'colText'
+                classTime += ' highlightResults'
+                classStat += ' highlightResults'
+                classZone += ' highlightResults'
+                classIntv += ' highlightResults'
+                classTrav += ' highlightResults'
+                classDist += ' highlightResults'
 
-            classTime += ' highlightResults'
-            classStat += ' highlightResults'
-            classZone += ' highlightResults'
-            classIntv += ' highlightResults'
-            classTrav += ' highlightResults'
-            classDist += ' highlightResults'
+                //Set header recd background bar color and turn edge bar on/off
+                //Set Startup start/complete & stage bar colors and edge bars
+                var classRecdType  = ' normalText'
+                var classHeaderBar = ''
+                var classErrorMsg  = ''
+                var classSpecialTextColor = ''
 
-            //Set header recd background bar color and turn edge bar on/off
-            //Set Startup start/complete & stage bar colors and edge bars
-            var classRecdType  = ' normalText'
-            var classHeaderBar = ''
-            var classErrorMsg  = ''
-            var classSpecialTextColor = ''
-
-            //Set text color the text starts with a special color character
-            if (tText.startsWith("^1^")) {
-                classSpecialTextColor = ' specColor1'
-            } else if (tText.startsWith("^2^")) {
-                classSpecialTextColor = ' specColor2'
-            } else if (tText.startsWith("^3^")) {
-                classSpecialTextColor = ' specColor3'
-            } else if (tText.startsWith("^4^")) {
-                classSpecialTextColor = ' specColor4'
-            } else if (tText.startsWith("^5^")) {
-                classSpecialTextColor = ' specColor5'
-            } else if (tText.startsWith("^6^")) {
-                classSpecialTextColor = ' specColor6'
-            } else if (tText.startsWith("__")) {
-                classSpecialTextColor = ' normalText'
-            } else {
-                classSpecialTextColor = ''
-            }
-
-            // ^s^ - update started text, cancel edge block
-            if (tText.startsWith("^s^")) {
-                classHeaderBar = ' updateRecdHdr'
-                cancelEdgeBarFlag = true
-
-                // ^c^ - update completed text, start edge block
-            } else if (tText.startsWith("^c^")) {
-                if (tText.indexOf("iOS App") >= 0) {
-                    iosappUpdateCompleteFlag = true
-                } else {
-                    icloudUpdateCompleteFlag = true
-                }
-                completedItemHighlightNextRowFlag = true
-                classHeaderBar = ' updateRecdHdr'
-                classEdgeBar = ' updateEdgeBar'
-
-                // ^i^ = iCloud3 Initialization Started/Completed
-            } else if (tText.startsWith("^i^")) {
-                cancelEdgeBarFlag = (tText.indexOf("started") >= 0)
-                classHeaderBar = ' iC3StartingHdr'
-                classEdgeBar = ' stageEdgeBar'
-
-            // ^h^ - special green highlight bar
-            } else if (tText.startsWith("^h^")) {
-                cancelEdgeBarFlag = true
-                classHeaderBar = ' highlightBar'
-                classEdgeBar   = ' highlightEdgeBar'
-
-            // ^g^ = iCloud3 Stage # Header
-            } else if (tText.startsWith("^g^")) {
-                classHeaderBar = ' stageRecdHdr'
-                classEdgeBar = ' stageEdgeBar'
-
-            } else if (tText.startsWith("^a^")) {
-                if (tText.startsWith("^a^Cancel")) {
-                    initializationRecdFound = true
-                    alertErrorMsg = ''
+                //Set text color the text starts with a special color character
+                if (tText.startsWith("^1^")) {
+                    classSpecialTextColor = ' specColor1'
+                } else if (tText.startsWith("^2^")) {
+                    classSpecialTextColor = ' specColor2'
+                } else if (tText.startsWith("^3^")) {
+                    classSpecialTextColor = ' specColor3'
+                } else if (tText.startsWith("^4^")) {
+                    classSpecialTextColor = ' specColor4'
+                } else if (tText.startsWith("^5^")) {
+                    classSpecialTextColor = ' specColor5'
+                } else if (tText.startsWith("^6^")) {
                     classSpecialTextColor = ' specColor6'
-                } else if (initializationRecdFound == false) {
+                } else if (tText.startsWith("__")) {
+                    classSpecialTextColor = ' normalText'
+                } else {
+                    classSpecialTextColor = ''
+                }
+
+                // ^s^ - update started text, cancel edge block
+                if (tText.startsWith("^s^")) {
+                    classHeaderBar = ' updateRecdHdr'
+                    cancelEdgeBarFlag = true
+
+                    // ^c^ - update completed text, start edge block
+                } else if (tText.startsWith("^c^")) {
+                    if (tText.indexOf("iOS App") >= 0) {
+                        iosappUpdateCompleteFlag = true
+                    } else {
+                        icloudUpdateCompleteFlag = true
+                    }
+                    completedItemHighlightNextRowFlag = true
+                    classHeaderBar = ' updateRecdHdr'
+                    classEdgeBar = ' updateEdgeBar'
+
+                    // ^i^ = iCloud3 Initialization Started/Completed
+                } else if (tText.startsWith("^i^")) {
+                    cancelEdgeBarFlag = (tText.indexOf("started") >= 0)
+                    classHeaderBar = ' iC3StartingHdr'
+                    classEdgeBar = ' stageEdgeBar'
+
+                // ^h^ - special green highlight bar
+                } else if (tText.startsWith("^h^")) {
+                    cancelEdgeBarFlag = true
+                    classHeaderBar = ' highlightBar'
+                    classEdgeBar   = ' highlightEdgeBar'
+
+                // ^g^ = iCloud3 Stage # Header
+                } else if (tText.startsWith("^g^")) {
+                    classHeaderBar = ' stageRecdHdr'
+                    classEdgeBar = ' stageEdgeBar'
+
+                } else if (tText.startsWith("^a^")) {
+                    if (tText.startsWith("^a^Cancel")) {
+                        initializationRecdFound = true
+                        alertErrorMsg = ''
+                        classSpecialTextColor = ' specColor6'
+                    } else if (initializationRecdFound == false) {
+                        classErrorMsg = ' errorMsg'
+                        alertErrorMsg = ".Alert at " + tTime + " ... (Refresh to Clear Alerts Messages)"
+                    } else {
+                        classSpecialTextColor = ' specColor6'
+                    }
+
+                } else if (tText.startsWith("^e^")) {
                     classErrorMsg = ' errorMsg'
-                    alertErrorMsg = ".Alert at " + tTime + " ... (Refresh to Clear Alerts Messages)"
+                    if (initializationRecdFound == false) {
+                        alertErrorMsg = ".ERROR AT " + tTime
+                    }
+
+                } else if (tText.startsWith("^w^")) {
+                    classErrorMsg = ' warningMsg'
+                }
+
+                if (classHeaderBar != "") {
+                    classHeaderBar = " hdrTopBottomShadow" + classHeaderBar
+                }
+
+                if (tText.indexOf("Initializing iCloud3") >= 0
+                        && tText.indexOf("Complete") == -1) {
+                    initializationRecdFound = true
+                }
+
+                // Uncompress evlog recd special characters. This is also in event_log.py
+                // and used for the event-log.log and the debug.log files
+                tText = tText.replace(/⣇/g, "<br>")
+                tText = tText.replace(/⠈/g, "&nbsp;")
+                tText = tText.replace(/⠉/g, "&nbsp;&nbsp;")
+                tText = tText.replace(/⠋/g, "&nbsp;&nbsp;&nbsp;")
+                tText = tText.replace(/⠛/g, "&nbsp;&nbsp;&nbsp;&nbsp;")
+                tText = tText.replace(/⠟/g, "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;")
+                tText = tText.replace(/⠿/g, "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;")
+
+                //If displaying a table, the State & Interval can contain column titles
+                var classTable = ''
+                var txtTblFlag = false
+                if (tText.indexOf("¤s") >= 0) {
+                    txtTblFlag = true
+                    classTable = ' txtTblStyle'
+                }
+
+                //Build the table HTML from the special characters in the recd
+                // ¤s=<table><tr>                     Table start, Row start
+                // ¤e=</tr></table>                   Row end, Table end
+                // §=</tr><tr>                        Row end, next row start
+                // «40=<td style='width: 40%'>        Col start, 40% width
+                // ¦0=</td><td>                       Col end, next col start
+                // ¦10=</td><td style='width: 10%'>   Col end, next col start-width 10%
+                // ¦40=</td><td style='width: 40%'>
+                tText = tText.replace(/¤s/g, '<table style="width: 100%">')
+                tText = tText.replace(/¤e/g, '</table>')
+
+                tText = tText.replace(/«HS/g, '<thead id="txtTblHdr"><tr class="txtTblHdrRow">')
+                tText = tText.replace(/¦LH-/g, '<th class="txtTblHdr" colSpan="2">')
+                tText = tText.replace(/¦RH-/g, '</th><th class="txtTblHdr" colSpan="2">')
+                tText = tText.replace(/»HE/g, '</th></thead>')
+
+                tText = tText.replace(/«LT-/g, '<tr><td class="txtTblEdge" style="width: 28%">&nbsp;')
+                tText = tText.replace(/¦LC-/g, '</td><td style="width: 7%">')
+                tText = tText.replace(/¦RT-/g, '</td><td class="txtTblEdge" style="width: 28%">&nbsp;')
+                tText = tText.replace(/¦RC-/g, '</td><td style="width: 7%">')
+
+                tText = tText.replace(/»/g, '</td></tr>')
+
+                //Determine if the state/zone/dist/time line should be displayed
+                var displayStateZoneLineFlag = false
+                if (classTime.indexOf("highlightResults") >= 0) { displayStateZoneLineFlag = true }
+                if (tStat == '' && tZone == '') { displayStateZoneLineFlag = false }
+                if (tText.startsWith("^i^")) { displayStateZoneLineFlag = false }
+                if (tText.startsWith("^")) { tText = tText.slice(3) }
+
+                classTime += classEdgeBar
+
+                // If the edge bar is not set and this is a header bar (started/completed) or a
+                // state/zone/time/distance record, we are not in a complete-->start update group
+                // and an update is being discarded and retried due poor location data. Do not
+                // display this event.
+
+                // //Display zone/interval/travel time/distance row
+                if (recdType == 'zoneDistTime') {
+                    if (tIntv == '') { tIntv = ' ' }
+                    if (tTrav == '') { tTrav = ' ' }
+                    if (tDist == '') { tDist = ' ' }
+
+                    ++row
+                    logTableHTML += '<tr class = "eltRow">'
+                    logTableHTML += '<td id="iTime" class="' + classTime + '">' + tTime + '</td>'
+                    logTableHTML += '<td id="iStat" class="' + classStat + '">' + tStat + '</td>'
+                    logTableHTML += '<td id="iZone" class="' + classZone + '">' + tZone + '</td>'
+                    logTableHTML += '<td id="iIntv" class="' + classIntv + '">' + tIntv + '</td>'
+                    logTableHTML += '<td id="iTrav" class="' + classTrav + '">' + tTrav + '</td>'
+                    logTableHTML += '<td id="iDist" class="' + classDist + '">' + tDist + '</td>'
+
+                    logTableHTML += '</tr>'
+
+                // Display Text Row
                 } else {
-                    classSpecialTextColor = ' specColor6'
+                    //tText = classTime
+                    classTime = classTime.replace("highlightResults", "")
+                    classTime = classTime.replace("inprocessResults", "")
+                    classTime += classRecdType + classHeaderBar
+                    classTime += ' colTimeTextRow'
+
+                    if (classTime.indexOf("Hdr") >= 0) {
+                        classText += ' noLeftEdge'
+                        classTime = classTime.replace("colTimeTextRow", "")
+                        classTime = classTime.replace("updateRecdHdr", "updateRecdHdrTime")
+                        classTime = classTime.replace("stageRecdHdr", "stageRecdHdrTime")
+                        classTime = classTime.replace("iC3StartingHdr", "iC3StartingHdrTime")
+                        // tTime = ''
+                    }
+                    var classTextColor = classHeaderBar + classSpecialTextColor + classTable + classErrorMsg
+                    if (classTextColor != "") {
+                        classText = classText.replace("colText", classTextColor)
+                    }
+                    // tText = classTime + ">>" + tText
+
+                    ++row
+                    logTableHTML += '<tr class = "eltRow">'
+                    logTableHTML += '<td class="' + classTime + '">' + tTime + '</td>'
+                    logTableHTML += '</td>'
+                    logTableHTML += '<td class="' + classText + '"; colspan="5">' + tText + '</td>'
+                    logTableHTML += '</tr>'
                 }
 
-            } else if (tText.startsWith("^e^")) {
-                classErrorMsg = ' errorMsg'
-                if (initializationRecdFound == false) {
-                    alertErrorMsg = ".ERROR AT " + tTime
+                if (cancelEdgeBarFlag) {
+                    classEdgeBar = ''
+                    cancelEdgeBarFlag = false
                 }
-
-            } else if (tText.startsWith("^w^")) {
-                classErrorMsg = ' warningMsg'
             }
-
-            if (classHeaderBar != "") {
-                classHeaderBar = " hdrTopBottomShadow" + classHeaderBar
-            }
-
-            if (tText.indexOf("Initializing iCloud3") >= 0
-                    && tText.indexOf("Complete") == -1) {
-                initializationRecdFound = true
-            }
-
-            // Uncompress evlog recd special characters. This is also in event_log.py
-            // and used for the event-log.log and the debug.log files
-            tText = tText.replace(/⣇/g, "<br>")
-            tText = tText.replace(/⠈/g, "&nbsp;")
-            tText = tText.replace(/⠉/g, "&nbsp;&nbsp;")
-            tText = tText.replace(/⠋/g, "&nbsp;&nbsp;&nbsp;")
-            tText = tText.replace(/⠛/g, "&nbsp;&nbsp;&nbsp;&nbsp;")
-            tText = tText.replace(/⠟/g, "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;")
-            tText = tText.replace(/⠿/g, "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;")
-
-            //If displaying a table, the State & Interval can contain column titles
-            var classTable = ''
-            var txtTblFlag = false
-            if (tText.indexOf("¤s") >= 0) {
-                txtTblFlag = true
-                classTable = ' txtTblStyle'
-            }
-
-            //Build the table HTML from the special characters in the recd
-            // ¤s=<table><tr>                     Table start, Row start
-            // ¤e=</tr></table>                   Row end, Table end
-            // §=</tr><tr>                        Row end, next row start
-            // «40=<td style='width: 40%'>        Col start, 40% width
-            // ¦0=</td><td>                       Col end, next col start
-            // ¦10=</td><td style='width: 10%'>   Col end, next col start-width 10%
-            // ¦40=</td><td style='width: 40%'>
-            tText = tText.replace(/¤s/g, '<table style="width: 100%">')
-            tText = tText.replace(/¤e/g, '</table>')
-
-            tText = tText.replace(/«HS/g, '<thead id="txtTblHdr"><tr class="txtTblHdrRow">')
-            tText = tText.replace(/¦LH-/g, '<th class="txtTblHdr" colSpan="2">')
-            tText = tText.replace(/¦RH-/g, '</th><th class="txtTblHdr" colSpan="2">')
-            tText = tText.replace(/»HE/g, '</th></thead>')
-
-            tText = tText.replace(/«LT-/g, '<tr><td class="txtTblEdge" style="width: 28%">&nbsp;')
-            tText = tText.replace(/¦LC-/g, '</td><td style="width: 7%">')
-            tText = tText.replace(/¦RT-/g, '</td><td class="txtTblEdge" style="width: 28%">&nbsp;')
-            tText = tText.replace(/¦RC-/g, '</td><td style="width: 7%">')
-
-            tText = tText.replace(/»/g, '</td></tr>')
-
-            //Determine if the state/zone/dist/time line should be displayed
-            var displayStateZoneLineFlag = false
-            if (classTime.indexOf("highlightResults") >= 0) { displayStateZoneLineFlag = true }
-            if (tStat == '' && tZone == '') { displayStateZoneLineFlag = false }
-            if (tText.startsWith("^i^")) { displayStateZoneLineFlag = false }
-            if (tText.startsWith("^")) { tText = tText.slice(3) }
-
-            classTime += classEdgeBar
-
-            // If the edge bar is not set and this is a header bar (started/completed) or a
-            // state/zone/time/distance record, we are not in a complete-->start update group
-            // and an update is being discarded and retried due poor location data. Do not
-            // display this event.
-
-            // //Display zone/interval/travel time/distance row
-            if (recdType == 'zoneDistTime') {
-                if (tIntv == '') { tIntv = ' ' }
-                if (tTrav == '') { tTrav = ' ' }
-                if (tDist == '') { tDist = ' ' }
-
-                ++row
-                logTableHTML += '<tr class = "eltRow">'
-                logTableHTML += '<td id="iTime" class="' + classTime + '">' + tTime + '</td>'
-                logTableHTML += '<td id="iStat" class="' + classStat + '">' + tStat + '</td>'
-                logTableHTML += '<td id="iZone" class="' + classZone + '">' + tZone + '</td>'
-                logTableHTML += '<td id="iIntv" class="' + classIntv + '">' + tIntv + '</td>'
-                logTableHTML += '<td id="iTrav" class="' + classTrav + '">' + tTrav + '</td>'
-                logTableHTML += '<td id="iDist" class="' + classDist + '">' + tDist + '</td>'
-
-                logTableHTML += '</tr>'
-
-            // Display Text Row
-            } else {
-                //tText = classTime
-                classTime = classTime.replace("highlightResults", "")
-                classTime = classTime.replace("inprocessResults", "")
-                classTime += classRecdType + classHeaderBar
-                classTime += ' colTimeTextRow'
-
-                if (classTime.indexOf("Hdr") >= 0) {
-                    classText += ' noLeftEdge'
-                    classTime = classTime.replace("colTimeTextRow", "")
-                    classTime = classTime.replace("updateRecdHdr", "updateRecdHdrTime")
-                    classTime = classTime.replace("stageRecdHdr", "stageRecdHdrTime")
-                    classTime = classTime.replace("iC3StartingHdr", "iC3StartingHdrTime")
-                    // tTime = ''
-                }
-                var classTextColor = classHeaderBar + classSpecialTextColor + classTable + classErrorMsg
-                if (classTextColor != "") {
-                    classText = classText.replace("colText", classTextColor)
-                }
-                // tText = classTime + ">>" + tText
-
-                ++row
-                logTableHTML += '<tr class = "eltRow">'
-                logTableHTML += '<td class="' + classTime + '">' + tTime + '</td>'
-                logTableHTML += '</td>'
-                logTableHTML += '<td class="' + classText + '"; colspan="5">' + tText + '</td>'
-                logTableHTML += '</tr>'
-            }
-
-            if (cancelEdgeBarFlag) {
-                classEdgeBar = ''
-                cancelEdgeBarFlag = false
-            }
+            catch(err) {}
         }
 
         logTableHTML += ''
@@ -1784,7 +1750,7 @@ class iCloud3EventLogCard extends HTMLElement {
     }
     //---------------------------------------------------------------------------
     _commandButtonPress(actionButton) {
-        /* Handle the button press events. Get the devicename, do an 'icloud3_update'
+        /* Handle the button press events. Get the devicename, do an 'icloud3_action'
         event_log devicename' service call to have the event_log attribute populated.
         */
         const hass           = this._hass
@@ -1825,10 +1791,9 @@ class iCloud3EventLogCard extends HTMLElement {
             })
 
         } else if (actionButton == "btnConfig") {
-            this._hass.callService("icloud3", "config", {
-                command: "configuration",
-                action_fname: "Configuration",
-                device_name: actionDevicename
+            this._hass.callService("icloud3", "action", {
+                command: "config_flow",
+                action_fname: "Configuration"
             })
 
         } else if (actionButton == "btnAction") {
@@ -1890,6 +1855,10 @@ class iCloud3EventLogCard extends HTMLElement {
         } else if (buttonId == "btnRefresh") {
             button.style.setProperty('border', '0px')
             this._displayInfoText("Refresh Event Log")
+
+        } else if (buttonId == "btnConfig") {
+            button.style.setProperty('border', '0px')
+            this._displayInfoText("Configuration Settings")
 
         } else if (buttonId == "btnIssues") {
             button.style.setProperty('border', '0px')

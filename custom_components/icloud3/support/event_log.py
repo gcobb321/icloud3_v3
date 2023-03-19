@@ -605,6 +605,14 @@ class EventLog(object):
             refresh_recd = ['',refresh_msg]
             time_text_recds.insert(0, refresh_recd)
 
+        # else:
+        #     time_text_recds_str = str(time_text_recds)
+
+        #     while len(time_text_recds_str) > 15000:
+        #         self.evlog_table = self.evlog_table[:len(self.evlog_table)-200]
+        #         time_text_recds = self._extract_filtered_evlog_recds(devicename)
+        #         time_text_recds_str = str(time_text_recds)
+
         time_text_recds.append(CONTROL_RECD)
 
         return str(time_text_recds)

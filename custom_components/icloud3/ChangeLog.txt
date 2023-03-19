@@ -1,3 +1,22 @@
+Beta 15 - 3/18/2023
+~~~~~~~~~~~~~~~~~~~~
+1.  Adding/Deleting Devices - Fixd a problem initializing the _interval sensors when adding a new device on the
+    Update_iCloud3 Devices Configuration Wizard screen. Also added some additional error checking when creating
+    sensors for new devices.
+2.  Configuration Wizard -
+    1. Added Alert messages to some screens when there are Inactive devices that will not be located or tracked.
+    2. Added a Untracked (Inactive) Devices screen that can be displayed when exiting the Wizard and an iCloud3
+    restart is needed.
+    3. Added a 'cancel' option to the Restart iCloud3 screen to return to the Main Menu.
+3.  Debug Logging - Now, the  'Log Level' is automatically set to 'debug' if a beta version is being used or
+    if a non-beta version (released version) was installed less than 5-days ago.
+4.  Configuration File - The configuration file is now reloaded when iCloud3 is restarted from the Event Log.
+5.  HACS - Prepared iCloud3_v3 for HACS. It has been submitted and awaiting approval from HA.
+6.  Debug Code - Removed debug trace code from beta15p2.
+
+
+
+
 Beta 14 - 3/4/2023
 ~~~~~~~~~~~~~~~~~~~~
 1.  iCloud Account Authentication:

@@ -22,7 +22,8 @@ from ..const            import (
                                 ZONE, ID,
                                 BATTERY_LEVEL, BATTERY_STATUS,
                                 CONF_ENCODE_PASSWORD,
-                                CONF_VERSION,  CONF_EVLOG_CARD_DIRECTORY, CONF_EVLOG_CARD_PROGRAM,
+                                CONF_VERSION,  CONF_VERSION_INSTALL_DATE,
+                                CONF_EVLOG_CARD_DIRECTORY, CONF_EVLOG_CARD_PROGRAM,
                                 CONF_USERNAME, CONF_PASSWORD,
                                 CONF_DATA_SOURCE, CONF_ICLOUD_SERVER_ENDPOINT_SUFFIX,
                                 CONF_DEVICE_TYPE, CONF_RAW_MODEL, CONF_MODEL, CONF_MODEL_DISPLAY_NAME,
@@ -71,6 +72,7 @@ from ..helpers.time_util    import (secs_to_time_str, )
 import os
 import json
 import shutil
+from datetime               import timedelta, date, datetime
 from collections            import OrderedDict
 from homeassistant.util     import slugify
 from re import match
@@ -282,7 +284,7 @@ def set_global_variables_from_conf_parameters(evlog_msg=True):
         Gb.stat_zone_inzone_interval_secs = Gb.conf_general[CONF_STAT_ZONE_INZONE_INTERVAL] * 60
         Gb.is_stat_zone_used              = (14400 > Gb.stat_zone_still_time_secs > 0)
 
-        Gb.log_level = Gb.conf_general[CONF_LOG_LEVEL]
+        Gb.log_level                      = Gb.conf_general[CONF_LOG_LEVEL]
 
         # update the interval time for each of the interval types (i.e., ipad: 2 hrs, no_iosapp: 15 min)
         inzone_intervals = Gb.conf_general[CONF_INZONE_INTERVALS]
@@ -449,10 +451,14 @@ def set_evlog_table_max_cnt():
 #      debug+eventlog   - Add debug items to HA log file and ic3 event log
 #
 #------------------------------------------------------------------------------
-def set_log_level(log_level, new_debug_log=False):
+def set_log_level(log_level):
 
     log_level = log_level.lower()
-    #Save log_level flags across restarts via Event Log > Actions
+
+    # Log level can be set on Event Log > Actions in service_handler.py which overrides
+    # the configuration/log_level parameter. The current log_level is preserved in the
+    # log_debug/rawdata_flag _restart in service_handler (Restart) to reassign any log
+    # level overrides on an iC3 restart
     if Gb.log_debug_flag_restart is not None or Gb.log_rawdata_flag_restart is not None:
         if Gb.log_debug_flag_restart is not None:
             Gb.log_debug_flag         = Gb.log_debug_flag_restart
@@ -462,11 +468,18 @@ def set_log_level(log_level, new_debug_log=False):
             Gb.log_rawdata_flag         = Gb.log_rawdata_flag_restart
             Gb.log_rawdata_flag_restart = None
     else:
-        Gb.log_debug_flag   = instr(log_level, 'debug') or DEBUG_TRACE_CONTROL_FLAG
+        Gb.log_debug_flag   = instr(log_level, 'debug')
         Gb.log_rawdata_flag = instr(log_level, 'rawdata')
         Gb.log_rawdata_flag_unfiltered = instr(log_level, 'unfiltered')
 
-    if Gb.log_rawdata_flag: Gb.log_debug_flag = True
+    # Turn on debug log if beta version or less than 5-days after an install
+    # of a new version or the loglevel is rawdata log
+    dt_auto_debug_end = datetime.strptime(Gb.conf_profile[CONF_VERSION_INSTALL_DATE], \
+                                        "%Y-%m-%d %H:%M:%S").date() + timedelta(days=5)
+    Gb.log_debug_flag = Gb.log_debug_flag or instr(Gb.version, 'b')
+    Gb.log_debug_flag = Gb.log_debug_flag or dt_auto_debug_end > date.today()
+    Gb.log_debug_flag = Gb.log_debug_flag or Gb.log_rawdata_flag
+
     Gb.evlog_trk_monitors_flag = Gb.evlog_trk_monitors_flag or instr(log_level, 'eventlog')
 
 #------------------------------------------------------------------------------
@@ -588,9 +601,12 @@ def process_config_flow_parameter_updates():
 #------------------------------------------------------------------------------
 def load_ha_config_parameters(ha_config_yaml_and_defaults):
     Gb.config_parm_initial_load = {k:v for k, v in ha_config_yaml_and_defaults.items()}
+    _traceha(f"{Gb.config_parm_initial_load=}")
     reinitialize_config_parameters()
 
 def reinitialize_config_parameters():
+    _traceha(f"{Gb.config_parm_initial_load=}")
+    _traceha(f"{Gb.config_parm=}")
     Gb.config_parm = Gb.config_parm_initial_load.copy()
 
 #------------------------------------------------------------------------------

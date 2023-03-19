@@ -74,8 +74,11 @@ class GlobalVariables(object):
     country_code = 'us'
     use_metric   = False
 
-    iCloud3         = None      # iCloud3 Platform object
-    OptionsFlowHandler = None   # config_flow OptionsFlowHandler
+    iCloud3             = None   # iCloud3 Platform object
+    OptionsFlowHandler  = None   # config_flow OptionsFlowHandler
+    SettingsFlowManager = None
+    SettingsOptionsFlowHandler = None
+
     EvLog           = None
     EvLogSensor     = None
     HALogger        = None

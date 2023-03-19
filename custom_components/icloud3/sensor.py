@@ -522,13 +522,18 @@ class SensorBase(SensorEntity):
 
         if (self.Device is None or sensor not in SENSOR_LIST_DISTANCE):
             return extra_attrs
+        elif self.Device and self.Device.sensors[DISTANCE_TO_OTHER_DEVICES] == []:
+            return extra_attrs
 
         # Add distance apart from this device other devices to the attributes
         # {devicename: [distance_m, gps_accuracy_factor, display_text]}
         extra_attrs["Distance To Devices Determined"] = self.Device.sensors[DISTANCE_TO_OTHER_DEVICES_DATETIME]
         for devicename, dist_to_other_devices in self.Device.sensors[DISTANCE_TO_OTHER_DEVICES].items():
-            Device = Gb.Devices_by_devicename[devicename]
-            extra_attrs[f"Device Info.: {Device.fname_devtype}"] = self._set_precision(dist_to_other_devices[2])
+            try:
+                Device = Gb.Devices_by_devicename[devicename]
+                extra_attrs[f"Device Info.: {Device.fname_devtype}"] = self._set_precision(dist_to_other_devices[2])
+            except:
+                pass
 
         for devicename, dist_to_other_devices in self.Device.sensors[DISTANCE_TO_OTHER_DEVICES].items():
             dist_m = dist_to_other_devices[0]

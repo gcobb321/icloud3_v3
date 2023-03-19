@@ -34,10 +34,11 @@ from .support                       import service_handler
 from .support                       import pyicloud_ic3_interface
 from .support                       import event_log
 from .icloud3_main                  import iCloud3
+from .                              import config_flow
 
 import logging
 # _LOGGER = logging.getLogger(__name__)
-Gb.HALogger = logging.getLogger(f"icloud3")
+Gb.HALogger = logging.getLogger("icloud3")
 # Gb.HALogger = logging.basicConfig(filename='icloud3.log', filemode='w')
 
 successful_startup = True
@@ -64,7 +65,6 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     start_ic3.initialize_directory_filenames()
     config_file.load_storage_icloud3_configuration_file()
     start_ic3.set_icloud_username_password()
-
 
     # Convert the .storage/icloud3.configuration file if it is at a default
     # state or has never been updated via config_flow using 'HA Integrations > iCloud3'
@@ -124,18 +124,25 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
 
         Gb.PyiCloud       = None
         Gb.EvLog          = event_log.EventLog(Gb.hass)
+        # Gb.ServiceConfigFlow = iCloud3_ServiceConfigFlow(Gb.hass, iCloud3_OptionsFlowHandler)
+        # log_info_msg(f"{Gb.ServiceConfigFlow=} {Gb.OptionsFlowHandler2=} {Gb.OptionsFlowHandler=}")
         Gb.start_icloud3_inprocess_flag = True
 
-        async_get_ha_location_info()
+        await async_get_ha_location_info()
         start_ic3.initialize_directory_filenames()
         config_file.load_storage_icloud3_configuration_file()
-
         start_ic3.set_log_level(Gb.log_level)
         if Gb.log_debug_flag:
             open_ic3_debug_log_file(new_debug_log=True)
 
         start_ic3.set_icloud_username_password()
         restore_state.load_storage_icloud3_restore_state_file()
+
+        # Create the Actions Settings Config Flow
+        # Gb.SettingsFlowManager = config_flow.ActionSettingsFlowManager(hass)
+        # Gb.SettingsOptionsFlowHandler = \
+        #         Gb.hass.loop.create_task(Gb.SettingsFlowManager.async_create_flow(
+        #                         handler_key=DOMAIN))
 
         # Create device_tracker and sensor entities
         await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
@@ -248,4 +255,5 @@ async def async_get_ha_location_info():
             Gb.country_code = Gb.ha_location_info.country_code.lower()
             Gb.use_metric   = Gb.ha_location_info.use_metric
         except Exception as err:
-            log_exception(err)
+            pass
+            # log_exception(err)

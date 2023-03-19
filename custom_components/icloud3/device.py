@@ -381,9 +381,12 @@ class iCloud3_Device(TrackerEntity):
         # Link the DeviceTracker-Device objects
         if self.devicename in Gb.DeviceTrackers_by_devicename:
             self.DeviceTracker = Gb.DeviceTrackers_by_devicename[self.devicename]
-            self.DeviceTracker.Device    = self
-            self.DeviceTracker.device_id = Gb.dr_device_id_by_devicename[self.devicename]
-            self.DeviceTracker.area_id   = Gb.dr_area_id_by_devicename[self.devicename]
+            self.DeviceTracker.Device = self
+            try:
+                self.DeviceTracker.device_id = Gb.dr_device_id_by_devicename[self.devicename]
+                self.DeviceTracker.area_id   = Gb.dr_area_id_by_devicename[self.devicename]
+            except:
+                pass
 
         # Cycle through all sensors for this device.
         # Link the Sensor-Device objects to provide access the sensors dictionary
@@ -1537,7 +1540,7 @@ class iCloud3_Device(TrackerEntity):
             if dist_apart_m > 500:
                 display_text = f"{dist_apart_m/1000:.1f}km/±{min_gps_accuracy}m"
             else:
-                display_text = f"{dist_apart_m}m/±{min_gps_accuracy}m"
+                display_text = f"{dist_apart_m:.0f}m/±{min_gps_accuracy}m"
 
             distance_apart_data = [dist_apart_m, gps_accuracy_factor, display_text]
 

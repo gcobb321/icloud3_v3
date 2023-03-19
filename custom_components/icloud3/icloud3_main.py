@@ -104,8 +104,8 @@ class iCloud3:
         Gb.evlog_trk_monitors_flag       = False
         Gb.log_debug_flag                = False
         Gb.log_rawdata_flag              = False
-        Gb.log_debug_flag_restart        = None
-        Gb.log_rawdata_flag_restart      = None
+        # Gb.log_debug_flag_restart        = None
+        # Gb.log_rawdata_flag_restart      = None
 
         Gb.any_device_was_updated_reason = ''
 
@@ -1237,14 +1237,11 @@ class iCloud3:
 
         prefetch_before_update_secs = 5
         for Device in Gb.Devices_by_devicename_tracked.values():
-            if Device.icloud_initial_locate_done is False:
-                return Device
-
             if (Device.is_tracking_method_IOSAPP
                     or Device.is_tracking_paused):
-                    # or Device.is_offline
-                    # or Device.NearDevice):
                 continue
+            if Device.icloud_initial_locate_done is False:
+                return Device
 
             secs_to_next_update = secs_to(Device.next_update_secs)
 
@@ -1369,6 +1366,8 @@ class iCloud3:
 
 #--------------------------------------------------------------------
     def _display_usage_counts(self, Device, force_display=False):
+        return
+
         try:
             total_count =   Device.count_update_icloud + \
                             Device.count_update_iosapp + \
@@ -1514,11 +1513,11 @@ class iCloud3:
                 elif Device.is_offline:
                     Device.old_loc_poor_gps_msg = f"Offline/201 {cnt_msg}"
                 #elif Device.is_location_old_and_gps_poor:
-                #    Device.old_loc_poor_gps_msg = (f"OldLoc/PoorGPS (±{Device.loc_data_accuracy:.0f}m)")
+                #    Device.old_loc_poor_gps_msg = (f"OldLoc/PoorGPS (±{Device.loc_data_gps_accuracy:.0f}m)")
                 elif Device.is_location_old:
                     Device.old_loc_poor_gps_msg = f"Old {cnt_msg}-{secs_to_age_str(Device.loc_data_secs)}"
                 elif Device.is_gps_poor:
-                    Device.old_loc_poor_gps_msg = f"PoorGPS {cnt_msg}-±{Device.loc_data_accuracy:.0f}m"
+                    Device.old_loc_poor_gps_msg = f"PoorGPS {cnt_msg}-±{Device.loc_data_gps_accuracy:.0f}m"
 
                 db_old_by     = (secs_since(Device.loc_data_secs) - Device.old_loc_threshold_secs)
                 db_poorgps_by = (Device.loc_data_gps_accuracy - Gb.gps_accuracy_threshold)

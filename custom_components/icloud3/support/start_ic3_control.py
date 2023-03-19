@@ -7,6 +7,7 @@ from ..const                import (NOT_SET,
                                     )
 
 from ..support              import start_ic3
+from ..support              import config_file
 from ..support              import pyicloud_ic3_interface
 from ..support              import icloud_data_handler
 from ..support              import determine_interval as det_interval
@@ -47,7 +48,8 @@ def stage_1_setup_variables():
             post_event( f"{EVLOG_IC3_STARTING}Restarting iCloud3 v{Gb.version} > "
                         f"{dt_util.now().strftime('%A, %b %d')}")
             # Gb.EvLog.update_event_log_display("")
-            start_ic3.reinitialize_config_parameters()
+            # start_ic3.reinitialize_config_parameters()
+            config_file.load_storage_icloud3_configuration_file()
             start_ic3.initialize_global_variables()
             start_ic3.set_global_variables_from_conf_parameters()
             start_ic3.set_zone_display_as()
@@ -116,7 +118,7 @@ def stage_2_prepare_configuration():
                         f"{CRLF}1. Select {SETTINGS_INTEGRATIONS_MSG}"
                         f"{CRLF}2. Select `+Add Integration` to add the iCloud3 integration if it is not dislayed. Then search "
                         f"for `iCloud3`, select it and complete the installation."
-                        f"{CRLF}3. Select `{INTEGRATIONS_IC3_CONFIG_MSG}` to open the iCloud3 Configurator"
+                        f"{CRLF}3. Select {INTEGRATIONS_IC3_CONFIG_MSG} to open the iCloud3 Configuration Wizard"
                         f"{CRLF}4. Review and setup the `iCloud Account` and `iCloud3 Devices` configuration windows "
                         f"{CRLF}5. Exit the configurator and `Restart iCloud3`")
             post_event(event_msg)
@@ -233,7 +235,7 @@ def _list_unverified_devices(retry=False):
     if retry:
         event_msg = (f"{EVLOG_ALERT}Some devices could not be verified. iCloud3 needs to be "
                         f"restarted to see if the unverified devices are available for "
-                        f"tracking. If not, check the device parameters in the iCloud3 configurator:"
+                        f"tracking. If not, check the device parameters in the iCloud3 Configuration Wizard:"
                         f"{CRLF}1. {SETTINGS_INTEGRATIONS_MSG} >"
                         f"{CRLF}2. {INTEGRATIONS_IC3_CONFIG_MSG}"
                         f"{CRLF}3. iCloud3 Devices")

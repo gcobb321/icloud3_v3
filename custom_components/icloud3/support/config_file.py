@@ -2,12 +2,12 @@
 from ..global_variables     import GlobalVariables as Gb
 from ..const                import (
                                     APPLE_SPECIAL_ICLOUD_SERVER_COUNTRY_CODE,
-                                    RARROW, HHMMSS_ZERO, NONE_FNAME, INACTIVE_DEVICE,
+                                    RARROW, HHMMSS_ZERO, DATETIME_ZERO, NONE_FNAME, INACTIVE_DEVICE,
                                     CONF_PARAMETER_TIME_STR,
                                     CONF_INZONE_INTERVALS, CONF_MAX_INTERVAL, CONF_EXIT_ZONE_INTERVAL,
                                     CONF_IOSAPP_ALIVE_INTERVAL,
                                     CONF_IC3_VERSION, VERSION, CONF_EVLOG_CARD_DIRECTORY, CONF_EVLOG_CARD_PROGRAM,
-                                    CONF_UPDATE_DATE, CONF_PASSWORD, CONF_ICLOUD_SERVER_ENDPOINT_SUFFIX,
+                                    CONF_UPDATE_DATE, CONF_VERSION_INSTALL_DATE, CONF_PASSWORD, CONF_ICLOUD_SERVER_ENDPOINT_SUFFIX,
                                     CONF_DEVICES, CONF_SETUP_ICLOUD_SESSION_EARLY,
                                     CONF_UNIT_OF_MEASUREMENT, CONF_TIME_FORMAT, CONF_LOG_LEVEL,
                                     CONF_FAMSHR_DEVICENAME, CONF_FMF_EMAIL, CONF_IOSAPP_DEVICE, CONF_TRACKING_MODE,
@@ -85,17 +85,6 @@ def load_storage_icloud3_configuration_file():
     if CONF_LOG_LEVEL in Gb.conf_general:
         start_ic3.set_log_level(Gb.conf_general[CONF_LOG_LEVEL])
 
-    update_icloud3_configuration_file = False
-    if HOME_DISTANCE not in Gb.conf_sensors[CONF_SENSORS_TRACKING_DISTANCE]:
-        Gb.conf_sensors[CONF_SENSORS_TRACKING_DISTANCE].append(HOME_DISTANCE)
-        update_icloud3_configuration_file = True
-    if Gb.conf_profile[CONF_EVLOG_CARD_DIRECTORY].startswith('www/') is False:
-        Gb.conf_profile[CONF_EVLOG_CARD_DIRECTORY] = f"www/{Gb.conf_profile[CONF_EVLOG_CARD_DIRECTORY]}"
-        update_icloud3_configuration_file = True
-
-    if update_icloud3_configuration_file:
-        write_storage_icloud3_configuration_file()
-
     Gb.www_evlog_js_directory = Gb.conf_profile[CONF_EVLOG_CARD_DIRECTORY]
     Gb.www_evlog_js_filename  = f"{Gb.www_evlog_js_directory}/{Gb.conf_profile[CONF_EVLOG_CARD_PROGRAM]}"
 
@@ -128,9 +117,9 @@ def read_storage_icloud3_configuration_file(filename_suffix=''):
 
             Gb.conf_tracking[CONF_PASSWORD] = decode_password(Gb.conf_tracking[CONF_PASSWORD])
 
-            if instr(Gb.conf_profile[CONF_IC3_VERSION], 'b'):
-                check_config_file_new_parameters_beta()
-            check_config_file_range_values()
+            config_file_add_new_parameters()
+            config_file_check_new_ic3_version()
+            config_file_check_range_values()
             count_device_tracking_methods_configured()
 
         return True
@@ -170,21 +159,38 @@ def count_device_tracking_methods_configured():
     except Exception as err:
         log_exception(err)
 #--------------------------------------------------------------------
-def check_config_file_new_parameters_beta():
+def config_file_check_new_ic3_version():
+    '''
+    Check to see if this is a new iCloud3 version
+    '''
+    update_config_file_flag = False
+    if Gb.conf_profile[CONF_IC3_VERSION] != VERSION:
+        Gb.conf_profile[CONF_IC3_VERSION] = VERSION
+        Gb.conf_profile[CONF_VERSION_INSTALL_DATE] = datetime_now()
+        update_config_file_flag = True
+
+    elif Gb.conf_profile[CONF_VERSION_INSTALL_DATE] == DATETIME_ZERO:
+        Gb.conf_profile[CONF_VERSION_INSTALL_DATE] = datetime_now()
+        update_config_file_flag = True
+
+    if update_config_file_flag:
+        write_storage_icloud3_configuration_file()
+
+#--------------------------------------------------------------------
+def config_file_add_new_parameters():
     '''
     Fix configuration file errors or add any new fields
     '''
 
     update_config_file_flag = False
 
-    if Gb.conf_profile[CONF_IC3_VERSION] != VERSION:
-        Gb.conf_profile[CONF_IC3_VERSION] = VERSION
-        update_config_file_flag = True
-
     # v3.0.0 beta 1 - Fix time format from migration
     if instr(Gb.conf_data['general'][CONF_TIME_FORMAT], '-hour-hour'):
         Gb.conf_data['general'][CONF_TIME_FORMAT].replace('-hour-hour', '-hour')
         update_config_file_flag = True
+
+    if Gb.conf_profile[CONF_EVLOG_CARD_DIRECTORY].startswith('www/') is False:
+        Gb.conf_profile[CONF_EVLOG_CARD_DIRECTORY] = f"www/{Gb.conf_profile[CONF_EVLOG_CARD_DIRECTORY]}"
 
     # v3.0.0 beta 3 - remove tracking_from_zone item from sensors list which shouldn't have been added
     if BATTERY_STATUS in Gb.conf_sensors[CONF_SENSORS_DEVICE]:
@@ -199,6 +205,11 @@ def check_config_file_new_parameters_beta():
     for conf_device in Gb.conf_devices:
         update_config_file_flag = (_add_config_file_parameter(conf_device, CONF_STAT_ZONE_FNAME, ' ')
                 or update_config_file_flag)
+
+    # Add HOME_DISTANCE sensor to conf_sensors
+    if HOME_DISTANCE not in Gb.conf_sensors[CONF_SENSORS_TRACKING_DISTANCE]:
+        Gb.conf_sensors[CONF_SENSORS_TRACKING_DISTANCE].append(HOME_DISTANCE)
+        update_config_file_flag = True
 
     # Add CONF_SETUP_ICLOUD_SESSION_EARLY
     update_config_file_flag = (_add_config_file_parameter(Gb.conf_tracking, CONF_SETUP_ICLOUD_SESSION_EARLY, True)
@@ -220,6 +231,9 @@ def check_config_file_new_parameters_beta():
     update_config_file_flag = (_add_config_file_parameter(Gb.conf_general, CONF_EXIT_ZONE_INTERVAL, 3)
             or update_config_file_flag)
 
+    # Add CONF_EXIT_ZONE_INTERVAL
+    update_config_file_flag = (_add_config_file_parameter(Gb.conf_profile, CONF_VERSION_INSTALL_DATE, DATETIME_ZERO)
+            or update_config_file_flag)
 
     # Remove CONF_ZONE_SENSOR_EVLOG_FORMAT, Add CONF_ZONE_SENSOR_EVLOG_FORMAT
     dtf = 'zone'
@@ -251,7 +265,7 @@ def check_config_file_new_parameters_beta():
         write_storage_icloud3_configuration_file()
 
 #--------------------------------------------------------------------
-def check_config_file_range_values():
+def config_file_check_range_values():
     '''
     Check the min and max value of the items that have a range in config_flow to make
     sure the actual value in the config file is within the min-max range

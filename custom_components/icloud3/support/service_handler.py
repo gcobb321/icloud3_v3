@@ -4,6 +4,7 @@
 #
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 import homeassistant.helpers.config_validation as cv
+from homeassistant          import data_entry_flow
 import voluptuous as vol
 
 from ..global_variables     import GlobalVariables as Gb
@@ -26,6 +27,8 @@ from ..helpers.messaging    import (post_event, post_error_msg, post_monitor_msg
                                     close_reopen_ic3_debug_log_file,
                                     _trace, _traceha, )
 from ..helpers.time_util    import (secs_to_time, time_str_to_secs, datetime_now, secs_since, time_now, )
+# from ..config_flow          import ActionSettingsFlowManager
+
 
 # EvLog Action Commands
 CMD_ERROR                  = 'error'
@@ -41,6 +44,7 @@ CMD_RESET_PYICLOUD_SESSION = 'reset_session'
 CMD_LOG_LEVEL              = 'log_level'
 CMD_REFRESH_EVENT_LOG      = 'refresh_event_log'
 CMD_RESTART                = 'restart'
+CMD_CONFIG_FLOW            = 'config_flow'
 CMD_FIND_DEVICE_ALERT      = 'find_alert'
 CMD_LOCATE                 = 'locate'
 
@@ -55,6 +59,7 @@ GLOBAL_ACTIONS =  [CMD_EXPORT_EVENT_LOG,
                     CMD_WAZE,
                     CMD_REFRESH_EVENT_LOG,
                     CMD_RESTART,
+                    CMD_CONFIG_FLOW,
                     CMD_LOG_LEVEL,
                     CMD_WAZEHIST_MAINTENANCE,
                     CMD_WAZEHIST_TRACK, ]
@@ -93,14 +98,6 @@ def process_update_service_request(call):
     devicename   = call.data.get(CONF_DEVICENAME)
 
     update_service_handler(action, action_fname, devicename)
-
-#--------------------------------------------------------------------
-# def process_update_icloud3_configuration_request(call):
-#     """
-#     Call the Icloud3 edit configuration service_request function
-#     that initiates a config_flow update
-#     """
-#     update_configuration_parameters_handler()
 
 #--------------------------------------------------------------------
 def process_restart_icloud3_service_request(call):
@@ -162,6 +159,7 @@ def update_service_handler(action_entry=None, action_fname=None, devicename=None
     - reset             - reset everything and rescans all of the devices
     - location          - request location update from ios app
     - locate x mins     - locate in x minutes
+    - config_flow       - Display the Configure screens handled by the config_flow module
     """
     # Ignore Action requests during startup. They are caused by the devicename changes
     # to the EvLog attributes indicating the startup stage.
@@ -237,21 +235,6 @@ def update_service_handler(action_entry=None, action_fname=None, devicename=None
     Gb.EvLog.update_event_log_display(devicename)
 
 #--------------------------------------------------------------------
-def update_configuration_parameters_handler():
-    post_event("Edit Configuration handler called")
-
-    try:
-
-        Gb.hass.add_job(Gb.hass.config_entries.flow.async_init(
-                                DOMAIN,
-                                context={'source': 'reauth'},
-                                data={'icloud3_service_call': True, 'step_id': 'reauth',},)
-                        )
-
-    except Exception as err:
-        log_exception(err)
-
-#--------------------------------------------------------------------
 def find_iphone_alert_service_handler(devicename):
     """
     Call the lost iPhone function if using th e FamShr tracking method.
@@ -307,6 +290,10 @@ def _handle_global_action(global_action, action_option):
         return
 
     elif global_action == CMD_REFRESH_EVENT_LOG:
+        return
+
+    elif global_action == CMD_CONFIG_FLOW:
+        _handle_action_config_flow_settings()
         return
 
     elif global_action == CMD_DISPLAY_STARTUP_EVENTS:
@@ -383,8 +370,16 @@ def _on_off_text(condition):
     return 'On' if condition else 'Off'
 
 #--------------------------------------------------------------------
-def close_reopen_ic3_debug_log_file():
-    close_reopen_ic3_debug_log_file()
+def _handle_action_config_flow_settings():
+    '''
+    Handle displaying and updating the parameters using the config_flow screens
+    '''
+    try:
+        if Gb.SettingsFlowManager is not None:
+            Gb.hass.loop.create_task(Gb.SettingsFlowManager.async_show_menu_handler())
+
+    except Exception as err:
+        log_exception(err)
 
 #--------------------------------------------------------------------
 def _handle_action_device_location(Device):
