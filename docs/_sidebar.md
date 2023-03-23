@@ -26,7 +26,6 @@
 - [Understanding iCloud3](README.md)
   - [iCloud3 Components](chapters/1.1-ic3-components.md)
   - [iCloud & iOS App Location Data](chapters/1.2-icloud-iosapp-loc-data.md)
-  - [How to Configure iCloud3](chapters/1.3-configuring-ic3.md)
   - [Event Log During Startup](chapters/1.4-evlog-during-startup.md)
 - [Installing and Setting up the iCloud3 Integration](chapters/2.0-installing-and-configuring.md)
 - [Configuration Screens & Parameters](chapters/3.0-config-parms.md)
