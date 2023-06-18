@@ -54,17 +54,22 @@ The screens below are an example of how the many tracking sensors can be display
 
 ### Installation
 
-### HACS
+#### HACS
 
-1. In Home Assistant, go to **HACS > Integrations**. Select  **+ Explore & Download Repositories**. Search for **iCloud3 v3**.
+1. In Home Assistant, go to **HACS > Integrations**. Select  **+ Explore & Download Repositories**. Search for **iCloud3 v3**
 
-[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=gcobb321&repository=icloud3_v3&category=integration)
+	or click the **HACS Repository** link below.
+
+[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/394419578)
+
 
 2. In Home Assistant, go to **Settings > Devices & Services > Integrations**. Select  **+ Add integration**. Search for **iCloud3 v3**.
 
+	or click the **Add Integration** link below.
+
 [![Open your Home Assistant instance and start setting up a new integration.](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=icloud3)
 
-### Manual
+#### Manual
 
 1. Using the tool of choice open the folder for your Home Assistant configuration (where you find `configuration.yaml`).
 2. If you do not have a `custom_components` folder there, you need to create it.
