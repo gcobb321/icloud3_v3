@@ -53,20 +53,23 @@ The screens below are an example of how the many tracking sensors can be display
 
 #### HACS
 
-1. In Home Assistant, go to **HACS > Integrations**. Select  **+ Explore & Download Repositories**. Select **HACS: Repository** below.
-2. [![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/394419578)
-    -or-
+1. In Home Assistant Sidebar, go to **HACS > Integrations**, then select  **+ Explore & Download Repositories**. 
 
-2. Search for **iCloud3 v3**, select **+Download**
+2. Search for **iCloud3 v3**, then select **+Download** to download iCloud3.
 
 3. Restart HA.
 
-4. In Home Assistant, go to **Settings > Devices & Services > Integrations**. Select **Add Integration** below.
+4. In Home Assistant Sidebar, go to **Settings > Devices & Services > Integrations**.
 
-5. [![Open your Home Assistant instance and start setting up a new integration.](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=icloud3)
-   -or-
+5. Select  **+ Add integration**, then search for **iCloud3 v3**, select it and then select **Submit** to install iCloud3.
 
-5. Select  **+ Add integration**. Search for **iCloud3 v3**.
+6. Select the **Settings Gear**, then select **Configure**
+
+   
+
+[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/394419578)
+
+[![Open your Home Assistant instance and start setting up a new integration.](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=icloud3)
 
 #### Manual
 
