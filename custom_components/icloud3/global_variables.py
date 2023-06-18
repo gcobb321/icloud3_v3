@@ -24,11 +24,11 @@
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 from .const          import (DEVICENAME_IOSAPP, VERSION, NOT_SET, HOME_FNAME, HOME, STORAGE_DIR, WAZE_USED,
-                            FAMSHR, FMF, FAMSHR_FMF, ICLOUD, FNAME, HIGH_INTEGER,
+                            FAMSHR, FMF, FAMSHR_FMF, ICLOUD, IOSAPP, FNAME, HIGH_INTEGER,
                             DEFAULT_GENERAL_CONF,
                             CONF_UNIT_OF_MEASUREMENT,
-                            CONF_DISPLAY_ZONE_FORMAT, CONF_DEVICE_TRACKER_STATE_FORMAT,
-                            CONF_CENTER_IN_ZONE,
+                            CONF_DISPLAY_ZONE_FORMAT,
+                            CONF_CENTER_IN_ZONE, CONF_DISPLAY_GPS_LAT_LONG,
                             CONF_TRAVEL_TIME_FACTOR, CONF_GPS_ACCURACY_THRESHOLD,
                             CONF_DISCARD_POOR_GPS_INZONE, CONF_OLD_LOCATION_THRESHOLD, CONF_OLD_LOCATION_ADJUSTMENT,
                             CONF_MAX_INTERVAL, CONF_OFFLINE_INTERVAL, CONF_EXIT_ZONE_INTERVAL, CONF_IOSAPP_ALIVE_INTERVAL,
@@ -82,7 +82,7 @@ class GlobalVariables(object):
     EvLog           = None
     EvLogSensor     = None
     HALogger        = None
-    iC3DebugLogFile = None
+    iC3_LogFile     = None
     Sensors         = None
     iC3EntityPlatform = None    # iCloud3 Entity Platform (homeassistant.helpers.entity_component)
     PyiCloud        = None      # iCloud Account service
@@ -128,12 +128,13 @@ class GlobalVariables(object):
     Devices_by_devicename_tracked     = {}  # All monitored Devices by devicename
     Devices_by_icloud_device_id       = {}  # FmF/FamShr Device Configuration
     Devices_by_iosapp_devicename      = {}  # All Devices by the iosapp device_tracker.iosapp_devicename
+    # Devices_by_statzonename           = {}  # All Devices by the statzone.zone and statzone.display_as
     Zones                             = []  # Zones object list
     Zones_by_zone                     = {}  # Zone object by zone name
     zone_display_as                   = {}   # Zone display_as by zone distionary to ease displaying zone fname
     TrackedZones_by_zone              = {HOME, None}  # Tracked zones object by zone name set up with Devices.DeviceFmZones object
     StatZones                         = []  # Stationary Zone objects
-    StatZones_by_devicename           = {}  # Stationary Zone objects by devicename
+    StatZones_by_zone                 = {}  # Stationary Zone objects by their id number (1-10 --> ic3_#_stationary)
     HomeZone                          = None # Home Zone object
 
     # HA device_tracker and sensor entity info
@@ -148,10 +149,16 @@ class GlobalVariables(object):
     # System Wide variables control iCloud3 start/restart procedures
     polling_5_sec_loop_running      = False     # Indicates the 5-sec polling loop is set up
     start_icloud3_inprocess_flag    = False
-    start_icloud3_request_flag      = False
-    initial_icloud3_loading_flag    = False
+    restart_icloud3_request_flag    = False     # iC3 needs to be restarted, set when a new_2fa code is needed in pyicloud_ic3_interface
+    evlog_disable_refresh_flag      = False
     any_device_was_updated_reason   = ''
     evlog_action_request            = ''
+    startup_alerts                  = []
+
+    stage_4_no_devices_found_cnt    = 0         # Retry count to connect to iCloud and retrieve FamShr devices
+    reinitialize_icloud_devices_flag= False         # Set when no devices are tracked and iC3 needs to automatically restart
+    reinitialize_icloud_devices_cnt = 0
+    initial_icloud3_loading_flag    = False
 
 
     # Debug and trace flags
@@ -161,14 +168,16 @@ class GlobalVariables(object):
     log_debug_flag_restart       = None
     log_rawdata_flag_restart     = None
     evlog_trk_monitors_flag      = False
-    ic3_debug_log_file_last_write_secs = 0
-    ic3_debug_log_update_flag    = False
-    ic3_debug_log_new_file_secs  = 0
+    ic3_log_file_update_flag     = False
+    ic3_log_file_create_secs     = 0
+    ic3_log_file_last_write_secs = 0
     info_notification            = ''
     ha_notification              = {}
     trace_prefix                 = ''
     trace_text_change_1          = ''
     trace_text_change_2          = ''
+    debug_flag                   = False
+    debug_integer                = 0
 
     # Startup variables
     startup_log_msgs          = ''
@@ -239,10 +248,12 @@ class GlobalVariables(object):
     travel_time_factor              = DEFAULT_GENERAL_CONF[CONF_TRAVEL_TIME_FACTOR]
     log_level                       = DEFAULT_GENERAL_CONF[CONF_LOG_LEVEL]
 
+    display_gps_lat_long_flag       = DEFAULT_GENERAL_CONF[CONF_DISPLAY_GPS_LAT_LONG]
     center_in_zone_flag             = DEFAULT_GENERAL_CONF[CONF_CENTER_IN_ZONE]
     display_zone_format             = DEFAULT_GENERAL_CONF[CONF_DISPLAY_ZONE_FORMAT]
-    device_tracker_state_format     = DEFAULT_GENERAL_CONF[CONF_DEVICE_TRACKER_STATE_FORMAT]
-    if device_tracker_state_format == 'display_as': device_tracker_state_format = display_zone_format
+    display_gps_lat_long_flag       = DEFAULT_GENERAL_CONF[CONF_DISPLAY_GPS_LAT_LONG]
+    # device_tracker_state_format     = DEFAULT_GENERAL_CONF[CONF_DEVICE_TRACKER_STATE_FORMAT]
+    # if device_tracker_state_format == 'display_as': device_tracker_state_format = display_zone_format
 
     # device_tracker_state_evlog_format_flag = (device_tracker_state_format == FNAME)
     discard_poor_gps_inzone_flag    = DEFAULT_GENERAL_CONF[CONF_DISCARD_POOR_GPS_INZONE]
@@ -258,43 +269,53 @@ class GlobalVariables(object):
     waze_history_max_distance       = DEFAULT_GENERAL_CONF[CONF_WAZE_HISTORY_MAX_DISTANCE]
     waze_history_track_direction    = DEFAULT_GENERAL_CONF[CONF_WAZE_HISTORY_TRACK_DIRECTION]
 
-    stat_zone_fname                 = DEFAULT_GENERAL_CONF[CONF_STAT_ZONE_FNAME]
-    stat_zone_base_latitude         = DEFAULT_GENERAL_CONF[CONF_STAT_ZONE_BASE_LATITUDE]
-    stat_zone_base_longitude        = DEFAULT_GENERAL_CONF[CONF_STAT_ZONE_BASE_LONGITUDE]
-    stat_zone_inzone_interval_secs  = DEFAULT_GENERAL_CONF[CONF_STAT_ZONE_INZONE_INTERVAL] * 60
-    stat_zone_still_time_secs       = DEFAULT_GENERAL_CONF[CONF_STAT_ZONE_STILL_TIME] * 60
-    is_stat_zone_used               = (14400 > stat_zone_still_time_secs > 0)   # time > 0 and < 4 hrs
+    statzone_fname                  = DEFAULT_GENERAL_CONF[CONF_STAT_ZONE_FNAME]
+    statzone_base_latitude          = DEFAULT_GENERAL_CONF[CONF_STAT_ZONE_BASE_LATITUDE]
+    statzone_base_longitude         = DEFAULT_GENERAL_CONF[CONF_STAT_ZONE_BASE_LONGITUDE]
+    statzone_inzone_interval_secs   = DEFAULT_GENERAL_CONF[CONF_STAT_ZONE_INZONE_INTERVAL] * 60
+    statzone_still_time_secs        = DEFAULT_GENERAL_CONF[CONF_STAT_ZONE_STILL_TIME] * 60
+    is_statzone_used                = (14400 > statzone_still_time_secs > 0)   # time > 0 and < 4 hrs
+
+    # Initialize Stat Zone size based on Home zone size
+    statzone_min_dist_from_zone_km = .2
+    statzone_dist_move_limit_km    = .125
+    statzone_radius_m              = 100
+
     # Variables used to config the device variables when setting up
     # intervals and determining the tracking method
     inzone_interval_secs = {}
-    # config_inzone_interval_secs = {}
 
-    # Tracking method control vaiables
-    # Used to reset Gb.tracking_method after pyicloud/icloud account successful reset
-    data_source_use_icloud   = True     # Master icloud tracking method flag (set in config_flow icloud)
-    data_source_use_iosapp   = True     # Master iosapp tracking method flag (set in config_flow icloud)
-    tracking_method_config_last_restart = NOT_SET
-    tracking_method_config       = ''
-    tracking_method              = ''   # Will be changed to IOSAPP if pyicloud errors
-    tracking_method_FMF          = False
-    tracking_method_FAMSHR       = False
-    tracking_method_IOSAPP       = False
-    tracking_method_FMF_used     = False
-    tracking_method_FAMSHR_used  = False
-    tracking_method_IOSAPP_used  = False
+    # Data source control variables
+    # Used to reset Gb.is_data_source after pyicloud/icloud account successful reset
+
+    # Specifed in configuration file (set in config_flow icloud credentials screen)
+    conf_data_source_FAMSHR   = True
+    conf_data_source_FMF      = False
+    conf_data_source_IOSAPP   = True
+    conf_data_source_ICLOUD   = conf_data_source_FAMSHR or conf_data_source_FMF
+
+    # A trackable device uses this data source (set in start_ic3.set trackable_devices)
+    used_data_source_FAMSHR  = False
+    used_data_source_FMF     = False
+    used_data_source_IOSAPP  = False
+
+    # Primary data source being used that can be turned off if errors
+    primary_data_source_ICLOUD = conf_data_source_ICLOUD
+    primary_data_source        = ICLOUD if primary_data_source_ICLOUD else IOSAPP
 
     # iCloud account authorization variables
-    icloud_acct_error_cnt        = 0
-    authenticated_time              = 0
-    authentication_error_cnt        = 0
+    icloud_acct_error_cnt         = 0
+    authenticated_time            = 0
+    authentication_error_cnt      = 0
     authentication_error_retry_secs = HIGH_INTEGER
     pyicloud_refresh_time         = {}     # Last time Pyicloud was refreshed for the trk method
     pyicloud_refresh_time[FMF]    = 0
     pyicloud_refresh_time[FAMSHR] = 0
 
     # Pyicloud counts, times and common variables
+    force_icloud_update_flag     = False
     pyicloud_auth_started_secs   = 0
-    pyicloud_authentication_cnt = 0
+    pyicloud_authentication_cnt  = 0
     pyicloud_location_update_cnt = 0
     pyicloud_calls_time          = 0.0
     trusted_device               = None
@@ -304,6 +325,11 @@ class GlobalVariables(object):
     fmf_device_verified_cnt      = 0
     famshr_device_verified_cnt   = 0
     iosapp_device_verified_cnt   = 0
+    authentication_alert_displayed_flag = False
+
+    unverified_Devices           = []               # Devices that have not been verified in start_ic3.check_unverified_devices
+    unverified_devices_cnt       = 0                #
+    unverified_devices_retry_cnt = 0                # Decreased in icloud_data_handler. Retry verify until cnt=0
 
     # Waze History for DeviceFmZone
     wazehist_zone_id            = {}

@@ -26,18 +26,18 @@ VERSION = '3.0.0'
 from ..global_variables     import GlobalVariables as Gb
 from ..const                import (AIRPODS_FNAME, NONE_FNAME,
                                     EVLOG_NOTICE, EVLOG_ALERT,
-                                    HHMMSS_ZERO, RARROW, CRLF, CRLF_DOT,
+                                    HHMMSS_ZERO, RARROW, CRLF, CRLF_DOT, CRLF_STAR, CRLF_CHK, CRLF_HDOT,
                                     FMF, FAMSHR, FMF_FNAME, FAMSHR_FNAME, NAME, ID,
                                     APPLE_SPECIAL_ICLOUD_SERVER_COUNTRY_CODE,
                                     ICLOUD_HORIZONTAL_ACCURACY,
-                                    LOCATION, TIMESTAMP, LOCATION_TIME, TRACKING_METHOD,
-                                    ICLOUD_BATTERY_STATUS, BATTERY_STATUS_REFORMAT,
-                                    CONF_PASSWORD,
-                                    CONF_IC3_DEVICENAME, CONF_FAMSHR_DEVICENAME, CONF_FMF_EMAIL,
+                                    LOCATION, TIMESTAMP, LOCATION_TIME, DATA_SOURCE,
+                                    ICLOUD_BATTERY_STATUS, BATTERY_STATUS_REFORMAT, ICLOUD_DEVICE_STATUS,
+                                    CONF_PASSWORD, CONF_MODEL_DISPLAY_NAME, CONF_RAW_MODEL,
+                                    CONF_IC3_DEVICENAME, CONF_FNAME, CONF_FAMSHR_DEVICENAME, CONF_FMF_EMAIL,
                                     )
 from ..helpers.time_util    import (time_now_secs, secs_to_time, timestamp_to_time_utcsecs, )
 from ..helpers.common       import (instr, obscure_field, list_to_str, delete_file, )
-from ..helpers.messaging    import (post_event, post_monitor_msg, _trace, _traceha,
+from ..helpers.messaging    import (post_event, post_monitor_msg, post_startup_alert, _trace, _traceha,
                                     log_info_msg, log_error_msg, log_debug_msg, log_warning_msg, log_rawdata, log_exception)
 from .config_file            import (encode_password, decode_password)
 
@@ -116,6 +116,9 @@ class PyiCloudSession(Session):
 
     def __init__(self, Service):
         self.Service = Service
+        self.response_status_code = 0
+        self.response_ok = True
+
         super().__init__()
 
         # Increase the number of connections to prevent timeouts
@@ -144,7 +147,11 @@ class PyiCloudSession(Session):
 
         try:
 
+            #++++++++++++++++ REQUEST ICLOUD DATA ++++++++++++++++
+
             response = Session.request(self, method, url, **kwargs)
+
+            #++++++++++++++++ REQUEST ICLOUD DATA ++++++++++++++++
 
 
         except Exception as err:
@@ -159,14 +166,20 @@ class PyiCloudSession(Session):
         except:
             data = None
 
+        self.response_status_code = response.status_code
+        self.response_ok = response.ok
+
         if Gb.log_rawdata_flag:
             log_msg = ( f"ResponseCode-{response.status_code} ")
 
             if (retry_cnt == 3 or response.status_code != 200 or response.ok is False):
                 log_msg +=  (f", ResponseOK-{response.ok}, Headers-{response.headers}")
-            #log_rawdata("PyiCloud_ic3 iCloud Response-Header", {'raw': log_msg})
-            log_rawdata("PyiCloud_ic3 iCloud Response-Data", {'filter': self.prefilter_rawdata(data)})
-            # log_rawdata("PyiCloud_ic3 iCloud Response-Data", {'raw': data})
+
+            if Gb.log_rawdata_flag_unfiltered:
+                log_rawdata("PyiCloud_ic3 iCloud Response-Header (Unfiltered)", {'raw': log_msg})
+                log_rawdata("PyiCloud_ic3 iCloud Response-Data (Unfiltered)", {'raw': data})
+            else:
+                log_rawdata("PyiCloud_ic3 iCloud Response-Data", {'filter': self.prefilter_rawdata(data)})
 
         for header in HEADER_DATA:
             if response.headers.get(header):
@@ -331,10 +344,10 @@ class PyiCloudSession(Session):
             #     return kwargs_json
 
             kwargs_dict = json.loads(kwargs_json['data'])
-            if 'password' in kwargs_dict:       kwargs_dict['password']       = obscure_field(kwargs_dict['password'])
-            if 'accountName' in kwargs_dict:    kwargs_dict['accountName']    = obscure_field(kwargs_dict['accountName'])
-            if 'trustTokens' in kwargs_dict:    kwargs_dict['trustTokens']    = '... ...'
-            if 'trustToken' in kwargs_dict:     kwargs_dict['trustToken']     = '... ...'
+            if 'password'     in kwargs_dict:   kwargs_dict['password']       = obscure_field(kwargs_dict['password'])
+            if 'accountName'  in kwargs_dict:   kwargs_dict['accountName']    = obscure_field(kwargs_dict['accountName'])
+            if 'trustTokens'   in kwargs_dict:  kwargs_dict['trustTokens']    = '... ...'
+            if 'trustToken'    in kwargs_dict:  kwargs_dict['trustToken']     = '... ...'
             if 'dsWebAuthToken' in kwargs_dict: kwargs_dict['dsWebAuthToken'] = '... ...'
             kwargs_json = json.dumps(kwargs_dict)
 
@@ -388,7 +401,8 @@ class PyiCloudService():
                     cookie_directory=None, session_directory=None,
                     verify=True, client_id=None, with_family=True,
                     called_from='notset',
-                    verify_password=False):
+                    verify_password=False,
+                    request_verification_code=False):
 
         if not apple_id:
             msg = "The Apple iCloud account username is not specified"
@@ -434,6 +448,10 @@ class PyiCloudService():
             self._set_step_inprocess('Authenticate')
             self.authenticate()
             self._set_step_completed('Authenticate')
+
+        # config_flow is requesting a new verification code. Do not have to load FamShr & FmF data
+        if request_verification_code:
+            return
 
         if 'FamShr' in self.init_step_needed:
             self._set_step_inprocess('FamShr')
@@ -789,7 +807,8 @@ class PyiCloudService():
         self._read_token_password_file()
 
         if self.password != self.token_password:
-            delete_file('session', self.session_directory, self.cookie_filename)
+            delete_msg = delete_file('session', self.session_directory, self.cookie_filename)
+            post_event(delete_msg)
 
         try:
             self.session_data = {}
@@ -990,13 +1009,14 @@ class PyiCloudService():
         if code == -21669:
             log_error_msg("Incorrect verification code")
             return False
-        log_debug_msg("Verification Code was accepted")
+        log_debug_msg("Verification Code accepted")
 
         self.trust_session()
 
         self.requires_2fa = self.requires_2fa or self._check_2fa_needed
 
         # Return true if 2fa code was successful
+
         return not self.requires_2fa
 
 #----------------------------------------------------------------------------
@@ -1027,10 +1047,14 @@ class PyiCloudService():
 #----------------------------------------------------------------------------
     def _get_webservice_url(self, ws_key):
         '''Get webservice URL, raise an exception if not exists.'''
-        if self._webservices.get(ws_key) is None:
-            raise PyiCloudServiceNotActivatedException("Webservice not available", ws_key)
+        try:
+            if self._webservices.get(ws_key) is None:
+                return None
+                # raise PyiCloudServiceNotActivatedException("Webservice not available", ws_key)
 
-        return self._webservices[ws_key]["url"]
+            return self._webservices[ws_key]["url"]
+        except:
+            return None
 
 #----------------------------------------------------------------------------
     @property
@@ -1082,6 +1106,8 @@ class PyiCloudService():
                                                         self.Session,
                                                         self.params)
 
+                                                        # self._get_webservice_url("contacts"),
+                                                        # self._get_webservice_url("cksharews"),
         except Exception as err:
             log_exception(err)
 
@@ -1116,10 +1142,14 @@ class PyiCloud_FamilySharing():
     latitude and longitude.
     '''
 
-    def __init__(self, PyiCloud, service_root, Session,
-                params, with_family=False, task="RefreshData",
-                device_id=None, subject=None, message=None,
-                sounds=False, number="", newpasscode=""):
+    def __init__(self,  PyiCloud,
+                        service_root,
+                        Session,
+                        params,
+                        with_family=False, task="RefreshData",
+                        device_id=None, subject=None, message=None,
+                        sounds=False, number="", newpasscode=""):
+
 
         self.Session     = Session
         self.PyiCloud    = PyiCloud
@@ -1127,8 +1157,35 @@ class PyiCloud_FamilySharing():
         self.with_family = with_family
         self.task        = task
         self.device_id   = device_id
+
+        # FamShr Device information - These is used verify the device, display on the EvLog and in the Config Flow
+        # device selection list on the iCloud3 Devices screen
+        self.devices_not_set_up          = []
+        self.device_id_by_device_fname   = {}       # Example: {'Gary-iPhone': 'n6ofM9CX4j...'}
+        self.device_fname_by_device_id   = {}       # Example: {'n6ofM9CX4j...': 'Gary-iPhone14'}
+        self.device_info_by_device_fname = {}       # Example: {'Gary-iPhone': 'Gary-iPhone (iPhone 14 Pro (iPhone15,2)'}
+        self.device_model_info_by_fname  = {}       # {'Gary-iPhone': [raw_model,model,model_display_name]}
+        self.dup_device_fname_cnt        = {}       # Used to create a suffix for duplicate devicenames
+                                                    # {'Gary-iPhone': ['iPhone15,2', 'iPhone', 'iPhone 14 Pro']}
         self.devices_without_location_data = []
-        self.devices_not_set_up = []
+
+        try:
+            self.is_service_available     = True
+            self.is_service_not_available = False
+            self._set_service_available(service_root is not None)
+        except Exception as err:
+            log_exception(err)
+
+        if Gb.conf_data_source_FAMSHR is False:
+            self._set_service_available(False)
+            return
+
+        if  self.is_service_not_available:
+            log_msg = ( f"{EVLOG_ALERT}iCLOUD ALERT > Family Sharing Data Source is not available. "
+                        f"The web url providing location data returned a Service Not Available error "
+                        f"({self.PyiCloud.called_from})")
+            post_event(log_msg)
+            return
 
         fmip_endpoint          = f"{service_root}/fmipservice/client/web"
         self._fmip_refresh_url = f"{fmip_endpoint}/refreshClient"
@@ -1165,26 +1222,17 @@ class PyiCloud_FamilySharing():
         except:
             pass
 
-        # FamShr Device information - These is used verify the device, display on the EvLog and in the Config Flow
-        # device selection list on the iCloud3 Devices screen
-        self.device_id_by_device_fname   = {}       # Example: {'Gary-iPhone': 'n6ofM9CX4j...'}
-        self.device_fname_by_device_id   = {}       # Example: {'n6ofM9CX4j...': 'Gary-iPhone14'}
-        self.device_info_by_device_fname = {}       # Example: {'Gary-iPhone': 'Gary-iPhone (iPhone 14 Pro (iPhone15,2)'}
-        self.device_model_info_by_fname  = {}       # {'Gary-iPhone': [raw_model,model,model_display_name]}
-        self.dup_device_fname_cnt        = {}       # Used to create a suffix for duplicate devicenames
-                                                    # {'Gary-iPhone': ['iPhone15,2', 'iPhone', 'iPhone 14 Pro']}
-
         self.refresh_client(device_id)
+
+        if self.is_service_not_available: return
 
         devices_not_set_up = self._conf_famshr_devices_not_set_up()
         if devices_not_set_up == '':
             return
 
-        log_msg = ( f"{EVLOG_NOTICE}iCloud3 Notice > Some FamShr devices were not "
-                    f"initialized, data was not received from iCloud "
-                    f"Location Services. Retrying..."
-                    f"{CRLF_DOT}Not set up-{devices_not_set_up} ({self.PyiCloud.called_from})")
-        post_event(log_msg)
+        # log_msg = ( f"FamShr Device not found > Retrying initialization for:"
+        #             f"{devices_not_set_up}")
+        # post_event(log_msg)
 
         if self.PyiCloud.called_from == 'init':
             self.PyiCloud.init_step_needed.append('FamShr')
@@ -1194,13 +1242,19 @@ class PyiCloud_FamilySharing():
 
         devices_not_set_up = self._conf_famshr_devices_not_set_up()
         if devices_not_set_up == '':
-            log_msg = f"{EVLOG_NOTICE}iCloud3 Alert > FamShr initialization retry successful"
-            post_event(log_msg)
             return
 
-        log_msg = ( f"{EVLOG_ALERT}iCloud3 Alert > FamShr device initializationretry failed. "
-                    f"{CRLF_DOT}Not set up-{devices_not_set_up}")
+        post_startup_alert(f"FamShr Device Config Error > Device Not found{devices_not_set_up.replace(CRLF_STAR, CRLF_HDOT)}")
+        log_msg = ( f"{EVLOG_ALERT}iCloud3 Alert > Some FamShr devices were not initialized. "
+                    f"Check the FamShr Device Name assigned to the iCloud3 device "
+                    f"in the iCloud3 Configuration."
+                    f"{devices_not_set_up}")
         post_event(log_msg)
+
+#----------------------------------------------------------------------------
+    def _set_service_available(self, available):
+        self.is_service_available     = available
+        self.is_service_not_available = not available
 
 #----------------------------------------------------------------------------
     def _conf_famshr_devices_not_set_up(self):
@@ -1208,7 +1262,10 @@ class PyiCloud_FamilySharing():
         Return with a list of famshr devices in the conf_devices that are not in
         _RawData
         '''
-        devices_not_set_up = [f"{conf_device[CONF_IC3_DEVICENAME]} ({conf_device[CONF_FAMSHR_DEVICENAME]})"
+        devices_not_set_up = [  (f"{conf_device[CONF_FAMSHR_DEVICENAME]} > "
+                                f"AssignedTo-{conf_device[CONF_FNAME]}/"
+                                f"{conf_device[CONF_IC3_DEVICENAME]}")
+                                # f"{conf_device[CONF_MODEL_DISPLAY_NAME]} ({conf_device[CONF_RAW_MODEL]})"
                     for conf_device in Gb.conf_devices
                     if (conf_device[CONF_FAMSHR_DEVICENAME] != NONE_FNAME
                         and conf_device[CONF_FAMSHR_DEVICENAME] not in self.device_id_by_device_fname)]
@@ -1216,7 +1273,7 @@ class PyiCloud_FamilySharing():
         if devices_not_set_up == []:
             return ""
         else:
-            return list_to_str(devices_not_set_up)
+            return list_to_str(devices_not_set_up, CRLF_STAR)
 
 #----------------------------------------------------------------------------
     @property
@@ -1224,16 +1281,18 @@ class PyiCloud_FamilySharing():
         return 'timeStamp'
 
     @property
-    def tracking_method(self):
+    def data_source(self):
         return FAMSHR_FNAME
 
 #----------------------------------------------------------------------------
-    def refresh_client(self, requested_by_devicename= None, _device_id=None,
+    def refresh_client(self, requested_by_devicename=None, _device_id=None,
                             _with_family=None, refreshing_poor_loc_flag=False):
         '''
         Refreshes the FindMyiPhoneService endpoint,
         This ensures that the location data is up-to-date.
         '''
+        if self.is_service_not_available:  return
+
         selected_device = _device_id   if _device_id else "all"
         fmly_param      = _with_family if _with_family is not None else self.with_family
 
@@ -1251,74 +1310,97 @@ class PyiCloud_FamilySharing():
 
         except Exception as err:
             self.response = {}
-            log_debug_msg("No data returned from fmi refresh request")
+            log_debug_msg("No data returned from FamShr refresh request")
 
-        # if requested_by_devicename:
-        #     post_monitor_msg(f"FamShr iCloudData Update RequestedBy-{requested_by_devicename}")
+        if self.Session.response_status_code == 501:
+            self._set_service_available(False)
+            log_msg = ( f"{EVLOG_ALERT}iCLOUD ALERT > Family Sharing Data Source is not available. "
+                        f"The web url providing location data returned a Service Not Available error "
+                        f"({self.PyiCloud.called_from})")
+            post_event(log_msg)
+            return None
 
+        Gb.pyicloud_refresh_time[FAMSHR] = time_now_secs()
         self.update_device_location_data(requested_by_devicename, self.response.get("content", {}))
 
 #----------------------------------------------------------------------------
     def update_device_location_data(self, requested_by_devicename=None, device_data=None):
         # content contains the device data and the location data
         # for device_info in self.response.get("content", {}):
-        if device_data is None:
+        if (self.is_service_not_available
+                or device_data is None):
             return
 
-        self.PyiCloud.update_requested_by = requested_by_devicename
-        monitor_msg = f"UPDATED FamShr Data > RequestedBy-{requested_by_devicename}"
+        try:
+            self.PyiCloud.update_requested_by = requested_by_devicename
+            monitor_msg = f"UPDATED FamShr Data > RequestedBy-{requested_by_devicename}"
 
-        for device_info in device_data:
-            device_id   = device_info[ID]
-            device_data_name  = device_info[NAME]
-            device_data_name  = device_data_name.replace(u'\xa0', ' ')
-            device_data_name  = device_data_name.replace(u'\2019', "'")
-            device_info[NAME] = device_data_name
+            for device_info in device_data:
+                device_data_name  = device_info[NAME]
+                device_data_name  = device_data_name.replace(u'\xa0', ' ')
+                device_data_name  = device_data_name.replace(u'\2019', "'")
+                device_info[NAME] = device_data_name
 
-            if (device_data_name in Gb.conf_famshr_devicenames
-                    and Gb.start_icloud3_inprocess_flag):
-                pass
+                device_id = device_info[ID]
 
-            elif (LOCATION not in device_info
-                    or device_info[LOCATION] == {}
-                    or device_info[LOCATION] is None):
-                if device_id not in self.devices_without_location_data:
-                    self.devices_without_location_data.append(device_id)
-                    monitor_msg += (f"{CRLF_DOT}NO LOCATION FamShr Data-"
-                                    f"{device_data_name}/{device_id[:8]}, "
-                                    f"{device_info['modelDisplayName']} "
-                                    f"({device_info['rawDeviceModel']})")
+                if (device_data_name in Gb.conf_famshr_devicenames
+                        and Gb.start_icloud3_inprocess_flag):
+                    pass
 
-                log_rawdata(f"FamShr Device - No Location Data - "
-                            f"<{device_data_name}>", device_info)
+                elif (LOCATION not in device_info
+                        or device_info[LOCATION] == {}
+                        or device_info[LOCATION] is None):
+                    if device_id not in self.devices_without_location_data:
+                        self.devices_without_location_data.append(device_id)
+                        if device_info[ICLOUD_DEVICE_STATUS] == 203:
+                            monitor_msg += f"{CRLF_STAR}OFFLINE > "
+                        else:
+                            monitor_msg += f"{CRLF_STAR}NO LOCATION > "
+                        monitor_msg += (f"{device_data_name}/{device_id[:8]}, "
+                                        f"{device_info['modelDisplayName']} "
+                                        f"({device_info['rawDeviceModel']})")
 
-                if device_data_name not in Gb.conf_famshr_devicenames:
+                    log_rawdata(f"FamShr Device - Offline/No Location Data - "
+                                f"<{device_data_name}>", device_info)
+
+                    if device_data_name not in Gb.conf_famshr_devicenames:
+                        continue
+
+                if device_id not in self.PyiCloud.RawData_by_device_id:
+                    monitor_msg +=\
+                        self._create_RawData_famshr_object(device_id, device_data_name, device_info)
                     continue
 
-            if device_id not in self.PyiCloud.RawData_by_device_id:
-                monitor_msg +=\
-                    self._create_RawData_famshr_object(device_id, device_data_name, device_info)
+                # Non-tracked devices are not updated
+                if (_Device := Gb.Devices_by_icloud_device_id.get(device_id)) is None:
+                    continue
 
-            else:
                 _RawData = self.PyiCloud.RawData_by_device_id[device_id]
-
                 _RawData.save_new_device_data(device_info)
-                requested_by_flag = ' *' if requested_by_devicename == _RawData.devicename else ''
 
-                #log_rawdata(f"FamShr Data - "
-                #            f"<{device_data_name}/{_RawData.devicename}>", _RawData.device_data)
-                if _RawData.devicename == 'gary_iphone':
-                    log_rawdata(f"FamShr Data - "
-                            f"<{device_data_name}/{_RawData.devicename}>", {'raw': _RawData.device_data})
+                requested_by_prefix = ''
+                if requested_by_devicename == _Device.devicename:
+                    _RawData.last_requested_loc_time_gps = _RawData.loc_time_gps
+                    requested_by_prefix = f'{CRLF_CHK}'
 
+                last_loc_time_gps_msg = ''
+                if _RawData.last_loc_time_gps != _RawData.loc_time_gps:
+                    last_loc_time_gps_msg = f"{_RawData.last_loc_time_gps}{RARROW}"
 
-                monitor_msg += (f"{CRLF_DOT}"
-                                f"{_RawData.devicename}, "
-                                f"{_RawData.location_time}/"
-                                f"{_RawData.gps_accuracy}m"
-                                f"{requested_by_flag}")
+                log_rawdata(f"FamShr Data - <{device_data_name}/{_Device.devicename}>",
+                            _RawData.device_data)
+                            # {'raw': _RawData.device_data})
 
-        post_monitor_msg(monitor_msg)
+                if requested_by_prefix == '': requested_by_prefix = CRLF_DOT
+                monitor_msg += (f"{requested_by_prefix}"
+                                f"{_Device.devicename}, "
+                                f"{last_loc_time_gps_msg}"
+                                f"{_RawData.loc_time_gps}")
+
+            post_monitor_msg(monitor_msg)
+
+        except Exception as err:
+            log_exception(err)
 
 #----------------------------------------------------------------------------
     def _create_RawData_famshr_object(self, device_id, device_data_name, device_info):
@@ -1346,9 +1428,8 @@ class PyiCloud_FamilySharing():
 
         dup_msg = f" as {_RawData.fname}" if _RawData.fname_dup_suffix else ''
 
-        return (f"{CRLF_DOT}ADDED-{device_data_name}{dup_msg}, "
-                f"{_RawData.location_time}/"
-                f"{_RawData.gps_accuracy}m")
+        return (f"{CRLF_DOT}ADDED > {device_data_name}{dup_msg}, "
+                f"{_RawData.loc_time_gps}")
 
 #----------------------------------------------------------------------------
     def play_sound(self, device_id, subject="Find My iPhone Alert"):
@@ -1356,6 +1437,7 @@ class PyiCloud_FamilySharing():
         Send a request to the device to play a sound.
         It's possible to pass a custom message by changing the `subject`.
         '''
+        if self.is_service_not_available:  return
 
         data = json.dumps({ "device": device_id,
                             "subject": subject,
@@ -1371,6 +1453,8 @@ class PyiCloud_FamilySharing():
         Send a request to the device to display a message.
         It's possible to pass a custom message by changing the `subject`.
         '''
+        if self.is_service_not_available:  return
+
         data = json.dumps( {"device": device_id,
                             "subject": subject,
                             "sound": sounds,
@@ -1390,6 +1474,8 @@ class PyiCloud_FamilySharing():
         been passed, then the person holding the device can call
         the number without entering the passcode.
         '''
+        if self.is_service_not_available:  return
+
         data = json.dumps({ "text": message,
                             "userText": True,
                             "ownerNbr": number,
@@ -1421,26 +1507,118 @@ class PyiCloud_FindMyFriends():
     This connects to iCloud and returns friend's data including
     latitude and longitude.
     '''
-
-    def __init__(self, PyiCloud, service_root, Session, params):
+    def contacts__init__(self,  PyiCloud,
+                        service_root,
+                        Session,
+                        params):
 
         self.Session          = Session
         self.PyiCloud         = PyiCloud
         self.params           = params
         self._service_root    = service_root
-        self._friend_endpoint = f"{self._service_root}/fmipservice/client/fmfWeb/initClient"
         self.refresh_always   = False
         self.response         = {}
-        self.devices_without_location_data = []
+
+        self.is_service_available     = True
+        self.is_service_not_available = False
+        self._set_service_available(service_root is not None)
 
         # FmF Device information - These is used verify the device, display on the EvLog and in the Config Flow
         # device selection list on the iCloud3 Devices screen
-        self.device_id_by_fmf_email      = {}
-        self.fmf_email_by_device_id      = {}
-        self.device_info_by_fmf_email    = {}
-        self.device_form_icloud_fmf_list = []
+        self.device_id_by_fmf_email        = {}
+        self.fmf_email_by_device_id        = {}
+        self.device_info_by_fmf_email      = {}
+        self.device_form_icloud_fmf_list   = []
+        self.devices_without_location_data = []
+
+        self._service_root           = service_root
+        self._contacts_endpoint      = "%s/co" % self._service_root
+        self._contacts_refresh_url   = "%s/startup" % self._contacts_endpoint
+        self._contacts_next_url      = "%s/contacts" % self._contacts_endpoint
+        self._contacts_changeset_url = "%s/changeset" % self._contacts_endpoint
 
         self.refresh_client()
+
+    def contacts_refresh_client(self):
+        """
+        Refreshes the ContactsService endpoint, ensuring that the
+        contacts data is up-to-date.
+        """
+        params_contacts = dict(self.params)
+        params_contacts.update(
+            {"clientVersion": "2.1", "locale": "en_US", "order": "last,first",}
+        )
+        req = self.Session.get(self._contacts_refresh_url, params=params_contacts)
+        self.response = req.json()
+
+        params_next = dict(params_contacts)
+        params_next.update(
+            {
+                "prefToken": self.response["prefToken"],
+                "syncToken": self.response["syncToken"],
+                "limit": "0",
+                "offset": "0",
+            }
+        )
+        req = self.Session.get(self._contacts_next_url, params=params_next)
+        self.response = req.json()
+
+    def contacts_all(self):
+        """
+        Retrieves all contacts.
+        """
+        self.refresh_client()
+        return self.response.get("contacts")
+
+
+    def __init__(self,  PyiCloud,
+                        service_root,
+                        Session,
+                        params):
+
+        self._set_service_available(service_root is not None)
+
+        self.Session          = Session
+        self.PyiCloud         = PyiCloud
+        self.params           = params
+        self._service_root    = service_root
+        self.refresh_always   = False
+        self.response         = {}
+
+        # FmF Device information - These is used verify the device, display on the EvLog and in the Config Flow
+        # device selection list on the iCloud3 Devices screen
+        self.device_id_by_fmf_email        = {}
+        self.fmf_email_by_device_id        = {}
+        self.device_info_by_fmf_email      = {}
+        self.device_form_icloud_fmf_list   = []
+        self.devices_without_location_data = []
+
+        self.is_service_available     = True
+        self.is_service_not_available = False
+        self._set_service_available(service_root is not None)
+
+        if Gb.conf_data_source_FMF is False:
+            self._set_service_available(False)
+            return
+
+        if self.is_service_not_available:
+            log_msg = ( f"{EVLOG_ALERT}iCLOUD ALERT > Find-my-Friends Data Source is not available. "
+                        f"The web url providing location data returned a Service Not Available error "
+                        f"({self.PyiCloud.called_from})")
+            post_event(log_msg)
+            return
+
+        self._friend_endpoint = f"{self._service_root}/fmipservice/client/fmfWeb/initClient"
+
+        self.refresh_client()
+
+        if self.is_service_not_available:
+            log_msg = ( f"{EVLOG_ALERT}iCLOUD ALERT > Find-my-Friends Data Source is not available. "
+                        f"The web url providing location data returned a Service Not Available error "
+                        f"({self.PyiCloud.called_from})")
+            post_event(log_msg)
+            return
+
         self._update_fmf_email_tables()
 
         devices_not_set_up = self._conf_fmf_devices_not_set_up()
@@ -1449,8 +1627,8 @@ class PyiCloud_FindMyFriends():
 
         log_msg = ( f"{EVLOG_NOTICE}iCloud3 Notice > Some FmF devices were not "
                     f"initialized, data was not received from iCloud "
-                    f"Location Services. Retrying..."
-                    f"{CRLF_DOT}Not set up-{devices_not_set_up} ({self.PyiCloud.called_from})")
+                    f"Location Svcs. Retrying..."
+                    f"{devices_not_set_up}")
         post_event(log_msg)
 
         if self.PyiCloud.called_from == 'init':
@@ -1462,13 +1640,18 @@ class PyiCloud_FindMyFriends():
 
         devices_not_set_up = self._conf_fmf_devices_not_set_up()
         if devices_not_set_up == '':
-            log_msg = f"{EVLOG_NOTICE}iCloud3 Alert > FmF initialization retry successful"
+            log_msg = f"{EVLOG_NOTICE}Find-my-Friends initialization retry successful"
             post_event(log_msg)
             return
 
-        log_msg = ( f"{EVLOG_ALERT}iCloud3 Alert > FmF device initialization retry failed"
-                    f"{CRLF_DOT}Not set up-{devices_not_set_up}")
+        log_msg = ( f"{EVLOG_ALERT}iCLOUD ALERT > Find-my-Friends initialization retry failed "
+                    f"{devices_not_set_up}")
         post_event(log_msg)
+
+#----------------------------------------------------------------------------
+    def _set_service_available(self, available):
+        self.is_service_available     = available
+        self.is_service_not_available = not available
 
 #----------------------------------------------------------------------------
     def _conf_fmf_devices_not_set_up(self):
@@ -1483,14 +1666,14 @@ class PyiCloud_FindMyFriends():
         if devices_not_set_up == []:
             return ""
         else:
-            return list_to_str(devices_not_set_up)
+            return list_to_str(devices_not_set_up, CRLF_DOT)
 
     @property
     def timestamp_field(self):
         return 'timestamp'
 
     @property
-    def tracking_method(self):
+    def data_source(self):
         return FMF_FNAME
 
 #----------------------------------------------------------------------------
@@ -1498,6 +1681,8 @@ class PyiCloud_FindMyFriends():
         '''
         Refreshes all data from 'Find My' endpoint,
         '''
+        if self.is_service_not_available: return
+
         params = dict(self.params)
 
         # This is a request payload we mock to fetch the data
@@ -1521,21 +1706,29 @@ class PyiCloud_FindMyFriends():
             response = self.Session.post(self._friend_endpoint, data=mock_payload, params=params)
         except:
             self.response = {}
-            log_debug_msg("No data returned on friends refresh request")
+            log_debug_msg("No data returned on FmF refresh request")
+
+        if self.Session.response_status_code == 501:
+            self._set_service_available(False)
+            return None
 
         try:
             self.response = response.json()
         except:
             self.response = {}
-            log_debug_msg("No data returned on friends refresh request")
+            log_debug_msg("No data returned on FmF refresh decode request")
 
+        Gb.pyicloud_refresh_time[FMF] = time_now_secs()
         self.PyiCloud.update_requested_by = requested_by_devicename
         monitor_msg = (f"FmF iCloudData Update RequestedBy-{requested_by_devicename}")
 
         try:
-            device_data_name = ''
             for device_info in self.response.get('locations', {}):
-                device_id   = device_info[ID]
+                device_id = device_info[ID]
+                if Device := Gb.Devices_by_icloud_device_id.get(device_id):
+                    device_data_name = Device.devicename
+                else:
+                    device_data_name = ''
 
                 # Device was already set up or rejected
                 if device_id in self.devices_without_location_data:
@@ -1545,23 +1738,31 @@ class PyiCloud_FindMyFriends():
                 if device_id not in self.PyiCloud.RawData_by_device_id:
                     monitor_msg += \
                         self._create_RawData_fmf_object(device_id, device_data_name, device_info)
+                    continue
 
-                elif device_id in Gb.Devices_by_icloud_device_id:
-                    _RawData = self.PyiCloud.RawData_by_device_id[device_id]
+                elif device_id not in Gb.Devices_by_icloud_device_id:
+                    continue
 
-                    _RawData.save_new_device_data(device_info)
-                    requested_by_flag = ' *' if requested_by_devicename == _RawData.devicename else ''
+                _RawData = self.PyiCloud.RawData_by_device_id[device_id]
 
-                    #log_rawdata(f"FmF Data - <{_RawData.devicename}>", _RawData.device_data)
-                    if _RawData.devicename == 'gary_iphone':
-                        log_rawdata(f"FmF Data - "
-                            f"<{device_data_name}/{_RawData.devicename}>", {'raw': _RawData.device_data})
+                _RawData.save_new_device_data(device_info)
 
-                    monitor_msg += (f"{CRLF_DOT}"
-                                    f"{_RawData.devicename}, "
-                                    f"{_RawData.location_time}/"
-                                    f"{_RawData.gps_accuracy}m"
-                                    f"{requested_by_flag}")
+                requested_by_flag = ''
+                if requested_by_devicename == _RawData.devicename:
+                    _RawData.last_requested_loc_time_gps = _RawData.loc_time_gps
+                    requested_by_flag = ' *'
+
+                last_loc_time_gps_msg = ''
+                if _RawData.last_loc_time_gps != _RawData.loc_time_gps:
+                    last_loc_time_gps_msg = f"{_RawData.last_loc_time_gps}{RARROW}"
+
+                log_rawdata(f"FmF Data - <{_RawData.devicename}>", _RawData.device_data)
+
+                monitor_msg += (f"{CRLF_DOT}"
+                                f"{_RawData.devicename}, "
+                                f"{last_loc_time_gps_msg}"
+                                f"{_RawData.loc_time_gps}"
+                                f"{requested_by_flag}")
 
             post_monitor_msg(monitor_msg)
             # if Gb.EvLog:
@@ -1589,18 +1790,24 @@ class PyiCloud_FindMyFriends():
                                     sound_url=None,
                                     lost_url=None,
                                     message_url=None,)
+        try:
+            self.PyiCloud.RawData_by_device_id[device_id]     = _RawData
+            self.PyiCloud.RawData_by_device_id_fmf[device_id] = _RawData
 
-        self.PyiCloud.RawData_by_device_id[device_id]     = _RawData
-        self.PyiCloud.RawData_by_device_id_fmf[device_id] = _RawData
+            log_rawdata(f"FmF Data - <{_RawData.devicename}>", _RawData.device_data)
 
-        log_rawdata(f"FmF Data - <{_RawData.devicename}>", _RawData.device_data)
+            monitor_msg = (f"{CRLF_DOT}ADDED > {device_data_name}/{device_id[:8]}")
 
-        monitor_msg = (f"{CRLF_DOT}ADDED-{device_data_name}/{device_id[:8]}")
+            if (LOCATION not in device_info
+                    or device_info[LOCATION] == {}
+                    or device_info[LOCATION] is None):
+                monitor_msg += " (No Location Data)"
+            else:
+                monitor_msg += f", {_RawData.loc_time_gps}"
 
-        if (LOCATION not in device_info
-                or device_info[LOCATION] == {}
-                or device_info[LOCATION] is None):
-            monitor_msg += " (No Location Data)"
+        except Exception as err:
+            log_exception(err)
+            monitor_msg = ''
 
         return monitor_msg
 
@@ -1736,7 +1943,7 @@ class PyiCloud_RawData():
                         device_data,
                         Session,
                         params,
-                        tracking_method,
+                        data_source,
                         timestamp_field,
                         FamShr_FmF,
                         device_data_name,
@@ -1746,26 +1953,28 @@ class PyiCloud_RawData():
         self.device_data     = device_data
         self.Session         = Session
         self.params          = params
-        self.tracking_method = tracking_method
+        self.data_source       = data_source
         self.timestamp_field = timestamp_field
         self.FamShr_FmF      = FamShr_FmF
         self.fname_dup_suffix= ''                               # Suffix added to fname if duplicates
         self.name            = device_data_name
         self.fname           = self.device_data_fname_dup_check # Clean up fname and check for duplicates
 
-        self.Device          = Gb.Devices_by_icloud_device_id.get(device_id)
+        # self.Device          = Gb.Devices_by_icloud_device_id.get(device_id)
         self.update_secs     = time_now_secs()
         self.location_secs   = 0
         self.location_time   = HHMMSS_ZERO
         self.last_used_location_secs = 0
         self.last_used_location_time = HHMMSS_ZERO
+        self.last_loc_time_gps       = ''               # location_time_gps_acc from last general update
+        self.last_requested_loc_time_gps = ''           # location_time_gps_acc from last time requested
 
         self.sound_url   = sound_url
         self.lost_url    = lost_url
         self.message_url = message_url
 
         self.set_located_time()
-        self.device_data[TRACKING_METHOD] = self.tracking_method
+        self.device_data[DATA_SOURCE] = self.data_source
 
 #----------------------------------------------------------------------
     @property
@@ -1780,7 +1989,7 @@ class PyiCloud_RawData():
             - iPhone 14,2 (iPhone15,2)
             - Gary-iPhone
         '''
-        if self.tracking_method_FAMSHR:
+        if self.is_data_source_FAMSHR:
             display_name = self.device_data['deviceDisplayName'].split(' (')[0]
             display_name = display_name.replace('Series ', '')
             if self.device_data.get('rawDeviceModel').startswith(AIRPODS_FNAME):
@@ -1791,7 +2000,7 @@ class PyiCloud_RawData():
 
             return (f"{display_name} ({raw_model}").replace("’", "'")
 
-        elif self.tracking_method_FMF:
+        elif self.is_data_source_FMF:
             full_name = (f"{self.device_data.get('firstName', '')} {self.device_data.get('lastName', '')}").strip()
             return full_name.replace("’", "'")
 
@@ -1801,9 +2010,9 @@ class PyiCloud_RawData():
 #----------------------------------------------------------------------
     @property
     def devicename(self):
-        if self.Device:
-            return self.Device.devicename
-        elif self.tracking_method_FAMSHR:
+        if Device := Gb.Devices_by_icloud_device_id.get(self.device_id):
+            return Device.devicename
+        elif self.is_data_source_FAMSHR:
             return self.fname
         else:
             return self.device_id[:8]
@@ -1818,7 +2027,7 @@ class PyiCloud_RawData():
         # Remove non-breakable space and right quote mark
         fname = self._remove_fname_special_chars(self.name)
 
-        if self.tracking_method_FAMSHR:
+        if self.is_data_source_FAMSHR:
             _FamShr = self.FamShr_FmF
 
             if fname not in _FamShr.dup_device_fname_cnt:
@@ -1864,17 +2073,20 @@ class PyiCloud_RawData():
 
 #----------------------------------------------------------------------
     @property
-    def tracking_method_FMF(self):
-        return (self.tracking_method in [FMF, FMF_FNAME])
+    def is_data_source_FMF(self):
+        return (self.data_source in [FMF, FMF_FNAME])
 
     @property
-    def tracking_method_FAMSHR(self):
-        return (self.tracking_method in [FAMSHR, FAMSHR_FNAME])
+    def is_data_source_FAMSHR(self):
+        return (self.data_source in [FAMSHR, FAMSHR_FNAME])
 
-    #** Added 5/3/2022
+    @property
+    def loc_time_gps(self):
+        return f"{self.location_time}/±{self.gps_accuracy}m"
+
     @property
     def gps_accuracy(self):
-        """ Get location gps accuracy or -1 if not available """
+        """ Get location gps accuracy or 9999 if not available """
 
         try:
             return round(self.location[ICLOUD_HORIZONTAL_ACCURACY])
@@ -1897,16 +2109,23 @@ class PyiCloud_RawData():
             return  'Unknown'
         return round(self.gps_accuracy)
 
+#----------------------------------------------------------------------------
     def save_new_device_data(self, device_data):
         '''Update the device data.'''
+        try:
+            self.last_loc_time_gps = f"{self.location_time}/±{self.gps_accuracy}m"
+        except:
+            self.last_loc_time_gps = ''
+
         self.device_data.clear()
         self.device_data.update(device_data)
         self.set_located_time()
-        self.device_data[TRACKING_METHOD] = self.tracking_method
+
+        self.device_data[DATA_SOURCE] = self.data_source
         return
 
 #----------------------------------------------------------------------------
-    def status(self, additional_fields=[]):  # pylint: disable=dangerous-default-value
+    def status(self, additional_fields=[]):
         '''
         Returns status information for device.
         This returns only a subset of possible properties.
@@ -1924,8 +2143,12 @@ class PyiCloud_RawData():
 
 #----------------------------------------------------------------------------
     @property
-    def is_location_data_available(self):
+    def is_offline(self):
+        return self.device_data[ICLOUD_DEVICE_STATUS] == 201
 
+#----------------------------------------------------------------------------
+    @property
+    def is_location_data_available(self):
         return not (LOCATION not in self.device_data
                     or self.device_data[LOCATION] == {}
                     or self.device_data[LOCATION] is None)
@@ -1976,7 +2199,7 @@ class PyiCloud_RawData():
 
     def __repr__(self):
         try:
-            return f"<PyiCloud_RawData: {self.name}-{self.tracking_method}-{self.device_id[:8]}"
+            return f"<PyiCloud_RawData: {self.name}-{self.data_source}-{self.device_id[:8]}"
         except:
             return f"<PyiCloud_RawData: Undefined>"
 

@@ -3,6 +3,7 @@ from ..global_variables     import GlobalVariables as Gb
 from ..const                import (
                                     APPLE_SPECIAL_ICLOUD_SERVER_COUNTRY_CODE,
                                     RARROW, HHMMSS_ZERO, DATETIME_ZERO, NONE_FNAME, INACTIVE_DEVICE,
+                                    ICLOUD, FAMSHR,
                                     CONF_PARAMETER_TIME_STR,
                                     CONF_INZONE_INTERVALS, CONF_MAX_INTERVAL, CONF_EXIT_ZONE_INTERVAL,
                                     CONF_IOSAPP_ALIVE_INTERVAL,
@@ -10,8 +11,9 @@ from ..const                import (
                                     CONF_UPDATE_DATE, CONF_VERSION_INSTALL_DATE, CONF_PASSWORD, CONF_ICLOUD_SERVER_ENDPOINT_SUFFIX,
                                     CONF_DEVICES, CONF_SETUP_ICLOUD_SESSION_EARLY,
                                     CONF_UNIT_OF_MEASUREMENT, CONF_TIME_FORMAT, CONF_LOG_LEVEL,
+                                    CONF_DATA_SOURCE, CONF_DISPLAY_GPS_LAT_LONG,
                                     CONF_FAMSHR_DEVICENAME, CONF_FMF_EMAIL, CONF_IOSAPP_DEVICE, CONF_TRACKING_MODE,
-                                    CONF_DEVICE_TRACKER_STATE_FORMAT, CONF_STAT_ZONE_FNAME,
+                                    CONF_STAT_ZONE_FNAME,
                                     CF_DEFAULT_IC3_CONF_FILE,
                                     DEFAULT_PROFILE_CONF, DEFAULT_TRACKING_CONF, DEFAULT_GENERAL_CONF,
                                     DEFAULT_SENSORS_CONF,
@@ -27,7 +29,7 @@ from ..support              import start_ic3
 from ..support              import waze
 from ..helpers.common       import (instr, ordereddict_to_dict, )
 from ..helpers.messaging    import (log_exception, _trace, _traceha, log_info_msg,
-                                    close_reopen_ic3_debug_log_file, )
+                                    close_reopen_ic3_log_file, )
 from ..helpers.time_util    import (datetime_now, )
 
 import os
@@ -82,6 +84,10 @@ def load_storage_icloud3_configuration_file():
             write_storage_icloud3_configuration_file()
             read_storage_icloud3_configuration_file()
 
+    config_file_check_new_ic3_version()
+    config_file_check_range_values()
+    count_device_tracking_methods_configured()
+
     if CONF_LOG_LEVEL in Gb.conf_general:
         start_ic3.set_log_level(Gb.conf_general[CONF_LOG_LEVEL])
 
@@ -117,10 +123,12 @@ def read_storage_icloud3_configuration_file(filename_suffix=''):
 
             Gb.conf_tracking[CONF_PASSWORD] = decode_password(Gb.conf_tracking[CONF_PASSWORD])
 
-            config_file_add_new_parameters()
-            config_file_check_new_ic3_version()
-            config_file_check_range_values()
-            count_device_tracking_methods_configured()
+            try:
+                config_file_add_new_parameters()
+
+            except Exception as err:
+                log_exception(err)
+                _LOGGER.error("iCloud3 > An error occured verifying the iCloud3 Configuration File. Will continue.")
 
         return True
 
@@ -147,17 +155,18 @@ def count_device_tracking_methods_configured():
             if conf_device[CONF_TRACKING_MODE] == INACTIVE_DEVICE:
                 continue
 
-            if conf_device[CONF_FAMSHR_DEVICENAME] != NONE_FNAME:
+            if conf_device[CONF_FAMSHR_DEVICENAME].startswith(NONE_FNAME) is False:
                 Gb.conf_famshr_device_cnt += 1
 
-            if conf_device[CONF_FMF_EMAIL] != NONE_FNAME:
+            if conf_device[CONF_FMF_EMAIL].startswith(NONE_FNAME) is False:
                 Gb.conf_fmf_device_cnt += 1
 
-            if conf_device[CONF_IOSAPP_DEVICE] != NONE_FNAME:
+            if conf_device[CONF_IOSAPP_DEVICE].startswith(NONE_FNAME) is False:
                 Gb.conf_iosapp_device_cnt += 1
 
     except Exception as err:
         log_exception(err)
+
 #--------------------------------------------------------------------
 def config_file_check_new_ic3_version():
     '''
@@ -203,8 +212,11 @@ def config_file_add_new_parameters():
 
     # Update parameters for each device
     for conf_device in Gb.conf_devices:
-        update_config_file_flag = (_add_config_file_parameter(conf_device, CONF_STAT_ZONE_FNAME, ' ')
-                or update_config_file_flag)
+        # beta 16 - Remove the device's stat zone friendly name since stat zones are ho longet
+        # associated with a device
+        if CONF_STAT_ZONE_FNAME in conf_device:
+            conf_device.pop(CONF_STAT_ZONE_FNAME)
+            update_config_file_flag = True
 
     # Add HOME_DISTANCE sensor to conf_sensors
     if HOME_DISTANCE not in Gb.conf_sensors[CONF_SENSORS_TRACKING_DISTANCE]:
@@ -241,9 +253,6 @@ def config_file_add_new_parameters():
         dtf = 'fname' if Gb.conf_general['zone_sensor_evlog_format'] else 'zone'
         Gb.conf_general.pop('zone_sensor_evlog_format')
 
-    update_config_file_flag = (_add_config_file_parameter(Gb.conf_general, CONF_DEVICE_TRACKER_STATE_FORMAT, dtf)
-            or update_config_file_flag)
-
     # Change Waze server codes
     if Gb.conf_general[CONF_WAZE_REGION].lower() in ['na']:
         Gb.conf_general[CONF_WAZE_REGION] = 'us'
@@ -261,8 +270,29 @@ def config_file_add_new_parameters():
         update_config_file_flag = (_convert_hhmmss_to_minutes(conf_device)
                 or update_config_file_flag)
 
+    # beta 16 - Change StatZone friendly Name
+    if instr(Gb.conf_general[CONF_STAT_ZONE_FNAME], '[name]'):
+        Gb.conf_general[CONF_STAT_ZONE_FNAME] = 'StatZon#'
+        update_config_file_flag = True
+
+    # beta 17 - Add Display GPS coordinates Flag
+    update_config_file_flag = (_add_config_file_parameter(Gb.conf_general, CONF_DISPLAY_GPS_LAT_LONG, True)
+            or update_config_file_flag)
+
+    if 'device_tracker_state_format' in Gb.conf_general:
+        Gb.conf_general.pop('device_tracker_state_format')
+
+    # beta 16d - Change icloud to famshr since fmf no longer works
+    if instr(Gb.conf_tracking[CONF_DATA_SOURCE], ICLOUD):
+        Gb.conf_tracking[CONF_DATA_SOURCE] = \
+            Gb.conf_tracking[CONF_DATA_SOURCE].replace(ICLOUD, FAMSHR)
+        update_config_file_flag = True
+
+
     if update_config_file_flag:
         write_storage_icloud3_configuration_file()
+
+    return True
 
 #--------------------------------------------------------------------
 def config_file_check_range_values():
@@ -363,8 +393,7 @@ def write_storage_icloud3_configuration_file(filename_suffix=''):
 
             Gb.conf_tracking[CONF_PASSWORD] = decoded_password
 
-        if Gb.iC3DebugLogFile:
-            close_reopen_ic3_debug_log_file()
+        close_reopen_ic3_log_file()
 
         return True
 

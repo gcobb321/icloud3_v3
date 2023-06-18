@@ -12,7 +12,7 @@
 
 from ..global_variables     import GlobalVariables as Gb
 from ..const                import (HOME,
-                                    HHMMSS_ZERO, HIGH_INTEGER, NONE,
+                                    HHMMSS_ZERO, HIGH_INTEGER, NONE, IOSAPP,
                                     EVLOG_TABLE_MAX_CNT_BASE, EVENT_LOG_CLEAR_SECS,
                                     EVENT_LOG_CLEAR_CNT, EVLOG_TABLE_MAX_CNT_ZONE,
                                     EVLOG_TIME_RECD, EVLOG_HIGHLIGHT, EVLOG_MONITOR,
@@ -21,7 +21,7 @@ from ..const                import (HOME,
                                     CRLF, CRLF_DOT, CRLF_CHK, RARROW, DOT, LT, GT,
                                     )
 
-from ..helpers.common       import instr, is_statzone, circle_letter
+from ..helpers.common       import instr, circle_letter
 from ..helpers.messaging    import log_exception, log_info_msg, log_warning_msg, _traceha, _trace
 from ..helpers.time_util    import time_to_12hrtime, datetime_now, time_now_secs
 
@@ -60,7 +60,6 @@ class EventLog(object):
         self.display_text_as         = {}
         self.evlog_table             = []   # Device event recds
         self.evlog_table_startup     = []   # All Event recds during startup
-        self.evlog_startup_alerts    = []   # Alert Event recds during startup
         self.evlog_table_max_cnt     = EVLOG_TABLE_MAX_CNT_BASE
 
         self.devicename              = ''
@@ -74,6 +73,7 @@ class EventLog(object):
         self.last_refresh_devicename = ''
         self.user_message            = ''       # Display a message in the name0 button
         self.user_message_alert_flag = False    # Do not clear the message if this is True
+        self.alert_message           = ''
 
         self.evlog_sensor_state_value       = ''
         self.evlog_attrs                    = {}
@@ -110,9 +110,11 @@ class EventLog(object):
             self.evlog_table_max_cnt  = EVLOG_TABLE_MAX_CNT_BASE
 
             self.devicename_by_fnames.update({devicename: Device.fname
-                            for devicename, Device in Gb.Devices_by_devicename_tracked.items()})
+                            for devicename, Device in Gb.Devices_by_devicename_tracked.items()
+                            if devicename != ''})
             self.devicename_by_fnames.update({devicename: f"{Device.fname} {circle_letter('m')}"
-                            for devicename, Device in Gb.Devices_by_devicename_monitored.items()})
+                            for devicename, Device in Gb.Devices_by_devicename_monitored.items()
+                            if devicename != ''})
 
             tfz_cnt = sum([len(Device.DeviceFmZones_by_zone) for Device in Gb.Devices])
             self.evlog_table_max_cnt = EVLOG_TABLE_MAX_CNT_ZONE*tfz_cnt
@@ -168,8 +170,7 @@ class EventLog(object):
         # if a ^c^ start header is immediately follows an ^s^ header, the group is empty,
         # delete the ^s^ header and throw the current record (^c^ header) away.
         try:
-            if (devicename.startswith('*') is False
-                    and len(self.evlog_table) > 8):
+            if (devicename.startswith('*') is False and len(self.evlog_table) > 8):
                 in_last_few_recds = [v for v in self.evlog_table[:8] \
                                         if (v[ELR_DEVICENAME] == devicename \
                                             and v[ELR_TEXT] == event_text \
@@ -190,16 +191,6 @@ class EventLog(object):
             log_exception(err)
 
         try:
-            # Alerts are saved during startup. If there are any, reinsert them into the EvLog table
-            # so all alerts are redisplayed when the startup complete event record is being processed.
-            if (event_text.startswith(EVLOG_IC3_STARTING)
-                    and instr(event_text, 'Complete')
-                    and self.evlog_startup_alerts != []):
-                for alert_recd in self.evlog_startup_alerts:
-                    self.evlog_table.insert(0, alert_recd)
-                self.evlog_startup_alerts = []
-
-
             if (event_text.startswith(EVLOG_UPDATE_START)
                     or event_text.startswith(EVLOG_UPDATE_END)
                     or event_text.startswith(EVLOG_IC3_STARTING)
@@ -220,9 +211,9 @@ class EventLog(object):
                     Device = Gb.Devices_by_devicename.get(devicename)
                     if Device:
                         Device.last_evlog_msg_secs = time_now_secs()
-                        if (Device.DeviceFmZoneCurrent.from_zone != HOME
+                        if (Device.DeviceFmZoneBeingUpdated.from_zone != HOME
                                 or event_text.startswith(EVLOG_TIME_RECD)):
-                            this_update_time = (f"»{Device.DeviceFmZoneCurrent.from_zone_display_as[:6]}")
+                            this_update_time = (f"»{Device.DeviceFmZoneBeingUpdated.from_zone_display_as[:6]}")
 
         except Exception as err:
             log_exception(err)
@@ -493,8 +484,6 @@ class EventLog(object):
         if (Gb.start_icloud3_inprocess_flag
                 or Gb.initial_icloud3_loading_flag):
             self.evlog_table_startup.insert(0, event_recd)
-            if event_recd[ELR_TEXT].startswith(EVLOG_ALERT):
-                self.evlog_startup_alerts.append(event_recd)
 
         elif event_recd[ELR_TEXT].startswith(EVLOG_ALERT):
             self.evlog_table_startup.insert(0, event_recd)
@@ -504,8 +493,8 @@ class EventLog(object):
 #------------------------------------------------------
     def _shrink_evlog_table(self, shrink_cnt):
         '''
-        The table has reached the maximun number of records. Remove 20% of the
-        oldest device records and 80% of the monitor type records. Do not delete
+        The table has reached the maximun number of records. Remove 40% of the
+        oldest device records and 60% of the monitor type records. Do not delete
         '*'/system records unles it contains a '#' since it will be a retry or
         authentication count recd:
 
@@ -516,13 +505,15 @@ class EventLog(object):
             if Gb.Devices == []:
                 return
 
-            self.devicename_cnts = {}
+            keep_nonmonitor_recd_pct = .40
+
+            delete_device_recd_cnt = shrink_cnt * keep_nonmonitor_recd_pct
+            evlog_table_recd_cnt   = len(self.evlog_table)
+            evlog_table_target_cnt = self.evlog_table_max_cnt - shrink_cnt
             delete_cnt = 0
             delete_reg_cnt = 0
             delete_mon_cnt = 0
-            delete_device_recd_cnt = shrink_cnt * .20
-            evlog_table_recd_cnt   = len(self.evlog_table)
-            evlog_table_target_cnt = self.evlog_table_max_cnt - shrink_cnt
+            self.devicename_cnts = {}
 
             # Go from end of table to front
             for x in range(evlog_table_recd_cnt-2, 2, -1):
@@ -544,7 +535,6 @@ class EventLog(object):
                     if delete_cnt >= shrink_cnt:
                         break
 
-            #self.post_event(f"SHRINK REG-- {shrink_cnt=} {delete_cnt=} {evlog_table_target_cnt=} recd_cnt={len(self.evlog_table)} max={self.evlog_table_max_cnt}")
             # If not enough recds were deleted, force deleting some
             if len(self.evlog_table) > evlog_table_target_cnt:
                 delete_cnt += len(self.evlog_table) - evlog_table_target_cnt
@@ -557,7 +547,7 @@ class EventLog(object):
                                 f"Deleted-{delete_cnt} "
                                 f"(DevInfo-{delete_reg_cnt}, "
                                 f"Monitor-{delete_mon_cnt})")
-                log_info_msg(event_msg)
+                self.post_event(event_msg)
 
         except Exception as err:
             log_exception(err)
@@ -571,19 +561,10 @@ class EventLog(object):
             self.devicename_cnts[devicename_type] = 0
         self.devicename_cnts[devicename_type] += 1
 
+#------------------------------------------------------
     def clear_alert_events(self):
-        '''
-        Alert events are identified by the EVLOG_ALERT (^a^ or ^e^) at the start of the
-        event message.  Add a monitor event to turn off alerts from being selected in the
-        event-log-card for events after this monitor recd is encountered.
 
-        But do not do this if only a few records are displayed because the clear_cnt
-        was used when setting the max number of recd to display. Then a refresh was to see
-        the alert message.
-        '''
-        if len(self.evlog_table) > EVENT_LOG_CLEAR_CNT+10:
-            alert_recd = f'{EVLOG_ALERT}Cancel previous alerts'
-            self.post_event(alert_recd)
+        self.alert_message = ''
 
 #------------------------------------------------------
     def _filtered_evlog_recds(self, devicename='', max_recds=HIGH_INTEGER, selected_devicename=None):
@@ -604,6 +585,13 @@ class EventLog(object):
                             f"to display all of the events")
             refresh_recd = ['',refresh_msg]
             time_text_recds.insert(0, refresh_recd)
+
+        if self.alert_message != '':
+            alert_msg = ( f"{EVLOG_HIGHLIGHT}{self.alert_message}")
+            alert_recd = ['',alert_msg]
+            time_text_recds.insert(0, alert_recd)
+            # self.alert_message = ''
+
 
         # else:
         #     time_text_recds_str = str(time_text_recds)
@@ -635,6 +623,11 @@ class EventLog(object):
         # Device = Gb.Devices_by_devicename.get(devicename)
         el_devicename_check = ['*', '**', 'nodevices', devicename]
 
+        if Device := Gb.Devices_by_devicename.get(devicename):
+            primary_data_source_IOSAPP = (Device.primary_data_source == IOSAPP)
+        else:
+            primary_data_source_IOSAPP = False
+
         # Select devicename recds, keep time & test elements, drop devicename
         try:
             devicename_recds = [el_recd for el_recd in self.evlog_table
@@ -644,9 +637,13 @@ class EventLog(object):
             if Gb.evlog_trk_monitors_flag:
                 return [el_recd[1:3] for el_recd in devicename_recds]
 
+            elif primary_data_source_IOSAPP:
+                return [el_recd[1:3] for el_recd in devicename_recds
+                                                if (el_recd[ELR_TEXT].startswith(EVLOG_MONITOR) is False
+                                                    and self._iosapp_filter(el_recd[ELR_TEXT]))]
             else:
                 return [el_recd[1:3] for el_recd in devicename_recds
-                                                if el_recd[ELR_TEXT].startswith(EVLOG_MONITOR) is False]
+                                                if (el_recd[ELR_TEXT].startswith(EVLOG_MONITOR) is False)]
 
         except IndexError:
             for el_recd in self.evlog_table:
@@ -658,6 +655,22 @@ class EventLog(object):
                     log_info_msg(f"{el_recd}")
 
         return []
+
+#--------------------------------------------------------------------
+    @staticmethod
+    def _iosapp_filter(el_recd_text):
+        '''
+        File icloud account records from events  for a device when its primary
+        data source it's the ios app
+
+        Return True if the record should be displayed
+        '''
+
+        if el_recd_text.startswith('iCloud Acct'):
+            return False
+
+        return True
+
 
 #--------------------------------------------------------------------
     def _export_ic3_event_log_reformat_recds(self, devicename, el_records):

@@ -4,6 +4,7 @@ from ..const            import ( HIGH_INTEGER, NOT_SET,
                                 HOME, UTC_TIME, IOS_TRIGGER_ABBREVIATIONS,
                                 TRACE_ICLOUD_ATTRS_BASE, TRACE_ATTRS_BASE,
                                 BATTERY_LEVEL, BATTERY_STATUS, BATTERY_STATUS_REFORMAT,
+                                LAST_CHANGED_SECS, LAST_CHANGED_TIME, STATE,
                                 LOCATION, ATTRIBUTES, TRIGGER, RAW_MODEL)
 from .common            import (instr,  )
 from .messaging         import (log_debug_msg, log_exception, log_debug_msg, log_error_msg, log_rawdata,
@@ -11,6 +12,7 @@ from .messaging         import (log_debug_msg, log_exception, log_debug_msg, log
 from .time_util         import (datetime_to_secs, secs_to_time)
 
 from homeassistant.helpers import entity_registry, device_registry
+from datetime import datetime
 
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 #
@@ -20,11 +22,25 @@ from homeassistant.helpers import entity_registry, device_registry
 def get_state(entity_id):
     """
     Return the state of an entity
+
+    from datetime import datetime
+
+    # Timezone Name.
+    date_String = "23/Feb/2012:09:15:26 UTC +0900"
+    dt_format = datetime.strptime(date_String, '%d/%b/%Y:%H:%M:%S %Z %z')
+    print("Date with Timezone Name::", dt_format)
+
+    # Timestamp
+    timestamp = dt_format.timestamp()
     """
 
     try:
         entity_state = ''
-        entity_state = Gb.hass.states.get(entity_id).state
+        entity_data  = Gb.hass.states.get(entity_id)
+        entity_state = entity_data.state
+        #entity_attrs = entity_data.attributes.copy()
+        last_changed_secs = int(entity_data.last_changed.timestamp())
+
         if entity_state in IOS_TRIGGER_ABBREVIATIONS:
             state = IOS_TRIGGER_ABBREVIATIONS[entity_state]
         else:
@@ -36,6 +52,7 @@ def get_state(entity_id):
             state = 0
 
     except Exception as err:
+        #log_exception(err)
         #When starting iCloud3, the device_tracker for the iosapp might
         #not have been set up yet. Catch the entity_id error here.
         state = NOT_SET
@@ -50,14 +67,14 @@ def get_attributes(entity_id):
 
     try:
         entity_data  = Gb.hass.states.get(entity_id)
-        entity_attrs = entity_data.attributes
-        retry_cnt = 0
-        while retry_cnt < 10:
-            if entity_attrs:
-                break
-            retry_cnt += 1
-            log_msg = (f"No attribute data returned for <{entity_id} >. Retrying #{retry_cnt}")
-            log_debug_msg('*', log_msg)
+        entity_state = entity_data.state
+        entity_attrs = entity_data.attributes.copy()
+        last_changed_secs = int(entity_data.last_changed.timestamp())
+
+        entity_attrs[STATE] = entity_state
+        entity_attrs[LAST_CHANGED_SECS] = last_changed_secs
+        entity_attrs[LAST_CHANGED_TIME] = secs_to_time(last_changed_secs)
+        #_traceha(f"{entity_id} {entity_attrs=}")
 
     except (KeyError, AttributeError):
         entity_attrs = {}
@@ -68,7 +85,7 @@ def get_attributes(entity_id):
         entity_attrs = {}
         entity_attrs[TRIGGER] = (f"Error {err}")
 
-    return dict(entity_attrs)
+    return entity_attrs
 
 #--------------------------------------------------------------------
 def get_last_changed_time(entity_id):

@@ -47,7 +47,11 @@ def str_to_list(str_value):
     str_value   - ('icloud,iosapp')
     Return      - ['icloud','iosapp']
     '''
-    return list(str_value.split((',')))
+
+    while instr(str_value,', '):
+        str_value = str_value.replace( ', ', ',')
+
+    return str_value.split(',')
 
 #--------------------------------------------------------------------
 def instr(string, substring):
@@ -66,8 +70,12 @@ def instr(string, substring):
     return False
 
 #--------------------------------------------------------------------
-def is_statzone(string):
-        return (str(string).find(STATIONARY) >= 0)
+def is_statzone(zone):
+    return instr(zone, STATIONARY)
+
+#--------------------------------------------------------------------
+def isnot_statzone(zone):
+    return instr(zone, STATIONARY) is False
 
 #--------------------------------------------------------------------
 def isnumber(string):
@@ -79,6 +87,10 @@ def isnumber(string):
 
     except:
         return False
+
+#--------------------------------------------------------------------
+def isbetween(number, greater_than, less_than_equal):
+    return (less_than_equal > number > greater_than)
 
 #--------------------------------------------------------------------
 def inlist(string, list_items):
@@ -94,11 +106,19 @@ def round_to_zero(value):
     return round(value, 8)
 
 #--------------------------------------------------------------------
-def is_inzone_zone(zone):
+# def is_inzone_zone(zone):
+#     return (zone != NOT_HOME)
+
+#--------------------------------------------------------------------
+# def isnot_inzone_zone(zone):
+#     return (zone == NOT_HOME)
+
+#--------------------------------------------------------------------
+def is_zone(zone):
     return (zone != NOT_HOME)
 
 #--------------------------------------------------------------------
-def isnot_inzone_zone(zone):
+def isnot_zone(zone):
     return (zone == NOT_HOME)
 
 #--------------------------------------------------------------------
@@ -157,6 +177,8 @@ def obscure_field(field):
 
 #--------------------------------------------------------------------
 def zone_display_as(zone):
+    if is_statzone(zone) and zone not in Gb.zone_display_as:
+        return 'StatZone'
     return Gb.zone_display_as.get(zone, zone.title())
 
 #--------------------------------------------------------------------
@@ -165,6 +187,10 @@ def format_gps(latitude, longitude, accuracy, latitude_to=None, longitude_to=Non
 
     if longitude is None or latitude is None:
         gps_text = UNKNOWN
+
+    elif Gb.display_gps_lat_long_flag is False:
+        gps_text     = f"/±{accuracy:.0f}m"
+
     else:
         accuracy_text = (f"/±{accuracy:.0f}m)") if accuracy > 0 else ")"
         gps_to_text   = (f" to {latitude_to:.5f}, {longitude_to:.5f})") if latitude_to else ""
@@ -223,9 +249,13 @@ def delete_file(file_desc, directory, filename, backup_extn=None, delete_old_sv_
                 file_msg += (f"{CRLF_DOT}Deleted file (...{filename})")
 
         if file_msg != "":
-            event_msg =(f"{file_desc} file > ({directory})"
-                        f"{CRLF}•{file_msg}")
-            Gb.EvLog.post_event(event_msg)
+            if instr(directory, 'config'):
+                directory = f"config{directory.split('config')[1]}"
+            file_msg = f"{file_desc} file > ({directory}) {file_msg}"
+            # Gb.EvLog.post_event(event_msg)
+
+        return file_msg
 
     except Exception as err:
         Gb.HALogger.exception(err)
+        return "Delete error"

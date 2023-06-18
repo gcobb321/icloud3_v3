@@ -17,27 +17,15 @@
 
 from .global_variables  import GlobalVariables as Gb
 from .const             import (HOME, NOT_HOME, STATIONARY, HIGH_INTEGER,
-                                ZONE, TITLE, FNAME, ZONE_FNAME,
-                                STAT_ZONE_NO_UPDATE, STAT_ZONE_MOVE_DEVICE_INTO, STAT_ZONE_MOVE_TO_BASE,
-                                NAME, STATIONARY_FNAME, ID,
-                                FRIENDLY_NAME, ICON,
+                                ZONE, TITLE, FNAME, NAME, ID, FRIENDLY_NAME, ICON,
                                 LATITUDE, LONGITUDE, RADIUS, PASSIVE,
-                                )
-
-from .helpers.common    import (instr, is_statzone, format_gps, )
+                                STATZONE_BASE_RADIUS_M, ZONE, )
+from .helpers.common    import (instr, is_statzone, format_gps, zone_display_as,)
 from .helpers.messaging import (post_event, post_error_msg, post_monitor_msg,
                                 log_exception, log_rawdata,_trace, _traceha, )
-from .helpers.time_util import (time_now_secs, datetime_now, secs_to_time,  format_time_age, )
-from .helpers.dist_util import (calc_distance_m, calc_distance_km, format_dist_km, )
+from .helpers.time_util import (time_now_secs, datetime_now, secs_to_time,   secs_to_datetime, format_time_age, )
+from .helpers.dist_util import (calc_distance_m, calc_distance_km, format_dist_km, format_dist_m, )
 
-from   homeassistant.util.location import distance
-
-
-#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-#
-#   GLOBAL SUPPORT FUNCTIONS & CONSTANTS
-#
-#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 MDI_NAME_LETTERS = {'circle-outline': '', 'box-outline': '', 'circle': '', 'box': ''}
 
@@ -56,9 +44,8 @@ MDI_NAME_LETTERS = {'circle-outline': '', 'box-outline': '', 'circle': '', 'box'
 class iCloud3_Zone(object):
 
     def __init__(self, zone, zone_data):
-        self.zone    = zone
+        self.zone = zone
 
-        # _traceha(f"{zone=} {zone_data=}")
         if NAME in zone_data:
             ztitle = zone_data[NAME].title()
         else:
@@ -67,25 +54,26 @@ class iCloud3_Zone(object):
             ztitle = ztitle.replace(' Ipad', ' iPad')
             ztitle = ztitle.replace(' Ipod', ' iPod')
 
-        # self.fname      = zone_data.get('original_name', ztitle)    # From entity_registry
         self.fname      = zone_data.get(FRIENDLY_NAME, ztitle)      # From zones_states attribute (zones config file)
         self.display_as = self.fname
-        self.device_tracker_state = self.fname
 
         self.name       = ztitle.replace(" ","").replace("'", "`")
         self.title      = ztitle
+
+        # contains the statzone names to easily determine if a device's zone name is this stat zone
+        self.names      = [self.zone, self.display_as]
 
         self.latitude   = zone_data.get(LATITUDE, 0)
         self.longitude  = zone_data.get(LONGITUDE, 0)
         self.radius_m   = round(zone_data.get(RADIUS, 100))
         self.passive    = zone_data.get(PASSIVE, True)
+        self.is_real_zone    = (self.radius_m > 0)
+        self.isnot_real_zone = not self.is_real_zone    # (Description only zones/Away, not_home, not_set, etc)
+        self.dist_time_history = []        #Entries are a list - [lat, long, distance, travel time]
 
-        # self.entity_id  = zone_data.get(ID, zone.lower())[:6]
         self.er_zone_id = zone_data.get(ID, zone.lower())     # HA entity_registry id
         self.entity_id  = self.er_zone_id[:6]
         self.unique_id  = zone_data.get('unique_id', zone.lower())
-
-        self.dist_time_history = []        #Entries are a list - [lat, long, distance, travel time]
 
         self.setup_zone_display_name()
 
@@ -113,21 +101,13 @@ class iCloud3_Zone(object):
         else:
             self.display_as = self.fname
 
-        # Set up the device_tracker state value for this zone
-        if Gb.device_tracker_state_format == ZONE:
-            self.device_tracker_state = self.zone
-        elif Gb.device_tracker_state_format == FNAME:
-            self.device_tracker_state = self.zone if self.zone in [HOME, NOT_HOME] else self.fname
-        elif Gb.device_tracker_state_format == 'fname/Home':
-            self.device_tracker_state = self.fname
-        elif Gb.device_tracker_state_format == NAME:
-            self.device_tracker_state = self.name
-        elif Gb.device_tracker_state_format == TITLE:
-            self.device_tracker_state = self.title
-        else:
-            self.device_tracker_state = self.fname
+        self.names = [self.zone, self.display_as]
 
-        Gb.zone_display_as[self.zone] = self.display_as
+        Gb.zone_display_as[self.zone]  = self.display_as
+        Gb.zone_display_as[self.fname] = self.display_as
+        Gb.zone_display_as[self.name]  = self.display_as
+        Gb.zone_display_as[self.title] = self.display_as
+
         self.sensor_prefix = '' if self.zone == HOME else self.display_as
 
         # Used in entity_io to change ios app state value to the actual zone entity name for internal use
@@ -135,6 +115,17 @@ class iCloud3_Zone(object):
         Gb.state_to_zone[self.display_as] = self.zone
 
     #---------------------------------------------------------------------
+    @property
+    def is_statzone(self):
+        return self.zone.endswith(STATIONARY)
+
+    @property
+    def isnot_statzone(self):
+        return self.zone.endswith(STATIONARY) is False
+
+    def is_my_statzone(self, Device):
+        return self.zone == f"{Device.devicename}_{STATIONARY}"
+
     @property
     def gps(self):
         return (self.latitude, self.longitude)
@@ -166,6 +157,7 @@ class iCloud3_Zone(object):
     def DeviceFmZone(self, Device):
         return (f"{Device.devicename}:{self.zone}")
 
+
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 #
 #   StationaryZones Class Object
@@ -183,122 +175,71 @@ class iCloud3_Zone(object):
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 class iCloud3_StationaryZone(iCloud3_Zone):
 
-    def __init__(self, Device):
-        self.zone       = f"{Device.devicename}_stationary"
-        self.Device     = Device
-        self.devicename = Device.devicename
+    def __init__(self, statzone_id):
+        self.zone        = f"ic3_{STATIONARY}_{statzone_id}"
+        self.statzone_id = statzone_id
 
-        self.base_latitude  = Gb.stat_zone_base_latitude
-        self.base_longitude = Gb.stat_zone_base_longitude
+        self.base_attrs = {}
+        self.fname = f"StatZon{self.statzone_id}"
+        self.display_as  = self.fname
+        Gb.zone_display_as[self.zone] = self.fname
 
-        self.set_stationary_zone_fname(Device)
+        #base_attrs is used to move the stationary zone back to it's base
+        self.base_attrs[NAME]          = self.zone
+        self.base_attrs[ICON]          = f"mdi:numeric-{statzone_id}-circle-outline"
+        self.base_attrs[RADIUS]        = STATZONE_BASE_RADIUS_M
+        self.base_attrs[PASSIVE]       = True
 
-        statzone_data = {   FRIENDLY_NAME: self.fname,
-                            LATITUDE: self.base_latitude,
-                            LONGITUDE: self.base_longitude,
-                            RADIUS: 1, PASSIVE: True}
+        self.initialize_updatable_items()
+
+        statzone_data ={FRIENDLY_NAME: self.fname,
+                        LATITUDE: self.base_latitude,
+                        LONGITUDE: self.base_longitude,
+                        RADIUS: STATZONE_BASE_RADIUS_M, PASSIVE: True}
+
 
         # Initialize Zone with location
         super().__init__(self.zone, statzone_data)
-        Gb.Zones.append(self)
-        Gb.Zones_by_zone[self.zone] = self
-
-        # Initialize tracking movement fields
-        self.inzone_interval_secs      = Gb.stat_zone_inzone_interval_secs
-        self.still_time                = Gb.stat_zone_still_time_secs
-        self.stat_zone_half_still_time = Gb.stat_zone_still_time_secs / 2
-
-        self.timer      = 0
-        self.moved_dist = 0
-
-        # Initialize Stat Zone size based on Home zone size
-        home_zone_radius_km        = Gb.HomeZone.radius_km
-        self.min_dist_from_zone_km = round(home_zone_radius_km * 2, 2)
-        self.dist_move_limit       = round(home_zone_radius_km * 1.5, 2)
-        self.inzone_radius_km      = round(home_zone_radius_km * 2, 2)
-        self.inzone_radius         = home_zone_radius_km * 2000
-        if self.inzone_radius_km   > .1:  self.inzone_radius_km = .1
-        if self.inzone_radius      > 100: self.inzone_radius    = 100
-        self.radius_m              = 1
-        self.passive               = True
-
-    #---------------------------------------------------------------------
-        first_initial = self.devicename[0]
-        icon_name     = first_initial
-        for mdi_name, mdi_letter in MDI_NAME_LETTERS.items():
-            if first_initial not in mdi_letter:
-                icon_name = (f"{first_initial}-{mdi_name}")
-                MDI_NAME_LETTERS[mdi_name] += first_initial
-                break
-
-        #base_attrs is used to move the stationary zone back to it's base
-        self.base_attrs = {}
-        self.base_attrs[NAME]          = self.zone
-        self.base_attrs[ICON]          = f"mdi:alpha-{icon_name}"
-        self.base_attrs[FRIENDLY_NAME] = self.display_as
-        self.base_attrs[LATITUDE]      = self.base_latitude
-        self.base_attrs[LONGITUDE]     = self.base_longitude
-        self.base_attrs[RADIUS]        = 1
-        self.base_attrs[PASSIVE]       = True
+        self.write_ha_zone_state(self.base_attrs)
 
         #away_attrs is used to move the stationary zone back to it's base
         self.away_attrs = self.base_attrs.copy()
-        self.away_attrs[RADIUS]        = self.inzone_radius
+        self.away_attrs[RADIUS]        = Gb.statzone_radius_m
         self.away_attrs[PASSIVE]       = False
 
+#--------------------------------------------------------------------
+    def initialize_updatable_items(self):
+        if Gb.statzone_fname == '': Gb.statzone_fname = 'StatZon#'
+        self.fname = Gb.statzone_fname.replace('#', self.statzone_id)
+        Gb.zone_display_as[self.zone] = self.fname
+
+        self.base_latitude  = Gb.statzone_base_latitude
+        self.base_longitude = Gb.statzone_base_longitude
+
+        self.base_attrs[FRIENDLY_NAME] = self.fname
+        self.base_attrs[LATITUDE]      = self.base_latitude
+        self.base_attrs[LONGITUDE]     = self.base_longitude
+
+#--------------------------------------------------------------------
     def __repr__(self):
         return (f"<StatZone: {self.zone}>")
 
     #---------------------------------------------------------------------
-    def set_stationary_zone_fname(self, Device):
-        '''
-        Format the Stationary Zones friendly and display_as name
-
-        This is done when the StatZone is initialized and in the
-        start_ic3.set_global_variables_from_conf_parameters function that
-        is run when iC3 is started and when the stat zone parameters are changed in config_flow
-        '''
-        if Device.stat_zone_fname != '':
-            self.fname = self.display_as = Device.stat_zone_fname
-        elif Gb.stat_zone_fname:
-            self.fname = self.display_as = Gb.stat_zone_fname.replace('[name]', Device.fname[:4])
-        else:
-            self.fname = self.display_as = STATIONARY_FNAME
-
-        Gb.zone_display_as[self.zone] = self.display_as
-
-    #---------------------------------------------------------------------
-    # Return True if the device is in the Stationary Zone
-    @property
-    def inzone(self):
-        return (self.radius_m > 1)
-
-    # Return True if the device is not in the Stationary Zone
-    @property
-    def not_inzone(self):
-        return (self.radius_m == 1)
-
-    # Return True if the device is not in the Stationary Zone
+    # Return True if the device has not set up a Stationary Zone
     @property
     def is_at_base(self):
-        return (self.radius_m == 1)
+        # return self.radius_m == STATZONE_BASE_RADIUS_M and self.passive
+        return  self.passive
 
-    # Return the seconds left before the phone should be moved into a Stationary Zone
+    # Return True if the device has set up a Stat Zone
     @property
-    def timer_left(self):
-        if self.timer > 0:
-            return (self.timer - time_now_secs())
-        else:
-            return HIGH_INTEGER
-
-    # Return True if the timer has expired, False if not expired or not using Stat Zone
-    @property
-    def timer_expired(self):
-        return (Gb.is_stat_zone_used and self.timer_left <= 0)
+    def isnot_at_base(self):
+        # return self.radius_m != STATZONE_BASE_RADIUS_M and self.passive is False
+        return self.passive is False
 
     @property
-    def move_limit_exceeded(self):
-        return (self.moved_dist > self.dist_move_limit)
+    def device_distance_m(self):
+        return self.distance_m(self.Device.loc_data_latitude, self.Device.loc_data_longitude)
 
     # Return the attributes for the Stat Zone to be used to update the HA Zone entity
     @property
@@ -310,150 +251,15 @@ class iCloud3_StationaryZone(iCloud3_Zone):
 
         return _attrs
 
-
-
-#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-#
-#   Methods to move the Stationary Zone to it's new location or back
-#   to the base location based on the Update Control value.
-#
-#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-    def update_stationary_zone_location(self):
-
+#--------------------------------------------------------------------
+    def write_ha_zone_state(self, attrs):
+        '''
+        Update the zone entity with the new attributes (lat/long, passive, radius, etc)
+        '''
         try:
-            if self.Device.stationary_zone_update_control == STAT_ZONE_NO_UPDATE:
-                return
-
-            elif self.Device.stationary_zone_update_control == STAT_ZONE_MOVE_TO_BASE:
-                self.move_stationary_zone_to_base_location()
-
-            elif self.Device.stationary_zone_update_control == STAT_ZONE_MOVE_DEVICE_INTO:
-                self.move_stationary_zone_to_new_location()
-
-            self.Device.stationary_zone_update_control = STAT_ZONE_NO_UPDATE
-            return
+            Gb.hass.states.async_set(f"zone.{self.zone}", 0, attrs, force_update=True)
 
         except Exception as err:
             log_exception(err)
 
 #--------------------------------------------------------------------
-    def move_stationary_zone_to_new_location(self):
-
-        if self.Device.old_loc_poor_gps_cnt > 0:
-            post_event("Move into Stationary Zone delayed > Old Location")
-            return
-
-        try:
-            latitude  = self.Device.loc_data_latitude
-            longitude = self.Device.loc_data_longitude
-
-            # Make sure stationary zone is not being moved to another zone's location unless it a
-            # Stationary Zone
-            close_zone = [{ 'name': Zone.zone,
-                            'display_as': Zone.display_as,
-                            'dist_m': Zone.distance_km(latitude, longitude)}
-                                    for Zone in Gb.Zones
-                                    if (Zone.radius_m > 1
-                                        and is_statzone(Zone.zone) is False
-                                        and Zone.passive is False
-                                        and Zone.distance_km(latitude, longitude) < self.min_dist_from_zone_km)]
-
-            if close_zone != []:
-                close_zone_1st = close_zone[0]
-                event_msg =(f"Move into stationary zone cancelled > "
-                            f"Too close to zone-{close_zone_1st['display_as']}, "
-                            f"DistFmZone-{format_dist_km(close_zone_1st['dist_m'])}")
-                post_event(self.devicename, event_msg)
-                self.timer = Gb.this_update_secs + self.still_time
-
-                return False
-
-            # Set new location, it will be updated when Device's attributes are updated in main routine
-            self.latitude              = latitude
-            self.longitude             = longitude
-            self.away_attrs[LATITUDE]  = latitude
-            self.away_attrs[LONGITUDE] = longitude
-            still_since_secs           = self.timer - self.still_time
-            self.moved_dist            = 0
-            self.timer                 = 0
-            self.radius_m              = self.inzone_radius
-            self.passive               = False
-
-            Gb.hass.states.async_set(f"zone.{self.zone}", 0, self.away_attrs, force_update=True)
-
-            # Set Stationary Zone at new location
-            self.Device.loc_data_zone      = self.zone
-            self.Device.into_zone_datetime = datetime_now()
-
-            event_msg =(f"Setting Stationary Zone Location > "
-                        f"StationarySince-{format_time_age(still_since_secs)}, "
-                        f"GPS-{format_gps(latitude, longitude, 0)}"
-                        f"/r{self.radius_m}m")
-                        # f"GPS-{format_gps(latitude, longitude, self.radius_m)}")
-            post_event(self.devicename, event_msg)
-
-            return True
-
-        except Exception as err:
-            log_exception(err)
-
-            return False
-
-# #--------------------------------------------------------------------
-#     def set_stat_zone_state(self):
-#             Gb.hass.states.set(f"zone.{self.zone}", "zoning", self.away_attrs, force_update=True)
-
-#--------------------------------------------------------------------
-    def move_stationary_zone_to_base_location(self):
-        ''' Move stationary zone back to base location '''
-        # Set new location, it will be updated when Device's attributes are updated in main routine
-
-        self.clear_timer
-        self.radius_m = 1
-
-        self.base_attrs[LATITUDE] += 20
-        Gb.hass.states.async_set(f"zone.{self.zone}", 0, self.base_attrs, force_update=True)
-
-        event_msg =(f"Reset Stationary Zone Location > {self.zone}, "
-                    f"Moved back to Base Location-{format_gps(self.base_latitude, self.base_longitude, 1)}")
-        post_event(self.devicename, event_msg)
-
-        return True
-
-#--------------------------------------------------------------------
-    @property
-    def reset_timer_time(self):
-        '''
-        Set the Stationary Zone timer expiration time
-        '''
-        self.moved_dist = 0
-        self.timer      = Gb.this_update_secs + self.still_time
-
-    @property
-    def clear_timer(self):
-        '''
-        Clear the Stationary Zone timer
-        '''
-        self.moved_dist = 0
-        self.timer      = 0
-
-#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-#
-#   Methods to update the Stationary Zone's distance moved and to
-#   determine if the update should be reset or to move the device into
-#   it's Stationary Zone
-#
-#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-    def update_distance_moved(self, distance):
-        self.moved_dist += distance
-
-        if Gb.evlog_trk_monitors_flag:
-            log_msg =  (f"Stat Zone Movement > "
-                        f"TotalMoved-{format_dist_km(self.Device.StatZone.moved_dist)}, "
-                        f"UnderMoveLimit-{self.Device.StatZone.moved_dist <= self.Device.StatZone.dist_move_limit}, "
-                        f"Timer-{secs_to_time(self.Device.StatZone.timer)}, "
-                        f"TimerLeft- {self.Device.StatZone.timer_left} secs, "
-                        f"TimerExpired-{self.Device.StatZone.timer_expired}")
-            post_monitor_msg(self.Device.devicename, log_msg)
-
-        return self.moved_dist

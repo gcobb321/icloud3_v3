@@ -22,7 +22,7 @@ class iCloud3EventLogCard extends HTMLElement {
     }
     //---------------------------------------------------------------------------
     setConfig(config) {
-        const version = "3.0.7"
+        const version = "3.0.9"
         const cardTitle = "iCloud3 v3 - Event Log"
 
         const root = this.shadowRoot
@@ -284,7 +284,7 @@ class iCloud3EventLogCard extends HTMLElement {
         btnAction.appendChild(btnActionOptOC7)
 
         var btnActionOptOC6 = document.createElement("option")
-        var btnActionOptOC6Txt = document.createTextNode("Reset iCloud Interface")
+        var btnActionOptOC6Txt = document.createTextNode("Request Apple ID Verification Code")
         btnActionOptOC6.setAttribute("value", "reset_session")
         btnActionOptOC6.setAttribute("id", "optResetPyicloud")
         btnActionOptOC6.classList.add("btnActionOption")
@@ -326,12 +326,16 @@ class iCloud3EventLogCard extends HTMLElement {
         btnStar.setAttribute('href', 'https://github.com/gcobb321/icloud3_v3/stargazers')
         btnStar.setAttribute('target', '_blank')
         btnStar.innerHTML = `<svg  width="24px" height="24px" fill="none" viewBox="0 0 24 24" stroke-width="1" stroke="#000000">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" /></svg>`
+        <path stroke-linecap="round" stroke-linejoin="round" d="M6.633 10.5c.806 0 1.533-.446 2.031-1.08a9.041 9.041 0 012.861-2.4c.723-.384 1.35-.956 1.653-1.715a4.498 4.498 0 00.322-1.672V3a.75.75 0 01.75-.75A2.25 2.25 0 0116.5 4.5c0 1.152-.26 2.243-.723 3.218-.266.558.107 1.282.725 1.282h3.126c1.026 0 1.945.694 2.054 1.715.045.422.068.85.068 1.285a11.95 11.95 0 01-2.649 7.521c-.388.482-.987.729-1.605.729H13.48c-.483 0-.964-.078-1.423-.23l-3.114-1.04a4.501 4.501 0 00-1.423-.23H5.904M14.25 9h2.25M5.904 18.75c.083.205.173.405.27.602.197.4-.078.898-.523.898h-.908c-.889 0-1.713-.518-1.972-1.368a12 12 0 01-.521-3.507c0-1.553.295-3.036.831-4.398C3.387 10.203 4.167 9.75 5 9.75h1.053c.472 0 .745.556.5.96a8.958 8.958 0 00-1.302 4.665c0 1.194.232 2.333.654 3.375z" /></svg>`
+
+        // Sparkles
+        // btnStar.innerHTML = `<svg  width="24px" height="24px" fill="none" viewBox="0 0 24 24" stroke-width="1" stroke="#000000">
+        // <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" /></svg>`
 
         const btnConfig = document.createElement('btnName')
         btnConfig.id = "btnConfig"
         btnConfig.classList.add("btnConfig")
-        btnConfig.setAttribute('href', 'https://gcobb321.github.io/icloud3_docs/#/')
+        btnConfig.setAttribute('href', 'https://gcobb321.github.io/icloud3_v3/#/')
         btnConfig.setAttribute('target', '_blank')
         btnConfig.innerHTML = `<svg width="29px" height="29px" viewBox="0 0 24 24" fill="none" stroke="#000000">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
@@ -693,10 +697,10 @@ class iCloud3EventLogCard extends HTMLElement {
                 box-shadow: transparent;
             }
             /*                   Top Rt  Bot Left*/
-            #btnRefresh {margin: 2px 1px 0px 0px;}
             #btnConfig  {margin: 0px 0px 3px 1px;}
-            #btnIssues  {margin: 2px 0px 2px 1px;}
-            #btnStar    {margin: 1px 0px 0px 1px;}
+            #btnRefresh {margin: 0px 1px 0px 0px;}
+            #btnIssues  {margin: 0px 0px 2px 1px;}
+            #btnStar    {margin: 0px 0px 0px 1px;}
             #btnHelp    {margin: 0px 0px 0px 2px;}
 
             svg         {stroke: #ff4d4d;}
@@ -1235,7 +1239,6 @@ class iCloud3EventLogCard extends HTMLElement {
         var initializationRecdFound = false
         var iosappUpdateCompleteFlag = false
         var icloudUpdateCompleteFlag = false
-        var alertErrorMsg = ""
 
         for (var i = 0; i < logEntries.length - 1; i++) {
             try {
@@ -1383,22 +1386,10 @@ class iCloud3EventLogCard extends HTMLElement {
                     classEdgeBar = ' stageEdgeBar'
 
                 } else if (tText.startsWith("^a^")) {
-                    if (tText.startsWith("^a^Cancel")) {
-                        initializationRecdFound = true
-                        alertErrorMsg = ''
-                        classSpecialTextColor = ' specColor6'
-                    } else if (initializationRecdFound == false) {
-                        classErrorMsg = ' errorMsg'
-                        alertErrorMsg = ".Alert at " + tTime + " ... (Refresh to Clear Alerts Messages)"
-                    } else {
-                        classSpecialTextColor = ' specColor6'
-                    }
+                    classErrorMsg = ' errorMsg'
 
                 } else if (tText.startsWith("^e^")) {
                     classErrorMsg = ' errorMsg'
-                    if (initializationRecdFound == false) {
-                        alertErrorMsg = ".ERROR AT " + tTime
-                    }
 
                 } else if (tText.startsWith("^w^")) {
                     classErrorMsg = ' warningMsg'
@@ -1557,9 +1548,7 @@ class iCloud3EventLogCard extends HTMLElement {
 
         if (statusName.classList.contains('errorAlertMsg')) {
             'pass'
-        } else if (alertErrorMsg != "") {
-            this._displayDevicenameMsgL(alertErrorMsg)
-            alertErrorMsg = ''
+
         } else {
             this._displayTimeMsgR(infoTimeText)
         }
@@ -1772,13 +1761,8 @@ class iCloud3EventLogCard extends HTMLElement {
 
         if (actionButton == "btnRefresh") {
             displayUserMsgFlag.innerText = 'false'
-            if (statusName.innerText.startsWith(".Alert")) {
-                var refresh_command = "refresh_event_log+clear_alerts"
-                const [devicename, fname] = this._getButtonDevicename(currentButtonId)
-                this._displayDevicenameMsgL(devicename)
-            } else {
-                var refresh_command = "refresh_event_log"
-            }
+            var refresh_command = "refresh_event_log"
+
             if (statusMsgPopup.innerHTML != '' && statusMsgPopup.innerHTML != 'cancelMsgDisplay') {
                 statusMsgPopup.innerHTML = 'cancelMsgDisplay'
             }
@@ -1959,6 +1943,7 @@ class iCloud3EventLogCard extends HTMLElement {
     _displayDevicenameMsgL(msg) {
         // Display text below name button
         const root       = this.shadowRoot
+        const hass       = this._hass
         const statusName = root.getElementById("statusName")
         const statusTime = root.getElementById("statusTime")
 
@@ -1967,11 +1952,6 @@ class iCloud3EventLogCard extends HTMLElement {
             this._classListRemove('statusName', 'errorAlertMsg')
             statusName.style.setProperty('width', '100%')
             statusName.style.setProperty('color', 'green')
-            statusTime.innerText = ''
-        } else if (msg.startsWith(".Alert")) {
-            this._classListAdd('statusName', 'errorAlertMsg')
-            statusName.style.setProperty('width', '100%')
-            statusName.style.setProperty('color', 'white')
             statusTime.innerText = ''
         } else {
             statusName.style.setProperty('width', '55%')
@@ -1993,22 +1973,12 @@ class iCloud3EventLogCard extends HTMLElement {
         const hass       = this._hass
         const statusTime = root.getElementById("statusTime")
         const statusName = root.getElementById("statusName")
-        const updateTime = hass.states['sensor.icloud3_event_log'].attributes['update_time'].slice(0, -7)
+        const updateTime   = hass.states['sensor.icloud3_event_log'].attributes['update_time'].slice(0, -7)
 
         if (this._isUserMessageDisplayed()) {
             return
         }
 
-        // Display the update time if no error alerts and the msg is empty, otherwise return
-        if (msg.startsWith(".Alert") || msg.startsWith(".Error") || msg.startsWith(".ERROR")) {
-            this._classListAdd('statusName', 'errorAlertMsg')
-            this._displayDevicenameMsgL('\xa0' + msg + '\xa0')
-            msg = updateTime
-        } else {
-            this._classListRemove('statusName', 'errorAlertMsg')
-            statusName.style.setProperty('width', '55%')
-            statusName.style.setProperty('color', 'firebrick')
-        }
         if (msg == "") {
             msg = updateTime
         }

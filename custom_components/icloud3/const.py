@@ -4,7 +4,7 @@
 #
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-VERSION                         = '3.0.0b15'
+VERSION                         = '3.0.0b18c'
 
 DOMAIN                          = 'icloud3'
 ICLOUD3                         = 'iCloud3'
@@ -25,8 +25,8 @@ EVLOG_CARD_WWW_DIRECTORY        = 'www/icloud3'
 EVLOG_CARD_WWW_JS_PROG          = 'icloud3-event-log-card.js'
 WAZE_LOCATION_HISTORY_DATABASE  = 'icloud3.waze_location_history.db'
 SENSOR_WAZEHIST_TRACK_NAME      = 'icloud3_wazehist_track'
-IC3LOGGER_FILENAME              = 'icloud3-debug.log'
-DEBUG_LOG_FILENAME              = 'icloud3-debug.log'
+IC3LOGGER_FILENAME              = 'icloud3-0.log'
+IC3_LOG_FILENAME                = 'icloud3-0.log'
 
 DEVICE_TRACKER                  = 'device_tracker'
 DEVICE_TRACKER_DOT              = 'device_tracker.'
@@ -47,15 +47,21 @@ HOME                            = 'home'
 HOME_FNAME                      = 'Home'
 NOT_HOME                        = 'not_home'
 NOT_HOME_FNAME                  = 'NotHome'
+NEAR_HOME                       = 'NearHome'
 NOT_SET                         = 'not_set'
 NOT_SET_FNAME                   = 'NotSet'
 UNKNOWN                         = 'Unknown'
-STATIONARY                      = 'stationary'
-STATIONARY_FNAME                = 'Stationary'
+STATIONARY                      = 'statzone'
+STATIONARY_FNAME                = 'StatZone'
 AWAY_FROM                       = 'AwayFrom'
+AWAY_FROM_HOME                  = 'AwayFromHome'
 AWAY                            = 'Away'
+NEAR                            = 'Near'
 TOWARDS                         = 'Towards'
-INZONE                          = 'InZone'
+TOWARDS_HOME                    = 'TowardsHome'
+INZONE                          = 'inZone'
+INZONE_HOME                     = 'inHomeZone'
+INZONE_STATIONARY               = 'inStatZone'
 PAUSED                          = 'PAUSED'
 PAUSED_CAPS                     = 'PAUSED'
 RESUMING                        = 'RESUMING'
@@ -100,7 +106,6 @@ DEVICE_TYPES = [
 ]
 DEVICE_TYPE_FNAME = {
         IPHONE: IPHONE_FNAME,
-        'phone': IPHONE_FNAME,
         IPAD: IPAD_FNAME,
         WATCH: WATCH_FNAME,
         AIRPODS: AIRPODS_FNAME,
@@ -115,12 +120,7 @@ DEVICE_TYPE_ICONS = {
         WATCH: "mdi:watch-variant",
         OTHER: 'mdi:laptop'
 }
-ICON_DIR_OF_TRAVEL = {
-        TOWARDS: 'mdi:location-enter',
-        AWAY_FROM: 'mdi:location-exit',
-        INZONE: 'mdi:crosshairs-gps',
-        'other': 'mdi:compass-outline',
-}
+
 UM_FNAME        = {'mi': 'Miles', 'km': 'Kilometers'}
 DATETIME_FORMAT = '%Y-%m-%d %H:%M:%S'
 DATETIME_ZERO   = '0000-00-00 00:00:00'
@@ -143,17 +143,12 @@ IOSAPP_DT_ENTITY = True
 ICLOUD_DT_ENTITY = False
 ICLOUD_LOCATION_DATA_ERROR = False
 CMD_RESET_PYICLOUD_SESSION = 'reset_session'
-NEAR_DEVICE_DISTANCE       = 15
+NEAR_DEVICE_DISTANCE       = 20
 PASS_THRU_ZONE_INTERVAL_SECS = 60       # Delay time before moving into a non-tracked zone to see if if just passing thru
+STATZONE_BASE_RADIUS_M     = 100
 
-# used by the Gb.stationary_zone_update_control field to indicate the
-# Stat Zone should be updated when the Device location info is updated
-STAT_ZONE_NO_UPDATE        = 0
-STAT_ZONE_MOVE_DEVICE_INTO = 100
-STAT_ZONE_MOVE_TO_BASE     = 1
-
-EVLOG_TABLE_MAX_CNT_BASE = 1000         # Used to calculate the max recds to store
-EVLOG_TABLE_MAX_CNT_ZONE = 750          # Used to calculate the max recds to store
+EVLOG_TABLE_MAX_CNT_BASE = 1500         # Used to calculate the max recds to store
+EVLOG_TABLE_MAX_CNT_ZONE = 2000         # Used to calculate the max recds to store
 EVENT_LOG_CLEAR_SECS     = 900          # Clear event log data interval
 EVENT_LOG_CLEAR_CNT      = 50           # Number of recds to display when clearing event log
 ICLOUD3_ERROR_MSG        = "ICLOUD3 ERROR-SEE EVENT LOG"
@@ -188,9 +183,9 @@ WAZE_NO_DATA      = 4
 # poor_location_gps cnt, icloud_authentication cnt (default)
 OLD_LOC_POOR_GPS_CNT   = 1.1
 AUTH_ERROR_CNT         = 1.2
-RETRY_INTERVAL_RANGE_1 = {6:.25, 4:1, 8:5, 12:30, 16:60, 20:120, 22:240, 24:240}
+RETRY_INTERVAL_RANGE_1 = {0:.25, 4:1, 8:5, 12:30, 16:60, 20:120, 22:240, 24:240}
 IOSAPP_REQUEST_LOC_CNT = 2.1
-RETRY_INTERVAL_RANGE_2 = {4:.5, 4:2, 8:30, 12:60, 14:120, 16:180, 18:240, 20:240}
+RETRY_INTERVAL_RANGE_2 = {0:.5, 4:2, 8:30, 12:60, 14:120, 16:180, 18:240, 20:240}
 
 # Used by the 'update_method' in the polling_5_sec loop
 IOSAPP_UPDATE     = "IOSAPP"
@@ -217,7 +212,7 @@ EVLOG_IC3_STARTING  = '^i^'
 EVLOG_IC3_STAGE_HDR = '^g^'
 
 
-EVLOG_NOTICE      = '^4^'
+EVLOG_NOTICE      = '^5^'
 EVLOG_TRACE       = '^6^'
 EVLOG_DEBUG       = '^6^'
 EVLOG_MONITOR     = '^6^'
@@ -236,8 +231,8 @@ CIRCLE_LETTERS_LITE =  {'a':'Ⓐ', 'b':'Ⓑ', 'c':'Ⓒ', 'd':'Ⓓ', 'e':'Ⓔ', '
 '''
 lite_circled_letters = "Ⓐ Ⓑ Ⓒ Ⓓ Ⓔ Ⓕ Ⓖ Ⓗ Ⓘ Ⓙ Ⓚ Ⓛ Ⓜ Ⓝ Ⓞ Ⓟ Ⓠ Ⓡ Ⓢ Ⓣ Ⓤ Ⓥ Ⓦ Ⓧ Ⓨ Ⓩ"
 dark_circled_letters = "🅐 🅑 🅒 🅓 🅔 🅕 🅖 🅗 🅘 🅙 🅚 🅛 🅜 🅝 🅞 🅟 🅠 🅡 🅢 🅣 🅤 🅥 🅦 🅧 🅨 🅩 ✪"
-Symbols = ▪•●▬⊗⊘✓×ø¦ ▶◀ ►◄▲▼ ∙▪ »« oPhone=►▶→⟾➤➟➜➔➤🡆🡪🡺⟹🡆➔ᐅ◈
-  — – ⁃ » ━▶━➤🡺 —> > > ❯↦ … 🡪ᗕ ᗒ ᐳ ─🡢 ──ᗒ 🡢 ─ᐅ ↣ ➙ →《》◆◈◉●▐‖  ▹▻▷◁◅◃▶➤➜➔❰❰❱❱
+Symbols = ±▪•●▬⮾ ⊗ ⊘✓×ø¦ ▶◀ ►◄▲▼ ∙▪ »« oPhone=►▶→⟾➤➟➜➔➤🡆🡪🡺⟹🡆➔ᐅ◈🝱☒☢⛒❌⊘Ɵ⊗ⓧⓍ⛒🜔
+  — – ⁃ » ━▶ ━➤🡺 —> > > ❯↦ … 🡪ᗕ ᗒ ᐳ ─🡢 ──ᗒ 🡢 ─ᐅ ↣ ➙ →《》◆◈◉●▐‖  ▹▻▷◁◅◃▶➤➜➔❰❰❱❱ ⠤
  ⣇⠈⠉⠋⠛⠟⠿⡿⣿       https://www.fileformat.info/info/unicode/block/braille_patterns/utf8test.htm
 '''
 NBSP              = '⠈' #'&nbsp;'
@@ -248,21 +243,32 @@ NBSP5             = '⠟' #'&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'
 NBSP6             = '⠿' #'&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'
 CRLF              = '⣇' #'<br>'
 CHECK_MARK        = '✓ '
-CIRCLE_X          = '✪ '
-CIRCLE_X2         = '✪'
+CIRCLE_STAR       = '✪ '
+CIRCLE_STAR2      = '✪'
+CIRCLE_BIG_X      = '⊗'
+CIRCLE_SLASH      = '⊘'
+CIRCLE_X          = 'ⓧ'
 DOT               = '• '
 DOT2              = '•'
 HDOT              = '◦ '
 HDOT2             = '◦'
 LT                = '&lt;'
 GT                = '&gt;'
+LTE               = '≤'
+GTE               = '≥'
 CRLF_DOT          = f'{CRLF}{NBSP3}•{NBSP2}'
+CRLF_X            = f'{CRLF}{NBSP3}×{NBSP2}'
 CRLF_HDOT         = f'{CRLF}{NBSP6}◦{NBSP2}'
 CRLF_CHK          = f'{CRLF}{NBSP3}✓{NBSP}'
-CRLF_X            = f'{CRLF}{NBSP2}✪{NBSP}'
-CRLF_NBSP6_DOT    = f'{CRLF}{NBSP3}◦{NBSP}'
-CRLF_NBSP6_X      = f'{CRLF}{NBSP3}✪{NBSP}'
+CTRL_STAR         = f'{CRLF}{NBSP2}✪{NBSP}'
+CRLF_STAR         = f'{CRLF}{NBSP2}✪{NBSP}'
+CRLF_CIRCLE_X     = f'{CRLF}{NBSP2}ⓧ{NBSP}'
+CRLF_SP3_DOT      = f'{CRLF}{NBSP3}•{NBSP}'
+CRLF_SP5_DOT      = f'{CRLF}{NBSP5}•{NBSP}'
+CRLF_SP3_HDOT     = f'{CRLF}{NBSP3}◦{NBSP}'
+CRLF_SP3_STAR     = f'{CRLF}{NBSP3}✪{NBSP}'
 
+NEARBY_DEVICE_USEABLE_SYM = '✓'
 BLANK_SENSOR_FIELD = '———'
 RARROW            = ' → '       #U+27F6 (Long Arrow Right)  ⟹ ⟾
 RARROW2           = '→'         #U+27F6 (Long Arrow Right)  ⟹ ⟾
@@ -282,7 +288,7 @@ FMF_FNAME         = 'FmF'
 FAMSHR_FNAME      = 'FamShr'
 FAMSHR_FMF        = 'famshr_fmf'
 FAMSHR_FMF_FNAME  = 'FamShr-FmF'
-TRACKING_METHOD_FNAME = {FMF: FMF_FNAME, FAMSHR: FAMSHR_FNAME, FAMSHR_FMF: FAMSHR_FMF_FNAME,
+DATA_SOURCE_FNAME = {FMF: FMF_FNAME, FAMSHR: FAMSHR_FNAME, FAMSHR_FMF: FAMSHR_FMF_FNAME,
                         IOSAPP: IOSAPP_FNAME, ICLOUD: ICLOUD_FNAME}
 
 # Device tracking modes
@@ -301,8 +307,10 @@ NON_ZONE_ITEM_LIST = {
         'Not_Home': 'Away',
         'not_set': 'NotSet',
         'Not_Set': 'NotSet',
-        'stationary': 'Stationary',
-        'Stationary': 'Stationary',
+        # 'stationary': 'Stationary',
+        # 'Stationary': 'Stationary',
+        STATIONARY: STATIONARY_FNAME,
+        STATIONARY_FNAME: STATIONARY_FNAME,
         'unknown': 'Unknown'}
 
 #config_ic3.yaml parameter validation items
@@ -382,8 +390,10 @@ STATE_TO_ZONE_BASE = {
         "away": 'not_home',
         'NotHome': 'not_home',
         "nothome": 'not_home',
-        'Stationary': 'stationary',
-        'stationary': 'stationary',
+        # 'Stationary': 'stationary',
+        # 'stationary': 'stationary',
+        STATIONARY: STATIONARY_FNAME,
+        STATIONARY_FNAME: STATIONARY_FNAME,
         }
 
 #Lists to hold the group names, group objects and iCloud device configuration
@@ -416,11 +426,13 @@ ICLOUD_BATTERY_LEVEL       = 'batteryLevel'
 ICLOUD_DEVICE_CLASS        = 'deviceClass'
 ICLOUD_DEVICE_STATUS       = 'deviceStatus'
 ICLOUD_LOW_POWER_MODE      = 'lowPowerMode'
+ICLOUD_LOST_MODE_CAPABLE   = 'lostModeCapable'
 ID                         = 'id'
+LAST_CHANGED_SECS          = 'last_changed_secs'
+LAST_CHANGED_TIME          = 'last_changed_time'
+STATE                      = 'state'
 
 # device tracker attributes
-DEVICE_TRACKER_STATE_VALUE = 'device_tracker_state_value'
-DEVICE_TRACKER_STATE_ZONE  = 'device_tracker_state_zone'
 LOCATION                   = 'location'
 ATTRIBUTES                 = 'attributes'
 RADIUS                     = 'radius'
@@ -440,12 +452,13 @@ TIMESTAMP                  = 'timestamp'
 TIMESTAMP_SECS             = 'timestamp_secs'
 TIMESTAMP_TIME             = 'timestamp_time'
 LOCATION_TIME              = 'location_time'
-TRACKING_METHOD            = 'tracking_method'
+TRACKING_METHOD            = 'data_source'
 DATA_SOURCE                = 'data_source'
 DATETIME                   = 'date_time'
 AGE                        = 'age'
 BATTERY_SOURCE             = 'battery_data_source'
 BATTERY_LEVEL              = 'battery_level'
+BATTERY_UPDATE_TIME        = 'battery_level_updated'
 WAZE_METHOD                = 'waze_method'
 MAX_DISTANCE               = 'max_distance'
 
@@ -505,7 +518,6 @@ CONF_EVLOG_CARD_PROGRAM         = 'event_log_card_program'
 CONF_USERNAME                   = 'username'
 CONF_PASSWORD                   = 'password'
 CONF_DEVICES                    = 'devices'
-CONF_TRACKING_METHOD            = 'tracking_method'
 CONF_DATA_SOURCE                = 'data_source'
 CONF_VERIFICATION_CODE          = 'verification_code'
 CONF_ICLOUD_SERVER_ENDPOINT_SUFFIX = 'icloud_server_endpoint_suffix'
@@ -537,10 +549,10 @@ CONF_TRAVEL_TIME_FACTOR         = 'travel_time_factor'
 CONF_TFZ_TRACKING_MAX_DISTANCE  = 'tfz_tracking_max_distance'
 CONF_PASSTHRU_ZONE_TIME         = 'passthru_zone_time'
 CONF_LOG_LEVEL                  = 'log_level'
+CONF_DISPLAY_GPS_LAT_LONG       = 'display_gps_lat_long'
 
 # inZone Parameters
 CONF_DISPLAY_ZONE_FORMAT        = 'display_zone_format'
-CONF_DEVICE_TRACKER_STATE_FORMAT= 'device_tracker_state_format'
 CONF_CENTER_IN_ZONE             = 'center_in_zone'
 CONF_DISCARD_POOR_GPS_INZONE    = 'discard_poor_gps_inzone'
 CONF_DISTANCE_BETWEEN_DEVICES   = 'distance_between_devices'
@@ -648,14 +660,17 @@ CALC_DISTANCE                 = "calc_distance"
 
 CONF_EXCLUDED_SENSORS         = "excluded_sensors"
 
+
 DISTANCE           = 'distance'
 CONF_SENSORS_ZONE  = 'zone'
 ZONE_INFO          = 'zone_info'
 ZONE               = "zone"
+ZONE_DISPLAY_AS    = "zone_display_as"
 ZONE_FNAME         = "zone_fname"
 ZONE_NAME          = "zone_name"
 ZONE_DATETIME      = "zone_changed"
 LAST_ZONE          = "last_zone"
+LAST_ZONE_DISPLAY_AS= "last_zone_display_as"
 LAST_ZONE_FNAME    = "last_zone_fname"
 LAST_ZONE_NAME     = "last_zone_name"
 LAST_ZONE_DATETIME = "last_zone_changed"
@@ -688,7 +703,7 @@ DEFAULT_TRACKING_CONF = {
         CONF_ENCODE_PASSWORD: True,
         CONF_ICLOUD_SERVER_ENDPOINT_SUFFIX: '',
         CONF_SETUP_ICLOUD_SESSION_EARLY: True,
-        CONF_DATA_SOURCE: 'icloud,iosapp',
+        CONF_DATA_SOURCE: 'famshr,iosapp',
         CONF_DEVICES: [],
 }
 
@@ -711,7 +726,6 @@ DEFAULT_DEVICE_CONF = {
         CONF_IOSAPP_DEVICE: 'None',
         CONF_TRACK_FROM_BASE_ZONE: HOME,
         CONF_TRACK_FROM_ZONES: [HOME],
-        CONF_STAT_ZONE_FNAME: ' '
 }
 
 RANGE_DEVICE_CONF = {
@@ -729,13 +743,12 @@ DEFAULT_DEVICE_REINITIALIZE_CONF.pop(CONF_DEVICE_TYPE, None)
 DEFAULT_DEVICE_REINITIALIZE_CONF.pop(CONF_UNIQUE_ID, None)
 
 DEFAULT_GENERAL_CONF = {
-        CONF_LOG_LEVEL: 'info',
+        CONF_LOG_LEVEL: 'debug-auto-reset',
 
         # General Configuration Parameters
         CONF_UNIT_OF_MEASUREMENT: 'mi',
         CONF_TIME_FORMAT: '12-hour',
         CONF_DISPLAY_ZONE_FORMAT: 'fname',
-        CONF_DEVICE_TRACKER_STATE_FORMAT: 'fname',
         CONF_MAX_INTERVAL: 240,
         CONF_OFFLINE_INTERVAL: 20,
         CONF_EXIT_ZONE_INTERVAL: 3,
@@ -743,6 +756,7 @@ DEFAULT_GENERAL_CONF = {
         CONF_OLD_LOCATION_THRESHOLD: 3,
         CONF_OLD_LOCATION_ADJUSTMENT: 0,
         CONF_GPS_ACCURACY_THRESHOLD: 100,
+        CONF_DISPLAY_GPS_LAT_LONG: True,
         CONF_TRAVEL_TIME_FACTOR: .6,
         CONF_TFZ_TRACKING_MAX_DISTANCE: 8,
         CONF_PASSTHRU_ZONE_TIME: .5,
@@ -773,7 +787,7 @@ DEFAULT_GENERAL_CONF = {
         CONF_WAZE_HISTORY_TRACK_DIRECTION: 'north_south',
 
         # Stationary Zone Configuration Parameters
-        CONF_STAT_ZONE_FNAME: '[name]Zone',
+        CONF_STAT_ZONE_FNAME: 'StatZon#',
         CONF_STAT_ZONE_STILL_TIME: 8,
         CONF_STAT_ZONE_INZONE_INTERVAL: 30,
         CONF_STAT_ZONE_BASE_LATITUDE: 1,

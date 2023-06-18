@@ -23,7 +23,7 @@ from ..const            import (
                                 CONFIG_IC3, CONF_VERSION_INSTALL_DATE,
                                 CONF_CONFIG_IC3_FILE_NAME,
                                 CONF_VERSION, CONF_EVLOG_CARD_DIRECTORY, CONF_EVLOG_CARD_PROGRAM,
-                                CONF_USERNAME, CONF_PASSWORD, CONF_DEVICES, CONF_TRACKING_METHOD,
+                                CONF_USERNAME, CONF_PASSWORD, CONF_DEVICES,
                                 CONF_DEVICENAME, CONF_TRACK_FROM_ZONES, CONF_TRACKING_MODE,
                                 CONF_IOSAPP_SUFFIX, CONF_IOSAPP_ENTITY, CONF_NO_IOSAPP, CONF_IOSAPP_INSTALLED,
                                 CONF_PICTURE, CONF_EMAIL, CONF_DEVICE_TYPE, CONF_INZONE_INTERVALS,
@@ -56,6 +56,7 @@ CONF_IOSAPP_ENTITY    = 'iosapp_entity'
 CONF_EMAIL            = 'email'
 CONF_CONFIG           = 'config'
 CONF_SOURCE           = 'source'
+CONF_TRACKING_METHOD  = 'tracking_method'
 
 VALID_CONF_DEVICES_ITEMS = [CONF_DEVICENAME, CONF_EMAIL, CONF_PICTURE, CONF_NAME,
                             CONF_INZONE_INTERVAL, 'track_from_zone', CONF_IOSAPP_SUFFIX,
@@ -110,9 +111,10 @@ CONF_SENSORS_ZONE_LIST              = ['zone', 'zone_fname', 'zone_name', 'zone_
 CONF_SENSORS_OTHER_LIST             = ['gps_accuracy', 'vertical_accuracy', 'altitude']
 
 from ..helpers.common       import (instr, )
-from ..helpers.messaging    import (_traceha, log_info_msg, log_warning_msg, log_exception, )
+from ..helpers.messaging    import (_traceha, log_info_msg, log_warning_msg, log_exception,
+                                    open_ic3_log_file, write_ic3_log_recd, )
 from ..helpers.time_util    import (time_str_to_secs, datetime_now, )
-from ..support              import waze
+from ..support              import start_ic3
 from .                      import config_file
 
 import os
@@ -170,6 +172,8 @@ class iCloud3_v2v3ConfigMigration(object):
     #
     #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     def convert_v2_config_files_to_v3(self):
+        DEBUG_LOG_LINE_TABS = "\t\t\t\t\t\t\t\t\t\t"
+
         self.write_migration_log_msg(f"\nMigration Started, {datetime_now()}\n")
         log_warning_msg('iCloud3 - Migrating Configuration Parameters')
         self._extract_config_parameters(Gb.ha_config_yaml_icloud3_platform)
@@ -180,7 +184,6 @@ class iCloud3_v2v3ConfigMigration(object):
 
         Gb.conf_profile[CONF_VERSION_INSTALL_DATE] = datetime_now()
 
-
         try:
             self.write_migration_log_msg("\nMigration Complete, Writing Configuration File")
             self.write_migration_config_items('Profile', Gb.conf_profile)
@@ -188,25 +191,25 @@ class iCloud3_v2v3ConfigMigration(object):
             self.write_migration_config_items('General', Gb.conf_general)
             self.write_migration_config_items('Sensors', Gb.conf_sensors)
 
-
-            # self.write_migration_log_msg("\nMigration Complete, Writing Configuration File")
-            # self.write_migration_log_msg(f"  -- Profile: {Gb.conf_profile}")
-            # temp_tracking_recds = Gb.conf_tracking.copy()
-            # temp_tracking_recds[CONF_PASSWORD] = '********'
-            # self.write_migration_log_msg(f"  -- Tracking: {temp_tracking_recds}")
-            # self.write_migration_log_msg(f"  -- General: {Gb.conf_general}")
-            # self.write_migration_log_msg(f"  -- Sensors: {Gb.conf_sensors}")
-
         except Exception as err:
             self.log_exception(err)
 
         log_warning_msg('iCloud3 - Migration Complete')
 
-        # event_msg = (   f"iCloud3 parameters were converted from v2 to v3. Log file "
-        #                 f"{self.log_filename_name} was created")
-
         config_file.write_storage_icloud3_configuration_file()
         self.migration_log_file.close()
+
+        write_ic3_log_recd(f"Profile:\n{DEBUG_LOG_LINE_TABS}{Gb.conf_profile}")
+        write_ic3_log_recd(f"General Configuration:\n{DEBUG_LOG_LINE_TABS}{Gb.conf_general}")
+        write_ic3_log_recd(f"{DEBUG_LOG_LINE_TABS}{Gb.ha_location_info}")
+        write_ic3_log_recd("")
+
+        for conf_device in Gb.conf_devices:
+            write_ic3_log_recd(   f"{Gb.conf_device[CONF_FNAME]}, {Gb.conf_device[CONF_IC3_DEVICENAME]}:\n"
+                                        f"{DEBUG_LOG_LINE_TABS}{Gb.conf_device}")
+        write_ic3_log_recd("")
+        write_ic3_log_recd("iCloud3 - Migration Complete")
+
 
     #-------------------------------------------------------------------------
     def _extract_config_parameters(self, config_yaml_recds):
@@ -236,9 +239,6 @@ class iCloud3_v2v3ConfigMigration(object):
             config_yaml_recds[CONF_DISPLAY_TEXT_AS] = display_text_as
 
         self.write_migration_log_msg(f"\nExtracting parameters")
-        # temp_config_yaml_recds = config_yaml_recds.copy()
-        # temp_config_yaml_recds[CONF_PASSWORD] = '********'
-        #self.write_migration_log_msg(f"-- {temp_config_yaml_recds}")
 
         for pname, pvalue in config_yaml_recds.items():
             if pname == CONF_PASSWORD:
@@ -287,8 +287,6 @@ class iCloud3_v2v3ConfigMigration(object):
 
             Gb.config_ic3_yaml_filename = config_ic3_filename
             config_yaml_recds = yaml_loader.load_yaml(config_ic3_filename)
-
-            # self.write_migration_log_msg(f"-- {config_yaml_recds}")
 
         except Exception as err:
             self.log_exception(err)
@@ -368,7 +366,7 @@ class iCloud3_v2v3ConfigMigration(object):
                     elif pname == CONF_PICTURE:
                         if instr(pvalue, 'www') is False:
                             pvalue = f"www/{pvalue}"
-                        # pvalue = pvalue.replace('local', '').replace('www', '').replace('/', '')
+
                         conf_device[CONF_PICTURE] = pvalue
 
                     elif pname == CONF_INZONE_INTERVAL:
@@ -551,7 +549,7 @@ class iCloud3_v2v3ConfigMigration(object):
         Gb.conf_tracking[CONF_DEVICES]                   = self.config_ic3_track_devices_fields
 
         # Convert General parameters
-        Gb.conf_general[CONF_LOG_LEVEL]                  = self.config_parm_general[CONF_LOG_LEVEL]
+        #Gb.conf_general[CONF_LOG_LEVEL]                  = self.config_parm_general[CONF_LOG_LEVEL]
         Gb.conf_general[CONF_UNIT_OF_MEASUREMENT]        = self.config_parm_general[CONF_UNIT_OF_MEASUREMENT].lower()
         #12/17/2022 (beta 1) - The time format was being converted to 12_hour_hour instead of 12_hour
         Gb.conf_general[CONF_TIME_FORMAT]                = (f"{self.config_parm_general[CONF_TIME_FORMAT]}-hour").replace('-hour-hour', '-hour')
@@ -574,20 +572,6 @@ class iCloud3_v2v3ConfigMigration(object):
         Gb.conf_general[CONF_WAZE_MIN_DISTANCE]          = self.config_parm_general[CONF_WAZE_MIN_DISTANCE]
         Gb.conf_general[CONF_WAZE_MAX_DISTANCE]          = self.config_parm_general[CONF_WAZE_MAX_DISTANCE]
         Gb.conf_general[CONF_WAZE_REALTIME]              = self.config_parm_general[CONF_WAZE_REALTIME]
-
-        # if Gb.conf_general[CONF_WAZE_USED]:
-        #     waze_region_code = waze.waze_region_by_country_code()
-            # if waze_region_code != Gb.conf_general[CONF_WAZE_REGION]:
-            #     log_msg =  (f""
-            #                 f"The current Waze Region ({Gb.conf_general[CONF_WAZE_REGION].upper()}) "
-            #                 f"does not match the region ({waze_region_code}) "
-            #                 f"for the HA Country Code ({Gb.location_info['country_code']}). "
-            #                 f"The Region in the iCloud3 configuration was changed\n")
-            #     self.write_migration_log_msg(log_msg)
-            #     log_warning_msg(log_msg)
-
-                # Gb.conf_general[CONF_WAZE_REGION] = waze_region_code.lower()
-                # Gb.conf_general[CONF_WAZE_USED]   = (waze_region_code != '??')
 
         # Convert Stationary Zone Parameters
         if instr(self.config_parm_general[CONF_STAT_ZONE_STILL_TIME], ':'):

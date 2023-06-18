@@ -141,11 +141,11 @@ class iCloud3_DeviceFmZone():
 
     @property
     def is_going_towards(self):
-        return self.dir_of_travel.startswith(TOWARDS)
+        return self.dir_of_travel == TOWARDS
 
     @property
     def isnot_going_towards(self):
-        return self.dir_of_travel.startswith(TOWARDS) is False
+        return self.dir_of_travel != TOWARDS
 
     @property
     def is_going_awayfrom(self):

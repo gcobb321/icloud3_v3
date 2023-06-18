@@ -55,7 +55,7 @@ class WazeRouteCalculator(object):
     #     'AU': 'row-SearchServer/mozi'
     # }
     # COORD_MATCH = re.compile(r'^([-+]?)([\d]{1,2})(((\.)(\d+)(,)))(\s*)(([-+]?)([\d]{1,3})((\.)(\d+))?)$')
-    
+
     ROUTING_SERVERS = {
         'US': 'RoutingManager/routingRequest',
         'IL': 'il-RoutingManager/routingRequest',
@@ -89,7 +89,7 @@ class WazeRouteCalculator(object):
     def get_route(self, from_lat, from_long, to_lat, to_long,):
         """Get route data from waze"""
 
-        routing_server = self.ROUTING_SERVERS[self.region]
+        url = self.WAZE_URL + self.ROUTING_SERVERS[self.region]
 
         url_options = {
             "from": f"x:{from_long} y:{from_lat}",
@@ -104,7 +104,7 @@ class WazeRouteCalculator(object):
         }
 
         try:
-            response = requests.get(self.WAZE_URL + routing_server, params=url_options, headers=self.HEADERS)
+            response = requests.get(url, params=url_options, headers=self.HEADERS)
             response.encoding = 'utf-8'
             response_json = self._check_response(response)
 
@@ -122,13 +122,12 @@ class WazeRouteCalculator(object):
     @staticmethod
     def _check_response(response):
         """Check waze server response."""
-        if response.ok:
-            try:
+        try:
+            if response.ok:
                 return response.json()
 
-            except Exception as err:
-                log_exception(err)
-
+        except Exception as err:
+            log_exception(err)
             return None
 
     def _add_up_route(self, results, stop_at_bounds=False):

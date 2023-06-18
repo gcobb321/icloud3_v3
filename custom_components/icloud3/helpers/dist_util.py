@@ -16,24 +16,24 @@ def km_to_mi(distance):
     """
     convert km to miles
     """
-    try:
-        return distance * Gb.um_km_mi_factor
+    #try:
+    return distance * Gb.um_km_mi_factor
 
-        mi = distance * Gb.um_km_mi_factor
+    #     mi = distance * Gb.um_km_mi_factor
 
-        if mi == 0:
-            mi = 0
-        elif mi < 1:
-            mi = float(f"{mi:.2f}")
-        elif mi < 20:
-            mi = float(f"{mi:.1f}")
-        else:
-            mi = round(mi)
+    #     if mi == 0:
+    #         mi = 0
+    #     elif mi < 1:
+    #         mi = float(f"{mi:.2f}")
+    #     elif mi < 20:
+    #         mi = float(f"{mi:.1f}")
+    #     else:
+    #         mi = round(mi)
 
-    except:
-        mi = 0
+    # except:
+    #     mi = 0
 
-    return mi
+    # return mi
 
 def mi_to_km(distance):
     return round(float(distance) / Gb.um_km_mi_factor, 2)

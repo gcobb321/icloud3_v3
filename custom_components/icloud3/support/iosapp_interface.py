@@ -57,13 +57,15 @@ def get_entity_registry_mobile_app_devices():
                                     if x['unique_id'].endswith('_battery_state')]
 
             for dev_trkr_entity in dev_trkr_entities:
+                if 'device_id' not in dev_trkr_entity: continue
+
                 iosapp_devicename = dev_trkr_entity['entity_id'].replace('device_tracker.', '')
+                raw_model = 'Unknown'
 
                 log_title = (f"iosapp entity_registry entry -- {iosapp_devicename})")
                 log_rawdata(log_title, dev_trkr_entity, log_rawdata_flag=True)
 
                 device_id = dev_trkr_entity['device_id']
-                raw_model = 'Unknown'
                 try:
                     # Get raw_model from HA device_registry
                     device_reg_data = device_registry.async_get(device_id)
@@ -86,16 +88,16 @@ def get_entity_registry_mobile_app_devices():
                 device_model_info_by_iosapp_devicename[iosapp_devicename] = [raw_model,'','']    # iPhone15,2;iPhone;iPhone 14 Pro
 
             for sensor in last_updt_trigger_sensors:
-                iosapp_devicename = iosapp_devicename_by_iosapp_id[sensor['device_id']]
-                last_updt_trig_by_iosapp_devicename[iosapp_devicename] = sensor['entity_id'].replace('sensor.', '')
+                if iosapp_devicename := iosapp_devicename_by_iosapp_id.get(sensor['device_id']):
+                    last_updt_trig_by_iosapp_devicename[iosapp_devicename] = sensor['entity_id'].replace('sensor.', '')
 
             for sensor in battery_level_sensors:
-                iosapp_devicename = iosapp_devicename_by_iosapp_id[sensor['device_id']]
-                battery_level_sensors_by_iosapp_devicename[iosapp_devicename] = sensor['entity_id'].replace('sensor.', '')
+                if iosapp_devicename := iosapp_devicename_by_iosapp_id.get(sensor['device_id']):
+                    battery_level_sensors_by_iosapp_devicename[iosapp_devicename] = sensor['entity_id'].replace('sensor.', '')
 
             for sensor in battery_state_sensors:
-                iosapp_devicename = iosapp_devicename_by_iosapp_id[sensor['device_id']]
-                battery_state_sensors_by_iosapp_devicename[iosapp_devicename] = sensor['entity_id'].replace('sensor.', '')
+                if iosapp_devicename := iosapp_devicename_by_iosapp_id.get(sensor['device_id']):
+                    battery_state_sensors_by_iosapp_devicename[iosapp_devicename] = sensor['entity_id'].replace('sensor.', '')
 
         #notify_iosapp_devicenames = get_mobile_app_notifications()
 
@@ -194,7 +196,7 @@ def request_location(Device, is_alive_check=False, force_request=False):
     and, if true, set interval based on the retry count.
     '''
 
-    if (Gb.data_source_use_iosapp is False
+    if (Gb.used_data_source_IOSAPP is False
             or Device.iosapp_monitor_flag is False
             or Device.is_offline):
         return
@@ -223,13 +225,13 @@ def request_location(Device, is_alive_check=False, force_request=False):
                 event_msg +=  f", LastRequest-{secs_to_time(Device.iosapp_request_loc_last_secs)}"
         else:
             event_msg =(f"iOSApp Location Requested > "
-                        f"iOSAppLocation-{secs_to_time_age_str(Device.iosapp_data_secs)}")
+                        f"LastLocated-{secs_to_time_age_str(Device.iosapp_data_secs)}")
         post_event(devicename, event_msg)
 
-        Device.iosapp_request_loc_cnt += 1
         if Device.iosapp_request_loc_first_secs == 0:
             Device.iosapp_request_loc_first_secs = Gb.this_update_secs
         Device.iosapp_request_loc_last_secs = Gb.this_update_secs
+        Device.iosapp_request_loc_sent_secs = Gb.this_update_secs
         message = {"message": "request_location_update"}
         return_code = send_message_to_device(Device, message)
 
