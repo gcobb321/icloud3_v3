@@ -1,11 +1,10 @@
-```
-# [iCloud3 v3 iDevice Tracker](https://github.com/gcobb321/icloud3_v3)
+## [iCloud3 v3 iDevice Tracker](https://github.com/gcobb321/icloud3_v3)
 
-iCloud3 is a custom component that allows you to track your iDevices (iPhone, iPad, Watch, etc) using location data from your Apple iCloud account and the HA Companion app.
+iCloud3 is an advanced iDevice tracker that reports location and other information from your Apple iCloud account and the HA Companion App that can be used for presence detection and zone automation activities.
 
-### Highlights of what **iCloud3** can do
+Some of the features of iCloud3:
 
-- **Track devices from several sources** - Family members on the iCloud Account Family Sharing list, those who are sharing their location on FindMy App and devices that have installed the HA Companion App (iOS App) can be tracked.
+- **Track devices from several sources** - Family members in your iCloud Account Family Sharing list and devices that have installed the HA Companion App (iOS App) are tracked.
 - **Actively track a device** - The device will request it's location on a regular interval.
 - **Passively monitor a device** - The device does not request it's location but is tracked when another tracked device requests theirs.
 - **Waze Route Service** - The travel time and route distance to a tracked zone (Home) is provided by Waze.
@@ -16,7 +15,7 @@ iCloud3 is a custom component that allows you to track your iDevices (iPhone, iP
 
 ## Useful Links
 
-* [README](https://github.com/gcobb321/icloud3_v3/blob/master/README.md)
-* [Documentation](https://gcobb321.github.io/icloud3_v3/#/)
-* [Repository](https://github.com/gcobb321/icloud3_v3)
-```
+* [Brief Overview](https://github.com/gcobb321/icloud3_v3/blob/master/README.md)
+* [Extensive Documentation](https://gcobb321.github.io/icloud3_v3/#/)
+* [GitHub Repository](https://github.com/gcobb321/icloud3_v3)
+
