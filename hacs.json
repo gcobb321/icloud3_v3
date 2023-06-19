@@ -1,5 +1,6 @@
 {
   "name": "iCloud3 v3, iDevice Tracker",
+  "home_assistant": 2023.6.0,
   "zip_release": true,
   "render_readme": true,
   "filename": "icloud3_v3.zip"
