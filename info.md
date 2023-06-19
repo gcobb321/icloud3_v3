@@ -13,7 +13,21 @@ Some of the features of iCloud3:
 - **Nearby Devices** - The location of all devices is monitored and the distance between devices is determined. Information from devices close to each other is shared.
 - **Event Log** - The current status and event history of every tracked and monitored device is displayed on the iCloud3 Event Log custom Lovelace card. It shows information about devices that can be tracked, errors and alerts, nearby devices, tracking results, debug information and location request results.
 
-## Useful Links
+### Installing iCloud3
+
+iCloud3 is still in beta and has not been added to the HACS base integration list. It needs to be added to HACS as a custom repository and then downloaded.
+
+1. Open HACS.
+
+2. Select **Integrations**, then select the 3-dots (**︙**) in the upper-right corner, then select **Custom Repositories**.
+
+3. Type **gcobb321/icloud3_v3** in the Repository field, then select **Integration** in the Category dropdown list, then select **Add**.
+
+4. Select **Integrations** again then select the 3-dots (**︙**) in the upper-right corner, then select **Custom Repositories** again.
+
+5. Select *iCloud3 v3 iDevice Tracker*, then select **Download**.
+
+### Useful Links
 
 * [Brief Overview](https://github.com/gcobb321/icloud3_v3/blob/master/README.md)
 * [Extensive Documentation](https://gcobb321.github.io/icloud3_v3/#/)
