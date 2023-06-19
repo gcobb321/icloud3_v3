@@ -1,0 +1,13 @@
+{
+  "domain": "icloud3",
+  "name": "iCloud3 v3",
+  "after_dependencies": [],
+  "codeowners": ["@gcobb321"],
+  "config_flow": true,
+  "dependencies": ["recorder"],
+  "documentation": "https://gcobb321.github.io/icloud3_v3/#/",
+  "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/gcobb321/icloud3_v3/issues",
+  "requirements": [],
+  "version": "3.0.0"
+}
