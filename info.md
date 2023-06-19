@@ -23,7 +23,7 @@ iCloud3 is still in beta and has not been added to the HACS base integration lis
 
 3. Type **gcobb321/icloud3_v3** in the Repository field, then select **Integration** in the Category dropdown list, then select **Add**.
 
-4. Select **Integrations** again then select the 3-dots (**︙**) in the upper-right corner, then select **Custom Repositories** again.
+4. Select **Integrations** again, then select **+ Explore & Download Repositories**.
 
 5. Select *iCloud3 v3 iDevice Tracker*, then select **Download**.
 
