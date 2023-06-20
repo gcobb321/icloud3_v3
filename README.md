@@ -45,21 +45,37 @@ The screens below are an example of how the many tracking sensors can be display
 ### iCloud3 Documentation
 
 - Introduces the many features and components of iCloud3
+
 - Describes how to migration from v2.4.7 to v3.0
+
 - Provides step-by-step to install and configure iCloud3, it's components and it's supporting components (iCloud Account and the iOS App)
+
 - Highlights the configuration screens and parameters
+
 - Provides example screens, automations and scripts
+
+- Go [here](https://gcobb321.github.io/icloud3_v3/#/) to review the documentation.
+
+  
 
 ### Installation
 
-#### HACS
+#### Using HACS
 
-1. In Home Assistant Sidebar, go to **HACS > Integrations**, then select  **+ Explore & Download Repositories**. 
-2. Search for **iCloud3 v3**, then select **+Download** to download iCloud3.
-3. Restart HA.
-4. In Home Assistant Sidebar, go to **Settings > Devices & Services > Integrations**.
-5. Select  **+ Add integration**, then search for **iCloud3 v3**, select it and then select **Submit** to install iCloud3.
-6. Select the **Settings Gear**, then select **Configure**
+1. Open HACS.
+2. Select **Integrations**, then select the 3-dots (**︙**) in the upper-right corner, then select **Custom Repositories**.
+
+3. Type **gcobb321/icloud3_v3** in the Repository field, then select **Integration** in the Category dropdown list, then select **Add**.
+
+   The repository will be added to HACS and will be displayed when you open HACS
+
+4. Select **Integrations** and type **icloud3** in the search bar.
+
+   The i*Cloud3 New Repository* window is displayed, along with iCloud3 v2. Select iCloud3 v3 and follow the normal HACS procedures to complete the installation.
+
+5. Select the **iCloud3 Device Tracker, Version 3** item (or **iCloud3 v3 iDevice Tracker**), then select **+Download** to download iCloud3.
+
+6. **Restart Home Assistant**
 
 
 
@@ -67,7 +83,9 @@ The screens below are an example of how the many tracking sensors can be display
 
 [![Open your Home Assistant instance and start setting up a new integration.](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=icloud3)
 
-#### Manual
+
+
+#### Manual Installation
 
 1. Using the tool of choice open the folder for your Home Assistant configuration (where you find `configuration.yaml`).
 2. If you do not have a `custom_components` folder there, you need to create it.
@@ -76,6 +94,16 @@ The screens below are an example of how the many tracking sensors can be display
 5. Place the files you downloaded into the `custom_components/icloud3/` folder you just created.
 6. Restart Home Assistant.
 7. In Home Assistant, go to **Settings > Devices & Services > Integrations**. Select  **+ Add integration**. Search for **iCloud3 v3**.
+
+
+
+### Useful Links
+
+* [Brief Overview](https://github.com/gcobb321/icloud3_v3/blob/master/README.md)
+* [Extensive Documentation](https://gcobb321.github.io/icloud3_v3/#/)
+* [GitHub Repository](https://github.com/gcobb321/icloud3_v3)
+
+
 
 
 -----
