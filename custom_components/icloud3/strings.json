@@ -1,9 +1,4 @@
-{ "translation": {
-    "language": "english",
-    "author": "Gary Cobb",
-    "location": "Florida, US"
-  },
-  "config": {
+{"config": {
     "abort": {
       "config_update_complete": "iCloud3 configuration updated successfully",
       "already_configured": "iCloud3 is already installed and can not be installed again. Select CONFIGURE in the iCloud3 Integration entry to configure iCloud3. If you are deleting and then reinstalling, restart HA first and then reinstall iCloud3",

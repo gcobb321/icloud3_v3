@@ -262,7 +262,7 @@ RESTART_NOW_LATER_ACTIONS = [
 #         }
 DATA_SOURCE_ICLOUD_ITEMS_KEY_TEXT = {
         'famshr':   'Family Sharing List members from the iCloud Account (FamShr)',
-        'fmf':      'Friends/Contacts who are sharing their location with you (FmF)'
+        # 'fmf':      'Friends/Contacts who are sharing their location with you (FmF)'
         }
 DATA_SOURCE_IOSAPP_ITEMS_KEY_TEXT = {
         'iosapp':   'HA iOS Companion App device_tracker and sensor entities are monitored (iosapp)'
@@ -492,7 +492,7 @@ class iCloud3_ConfigFlow(config_entries.ConfigFlow, FlowHandler, domain=DOMAIN):
 
             start_ic3.initialize_directory_filenames()
             config_file.load_storage_icloud3_configuration_file()
-            start_ic3.initialize_icloud_data_source()
+            start_ic3.set_icloud_username_password()
 
             # Convert the .storage/icloud3.configuration file if it is at a default
             # state or has never been updated via config_flow using 'HA Integrations > iCloud3'

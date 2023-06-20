@@ -1,6 +1,4 @@
 {
   "name": "iCloud3 v3 iDevice Tracker",
-  "zip_release": true,
-  "render_readme": true,
-  "filename": "icloud3.zip"
+  "homeassistant": "2023.6.0b0"
 }
