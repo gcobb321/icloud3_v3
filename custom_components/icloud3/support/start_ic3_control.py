@@ -395,8 +395,9 @@ def reinitialize_icloud_devices():
         event_msg =(f"{EVLOG_IC3_STARTING}Initializing iCloud3 > Restarting iCloud Location Services")
         post_event(event_msg)
 
+        if Gb.PyiCloud and Gb.PyiCloud.FamilySharing:
+            Gb.PyiCloud.FamilySharing.refresh_client()
 
-        Gb.PyiCloud.FamilySharing.refresh_client()
         if stage_4_setup_data_sources():
             stage_4_setup_data_sources()
 

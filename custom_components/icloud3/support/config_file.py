@@ -3,7 +3,7 @@ from ..global_variables     import GlobalVariables as Gb
 from ..const                import (
                                     APPLE_SPECIAL_ICLOUD_SERVER_COUNTRY_CODE,
                                     RARROW, HHMMSS_ZERO, DATETIME_ZERO, NONE_FNAME, INACTIVE_DEVICE,
-                                    ICLOUD, FAMSHR,
+                                    ICLOUD, FAMSHR, FMF,
                                     CONF_PARAMETER_TIME_STR,
                                     CONF_INZONE_INTERVALS, CONF_MAX_INTERVAL, CONF_EXIT_ZONE_INTERVAL,
                                     CONF_IOSAPP_ALIVE_INTERVAL,
@@ -122,6 +122,8 @@ def read_storage_icloud3_configuration_file(filename_suffix=''):
             Gb.log_level      = Gb.conf_general[CONF_LOG_LEVEL]
 
             Gb.conf_tracking[CONF_PASSWORD] = decode_password(Gb.conf_tracking[CONF_PASSWORD])
+            if instr(Gb.conf_tracking[CONF_DATA_SOURCE], FMF):
+                Gb.conf_tracking[CONF_DATA_SOURCE].pop(FMF)
 
             try:
                 config_file_add_new_parameters()

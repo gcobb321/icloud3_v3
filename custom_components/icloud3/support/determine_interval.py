@@ -162,12 +162,23 @@ def determine_interval(Device, DeviceFmZone):
 
     #--------------------------------------------------------------------------------
     #if more than 3km(1.8mi) then assume driving
-
+    last_went_3km = Device.went_3km
     if DeviceFmZone is Device.DeviceFmZoneLast:
+        if dist_from_zone_km > 3:
+            oldway_went_3km = True
+        elif dist_from_zone_km < .03:    # back in the zone, reset flag
+           oldway_went_3km = False
+
+    #--------------------------------------------------------------------------------
+    #if more than 3km(1.8mi) then assume driving
+    if DeviceFmZone is Device.DeviceFmZoneHome:     #Device.DeviceFmZoneLast:
         if dist_from_zone_km > 3:
             Device.went_3km = True
         elif dist_from_zone_km < .03:    # back in the zone, reset flag
             Device.went_3km = False
+
+    # if last_went_3km != Device.went_3km:
+    #         _trace(devicename, f"New went_3k {DeviceFmZone=} {Device.DeviceFmZoneHome=} {dist_from_zone_km=} {Device.went_3km=} {oldway_went_3km=}")
 
     #--------------------------------------------------------------------------------
     interval        = 15
@@ -505,7 +516,8 @@ def post_results_message_to_event_log(Device, DeviceFmZone):
     if Device.dev_data_battery_level > 0:
         event_msg +=    f"Battery-{Device.dev_data_battery_level}%, "
     if Gb.log_debug_flag and DeviceFmZone.interval_method and Device.is_tracked:
-        event_msg +=    f"Method-{DeviceFmZone.interval_method}, "
+        event_msg +=    (f"Method-{DeviceFmZone.interval_method}, "
+                        f"{'Went3km, ' if Device.went_3km else ''}")
     post_event(Device.devicename, event_msg[:-2])
 
     if Device.is_tracked:

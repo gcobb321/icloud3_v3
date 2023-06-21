@@ -1,3 +1,14 @@
+Beta 18.5 - 6/21/2023
+...................
+1.  Fixed a regression installing iCloud3 for the first time leading to a start_ic3.setup_username_password not found error.
+2. Changed the sub-beta version number from b18e to b18.5 to comply with version numbering used by HAXCS and HA.
+
+Beta 18.4 - 6/20/2023
+...................
+1.  Configuration Wizard - Removed the FmF data source option since it is no longer available. Hopefully, a solution will be found and the FmF will breathe again.
+2.  HACS - Fixed the HACS configuration. iCloud3 is displayed when an update is available once again.
+
+
 Beta 18 - 6/17/2023
 ...................
 1.  iOS App Only - Location requests will be sent to the device when the iOS App is the primary data source just like it is to the iCloud Web Service. This only sends a request to the iOS App. If the device is asleep or the iOS App is running in the background or not loaded, it will not respond and send the location. In this case, another location request will be sent when the next update time is reached.

@@ -492,7 +492,7 @@ class iCloud3_ConfigFlow(config_entries.ConfigFlow, FlowHandler, domain=DOMAIN):
 
             start_ic3.initialize_directory_filenames()
             config_file.load_storage_icloud3_configuration_file()
-            start_ic3.set_icloud_username_password()
+            start_ic3.initialize_icloud_data_source()
 
             # Convert the .storage/icloud3.configuration file if it is at a default
             # state or has never been updated via config_flow using 'HA Integrations > iCloud3'
