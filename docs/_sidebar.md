@@ -13,7 +13,7 @@
   <table style="padding:  0  10px  0 40px;">
     <tr>
       <td>
-        <a  class="sidebar-version-date">Version: 3.0.0, February, 2023</a>
+        <a  class="sidebar-version-date">Version: 3.0.0, June, 2023</a>
       </td>
     </tr>
   </table>
