@@ -1,10 +1,10 @@
-# iCloud3  Device Tracker Custom Component
+# iCloud3 v3 Device Tracker Custom Component
 
 [![CurrentVersion](https://img.shields.io/badge/Current_Version-v3.0.0-blue.svg)](https://github.com/gcobb321/icloud3_v3)
 [![ProjectStage](https://img.shields.io/badge/Project_Stage-Beta_18-red.svg)](https://github.com/gcobb321/icloud3_v3) [![Released](https://img.shields.io/badge/Released-June,_2023-blue.svg)](https://github.com/gcobb321/icloud3_v3)
 
 [![Type](https://img.shields.io/badge/Type-Custom_Component-orange.svg)](https://github.com/gcobb321/icloud3_v3)
-[![HACS](https://img.shields.io/badge/HACS-Default-orange.svg)](https://github.com/gcobb321/icloud3_v3)
+[![HACS](https://img.shields.io/badge/HACS-Custom_Repository-orange.svg)](https://github.com/gcobb321/icloud3_v3)
 
 
 
@@ -12,12 +12,12 @@
 
 iCloud3 is a device tracker custom component that tracks your iPhones, iPads, Apple Watches, AirPods and other Apple devices. It requests location data from Apple's iCloud  Location Services and monitors various triggers sent from the Home Assistant Companion App (iOS App) to Home Assistant. Sensors are updated with the device's location, distance from zones, travel time to zones, etc. 
 
-### iCloud3 Highlights
+### iCloud3 v3 Highlights
 
 Although Home Assistant has it's own official iCloud component, iCloud3 goes far beyond it's capabilities. The important highlights include:
 
 - **HA Integration** - iCloud3 is a Home Assistant custom integration that is set up and configured from the *HA Settings > Devices & Settings > Integrations* screen.
-- ***The Configurator*** - All of the parameters are updated on configuration screens selected from the *iCloud3 Integrations* entry.
+- ***The Configuration Wizard*** - All of the parameters are updated on configuration screens selected from the *iCloud3 Integrations* entry.
 - **Track devices from several sources** - Family members on the iCloud Account Family Sharing list, those who are sharing their location on FindMy App and devices that have installed the HA Companion App (iOS App) can be tracked.
 - **Actively track a device** - The device will request it's location on a regular interval.
 - **Passively monitor a device** - The device does not request it's location but is tracked when another tracked device requests theirs.
