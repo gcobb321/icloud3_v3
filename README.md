@@ -35,11 +35,11 @@ Although Home Assistant has it's own official iCloud component, iCloud3 goes far
 - **Nearby Devices** - The location of all devices is monitored and the distance between devices is determined. Information from devices close to each other is shared.
 - **And More** - Review the following documentation to see if it will help you track and monitor the locations of your family members and friends.
 
-### Information screens showing tracking information
+### Tracking Information Screen with Event Log
 
 The screens below are an example of how the many tracking sensors can be displayed. The screen on the left shows the current tracking formation for Gary while the Event Log on the right shows a history of important tracking events.
 
-![](../docs/images/tracking-gary-home-tfz-evlog.png)
+![](./docs/images/tracking-gary-home-tfz-evlog.png)
 
 
 
@@ -64,6 +64,7 @@ The screens below are an example of how the many tracking sensors can be display
 #### Using HACS
 
 1. Open HACS.
+
 2. Select **Integrations**, then select the 3-dots (**︙**) in the upper-right corner, then select **Custom Repositories**.
 
 3. Type **gcobb321/icloud3_v3** in the Repository field, then select **Integration** in the Category dropdown list, then select **Add**.
@@ -78,13 +79,7 @@ The screens below are an example of how the many tracking sensors can be display
 
 6. **Restart Home Assistant**
 
-
-
-[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/394419578)
-
-[![Open your Home Assistant instance and start setting up a new integration.](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=icloud3)
-
-
+   
 
 #### Manual Installation
 
@@ -98,7 +93,7 @@ The screens below are an example of how the many tracking sensors can be display
 
 
 
-### Useful Links
+### Useful Links   {docsify-ignore}
 
 * [Brief Overview](https://github.com/gcobb321/icloud3_v3/blob/master/README.md)
 * [Extensive Documentation](https://gcobb321.github.io/icloud3_v3/#/)

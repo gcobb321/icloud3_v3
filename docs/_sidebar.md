@@ -24,11 +24,10 @@
 - [Migrating from iCloud3 v2.4.x to v3.0](chapters/0.1-migrating-v2.4-to-v3.0.md)
 
   
-- [Introducing  iCloud3](README.md)
-  - [iCloud3 Components](chapters/1.1-ic3-components.md)
-  - [iCloud & iOS App Location Data](chapters/1.2-icloud-iosapp-loc-data.md)
-  - [Event Log During Startup](chapters/1.4-evlog-during-startup.md)
-
+- [Introducing  iCloud3](chapters/1.0-introduction.md)
+- [iCloud3 Components](chapters/1.1-ic3-components.md)
+- [iCloud & iOS App Location Data](chapters/1.2-icloud-iosapp-loc-data.md)
+- [Event Log During Startup](chapters/1.4-evlog-during-startup.md)
 - [Installing and Setting up the iCloud3 Integration](chapters/2.0-installing-and-configuring.md)
 - [Configuration Screens & Parameters](chapters/3.0-config-parms.md)
 - [Other iCloud3 Features](chapters/3.1-other-topics.md)
