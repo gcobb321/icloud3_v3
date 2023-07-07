@@ -1,11 +1,12 @@
 # iCloud3 v3 Device Tracker Custom Component
 
-[![CurrentVersion](https://img.shields.io/badge/Current_Version-v3.0.0-blue.svg)](https://github.com/gcobb321/icloud3_v3)
-[![ProjectStage](https://img.shields.io/badge/Project_Stage-Beta_18-red.svg)](https://github.com/gcobb321/icloud3_v3) [![Released](https://img.shields.io/badge/Released-June,_2023-blue.svg)](https://github.com/gcobb321/icloud3_v3)
+[![CurrentVersion](https://img.shields.io/badge/Current_Version-v3.0.0-blue.svg)](https://github.com/gcobb321/icloud3_v3)  [![Type](https://img.shields.io/badge/Type-Custom_Component-orange.svg)](https://github.com/gcobb321/icloud3_v3)  [![HACS](https://img.shields.io/badge/HACS-Custom_Repository-orange.svg)](https://github.com/gcobb321/icloud3_v3)
 
-[![Type](https://img.shields.io/badge/Type-Custom_Component-orange.svg)](https://github.com/gcobb321/icloud3_v3)
-[![HACS](https://img.shields.io/badge/HACS-Custom_Repository-orange.svg)](https://github.com/gcobb321/icloud3_v3)
+[![ProjectStage](https://img.shields.io/badge/Project_Stage-Release_Candidate_1-forestgreen.svg)](https://github/gcobb321/icloud3_v3)  [![Released](https://img.shields.io/badge/Released-July,_2023-forestgreen.svg)](https://github.com/gcobb321/icloud3_v3)
 
+
+
+<a href="https://www.buymeacoffee.com/gcobb321" target="_blank"><img src="../docs/images/buymeacoffee.png"/></a>
 
 
 
@@ -16,8 +17,8 @@ iCloud3 is a device tracker custom component that tracks your iPhones, iPads, Ap
 
 Although Home Assistant has it's own official iCloud component, iCloud3 goes far beyond it's capabilities. The important highlights include:
 
-- **HA Integration** - iCloud3 is a Home Assistant custom integration that is set up and configured from the *HA Settings > Devices & Settings > Integrations* screen.
-- ***The Configuration Wizard*** - All of the parameters are updated on configuration screens selected from the *iCloud3 Integrations* entry.
+- **HA Integration** - iCloud3 is a Home Assistant custom integration that is set up and configured from the *HA Settings > Devices & Services > Integrations* screen.
+- **Configuration Settings** - All of the parameters are updated on configuration screens selected from the *iCloud3 Integrations* entry.
 - **Track devices from several sources** - Family members on the iCloud Account Family Sharing list, those who are sharing their location on FindMy App and devices that have installed the HA Companion App (iOS App) can be tracked.
 - **Actively track a device** - The device will request it's location on a regular interval.
 - **Passively monitor a device** - The device does not request it's location but is tracked when another tracked device requests theirs.
@@ -38,7 +39,7 @@ Although Home Assistant has it's own official iCloud component, iCloud3 goes far
 
 The screens below are an example of how the many tracking sensors can be displayed. The screen on the left shows the current tracking formation for Gary while the Event Log on the right shows a history of important tracking events.
 
-![](docs/images/tracking-gary-home-tfz-evlog.png)
+![](../docs/images/tracking-gary-home-tfz-evlog.png)
 
 
 
