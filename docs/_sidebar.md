@@ -41,4 +41,4 @@
 
 
 
-<a href="https://www.buymeacoffee.com/gcobb321" target="_blank"><img src="../docs/images/buymeacoffee.png"/></a>
+<a href="https://www.buymeacoffee.com/gcobb321" target="_blank"><img src="images/buymeacoffee-sidebar.png"/></a>
