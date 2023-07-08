@@ -1,0 +1,15 @@
+I've looked at the logs and there are messages that icloud3 devices were removed from ha at the start of the log file. There is also a message that the iOS App entry for a device could not be found.
+    Registered device_tracker.icloud3 entity removed: device_tracker.myphone    Registered device_tracker.icloud3 entity removed: device_tracker.jonathanapplewatch    Registered device_tracker.icloud3 entity removed: device_tracker.jonathanipadpro    ... continues
+IOS APP DEVICE CONFIGURATION ERROR, IPAD PRO/JONATHANIPADPRO > THE IOS `DEVICE_TRACKER.JONATHANIPADPRO_???` SEARCH FAILED. NO MOBILE_APP ENTITY WAS FOUND. CHECK THE IOSAPP DEVICE ENTITY ASSIGNED TO THE ICLOUD3 DEVICE IN THE ICLOUD3 CONFIGURATION.
+The startup process continues, gets your ic3 configuration, gets the devices from your icloud account, assigns them correctly but fails to update any information in HA, generating an error
+RuntimeError: Attribute hass is None for <DeviceTracker: myphone/iphone>
+
+It appears that there are some device conflicts in the HA Device Registry and the Entity Registry. Looking on the Devices & Services > Devices screen, you will probably find some errors. The you might also find some on the Devices & Seervices > Entities screen.
+
+To clean everything up, try the following:
+1. Delete the iCloud3 Integration from HA:
+Go to the Devices & Services > Integrations > iCloud3 Settings Icon (Gear) Select 3-dots in the upper-right Select Delete and confirm the deletion. That will delete the iCloud3 Integration and the iCloud3 devices and entities. Restart Home Assistant.Restart Home Assistant again (yes do it again).
+2. Delete orphaned entities associated with iCloud3 and other integrations from the HA registries:
+Go to the  Devices & Services > Entities screen.  Scroll through the entities list. Any Orphaned entities associated with iCloud3 or any other integration that are not assigned are designated with a red-exclamation point under the Status column. They need to be deleted.Check the box on the heading line left of 'Name' heading. This will select every device and entity in HA. Select 'Remove Selected' at the top-right. Even though you have check everything, only the ones with the red-exclamation point may be deleted. Everything still associated with an Integration will not be deleted.Restart Home Assistant
+3. Readd iCloud3 Integration:
+Go to Devices & Services > IntegrationsSelect Add IntegrationsAdd iCloud3. It will be added back to Home Assistant. Select the Areas for each of the devices (Personal Device), it will be added and restarted with your previous configuration settings.
