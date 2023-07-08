@@ -6,11 +6,6 @@
 
 
 
-<a href="https://www.buymeacoffee.com/gcobb321" target="_blank"><img src="docs/images/buymeacoffee.png"/></a>
-
-
-
-
 iCloud3 is a device tracker custom component that tracks your iPhones, iPads, Apple Watches, AirPods and other Apple devices. It requests location data from Apple's iCloud  Location Services and monitors various triggers sent from the Home Assistant Companion App (iOS App) to Home Assistant. Sensors are updated with the device's location, distance from zones, travel time to zones, etc. 
 
 ### iCloud3 v3 Highlights

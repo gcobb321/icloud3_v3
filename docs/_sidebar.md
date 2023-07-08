@@ -9,16 +9,11 @@
       </td>
     </tr>
   </table>
-  <!--
-  <table style="padding:  0  10px  0 40px;">
-    <tr>
-      <td>
-        <a  class="sidebar-version-date">Version: 3.0.0, June, 2023</a>
-      </td>
-    </tr>
-  </table>
-  -->
+
 </nav>
+
+<a href="https://www.buymeacoffee.com/gcobb321" target="_blank"><img src="images/buymeacoffee-sidebar.png"/></a>
+
 
 - [Changes and new Features - v3.0](chapters/0.0-change-log-v3.0.md)
 - [Migrating from iCloud3 v2.4.x to v3.0](chapters/0.1-migrating-v2.4-to-v3.0.md)
@@ -39,5 +34,3 @@
 - [ToDo-Technical Information](chapters/6.0-tech-info.md)
 
 
-
-<a href="https://www.buymeacoffee.com/gcobb321" target="_blank"><img src="images/buymeacoffee-sidebar.png"/></a>
