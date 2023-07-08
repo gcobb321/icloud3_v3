@@ -1544,6 +1544,7 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
         '''
         The display_zone_format may contain '(Example: ...). If so, strip it off.
         '''
+        user_input[CONF_HA_CONFIG_IC3_URL] = user_input[CONF_HA_CONFIG_IC3_URL].strip()
         return user_input
 
 #-------------------------------------------------------------------------------------------
@@ -4042,10 +4043,6 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
         elif step_id == 'tracking_parameters':
             self.actions_list = ACTION_LIST_ITEMS_BASE.copy()
             return vol.Schema({
-                # vol.Required(CONF_LOG_LEVEL,
-                #             default=self._option_parm_to_text(CONF_LOG_LEVEL, LOG_LEVEL_ITEMS_KEY_TEXT)):
-                #             selector.SelectSelector(selector.SelectSelectorConfig(
-                #                 options=dict_value_to_list(LOG_LEVEL_ITEMS_KEY_TEXT), mode='dropdown')),
                 vol.Required(CONF_DISTANCE_BETWEEN_DEVICES,
                             default=Gb.conf_general[CONF_DISTANCE_BETWEEN_DEVICES]):
                             selector.BooleanSelector(),
@@ -4089,7 +4086,7 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
                             default=self._parm_or_error_msg(CONF_EVLOG_CARD_DIRECTORY, conf_group=CF_PROFILE)):
                             selector.SelectSelector(selector.SelectSelectorConfig(
                                 options=dict_value_to_list(self.opt_www_directory_list), mode='dropdown')),
-                vol.Required(CONF_HA_CONFIG_IC3_URL,
+                vol.Optional(CONF_HA_CONFIG_IC3_URL,
                             default=self._parm_or_error_msg(CONF_HA_CONFIG_IC3_URL, conf_group=CF_PROFILE)):
                             selector.TextSelector(),
 
@@ -4353,50 +4350,3 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
             pass
 
         return schema
-
-
-#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-#
-#       ICLOUD3 CONFIG FLOW - CONFIG SETTINGS SERVICE CALL HANDLER
-#
-#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-# class ActionSettingsFlowHandler(iCloud3_ConfigFlow):
-#     '''
-#     Dummy class to tie the Settings Handler to the actual config_flow
-#     '''
-#     pass
-
-# class ActionSettingsFlowManager(data_entry_flow.FlowManager):
-#     '''
-#     Action Settings Flow Manager - Create the flow (__init__) and load the main menu
-#     (service_handler)
-#     '''
-
-#     async def async_create_flow(self, handler_key: str, *,
-#                                 context = None, data = None, ) -> ActionSettingsFlowHandler:
-#         '''
-#         The flow is created in __init__ when iCloud3 is being set up
-#         '''
-#         Gb.SettingsOptionsFlowHandler = ActionSettingsFlowHandler()
-#         Gb.SettingsOptionsFlowHandler.async_get_options_flow(config_entry=None)
-#         return Gb.SettingsOptionsFlowHandler
-
-
-#     async def async_show_menu_handler(self):
-#         '''
-#         This is called from service_handler._handle_action_config_flow function that is called
-#         when the EvLog Settings icon is clicked
-#         '''
-
-#         return await Gb.OptionsFlowHandler.async_step_menu()
-#         # return await Gb.OptionsFlowHandler.async_show_form(step_id='menu',
-#         #                     data_schema=Gb.OptionsFlowHandler.form_schema('menu'),
-#         #                     errors={},
-#         #                     last_step=False)
-
-#     async def async_finish_flow(self,
-#                                 flow=Gb.SettingsFlowManager,
-#                                 result=None):
-#                                 # result: data_entry_flow.FlowResult):    # -> data_entry_flow.FlowResult:
-#         result = None
-#         return result
