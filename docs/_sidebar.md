@@ -14,6 +14,8 @@
 <a href="https://www.buymeacoffee.com/gcobb321" target="_blank"><img src="images/buymeacoffee-sidebar.png"/></a>
 
 
+  ------
+
 - [Introducing  iCloud3](chapters/1.0-introduction.md)
 
 - [Changes and new Features - v3.0](chapters/0.0-change-log-v3.0.md)
