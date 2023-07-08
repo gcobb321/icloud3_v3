@@ -38,3 +38,6 @@
 - [ToDo-Entity Attributes](chapters/3.2-attributes.md)
 - [ToDo-Technical Information](chapters/6.0-tech-info.md)
 
+
+
+<a href="https://www.buymeacoffee.com/gcobb321" target="_blank"><img src="images/buymeacoffee-sidebar.png"/></a>
