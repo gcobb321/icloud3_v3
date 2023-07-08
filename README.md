@@ -51,12 +51,12 @@ The screens below are an example of how the many tracking sensors can be display
 
 ### Important Links
 
-**iCloud3 GitHub Repository** - The  [GitHub Repository is here.](https://github.com/gcobb321/icloud3_v3)
-**Installing using HACS** - iCloud3 is not available on the HACS base. You have set it up as a custom repository.
-See [here](https://gcobb321.github.io/icloud3_v3/#/chapters/2.0-installing-and-configuring?id=step-1-install-icloud3) for instructions on how to do that and then install it. If you just go to HACS and do the installation, you will be installing v2.4.7, not v3.
-**Download and Install** - Go to the iCloud3 [Releases page here](https://github.com/gcobb321/icloud3_v3/releases). Scroll down past the notes, then select Assets, then select icloud3.zip. Download the zip file and unzip it into the /config/custom_components/icloud3 directory. Then restart HA.
-**Migrating from v2.4._** - See [here](https://gcobb321.github.io/icloud3_v3/#/chapters/0.1-migrating-v2.4-to-v3.0?id=migrating-icloud3-from-v24x-to-v30) for instructions on migrating from from an older version.
-**iCloud3 v3 User Guide** - It is still in process, does not include the latest updates to iCloud3 and can be found [here](https://gcobb321.github.io/icloud3_v3/#/)
+- **iCloud3 GitHub Repository** - The  [GitHub Repository is here.](https://github.com/gcobb321/icloud3_v3)
+- **Installing using HACS** - iCloud3 is not available on the HACS base. You have set it up as a custom repository.
+  See [here](https://gcobb321.github.io/icloud3_v3/#/chapters/2.0-installing-and-configuring?id=step-1-install-icloud3) for instructions on how to do that and then install it. If you just go to HACS and do the installation, you will be installing v2.4.7, not v3.
+- **Download and Install** - Go to the iCloud3 [Releases page here](https://github.com/gcobb321/icloud3_v3/releases). Scroll down past the notes, then select Assets, then select icloud3.zip. Download the zip file and unzip it into the /config/custom_components/icloud3 directory. Then restart HA.
+- **Migrating from v2.4._** - See [here](https://gcobb321.github.io/icloud3_v3/#/chapters/0.1-migrating-v2.4-to-v3.0?id=migrating-icloud3-from-v24x-to-v30) for instructions on migrating from from an older version.
+- **iCloud3 v3 User Guide** - It is still in process, does not include the latest updates to iCloud3 and can be found [here](https://gcobb321.github.io/icloud3_v3/#/)
 
 
 
