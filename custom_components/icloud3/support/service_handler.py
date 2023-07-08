@@ -6,6 +6,7 @@
 import homeassistant.helpers.config_validation as cv
 from homeassistant          import data_entry_flow
 import voluptuous as vol
+import asyncio
 
 from ..global_variables     import GlobalVariables as Gb
 from ..const                import (DOMAIN,
@@ -29,7 +30,7 @@ from ..helpers.messaging    import (post_event, post_error_msg, post_monitor_msg
                                     _trace, _traceha, )
 from ..helpers.time_util    import (secs_to_time, time_str_to_secs, datetime_now, secs_since, time_now, )
 # from ..config_flow          import ActionSettingsFlowManager
-
+# from ..                     import config_flow
 
 # EvLog Action Commands
 CMD_ERROR                  = 'error'
@@ -221,6 +222,16 @@ def update_service_handler(action_entry=None, action_fname=None, devicename=None
         return
 
     action = action_entry
+    # if action == CMD_REFRESH_EVENT_LOG:
+        # flow_result = Gb.hass.async_create_task(Gb.ActionsFlow.async_init, 'icloud3')
+        # flow_result = asyncio.run_coroutine_threadsafe(
+        #             Gb.ActionsFlow.async_init('icloud3_af'), Gb.hass.loop).result()
+        # _traceha(f"FLOW {flow_result=}")
+        # Gb.hass.async_create_task(Gb.ActionsFlow.async_configure, flow_result['flow_id'])
+
+        # return asyncio.run_coroutine_threadsafe(
+        #             Gb.ActionsFlow.async_configure(flow_result['flow_id']), Gb.hass.loop).result()
+
     if action == f"{CMD_REFRESH_EVENT_LOG}+clear_alerts":
         action = CMD_REFRESH_EVENT_LOG
         Gb.EvLog.clear_alert_events()
@@ -378,7 +389,7 @@ def handle_action_log_level(action_option, change_conf_log_level=True):
     if new_log_rawdata_flag is False:
         Gb.log_rawdata_flag_unfiltered = False
 
-    new_log_level = 'rawdata' if new_log_rawdata_flag \
+    new_log_level = 'rawdata-auto-reset' if new_log_rawdata_flag \
         else 'debug-auto-reset' if new_log_debug_flag \
         else 'info'
 

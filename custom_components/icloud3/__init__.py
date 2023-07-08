@@ -8,8 +8,10 @@ import asyncio
 from homeassistant.config_entries   import ConfigEntry
 from homeassistant.core             import CoreState, HomeAssistant
 from homeassistant.helpers.typing   import ConfigType
+from homeassistant.helpers          import network
 from homeassistant.const            import EVENT_HOMEASSISTANT_STARTED, EVENT_HOMEASSISTANT_STOP
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.components.network import async_get_source_ip
 # from homeassistant.helpers import collection, storage
 import homeassistant.util.location  as ha_location_info
 import homeassistant.helpers.config_validation as cv
@@ -19,19 +21,20 @@ import os
 
 from .const import (DOMAIN, PLATFORMS, MODE_PLATFORM, MODE_INTEGRATION, CONF_VERSION,
                     CONF_SETUP_ICLOUD_SESSION_EARLY,
+                    SENSOR_EVENT_LOG_NAME, SENSOR_WAZEHIST_TRACK_NAME,
                     EVLOG_IC3_STARTING, VERSION, )
 
 from .const_sensor import (HA_EXCLUDE_SENSORS, )
 
 from .global_variables              import GlobalVariables as Gb
-from .helpers.common                import (instr, )
-from .helpers.messaging             import (_traceha, open_ic3_log_file,
+# from .helpers.common                import (instr, )
+from .helpers.messaging             import (_trace, _traceha, open_ic3_log_file,
                                             log_info_msg, log_debug_msg, log_error_msg, log_exception)
 from .support.v2v3_config_migration import iCloud3_v2v3ConfigMigration
 from .support                       import start_ic3
 from .support                       import config_file
 from .support                       import restore_state
-from .support                       import service_handler
+from .support.service_handler       import register_icloud3_services
 from .support                       import pyicloud_ic3_interface
 from .support                       import event_log
 from .support                       import recorder_prefilter
@@ -60,14 +63,16 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     Gb.config = config
     Gb.ha_config_platform_stmt = True
     Gb.operating_mode = MODE_PLATFORM
-    log_info_msg(f"Initializing iCloud3 {VERSION} - Using Platform method")
+    Gb.local_ip       = await async_get_source_ip(hass)
+    Gb.network_url    = network.get_url(hass)
+    await async_get_ha_location_info(hass)
 
-    await async_get_ha_location_info()
+    recorder_prefilter.add_filter(hass, [SENSOR_EVENT_LOG_NAME, SENSOR_WAZEHIST_TRACK_NAME])
     start_ic3.initialize_directory_filenames()
     config_file.load_storage_icloud3_configuration_file()
     start_ic3.initialize_icloud_data_source()
-
     open_ic3_log_file()
+    log_info_msg(f"Initializing iCloud3 {VERSION} - Using Platform method")
 
     # Convert the .storage/icloud3.configuration file if it is at a default
     # state or has never been updated via config_flow using 'HA Integrations > iCloud3'
@@ -115,30 +120,41 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
         # unsub_options_update_listener = entry.add_update_listener(options_update_listener)
         # hass_data["unsub_options_update_listener"] = unsub_options_update_listener
         # hass.data[DOMAIN][entry.entry_id] = hass_data
+
         Gb.hass           = hass
         Gb.config_entry   = entry
         Gb.entry_id       = entry.entry_id
         Gb.operating_mode = MODE_INTEGRATION
+        Gb.local_ip       = await async_get_source_ip(hass)
+        Gb.network_url    = network.get_url(hass)
+        await async_get_ha_location_info(hass)
 
-        log_info_msg(f"Setting up iCloud3 {VERSION} - Using Integration method")
-
-        recorder_prefilter.add_prefilter(hass, 'icloud3_*') #HA_EXCLUDE_SENSORS)
-
+        recorder_prefilter.add_filter(hass, [SENSOR_EVENT_LOG_NAME, SENSOR_WAZEHIST_TRACK_NAME])
         Gb.PyiCloud       = None
         Gb.EvLog          = event_log.EventLog(Gb.hass)
         Gb.start_icloud3_inprocess_flag = True
 
-        await async_get_ha_location_info()
         start_ic3.initialize_directory_filenames()
         config_file.load_storage_icloud3_configuration_file()
         start_ic3.set_log_level(Gb.log_level)
-
         open_ic3_log_file(new_log_file=Gb.log_debug_flag)
+        log_info_msg(f"Setting up iCloud3 {VERSION} - Using Integration method")
+
+        #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        try:
+            # _traceha(f"hass.data=")
+
+            pass
+
+        except Exception as err:
+            log_exception(err)
+        #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
         start_ic3.initialize_icloud_data_source()
         restore_state.load_storage_icloud3_restore_state_file()
 
         # Create device_tracker and sensor entities
+        #await hass.config_entries.async_forward_configuration_file()
         await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
         # conf_version goes from:
@@ -185,7 +201,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STOP, start_ic3.ha_stopping)
 
     Gb.EvLog.post_event('Start iCloud3 Services Executor Job')
-    hass.async_add_executor_job(service_handler.register_icloud3_services)
+    hass.async_add_executor_job(register_icloud3_services)
+    # hass.async_add_executor_job(service_handler.register_icloud3_services)
 
     if (Gb.primary_data_source_ICLOUD and Gb.conf_tracking[CONF_SETUP_ICLOUD_SESSION_EARLY]):
         Gb.EvLog.post_event('Start iCloud Account Session Executor Job')
@@ -224,9 +241,9 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry):
     return unload_ok
 
 #-------------------------------------------------------------------------------------------
-async def async_get_ha_location_info():
+async def async_get_ha_location_info(hass):
     if location_info := await ha_location_info.async_detect_location_info(
-            async_get_clientsession(Gb.hass)):
+            async_get_clientsession(hass)):
 
         Gb.ha_location_info = {
             "country_code": location_info.country_code,
@@ -245,4 +262,3 @@ async def async_get_ha_location_info():
             Gb.use_metric   = Gb.ha_location_info.use_metric
         except Exception as err:
             pass
-            # log_exception(err)

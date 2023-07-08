@@ -22,6 +22,7 @@ from ..const                import (
                                     CONF_WAZE_USED, CONF_WAZE_REGION, CONF_WAZE_MAX_DISTANCE, CONF_DISTANCE_METHOD,
                                     WAZE_SERVERS_BY_COUNTRY_CODE, WAZE_SERVERS_FNAME,
                                     CONF_EXCLUDED_SENSORS, CONF_OLD_LOCATION_ADJUSTMENT, CONF_DISTANCE_BETWEEN_DEVICES,
+                                    CONF_HA_CONFIG_IC3_URL, HA_CONFIG_IC3_URL,
                                     RANGE_DEVICE_CONF, RANGE_GENERAL_CONF, MIN, MAX, STEP, RANGE_UM,
                                     )
 
@@ -249,6 +250,12 @@ def config_file_add_new_parameters():
     update_config_file_flag = (_add_config_file_parameter(Gb.conf_profile, CONF_VERSION_INSTALL_DATE, DATETIME_ZERO)
             or update_config_file_flag)
 
+    # Add CONF_HA_CONFIG_IC3_URL that is used by EvLog to open Configuration Wizard
+    update_config_file_flag = (_add_config_file_parameter(Gb.conf_profile, CONF_HA_CONFIG_IC3_URL, '')
+            or update_config_file_flag)
+
+
+
     # Remove CONF_ZONE_SENSOR_EVLOG_FORMAT, Add CONF_ZONE_SENSOR_EVLOG_FORMAT
     dtf = 'zone'
     if 'zone_sensor_evlog_format' in Gb.conf_general:
@@ -289,7 +296,6 @@ def config_file_add_new_parameters():
         Gb.conf_tracking[CONF_DATA_SOURCE] = \
             Gb.conf_tracking[CONF_DATA_SOURCE].replace(ICLOUD, FAMSHR)
         update_config_file_flag = True
-
 
     if update_config_file_flag:
         write_storage_icloud3_configuration_file()

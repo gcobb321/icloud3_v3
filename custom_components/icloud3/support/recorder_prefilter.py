@@ -1,160 +1,182 @@
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 #
-#   HA RECORDER - EXCLUDE SENSORS FROM BEING ADDED TO HISTORY DATABASE
+#   HA RECORDER - EXCLUDE entities FROM BEING ADDED TO HISTORY DATABASE
 #
 #
 #   The HA Recorder module was modified in HA 2023.6.0 to no longer allow a custom
-#   component to insert sensor entity names in the '_exclude_e' list that defined
-#   sensor entities to not be added to the History database (home_assistant_v2.db).
+#   component to insert entity entity names in the '_exclude_e' list that defined
+#   entity entities to not be added to the History database (home_assistant_v2.db).
 #
 #   This module fixes that problem by using a code injection process to provide a
 #   local prefilter to determine if an entity should be added before the Recorder filter.
 #
-#   Generally, it does the following:
-#       1. Define the filter to be injected into the Recorder (entity_prefilter)
-#       2. Get the Recorder instance from the ha data.
-#       3. Get the entity_filter and _event_listener functions.
-#       4. Inject the local filter function (entity_prefilter) into the Recorder.
-#       5. Remove the Recorder that listener for event/state changes.
-#       6. Reinitialize the Recorder listener to link to the local prefilter.
 #
-#   Entity id checking is done using the 'entity_prefilter' function.
-#       If it should be filtered:
-#           - return False
-#       It it is not in the local filter list,
-#           - return using the original Recorder entity filter
+#   This injection has two methods:
+#       add_filter - Add entities to the filter list
+#       ----------
+#           hass - HomeAssistant
+#           entities to be filtered -
+#                   single entity - entity_id (string)
+#                   multiple entities - list of entity ids
 #
-#   This injection should be done at the beginining of the  '__init__.py/def async_setup'
-#   function before the filtered sensors have been initialized and set up.
+#                   'sensor.' will be added to the beginning of the entity id if
+#                   it's type is not specifid
 #
-#   Example Setup Code in __init__.py:
-#       import recorder_prefilter
+#           recorder_prefilter.add_filter(hass, 'filter_id1')
+#           recorder_prefilter.add_filter(hass, ['filter_entity2', 'filter_entity3'])
 #
-#       async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
-#           ....
 #
-#           Other Code
+#       remove_filter - Remove entities from the filter list
+#       -------------
+#           Same arguments for add_filter
 #
-#           ....
+#           recorder_prefilter.remove_filter(hass, 'filter_id1')
+#           recorder_prefilter.remove_filter(hass, ['filter_entity2', 'filter_entity3'])
 #
-#           recorder_prefilter.add_prefilter(hass, sensors)
-#           - or -
-#           recorder_prefilter.add_prefilter(hass, ['new_sensor1', 'new_sensor2', '*_sensor_glob1'])
 #
-#   Sensors can be added to the filtered list at a later time using the update_filter
-#   function.
-#
-#   Examples:
-#       recorder_prefilter.update_prefilter(sensorargument)
-#       recorder_prefilter.update_prefilter(['new_sensor3', 'new_sensor4', '*_sensor_glob2'])
-#       recorder_prefilter.update_prefilter('new_sensor5')
-#
-#   Arguments:
-#       hass     - hass: HomeAssistant
-#       sensors  - A list of sensor entities or sensor globs to be excluded
-#                         (['gary_last_update', 'lillian_last_update', '*_last_update'])
-#                       - A single sensor entity to be excluded
-#                         ('gary_last_zone')
-#
-#   Gary Cobb, iCloud3
+#   Gary Cobb, iCloud3 iDevice Tracker, aka geekstergary
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers import entityfilter
+from inspect import getframeinfo, stack
 import logging
 _LOGGER = logging.getLogger(__name__)
 
-# Recorder Prefilter Global Variables
-exclude_entities = set()
-exclude_globs    = set()
-exclude_globs_re = None
+VERSION = 1.0
 
-
-def update_prefilter(exclude_items):
-    """ Update the filtered entity/globs list """
-    global exclude_entities, exclude_globs, exclude_globs_re
-
-    try:
-        items = [exclude_items] if type(exclude_items) is str else exclude_items
-
-        for item in items:
-            if item.find('*') >= 0:
-                exclude_globs.add(item)
-            else:
-                if item.startswith('sensor.') is False: item = f"sensor.{item}"
-                exclude_entities.add(item)
-
-        if exclude_entities != set():
-            _LOGGER.info(f"Prefiltering Entities: {sorted(exclude_entities)}")
-
-        if exclude_globs != set():
-            exclude_globs_re = entityfilter._convert_globs_to_pattern(exclude_globs)
-            _LOGGER.info(f"Prefiltering Globs: {sorted(exclude_globs)}")
-    #        _LOGGER.info(f"Prefiltering Globs: >>{exclude_globs_re}<<")
-
-    except Exception as err:
-        _LOGGER.info(f"Recorder Entity Filter Injection Failed ({err}), "
-                        f"Entities-{exclude_entities}")
-        #_LOGGER.exception(err)
-
-
-def add_prefilter(hass: HomeAssistant, exclude_items: dict[str, list[str]]):
+def add_filter(hass: HomeAssistant, entities=None):
     '''
     Inject the entity prefilter into the Recorder, remove Recorder listeners,
     reinitialize the Recorder
 
     Arguments:
         hass - HomeAssistant
-        exclude_items - A list of sensor entities or sensor globs
+        entities - A list of entity entities
                         (['gary_last_update', 'lillian_last_update', '*_next_update'])
-                      - A single sensor entity ('gary_last_zone')
+                      - A single entity entity ('gary_last_zone')
 
     Returns:
         True - The injection was successful
         False - The injection was not successful
     '''
 
-    _LOGGER.info(f"Recorder Entity Prefilter Injection Started")
-
     ha_recorder = hass.data['recorder_instance']
+
     if ha_recorder is None:
         return False
 
+    if hass.data.get('recorder_prefilter') is None:
+        rp_data = hass.data['recorder_prefilter'] = {}
+        rp_data['injected'] = True
+        rp_data['legacy'] = True
+        rp_data['exclude_entities'] = []
+
+        try:
+            ha_recorder.entity_filter._exclude_e.add(entities)
+            return True
+        except:
+            pass
+
+        rp_data['legacy'] = False
+
+        if _inject_filter(hass) is False:
+            return
+
+    _update_filter(hass, entities)
+
+
+def remove_filter(hass: HomeAssistant, entities):
+    if hass.data['recorder_prefilter']['legacy']:
+        try:
+            ha_recorder = hass.data['recorder_instance']
+            ha_recorder.entity_filter._exclude_e.discard(entities)
+            return True
+        except Exception as err:
+            _LOGGER.exception(err)
+
+    _update_filter(hass, entities, remove=True)
+
+
+def _inject_filter(hass: HomeAssistant):
+    ha_recorder = hass.data['recorder_instance']
+    rp_data = hass.data['recorder_prefilter']
     recorder_entity_filter   = ha_recorder.entity_filter
     recorder_remove_listener = ha_recorder._event_listener
 
-    update_prefilter(exclude_items)
+    def entity_filter(entity_id):
+        """
+        Prefilter an entity to see if it should be excluded from
+        the recorder history.
+
+        This function is injected into the recorder, replacing the
+        original HA recorder_entity_filter module.
+
+        Return:
+            False - The entity should is in the filter list
+            Run the original HA recorder_entity_filter function -
+                The entity is not in the filter list.
+        """
+        if (entity_id
+                and entity_id in hass.data['recorder_prefilter']['exclude_entities']):
+            return False
+
+        return recorder_entity_filter(entity_id)
 
     try:
-        def entity_prefilter(entity_id):
-            global exclude_entities, exclude_globs, exclude_globs_re
+        _LOGGER.info("Recorder Prefilter Injection Started")
+        _LOGGER.debug("Injecting Custom Exclude Entity Prefilter into Recorder")
+        ha_recorder.entity_filter = entity_filter
 
-            if (entity_id
-                    and entity_id.startswith('sensor.')
-                    and (entity_id in exclude_entities
-                        or (bool(exclude_globs_re
-                            and exclude_globs_re.match(entity_id))))):
-                #_LOGGER.debug(f"Excluding Sensor {entity_id=}")
-                return False
-            #_LOGGER.debug(f"--------- Sensor {entity_id=} {entity_id in exclude_entities} {bool(exclude_globs_re and exclude_globs_re.match(entity_id))}")
-
-            return recorder_entity_filter(entity_id)
-
-        _LOGGER.info(f"Injecting Custom Exclude Entity Prefilter into Recorder")
-        ha_recorder.entity_filter = entity_prefilter
-
-        _LOGGER.info(f"Removing Recorder Event Listener")
+        _LOGGER.debug("Removing Recorder Event Listener")
         recorder_remove_listener()
 
-        _LOGGER.info(f"Reinitializing Recorder Event Listener")
+        _LOGGER.debug("Reinitializing Recorder Event Listener")
         hass.add_job(ha_recorder.async_initialize)
 
-        _LOGGER.info(f"Recorder Entity Prefilter Injection Completed")
+        _LOGGER.info(f"Recorder Prefilter Injection Completed")
 
         return True
 
     except Exception as err:
-        _LOGGER.info(f"Recorder Entity Filter Injection Failed ({err})")
-        # _LOGGER.exception(err)
+        _LOGGER.info(f"Recorder Prefilter Injection Failed ({err})")
+        _LOGGER.exception(err)
 
     return False
+
+
+def _update_filter(hass: HomeAssistant, entities=None, remove=False):
+    """ Update the filtered entity list """
+
+    mode = 'Removed' if remove else 'Added'
+    cust_component = _called_from()
+    entities_cnt = 1 if type(entities) is str else len(entities)
+
+    _LOGGER.debug(f"{mode} Prefilter Entities ({cust_component})-{entities}")
+    _LOGGER.info(f"{mode} Recorder Prefilter Entities "
+                    f"({cust_component})-{entities_cnt}")
+
+    entities =  [entities]  if type(entities) is str else \
+                entities    if type(entities) is list else \
+                []
+
+
+    rp_data = hass.data.get('recorder_prefilter')
+    rp_exclude_entities = rp_data['exclude_entities']
+
+    for entity in entities:
+        if entity.find('.') == -1:
+            entity = f"sensor.{entity}"
+        if entity not in rp_exclude_entities:
+            if remove is False:
+                rp_exclude_entities.append(entity)
+            elif entity in rp_exclude_entities:
+                rp_exclude_entities.remove(entity)
+
+    _LOGGER.debug(f"All Prefiltered Entities-{sorted(rp_exclude_entities)}")
+    _LOGGER.info(f"Recorder Prefilter Entities Updated, "
+                    f"Entities Filtered-{len(rp_exclude_entities)}")
+
+
+def _called_from():
+    cust_component = getframeinfo(stack()[0][0]).filename
+    return cust_component.split('custom_components/')[1].split('/')[0]

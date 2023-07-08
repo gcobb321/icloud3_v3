@@ -79,6 +79,7 @@ class EventLog(object):
         self.evlog_attrs                    = {}
         self.evlog_attrs["log_level_debug"] = ''
         self.evlog_attrs["run_mode"]        = 'Initialize'
+        self.evlog_attrs["ha_config_ic3_url"] = ''
         self.evlog_attrs["user_message"]    = self.user_message
         self.evlog_attrs["update_time"]     = ''
         self.evlog_attrs["version"]         = Gb.version_evlog
@@ -130,6 +131,7 @@ class EventLog(object):
                 self.fname_selected = self.devicename_by_fnames[self.devicename]
 
             self.evlog_attrs["run_mode"]    = "Initialize"
+            self.evlog_attrs["ha_config_ic3_url"] = Gb.ha_config_ic3_url
             self.evlog_attrs["update_time"] = "setup"
             self.evlog_attrs["devicename"]  = self.devicename
             self.evlog_attrs["fname"]       = self.fname_selected

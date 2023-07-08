@@ -22,7 +22,7 @@ from ..const            import (
                                 BATTERY_LEVEL, BATTERY_STATUS,
                                 CONF_ENCODE_PASSWORD,
                                 CONF_VERSION,  CONF_VERSION_INSTALL_DATE,
-                                CONF_EVLOG_CARD_DIRECTORY, CONF_EVLOG_CARD_PROGRAM,
+                                CONF_EVLOG_CARD_DIRECTORY, CONF_EVLOG_CARD_PROGRAM, CONF_HA_CONFIG_IC3_URL,
                                 CONF_USERNAME, CONF_PASSWORD,
                                 CONF_DATA_SOURCE, CONF_ICLOUD_SERVER_ENDPOINT_SUFFIX,
                                 CONF_DEVICE_TYPE, CONF_RAW_MODEL, CONF_MODEL, CONF_MODEL_DISPLAY_NAME,
@@ -79,7 +79,7 @@ from re import match
 
 import logging
 # _LOGGER = logging.getLogger(__name__)
-_LOGGER = logging.getLogger(f"icloud3")
+_LOGGER = logging.getLogger('icloud3')
 
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 #
@@ -269,6 +269,7 @@ def set_global_variables_from_conf_parameters(evlog_msg=True):
 
         Gb.www_evlog_js_directory       = Gb.conf_profile[CONF_EVLOG_CARD_DIRECTORY]
         Gb.www_evlog_js_filename        = Gb.conf_profile[CONF_EVLOG_CARD_PROGRAM]
+        Gb.ha_config_ic3_url            = Gb.conf_profile[CONF_HA_CONFIG_IC3_URL].strip()
 
         Gb.um                           = Gb.conf_general[CONF_UNIT_OF_MEASUREMENT]
         Gb.time_format_12_hour          = Gb.conf_general[CONF_TIME_FORMAT].startswith('12')
@@ -1160,7 +1161,7 @@ def setup_tracked_devices_for_famshr(PyiCloud=None):
         Gb.stage_4_no_devices_found_cnt += 1
         if Gb.stage_4_no_devices_found_cnt > 10:
             Gb.reinitialize_icloud_devices_flag = (Gb.conf_famshr_device_cnt > 0)
-            event_msg += f"NO DEVICES FOUND, RETRY #{Gb.stage_4_no_devices_found_cnt}"
+            event_msg += f"{CRLF_DOT}NO DEVICES FOUND, RETRY #{Gb.stage_4_no_devices_found_cnt}"
             post_event(f"{EVLOG_ALERT}{event_msg}")
         return False
 
@@ -1185,9 +1186,7 @@ def setup_tracked_devices_for_famshr(PyiCloud=None):
             except:
                 log_debug_msg(  f"Error extracting device info, "
                                 f"source-{_FamShr.device_model_info_by_fname[device_fname]}, "
-                                f"fname-{device_fname}, "
-                                f"desc-{model_display_name}, "
-                                f"raw_model-{raw_model}")
+                                f"fname-{device_fname}")
                 continue
 
             broadcast_info_msg(f"Set up FamShr Device > {device_fname}")
@@ -1246,7 +1245,15 @@ def setup_tracked_devices_for_famshr(PyiCloud=None):
                 device_type             = Device.device_type
                 Device.verified_flag    = True
                 Device.device_id_famshr = device_id
-                Device.person_id_famshr = _RawData.device_data['prsId']     # Links iPhone & Watch to person
+
+                # link paired devices (iPhone <--> Watch)
+                Device.paired_with_id = _RawData.device_data['prsId']     # Links iPhone & Watch to person
+                if Device.paired_with_id is not None:
+                    if Device.paired_with_id in Gb.PairedDevices_by_paired_with_id:
+                        Gb.PairedDevices_by_paired_with_id[Device.paired_with_id].append(Device)
+                    else:
+                        Gb.PairedDevices_by_paired_with_id[Device.paired_with_id] = [Device]
+
                 Gb.Devices_by_icloud_device_id[device_id] = Device
                 Gb.famshr_device_verified_cnt += 1
 
@@ -1535,8 +1542,6 @@ def set_device_data_source_famshr_fmf(PyiCloud=None):
                     data_source = FAMSHR
                     Gb.Devices_by_icloud_device_id[device_id] = Device
                     _RawData = PyiCloud.RawData_by_device_id[device_id]
-                    # _RawData.Device = Device
-                    # Device.PyiCloud_RawData_famshr = _RawData
 
             if Device.device_id_fmf:
                 device_id = Device.device_id_fmf
@@ -1545,19 +1550,12 @@ def set_device_data_source_famshr_fmf(PyiCloud=None):
                         data_source = FMF
                     Gb.Devices_by_icloud_device_id[device_id] = Device
                     _RawData = PyiCloud.RawData_by_device_id[device_id]
-                    # _RawData.Device = Device
-                    # Device.PyiCloud_RawData_fmf = _RawData
 
             if (Device.iosapp_monitor_flag
                     and data_source is None):
                 data_source = IOSAPP
 
             if data_source != IOSAPP:
-                # if Device.device_id_famshr and Device.device_id_fmf is None:
-                #     Device.PyiCloud_RawData = Device.PyiCloud_RawData_famshr
-                # elif Device.device_id_fmf and Device.device_id_famshr is None:
-                #     Device.PyiCloud_RawData = Device.PyiCloud_RawData_fmf
-
                 info_msg = (f"Set PyiCloud Device Id > {Device.devicename}, "
                             f"DataSource-{data_source}, "
                             f"{CRLF}FamShr-({Device.device_id8_famshr}), "
@@ -1868,11 +1866,16 @@ def identify_tracked_monitored_devices():
         else:
             Gb.Devices_by_devicename_monitored[devicename] = Device
 
+
 #------------------------------------------------------------------------------
 def setup_trackable_devices():
     '''
     Display a list of all the devices that are tracked and their tracking information
     '''
+    # Cycle thru any paired devices and associate them with each otherthem with each other
+    for PairedDevices in Gb.PairedDevices_by_paired_with_id.values():
+        PairedDevices[0].PairedDevice = PairedDevices[1]
+        PairedDevices[1].PairedDevice = PairedDevices[0]
 
     for devicename, Device in Gb.Devices_by_devicename.items():
         Device.display_info_msg(f"Set Trackable Devices > {devicename}")
@@ -1886,6 +1889,9 @@ def setup_trackable_devices():
         event_msg =(f"{tracking_mode} Device > {devicename} ({Device.fname_devtype})")
 
         if Gb.primary_data_source_ICLOUD:
+            if Device.PairedDevice is not None:
+                event_msg += (f"{CRLF_DOT}Paired Device: {Device.PairedDevice.fname_devicename}")
+
             if Device.is_data_source_FAMSHR:
                 Gb.used_data_source_FAMSHR = True
                 event_msg += f"{CRLF_DOT}FamShr Device: {Device.conf_famshr_name}"
@@ -1893,6 +1899,7 @@ def setup_trackable_devices():
             if Device.is_data_source_FMF:
                 Gb.used_data_source_FMF = True
                 event_msg += f"{CRLF_DOT}FmF Device: {Device.conf_fmf_email}"
+
 
         # Initialize iosapp state & location fields
         if Device.iosapp_monitor_flag:
@@ -1912,7 +1919,7 @@ def setup_trackable_devices():
         # Initialize distance_to_other_devices, add other devicenames to this Device's field
         for _devicename, _Device in Gb.Devices_by_devicename.items():
             if devicename != _devicename:
-                Device.dist_to_other_devices[_devicename] = [0, 0, '0m/±0m']
+                Device.dist_to_other_devices[_devicename] = [0, 0, 0, '0m/00:00:00']
                 Device.near_device_distance         = 0       # Distance to the NearDevice device
                 Device.near_device_checked_secs     = 0       # When the nearby devices were last updated
                 Device.dist_apart_msg               = ''      # Distance to all other devices msg set in icloud3_main

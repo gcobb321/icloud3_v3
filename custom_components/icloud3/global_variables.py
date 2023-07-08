@@ -25,7 +25,7 @@
 
 from .const          import (DEVICENAME_IOSAPP, VERSION, NOT_SET, HOME_FNAME, HOME, STORAGE_DIR, WAZE_USED,
                             FAMSHR, FMF, FAMSHR_FMF, ICLOUD, IOSAPP, FNAME, HIGH_INTEGER,
-                            DEFAULT_GENERAL_CONF,
+                            DEFAULT_GENERAL_CONF, HA_CONFIG_IC3_URL,
                             CONF_UNIT_OF_MEASUREMENT,
                             CONF_DISPLAY_ZONE_FORMAT,
                             CONF_CENTER_IN_ZONE, CONF_DISPLAY_GPS_LAT_LONG,
@@ -62,8 +62,11 @@ class GlobalVariables(object):
 
     hass            = None      # hass: HomeAssistant set in __init__
     config_entry    = None      # hass.config_entry set in __init__ (integration)
-    config          = None      # has config parmaeter swt in __init__ (platform)
+    config          = None      # has config parmaeter set in __init__ (platform)
     entry_id        = None      # Has entry_id for iCloud3
+    local_ip        = None      # from component/local_ip/async_get_source_ip in __init__
+    network_url     = None      # from helpers/network/get_url in __init__
+    ha_config_ic3_url = ''
     async_add_entities_sensor = None            # Initial add_entities link passed to sensor during ha startup
     async_add_entities_device_tracker = None    # Initial add_entities link passed to device_tracker during ha startup
     async_executor_call_parameters = None
@@ -76,8 +79,8 @@ class GlobalVariables(object):
 
     iCloud3             = None   # iCloud3 Platform object
     OptionsFlowHandler  = None   # config_flow OptionsFlowHandler
-    SettingsFlowManager = None
-    SettingsOptionsFlowHandler = None
+    ActionsFlow         = None
+    ActionsOptionsFlow  = None
 
     EvLog           = None
     EvLogSensor     = None
@@ -128,6 +131,7 @@ class GlobalVariables(object):
     Devices_by_devicename_tracked     = {}  # All monitored Devices by devicename
     Devices_by_icloud_device_id       = {}  # FmF/FamShr Device Configuration
     Devices_by_iosapp_devicename      = {}  # All Devices by the iosapp device_tracker.iosapp_devicename
+    PairedDevices_by_paired_with_id   = {}  # Paired Devices by the paired_with_id (famshr prsID) id=[Dev1, Dev2]
     # Devices_by_statzonename           = {}  # All Devices by the statzone.zone and statzone.display_as
     Zones                             = []  # Zones object list
     Zones_by_zone                     = {}  # Zone object by zone name

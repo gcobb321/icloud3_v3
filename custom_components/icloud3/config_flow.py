@@ -25,16 +25,14 @@ from .const             import (DOMAIN, DATETIME_FORMAT,
                                 IOSAPP, NO_IOSAPP,
                                 TRACK_DEVICE, MONITOR_DEVICE, INACTIVE_DEVICE,
                                 NAME,  FRIENDLY_NAME, FNAME, TITLE, BATTERY,
-                                ZONE, HOME_DISTANCE, PASSIVE,
-                                WAZE_SERVERS_BY_COUNTRY_CODE, WAZE_SERVERS_FNAME,
-                                CONF_VERSION, CONF_EVLOG_CARD_DIRECTORY,
+                                ZONE, HOME_DISTANCE, WAZE_SERVERS_FNAME,
+                                CONF_VERSION, CONF_EVLOG_CARD_DIRECTORY, CONF_HA_CONFIG_IC3_URL,
                                 CONF_USERNAME, CONF_PASSWORD, CONF_DEVICES, CONF_SETUP_ICLOUD_SESSION_EARLY,
                                 CONF_DATA_SOURCE, CONF_VERIFICATION_CODE,
                                 CONF_TRACK_FROM_ZONES, CONF_TRACK_FROM_BASE_ZONE, CONF_TRACK_FROM_HOME_ZONE,
                                 CONF_NO_IOSAPP,
                                 CONF_PICTURE, CONF_DEVICE_TYPE, CONF_INZONE_INTERVALS,
                                 CONF_RAW_MODEL, CONF_MODEL, CONF_MODEL_DISPLAY_NAME, CONF_FAMSHR_DEVICE_ID,
-                                CONF_EVLOG_DISPLAY_ORDER,
                                 CONF_UNIT_OF_MEASUREMENT, CONF_TIME_FORMAT,
                                 CONF_MAX_INTERVAL, CONF_OFFLINE_INTERVAL, CONF_EXIT_ZONE_INTERVAL, CONF_IOSAPP_ALIVE_INTERVAL,
                                 CONF_GPS_ACCURACY_THRESHOLD, CONF_OLD_LOCATION_THRESHOLD, CONF_OLD_LOCATION_ADJUSTMENT,
@@ -303,9 +301,10 @@ DISPLAY_ZONE_FORMAT_ITEMS_KEY_TEXT_BASE = {
 LOG_LEVEL_ITEMS_KEY_TEXT = {
         'info':     'Info - Log General Information',
         'debug':    'Debug - Log Internal Tracking Monitors',
-        'debug-auto-reset': 'Debug - Log Internal Tracking Monitors (Reset at 12:00am)',
-        'rawdata':  'Rawdata - Log raw data received from iCloud Location Servers. Filter unused data items.',
-        'unfiltered':  'Rawdata (Unfiltered) - Log raw data received from iCloud Location Servers. Display all data items.',
+        'debug-auto-reset': 'Debug (AutoReset) - Debug logging that resets to Info at midnight',
+        'rawdata':  'Rawdata - Log raw data received from iCloud Location Servers. Filter unused data items',
+        'rawdata-auto-reset':  'Rawdata (AutoReset) - RawData logging that resets to Info at midnight',
+        'unfiltered':  'Rawdata (Unfiltered) - Log raw data received from iCloud Location Servers. Display all data items',
         }
 DISTANCE_METHOD_ITEMS_KEY_TEXT = {
         'waze':     'Waze - Waze Route Service provides travel time & distance information',
@@ -811,7 +810,7 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
                 self.config_flow_updated_parms = {''}
                 data = {}
                 data = {'updated': dt_util.now().strftime(DATETIME_FORMAT)[0:19]}
-                log_debug_msg(f"Exit Configuration Wizard, UpdateParms-{Gb.config_flow_updated_parms}")
+                log_debug_msg(f"Exit Configure Settings, UpdateParms-{Gb.config_flow_updated_parms}")
 
                 return self.async_create_entry(title="iCloud3", data={})
 
@@ -897,7 +896,7 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
             close_reopen_ic3_log_file()
             data = {}
             data = {'added': dt_util.now().strftime(DATETIME_FORMAT)[0:19]}
-            log_debug_msg(f"Exit Configuration Wizard, UpdateParms-{Gb.config_flow_updated_parms}")
+            log_debug_msg(f"Exit Configure Settings, UpdateParms-{Gb.config_flow_updated_parms}")
 
             return self.async_create_entry(title="iCloud3", data={})
 
@@ -1978,7 +1977,7 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
         if request_verification_code:
             event_msg = f"{EVLOG_NOTICE}Requesting Apple ID Verification Code"
         else:
-            event_msg =(f"{EVLOG_NOTICE}Logging into iCloud Account with Configuration Wizard, "
+            event_msg =(f"{EVLOG_NOTICE}Logging into iCloud Account with Configure Settings, "
                         f"{CRLF_DOT}New iCloud Account > {obscure_field(self.username)}, "
                         f"{CRLF_DOT}iCloud Account Currently Used > {obscure_field(Gb.username)}")
         post_event(event_msg)
@@ -4090,6 +4089,9 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
                             default=self._parm_or_error_msg(CONF_EVLOG_CARD_DIRECTORY, conf_group=CF_PROFILE)):
                             selector.SelectSelector(selector.SelectSelectorConfig(
                                 options=dict_value_to_list(self.opt_www_directory_list), mode='dropdown')),
+                vol.Required(CONF_HA_CONFIG_IC3_URL,
+                            default=self._parm_or_error_msg(CONF_HA_CONFIG_IC3_URL, conf_group=CF_PROFILE)):
+                            selector.TextSelector(),
 
                 vol.Required('action_items',
                             default=self.action_default_text('save')):
@@ -4358,43 +4360,43 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
 #       ICLOUD3 CONFIG FLOW - CONFIG SETTINGS SERVICE CALL HANDLER
 #
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-class ActionSettingsFlowHandler(iCloud3_ConfigFlow):
-    '''
-    Dummy class to tie the Settings Handler to the actual config_flow
-    '''
-    pass
+# class ActionSettingsFlowHandler(iCloud3_ConfigFlow):
+#     '''
+#     Dummy class to tie the Settings Handler to the actual config_flow
+#     '''
+#     pass
 
-class ActionSettingsFlowManager(data_entry_flow.FlowManager):
-    '''
-    Action Settings Flow Manager - Create the flow (__init__) and load the main menu
-    (service_handler)
-    '''
+# class ActionSettingsFlowManager(data_entry_flow.FlowManager):
+#     '''
+#     Action Settings Flow Manager - Create the flow (__init__) and load the main menu
+#     (service_handler)
+#     '''
 
-    async def async_create_flow(self, handler_key: str, *,
-                                context = None, data = None, ) -> ActionSettingsFlowHandler:
-        '''
-        The flow is created in __init__ when iCloud3 is being set up
-        '''
-        Gb.SettingsOptionsFlowHandler = ActionSettingsFlowHandler()
-        Gb.SettingsOptionsFlowHandler.async_get_options_flow(config_entry=None)
-        return Gb.SettingsOptionsFlowHandler
+#     async def async_create_flow(self, handler_key: str, *,
+#                                 context = None, data = None, ) -> ActionSettingsFlowHandler:
+#         '''
+#         The flow is created in __init__ when iCloud3 is being set up
+#         '''
+#         Gb.SettingsOptionsFlowHandler = ActionSettingsFlowHandler()
+#         Gb.SettingsOptionsFlowHandler.async_get_options_flow(config_entry=None)
+#         return Gb.SettingsOptionsFlowHandler
 
 
-    async def async_show_menu_handler(self):
-        '''
-        This is called from service_handler._handle_action_config_flow function that is called
-        when the EvLog Settings icon is clicked
-        '''
+#     async def async_show_menu_handler(self):
+#         '''
+#         This is called from service_handler._handle_action_config_flow function that is called
+#         when the EvLog Settings icon is clicked
+#         '''
 
-        return await Gb.OptionsFlowHandler.async_step_menu()
-        # return await Gb.OptionsFlowHandler.async_show_form(step_id='menu',
-        #                     data_schema=Gb.OptionsFlowHandler.form_schema('menu'),
-        #                     errors={},
-        #                     last_step=False)
+#         return await Gb.OptionsFlowHandler.async_step_menu()
+#         # return await Gb.OptionsFlowHandler.async_show_form(step_id='menu',
+#         #                     data_schema=Gb.OptionsFlowHandler.form_schema('menu'),
+#         #                     errors={},
+#         #                     last_step=False)
 
-    async def async_finish_flow(self,
-                                flow=Gb.SettingsFlowManager,
-                                result=None):
-                                # result: data_entry_flow.FlowResult):    # -> data_entry_flow.FlowResult:
-        result = None
-        return result
+#     async def async_finish_flow(self,
+#                                 flow=Gb.SettingsFlowManager,
+#                                 result=None):
+#                                 # result: data_entry_flow.FlowResult):    # -> data_entry_flow.FlowResult:
+#         result = None
+#         return result

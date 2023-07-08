@@ -1,6 +1,21 @@
+Beta 19 - 7/8/2023
+...................
+1. Event Log - You will get a browser refresh notification
+    1. Icons - The icons on the Event Log have a new look. They are brighter, have a little color and look similar to the HA icons.
+    2. New 'Configure Settings' icon - This will display the Devices & Services > Integrations > iCloud3 Settings screen. Select Configure to open Configure Settings screens. When you exit the Configure Settings screens, selcet Back to return to the iCloud3 screen.
+    3. New 'Buy Me a Coffee' icon - Drop me a dime if you find iCloud3 useful. Thanks. It's been a several year project rewriting iCloud3 from v2 and I appreciate your support.
+2. Configure Settings -
+    1. Format Parameters screen - Added Log Level > RawData (AutoReset) to automatically turn off RawData at midnight.
+    2. Tracking & Other Parameters - Added the HA > Integrations > iCloud3 Configure Settings URL parameter. The Configure Settings icon on the Event Log gets base part of the URL from the URL used by HA (https://192.0.1.168:8123, https://localhost:8123, https://homeassistant:8123, etc). It appends /integrations/integrations/icloud3 to it and uses the result to display the Configure screen. When running in a virtual environment, docker, etc.. the first part might not be determined correctly, resulting in a 404 not found error. If this happens, paste the URL in this field and it will be used instead of trying to figure it out.
+3. Start up > Stage 5 > Configured Devices - Paired devices (iPhone <--> Watch) are now identified and a message indicating how the devices are paired together is displayed. This is not used for anything yet but may be in the future.
+4. v2-v3 Migration - The `known_devices.yaml` file has caused some problems with old iCloud3 device names being added to the HA entity_registry before the iCloud3 v3 Integration is able to create them. This creates a mess with duplicate device_tracker and sensor entity names. This file will be renamed when the migration starts to prevent these errors.
+5. Updated the iCloud3 User Guide.
+
+Special Note: Release Candidate 1 will be released very shortly.
+
 Beta 18.5 - 6/21/2023
 ...................
-1.  Fixed a regression installing iCloud3 for the first time leading to a start_ic3.setup_username_password not found error.
+1. Fixed a regression installing iCloud3 for the first time leading to a start_ic3.setup_username_password not found error.
 2. Changed the sub-beta version number from b18e to b18.5 to comply with version numbering used by HAXCS and HA.
 
 Beta 18.4 - 6/20/2023

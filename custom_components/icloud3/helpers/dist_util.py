@@ -94,11 +94,11 @@ def format_dist_km(dist_km):
     dist: Distance in kilometers
     '''
     if dist_km >= 10:       #25km/15mi
-        return f"{dist_km:.1f} km"
+        return f"{dist_km:.1f}km"
     if dist_km >= 1:        #1000m/.6mi
-        return f"{dist_km:.2f} km"
+        return f"{dist_km:.2f}km"
 
-    return f"{dist_km*1000:.0f} m"
+    return f"{dist_km*1000:.0f}m"
 
 #--------------------------------------------------------------------
 def format_dist_m(dist_m):
@@ -108,8 +108,8 @@ def format_dist_m(dist_m):
     dist: Distance in meters
     '''
     if dist_m >= 10000:       #25km/15mi
-        return f"{dist_m/1000:.1f} km"
+        return f"{dist_m/1000:.1f}km"
     if dist_m >= 1000:        #1000m/.6mi
-        return f"{dist_m/1000:.2f} km"
+        return f"{dist_m/1000:.2f}km"
 
-    return f"{dist_m:.0f} m"
+    return f"{dist_m:.0f}m"

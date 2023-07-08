@@ -114,7 +114,7 @@ from ..helpers.common       import (instr, )
 from ..helpers.messaging    import (_traceha, log_info_msg, log_warning_msg, log_exception,
                                     open_ic3_log_file, write_ic3_log_recd, )
 from ..helpers.time_util    import (time_str_to_secs, datetime_now, )
-from ..support              import start_ic3
+# from ..support              import start_ic3
 from .                      import config_file
 
 import os
@@ -175,6 +175,7 @@ class iCloud3_v2v3ConfigMigration(object):
         DEBUG_LOG_LINE_TABS = "\t\t\t\t\t\t\t\t\t\t"
 
         self.write_migration_log_msg(f"\nMigration Started, {datetime_now()}\n")
+        self._rename_known_devices_yaml_file()
         log_warning_msg('iCloud3 - Migrating Configuration Parameters')
         self._extract_config_parameters(Gb.ha_config_yaml_icloud3_platform)
 
@@ -613,6 +614,16 @@ class iCloud3_v2v3ConfigMigration(object):
             pass
 
         return (fname, device_type)
+
+    #--------------------------------------------------------------------
+    def _rename_known_devices_yaml_file(self):
+        known_devices_file     = Gb.hass.config.path('known_devices.yaml')
+        known_devices_file_new = f"{known_devices_file.replace('.yaml', '')}.IC3.CAN.DELETE.yaml"
+
+        if (os.path.isfile(known_devices_file) 
+                and os.path.isfile(known_devices_file_new) is False):
+            os.rename(known_devices_file, known_devices_file_new)
+            self.write_migration_log_msg(f"\nRenamed {known_devices_file} to {known_devices_file_new}")
 
     #--------------------------------------------------------------------
     def log_exception(self, err):

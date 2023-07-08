@@ -608,14 +608,16 @@ class iCloud3:
                 for devicename, Device in Gb.Devices_by_devicename_tracked.items():
                     Device.log_data_fields()
 
-        # Every 1/2-hour
-        if time_now_mm in ['00', '30']:
             for devicename, Device in Gb.Devices_by_devicename.items():
                 if Device.dist_apart_msg:
                     event_msg =(f"Nearby Devices > (<{NEAR_DEVICE_DISTANCE}m), "
                                 f"{Device.dist_apart_msg}, "
                                 f"Checked-{secs_to_time(Device.near_device_checked_secs)}")
                     post_event(devicename, event_msg)
+
+         # Every 1/2-hour
+        if time_now_mm in ['00', '30']:
+            pass
 
         if Gb.PyiCloud is not None and Gb.this_update_secs >= Gb.authentication_error_retry_secs:
             post_event(f"Retry Authentication > "
@@ -1093,7 +1095,7 @@ class iCloud3:
         if display_zone_msg:
             selected_zone_msg = other_zones_msg = gps_accuracy_msg = ''
             if ZoneSelected.radius_m > 0:
-                selected_zone_msg = f"-{format_dist_m(zone_selected_dist_m)}"   #/r{ZoneSelected.radius_m:.0f}m"
+                selected_zone_msg = f"-{format_dist_m(zone_selected_dist_m)}"
             if (zone_selected == NOT_HOME
                     or (is_statzone(zone_selected) and isnot_statzone(Device.loc_data_zone))):
                 other_zones_msg = f" > {zones_distance_list}"
@@ -1411,7 +1413,7 @@ class iCloud3:
                 Gb.wazehist_recalculate_time_dist_flag = False
                 Gb.WazeHist.wazehist_recalculate_time_dist_all_zones()
 
-        if Gb.conf_general[CONF_LOG_LEVEL] == 'debug-auto-reset':
+        if instr(Gb.conf_general[CONF_LOG_LEVEL], 'auto-reset'):
                 start_ic3.set_log_level('info')
                 start_ic3.update_conf_file_log_level('info')
 

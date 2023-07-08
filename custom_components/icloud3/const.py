@@ -4,7 +4,7 @@
 #
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-VERSION                         = '3.0.0b18.5'
+VERSION                         = '3.0.0b19.0'
 
 DOMAIN                          = 'icloud3'
 ICLOUD3                         = 'iCloud3'
@@ -27,6 +27,7 @@ WAZE_LOCATION_HISTORY_DATABASE  = 'icloud3.waze_location_history.db'
 SENSOR_WAZEHIST_TRACK_NAME      = 'icloud3_wazehist_track'
 IC3LOGGER_FILENAME              = 'icloud3-0.log'
 IC3_LOG_FILENAME                = 'icloud3-0.log'
+HA_CONFIG_IC3_URL               = '/config/integrations/integration/icloud3'
 
 DEVICE_TRACKER                  = 'device_tracker'
 DEVICE_TRACKER_DOT              = 'device_tracker.'
@@ -511,6 +512,7 @@ CONF_VERSION                    = 'version'
 CONF_IC3_VERSION                = 'ic3_version'
 CONF_VERSION_INSTALL_DATE       = 'version_install_date'
 CONF_UPDATE_DATE                = 'config_update_date'
+CONF_HA_CONFIG_IC3_URL          = 'ha_config_ic3_url'
 CONF_EVLOG_CARD_DIRECTORY       = 'event_log_card_directory'
 CONF_EVLOG_CARD_PROGRAM         = 'event_log_card_program'
 
@@ -695,6 +697,7 @@ DEFAULT_PROFILE_CONF = {
         CONF_UPDATE_DATE: DATETIME_ZERO,
         CONF_EVLOG_CARD_DIRECTORY: EVLOG_CARD_WWW_DIRECTORY,
         CONF_EVLOG_CARD_PROGRAM: EVLOG_CARD_WWW_JS_PROG,
+        CONF_HA_CONFIG_IC3_URL: HA_CONFIG_IC3_URL,
 }
 
 DEFAULT_TRACKING_CONF = {

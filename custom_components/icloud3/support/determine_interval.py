@@ -50,7 +50,7 @@ from ..helpers.messaging    import (post_event, post_error_msg,
                                     log_info_msg, log_error_msg, log_exception, _trace, _traceha, )
 from ..helpers.time_util    import (secs_to_time, secs_to_time_str, secs_to_time_age_str, waze_mins_to_time_str,
                                     secs_since, time_to_12hrtime, secs_to_datetime, secs_to, secs_to_age_str,
-                                    datetime_now, time_now, time_now_secs, )
+                                    datetime_now, time_now, time_now_secs, format_time_age, format_age_ts, )
 from ..helpers.dist_util    import (km_to_mi, km_to_mi_str, format_dist_km,  format_dist_m, format_km_to_mi, )
 
 
@@ -1112,32 +1112,38 @@ def update_nearby_device_info(Device):
     for devicename, dist_to_other_devices in Device.dist_to_other_devices.items():
         _Device = Gb.Devices_by_devicename[devicename]
 
-        dist_m, min_gps_accuracy, display_text = dist_to_other_devices
+        dist_apart_m, min_gps_accuracy, loc_data_secs, display_text = dist_to_other_devices
 
         # if one device is a watch and the devices are paired and the watch is close to the
         # device, the watch may use the devices location info. Don't use the watch as nearby
         # ⦾×⌘⛒♺⚯⚠︎⚮∞
         if ((Device.device_type == WATCH or _Device.device_type == WATCH)
-                and Device.person_id_famshr == _Device.person_id_famshr
-                and dist_m < NEAR_DEVICE_DISTANCE):
+                and Device.paired_with_id == _Device.paired_with_id
+                and dist_apart_m < NEAR_DEVICE_DISTANCE):
             useable_symbol = '×'
-        elif dist_m > NEAR_DEVICE_DISTANCE:
+        elif dist_apart_m > NEAR_DEVICE_DISTANCE:
             useable_symbol = '>'
         elif min_gps_accuracy > NEAR_DEVICE_DISTANCE:
             useable_symbol = '±'
-        elif display_text == '0m/±0m':
+        elif instr(display_text, '+') or instr(display_text, '±'):      # old or gps accuracy issue
             useable_symbol = '×'
         elif _Device.NearDevice is Device:
             useable_symbol = '⌘'
         elif _check_near_device_circular_loop(_Device, Device) is False:
             useable_symbol = '⌘'
         elif Device.loc_data_zone != _Device.loc_data_zone:
-            useable_symbol = '🜔'
+            useable_symbol = '×'
         else:
             useable_symbol = NEARBY_DEVICE_USEABLE_SYM
+        # dist_text = f"{dist_apart_m/1000:.1f}km" if dist_apart_m > 500 else f"{dist_apart_m:.0f}m"
+        # time_msg = format_time_age(loc_data_secs) \
+                    # if secs_since(loc_data_secs) > 120 else format_age_ts(loc_data_secs)
+        age_secs = secs_since(loc_data_secs)
+        time_msg = f"/{secs_to_time_str(age_secs).replace(' ', '+ ')} ago" if age_secs > 120 else ''
+        gps_msg  = f"±{min_gps_accuracy}" if min_gps_accuracy > Gb.gps_accuracy_threshold else ''
 
         Device.dist_apart_msg += (  f"{useable_symbol}{_Device.fname_devtype}-"
-                                    f"{display_text}, ")
+                                    f"{format_dist_m(dist_apart_m)}{gps_msg}{time_msg}, ")
 
         # The nearby devices can not point to each other and other criteria
         # if (((Device.is_tracked and _Device.is_tracked) or _Device.is_monitored)
@@ -1148,10 +1154,10 @@ def update_nearby_device_info(Device):
                 and _Device.old_loc_poor_gps_cnt == 0
                 and _Device.is_online):
 
-            if dist_m < closest_device_distance:
-                closest_device_distance = dist_m
+            if dist_apart_m < closest_device_distance:
+                closest_device_distance = dist_apart_m
                 Device.NearDevice = _Device
-                Device.near_device_distance = dist_m
+                Device.near_device_distance = dist_apart_m
 
     monitor_msg = f"Nearby Devices > ({LT}{NEAR_DEVICE_DISTANCE}m), {Device.dist_apart_msg}"
     post_monitor_msg(Device.devicename, monitor_msg)

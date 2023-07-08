@@ -63,6 +63,7 @@ import homeassistant.util.dt as dt_util
 import logging
 # _LOGGER = logging.getLogger(__name__)
 _LOGGER = logging.getLogger(f"icloud3")
+
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities):
     '''Set up iCloud3 sensors'''
@@ -344,7 +345,7 @@ def _setup_recorder_exclude_sensor_filter(NewSensors):
             exclude_entities.append(Sensor.entity_id)
 
     if exclude_entities != []:
-        recorder_prefilter.update_prefilter(exclude_entities)
+        recorder_prefilter.add_filter(Gb.hass, exclude_entities)
 
     return
 

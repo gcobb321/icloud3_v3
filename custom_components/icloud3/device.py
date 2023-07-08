@@ -59,7 +59,7 @@ from .helpers.common    import (instr, is_zone, isnot_zone, is_statzone,
 from .helpers.messaging import (post_event, post_error_msg, post_monitor_msg, log_exception, log_debug_msg,
                                 post_internal_error, _trace, _traceha, )
 from .helpers.time_util import ( time_now_secs, secs_to_time, secs_to_time_str, secs_since, secs_to,
-                                time_to_12hrtime,
+                                time_to_12hrtime, format_age, format_time_age, format_age_ts,
                                 datetime_to_secs, secs_to_datetime, datetime_now,
                                 secs_to_age_str,  secs_to_time_age_str, )
 from .helpers.dist_util import (calc_distance_m, calc_distance_km, format_km_to_mi, m_to_ft_str,
@@ -161,7 +161,8 @@ class iCloud3_Device(TrackerEntity):
         self.verified_flag           = False    # Indicates this is a valid and trackable Device
         self.device_id_famshr        = None     #       "
         self.device_id_fmf           = None     # iCloud device_id
-        self.person_id_famshr        = None
+        self.paired_with_id          = None     # famshr device id for paired devices (iPhone Device <--> Watch)
+        self.PairedDevice            = None     # Device of the other Device paired to this one
 
         # StatZone fields
         self.statzone_timer          = 0
@@ -1550,30 +1551,26 @@ class iCloud3_Device(TrackerEntity):
                 is_location_old = ((secs_since(_Device.loc_data_secs) > _Device.old_loc_threshold_secs * 1.5)
                                         or (secs_since(self.loc_data_secs) > self.old_loc_threshold_secs * 1.5))
 
-            if is_location_old:
-                continue
-
             dist_apart_m        = _Device.distance_m(self.loc_data_latitude, self.loc_data_longitude)
             min_gps_accuracy    = (min(self.loc_data_gps_accuracy, _Device.loc_data_gps_accuracy))
             gps_accuracy_factor = round(min_gps_accuracy * dist_apart_m / NEAR_DEVICE_DISTANCE)
+            loc_data_secs       = max(self.loc_data_secs, _Device.loc_data_secs)
 
-            if dist_apart_m > 500:
-                display_text = f"{dist_apart_m/1000:.1f}km/±{min_gps_accuracy}m"
-            else:
-                display_text = f"{dist_apart_m:.0f}m/±{min_gps_accuracy}m"
-
-            # distance_apart_data = [dist_apart_m, gps_accuracy_factor, display_text]
-            distance_apart_data = [dist_apart_m, min_gps_accuracy, display_text]
+            age_secs = secs_since(loc_data_secs)
+            time_msg = f"/{secs_to_time_str(age_secs).replace(' ', '+ ')} ago" if age_secs > 120 else ''
+            gps_msg  = f"±{min_gps_accuracy}" if min_gps_accuracy > Gb.gps_accuracy_threshold else ''
+            display_text = f"{format_dist_m(dist_apart_m)}{gps_msg}{time_msg}"
+            dist_apart_data = [dist_apart_m, min_gps_accuracy, loc_data_secs, display_text]
 
             if (_devicename not in self.dist_to_other_devices
                     or self.devicename not in _Device.dist_to_other_devices
-                    or _Device.dist_to_other_devices[self.devicename] != distance_apart_data
-                    or self.dist_to_other_devices[_devicename] != distance_apart_data):
+                    or _Device.dist_to_other_devices[self.devicename] != dist_apart_data
+                    or self.dist_to_other_devices[_devicename] != dist_apart_data):
                 before_s = self.dist_to_other_devices.get(_devicename)
 
-                self.dist_to_other_devices[_devicename] = distance_apart_data
                 self.dist_to_other_devices_datetime = datetime_now()
-                _Device.dist_to_other_devices[self.devicename] = distance_apart_data
+                self.dist_to_other_devices[_devicename] = dist_apart_data
+                _Device.dist_to_other_devices[self.devicename] = dist_apart_data
 
                 Gb.dist_to_other_devices_update_sensor_list.add(self.devicename)
                 Gb.dist_to_other_devices_update_sensor_list.add(_devicename)
@@ -1701,7 +1698,10 @@ class iCloud3_Device(TrackerEntity):
                                 info should be displayed in the Event Log
                         False - This is another device and do not display the Update Location msg
         '''
-        if (LOCATION not in RawData.device_data
+
+        if (RawData is None
+                or RawData.device_data is None
+                or LOCATION not in RawData.device_data
                 or RawData.device_data[LOCATION] is None
                 or (RawData.location_secs <= self.loc_data_secs and self.loc_data_secs > 0)):
             return
@@ -1718,8 +1718,13 @@ class iCloud3_Device(TrackerEntity):
         self.dev_data_device_class     = RawData.device_data.get(ICLOUD_DEVICE_CLASS, "")
         self.dev_data_low_power_mode   = RawData.device_data.get(ICLOUD_LOW_POWER_MODE, "")
 
-        icloud_rawdata_battery_level = round(RawData.device_data.get(ICLOUD_BATTERY_LEVEL, 0) * 100)
-        icloud_rawdata_battery_status = RawData.device_data.get(ICLOUD_BATTERY_STATUS, '')
+        if RawData.device_data.get(ICLOUD_BATTERY_LEVEL):
+            icloud_rawdata_battery_level  = round(RawData.device_data.get(ICLOUD_BATTERY_LEVEL, 0) * 100)
+            icloud_rawdata_battery_status = RawData.device_data.get(ICLOUD_BATTERY_STATUS, UNKNOWN)
+        else:
+            icloud_rawdata_battery_level  = 0
+            icloud_rawdata_battery_status = UNKNOWN
+
         if (RawData.is_data_source_FAMSHR
                 and icloud_rawdata_battery_level > 0
                 and icloud_rawdata_battery_status
