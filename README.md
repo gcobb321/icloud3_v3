@@ -41,59 +41,22 @@ The screens below are an example of how the many tracking sensors can be display
 ### iCloud3 Documentation
 
 - Introduces the many features and components of iCloud3
-
 - Describes how to migration from v2.4.7 to v3.0
-
 - Provides step-by-step to install and configure iCloud3, it's components and it's supporting components (iCloud Account and the iOS App)
-
 - Highlights the configuration screens and parameters
-
 - Provides example screens, automations and scripts
-
-- Go [here](https://gcobb321.github.io/icloud3_v3/#/) to review the documentation.
+- The [User Guide is here](https://gcobb321.github.io/icloud3_v3/#/).
 
   
 
-### Installation
+### Important Links
 
-#### Using HACS
-
-1. Open HACS.
-
-2. Select **Integrations**, then select the 3-dots (**︙**) in the upper-right corner, then select **Custom Repositories**.
-
-3. Type **gcobb321/icloud3_v3** in the Repository field, then select **Integration** in the Category dropdown list, then select **Add**.
-
-   The repository will be added to HACS and will be displayed when you open HACS
-
-4. Select **Integrations** and type **icloud3** in the search bar.
-
-   The i*Cloud3 New Repository* window is displayed, along with iCloud3 v2. Select iCloud3 v3 and follow the normal HACS procedures to complete the installation.
-
-5. Select the **iCloud3 Device Tracker, Version 3** item (or **iCloud3 v3 iDevice Tracker**), then select **+Download** to download iCloud3.
-
-6. **Restart Home Assistant**
-
-   
-
-#### Manual Installation
-
-1. Using the tool of choice open the folder for your Home Assistant configuration (where you find `configuration.yaml`).
-2. If you do not have a `custom_components` folder there, you need to create it.
-3. In the `custom_components` folder create a new folder called `icloud3`.
-4. Download _all_ the files from the `custom_components/icloud3/` folder in this repository.
-5. Place the files you downloaded into the `custom_components/icloud3/` folder you just created.
-6. Restart Home Assistant.
-7. In Home Assistant, go to **Settings > Devices & Services > Integrations**. Select  **+ Add integration**. Search for **iCloud3 v3**.
-
-
-
-### Useful Links   {docsify-ignore}
-
-* [Brief Overview](https://github.com/gcobb321/icloud3_v3/blob/master/README.md)
-* [Extensive Documentation](https://gcobb321.github.io/icloud3_v3/#/)
-* [GitHub Repository](https://github.com/gcobb321/icloud3_v3)
-
+**iCloud3 GitHub Repository** - The  [GitHub Repository is here.](https://github.com/gcobb321/icloud3_v3)
+**Installing using HACS** - iCloud3 is not available on the HACS base. You have set it up as a custom repository.
+See [here](https://gcobb321.github.io/icloud3_v3/#/chapters/2.0-installing-and-configuring?id=step-1-install-icloud3) for instructions on how to do that and then install it. If you just go to HACS and do the installation, you will be installing v2.4.7, not v3.
+**Download and Install** - Go to the iCloud3 [Releases page here](https://github.com/gcobb321/icloud3_v3/releases). Scroll down past the notes, then select Assets, then select icloud3.zip. Download the zip file and unzip it into the /config/custom_components/icloud3 directory. Then restart HA.
+**Migrating from v2.4._** - See [here](https://gcobb321.github.io/icloud3_v3/#/chapters/0.1-migrating-v2.4-to-v3.0?id=migrating-icloud3-from-v24x-to-v30) for instructions on migrating from from an older version.
+**iCloud3 v3 User Guide** - It is still in process, does not include the latest updates to iCloud3 and can be found [here](https://gcobb321.github.io/icloud3_v3/#/)
 
 
 
