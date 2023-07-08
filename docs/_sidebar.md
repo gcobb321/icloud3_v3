@@ -42,7 +42,7 @@
 
   ------
 
- - [Fixing Tracking Problems](chapters/4.2-device-tracking-problems.md)
+- [Fixing Tracking Problems](chapters/4.2-device-tracking-problems.md)
 
 - [Frequently Asked Questions](chapters/4.3-frequently-asked-questions.md)
 
