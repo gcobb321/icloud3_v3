@@ -23,7 +23,6 @@
 - [Changes and new Features - v3.0](chapters/0.0-change-log-v3.0.md)
 - [Migrating from iCloud3 v2.4.x to v3.0](chapters/0.1-migrating-v2.4-to-v3.0.md)
 
-  
 - [Introducing  iCloud3](chapters/1.0-introduction.md)
 - [iCloud3 Components](chapters/1.1-ic3-components.md)
 - [iCloud & iOS App Location Data](chapters/1.2-icloud-iosapp-loc-data.md)
