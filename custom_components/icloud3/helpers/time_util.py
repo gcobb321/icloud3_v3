@@ -121,30 +121,50 @@ def secs_to_hhmmss(secs):
         return '00:00:00'
 
     return f"{hh}:{mm}:{ss}"
+
+#---------------------------------------------------------
+def secs_to_hhmm(secs):
+    """ secs --> hh:mm """
+
+    try:
+        if instr(secs, ':'):
+            return secs
+
+        w_secs = float(secs) + 30
+
+        hh = f"{int(w_secs // 3600):02}" if (w_secs >= 3600) else '00'
+        w_secs = w_secs % 3600
+        mm = f"{int(w_secs // 60):02}" if (w_secs >= 60) else '00'
+
+        return f"{hh}:{mm}"
+
+    except:
+        return '00:00'
+
+#--------------------------------------------------------------------
+def secs_to_time_hhmm(secs):
+    """ secs --> hh:mm or hh:mma or hh:mmp"""
+    try:
+        hhmmss = secs_to_time(secs + 30)
+        hhmm = hhmmss[:-3]
+        if (Gb.time_format_12_hour is False
+                or hhmm.endswith('a')
+                or hhmm.endswith('p')):
+            return hhmm
+
+        if hhmm.endswith(':'): hhmm = hhmm[:-1]
+        hhmm = hhmm + hhmmss[-1:]
+
+        return hhmm
+
+    except:
+        return '00:00'
+
 #--------------------------------------------------------------------
 def secs_to_dhms_str(secs):
     """ Create the time 0w0d0h0m0s time string from seconds """
 
     return f"{secs/86400:.2f} days"
-
-    #try:
-    #    secs_dhms = float(secs)
-    #    dhms_str = ""
-    #    if (secs >= 31557600):
-    #        return f"{round(secs_dhms/31557600, 2)}y "
-
-    #    if (secs >= 604800): dhms_str += f"{secs_dhms // 604800}w "
-    #    secs_dhms = secs_dhms % 604800
-    #    if (secs >= 86400): dhms_str += f"{secs_dhms // 86400}d "
-    #    secs_dhms = secs_dhms % 86400
-    #    if (secs >= 3600): dhms_str += f"{secs_dhms / 3600:.1f}h"
-
-    #    dhms_str = dhms_str.replace('.0', '')
-
-    #except:
-    #    dhms_str = ""
-
-    #return dhms_str
 
 #--------------------------------------------------------------------
 def waze_mins_to_time_str(waze_time_from_zone):
@@ -197,6 +217,14 @@ def time_to_secs(hhmmss):
     return secs
 
 #--------------------------------------------------------------------
+def secs_to_time(secs):
+    """ Convert seconds to hh:mm:ss """
+    if secs is None or secs == 0 or secs == HIGH_INTEGER:
+        return HHMMSS_ZERO
+
+    return time_to_12hrtime(secs_to_24hr_time(secs))
+
+#--------------------------------------------------------------------
 def secs_to_24hr_time(secs):
     """ Convert seconds to hh:mm:ss """
     if secs is None or secs == 0 or secs == HIGH_INTEGER:
@@ -208,14 +236,6 @@ def secs_to_24hr_time(secs):
     hhmmss      = f"{time.strftime(time_format, t_struct)}"
 
     return hhmmss
-
-#--------------------------------------------------------------------
-def secs_to_time(secs):
-    """ Convert seconds to hh:mm:ss """
-    if secs is None or secs == 0 or secs == HIGH_INTEGER:
-        return HHMMSS_ZERO
-
-    return time_to_12hrtime(secs_to_24hr_time(secs))
 
 #--------------------------------------------------------------------
 def time_to_12hrtime(hhmmss, ampm=True):

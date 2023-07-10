@@ -1,3 +1,14 @@
+Beta 19.1 - 7/10/2023
+...................
+1. Bug Fix - Fixed a problem that may be encountered if you have a watch paired to an iPhone and are tracking the iPhone but not the watch.
+2. New Sensors:
+    1. travel_time_hhmm - Displays the travel time to the zone in an hh:mm format.
+    2. arrival_time - The expected arrival time to the zone (current time + travel time)
+3. Simplified the sensors associated with track_from_zones other than Home.
+
+
+
+
 Beta 19 - 7/8/2023
 ...................
 1. Event Log - You will get a browser refresh notification

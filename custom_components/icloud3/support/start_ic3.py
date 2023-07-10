@@ -1874,8 +1874,11 @@ def setup_trackable_devices():
     '''
     # Cycle thru any paired devices and associate them with each otherthem with each other
     for PairedDevices in Gb.PairedDevices_by_paired_with_id.values():
-        PairedDevices[0].PairedDevice = PairedDevices[1]
-        PairedDevices[1].PairedDevice = PairedDevices[0]
+        try:
+            PairedDevices[0].PairedDevice = PairedDevices[1]
+            PairedDevices[1].PairedDevice = PairedDevices[0]
+        except:
+            pass
 
     for devicename, Device in Gb.Devices_by_devicename.items():
         Device.display_info_msg(f"Set Trackable Devices > {devicename}")

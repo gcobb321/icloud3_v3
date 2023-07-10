@@ -11,7 +11,7 @@ from .const             import (DEVICE_TRACKER, DEVICE_TRACKER_DOT, CIRCLE_STAR2
                                 TOWARDS, AWAY, AWAY_FROM, INZONE, STATIONARY, STATIONARY_FNAME,
                                 TOWARDS_HOME, AWAY_FROM_HOME, INZONE_HOME, INZONE_STATIONARY,
                                 PAUSED, PAUSED_CAPS, RESUMING,
-                                DATETIME_ZERO, HHMMSS_ZERO, HIGH_INTEGER,
+                                DATETIME_ZERO, HHMMSS_ZERO,HHMM_ZERO, HIGH_INTEGER,
                                 TRACKING_NORMAL, TRACKING_PAUSED, TRACKING_RESUMED,
                                 LAST_CHANGED_SECS, LAST_CHANGED_TIME, STATE,
                                 EVLOG_ALERT,
@@ -32,7 +32,7 @@ from .const             import (DEVICE_TRACKER, DEVICE_TRACKER_DOT, CIRCLE_STAR2
                                 BATTERY_SOURCE, BATTERY, BATTERY_LEVEL, BATTERY_STATUS, BATTERY_STATUS_FNAME, BATTERY_UPDATE_TIME,
                                 ZONE_DISTANCE, ZONE_DISTANCE_M, ZONE_DISTANCE_M_EDGE, HOME_DISTANCE, MAX_DISTANCE,
                                 CALC_DISTANCE, WAZE_DISTANCE, WAZE_METHOD,
-                                TRAVEL_TIME, TRAVEL_TIME_MIN, DIR_OF_TRAVEL,
+                                TRAVEL_TIME, TRAVEL_TIME_MIN, TRAVEL_TIME_HHMM, ARRIVAL_TIME, DIR_OF_TRAVEL,
                                 MOVED_DISTANCE, MOVED_TIME_FROM, MOVED_TIME_TO,
                                 DEVICE_STATUS, LOW_POWER_MODE, RAW_MODEL, MODEL, MODEL_DISPLAY_NAME,
                                 LAST_UPDATE, LAST_UPDATE_TIME, LAST_UPDATE_DATETIME,
@@ -368,6 +368,8 @@ class iCloud3_Device(TrackerEntity):
         self.sensors[LAST_UPDATE]           = HHMMSS_ZERO
         self.sensors[TRAVEL_TIME]           = 0
         self.sensors[TRAVEL_TIME_MIN]       = 0
+        self.sensors[TRAVEL_TIME_HHMM]      = HHMM_ZERO
+        self.sensors[ARRIVAL_TIME]          = HHMMSS_ZERO
         self.sensors[ZONE_DISTANCE]         = 0
         self.sensors[ZONE_DISTANCE_M]       = 0
         self.sensors[ZONE_DISTANCE_M_EDGE]  = 0
@@ -1830,8 +1832,10 @@ class iCloud3_Device(TrackerEntity):
             self.sensors[LAST_UPDATE_DATETIME] = self.DeviceFmZoneClosest.sensors[LAST_UPDATE_DATETIME]
             self.sensors[LAST_UPDATE_TIME]     = self.DeviceFmZoneClosest.sensors[LAST_UPDATE_TIME]
             self.sensors[LAST_UPDATE]          = self.DeviceFmZoneClosest.sensors[LAST_UPDATE]
-            self.sensors[TRAVEL_TIME_MIN]      = self.DeviceFmZoneClosest.sensors[TRAVEL_TIME_MIN]
             self.sensors[TRAVEL_TIME]          = self.DeviceFmZoneClosest.sensors[TRAVEL_TIME]
+            self.sensors[TRAVEL_TIME_MIN]      = self.DeviceFmZoneClosest.sensors[TRAVEL_TIME_MIN]
+            self.sensors[TRAVEL_TIME_HHMM]     = self.DeviceFmZoneClosest.sensors[TRAVEL_TIME_HHMM]
+            self.sensors[ARRIVAL_TIME]         = self.DeviceFmZoneClosest.sensors[ARRIVAL_TIME]
             self.sensors[ZONE_DISTANCE]        = self.DeviceFmZoneClosest.sensors[ZONE_DISTANCE]
             self.sensors[ZONE_DISTANCE_M]      = self.DeviceFmZoneClosest.sensors[ZONE_DISTANCE_M]
             self.sensors[ZONE_DISTANCE_M_EDGE] = self.DeviceFmZoneClosest.sensors[ZONE_DISTANCE_M_EDGE]

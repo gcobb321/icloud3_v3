@@ -6,28 +6,27 @@ import asyncio
 
 
 from homeassistant.config_entries   import ConfigEntry
-from homeassistant.core             import CoreState, HomeAssistant
+from homeassistant.const            import EVENT_HOMEASSISTANT_STARTED, EVENT_HOMEASSISTANT_STOP
+from homeassistant.core             import HomeAssistant
 from homeassistant.helpers.typing   import ConfigType
 from homeassistant.helpers          import network
-from homeassistant.const            import EVENT_HOMEASSISTANT_STARTED, EVENT_HOMEASSISTANT_STOP
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
-from homeassistant.components.network import async_get_source_ip
-# from homeassistant.helpers import collection, storage
-import homeassistant.util.location  as ha_location_info
 import homeassistant.helpers.config_validation as cv
 import homeassistant.util.dt as dt_util
-# import voluptuous as vol
+import homeassistant.util.location  as ha_location_info
 import os
+import logging
 
 from .const import (DOMAIN, PLATFORMS, MODE_PLATFORM, MODE_INTEGRATION, CONF_VERSION,
                     CONF_SETUP_ICLOUD_SESSION_EARLY,
                     SENSOR_EVENT_LOG_NAME, SENSOR_WAZEHIST_TRACK_NAME,
                     EVLOG_IC3_STARTING, VERSION, )
 
-from .const_sensor import (HA_EXCLUDE_SENSORS, )
+CONFIG_SCHEMA = cv.empty_config_schema(DOMAIN)
+
+# from .const_sensor import (HA_EXCLUDE_SENSORS, )
 
 from .global_variables              import GlobalVariables as Gb
-# from .helpers.common                import (instr, )
 from .helpers.messaging             import (_trace, _traceha, open_ic3_log_file,
                                             log_info_msg, log_debug_msg, log_error_msg, log_exception)
 from .support.v2v3_config_migration import iCloud3_v2v3ConfigMigration
@@ -41,7 +40,6 @@ from .support                       import recorder_prefilter
 from .icloud3_main                  import iCloud3
 from .                              import config_flow
 
-import logging
 # _LOGGER = logging.getLogger(__name__)
 Gb.HALogger = _LOGGER = logging.getLogger('icloud3')
 
@@ -63,8 +61,6 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     Gb.config = config
     Gb.ha_config_platform_stmt = True
     Gb.operating_mode = MODE_PLATFORM
-    Gb.local_ip       = await async_get_source_ip(hass)
-    Gb.network_url    = network.get_url(hass)
     await async_get_ha_location_info(hass)
 
     recorder_prefilter.add_filter(hass, [SENSOR_EVENT_LOG_NAME, SENSOR_WAZEHIST_TRACK_NAME])
@@ -125,8 +121,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
         Gb.config_entry   = entry
         Gb.entry_id       = entry.entry_id
         Gb.operating_mode = MODE_INTEGRATION
-        Gb.local_ip       = await async_get_source_ip(hass)
-        Gb.network_url    = network.get_url(hass)
         await async_get_ha_location_info(hass)
 
         recorder_prefilter.add_filter(hass, [SENSOR_EVENT_LOG_NAME, SENSOR_WAZEHIST_TRACK_NAME])

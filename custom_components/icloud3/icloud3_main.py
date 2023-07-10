@@ -273,7 +273,7 @@ class iCloud3:
                 self._main_5sec_loop_update_battery_iosapp(Device)
 
                 if self.loop_ctrl_device_update_in_process:
-                    self._display_loop_control_msg('Moitored')
+                    self._display_loop_control_msg('Monitored')
                     break
                 if Device.is_tracking_paused:
                     continue

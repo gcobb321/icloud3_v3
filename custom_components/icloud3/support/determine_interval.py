@@ -35,7 +35,7 @@ from ..const                import (HOME, NOT_HOME, AWAY, NOT_SET, HIGH_INTEGER,
                                     ZONE, ZONE_INFO, INTERVAL,
                                     DISTANCE, ZONE_DISTANCE, ZONE_DISTANCE_M, ZONE_DISTANCE_M_EDGE,
                                     MAX_DISTANCE, CALC_DISTANCE, WAZE_DISTANCE, WAZE_METHOD,
-                                    TRAVEL_TIME, TRAVEL_TIME_MIN, DIR_OF_TRAVEL, MOVED_DISTANCE,
+                                    TRAVEL_TIME, TRAVEL_TIME_MIN, TRAVEL_TIME_HHMM, ARRIVAL_TIME, DIR_OF_TRAVEL, MOVED_DISTANCE,
                                     LAST_LOCATED, LAST_LOCATED_TIME, LAST_LOCATED_DATETIME,
                                     LAST_UPDATE, LAST_UPDATE_TIME, LAST_UPDATE_DATETIME,
                                     NEXT_UPDATE, NEXT_UPDATE_TIME, NEXT_UPDATE_DATETIME,
@@ -50,7 +50,7 @@ from ..helpers.messaging    import (post_event, post_error_msg,
                                     log_info_msg, log_error_msg, log_exception, _trace, _traceha, )
 from ..helpers.time_util    import (secs_to_time, secs_to_time_str, secs_to_time_age_str, waze_mins_to_time_str,
                                     secs_since, time_to_12hrtime, secs_to_datetime, secs_to, secs_to_age_str,
-                                    datetime_now, time_now, time_now_secs, format_time_age, format_age_ts, )
+                                    datetime_now, time_now, time_now_secs, secs_to_time_hhmm, secs_to_hhmm, )
 from ..helpers.dist_util    import (km_to_mi, km_to_mi_str, format_dist_km,  format_dist_m, format_km_to_mi, )
 
 
@@ -460,6 +460,11 @@ def determine_interval(Device, DeviceFmZone):
 
     sensors[TRAVEL_TIME]          = waze_mins_to_time_str(waze_time_from_zone)
     sensors[TRAVEL_TIME_MIN]      = f"{waze_time_from_zone:.0f} min"
+    sensors[TRAVEL_TIME_HHMM]     = secs_to_hhmm(waze_time_from_zone * 60)
+    if Device.is_inzone and Device.loc_data_zone == DeviceFmZone.from_zone:
+        sensors[ARRIVAL_TIME]     =f"@{secs_to_time_hhmm(Device.zone_change_secs)}"
+    else:
+        sensors[ARRIVAL_TIME]     = secs_to_time_hhmm(waze_time_from_zone * 60 + time_now_secs())
     sensors[DIR_OF_TRAVEL]        = dir_of_travel
 
     sensors[DISTANCE]             = km_to_mi(dist_from_zone_km)

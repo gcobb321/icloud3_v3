@@ -14,15 +14,15 @@ from .const     import (DISTANCE_TO_DEVICES,
                         BATTERY_SOURCE, BATTERY, BATTERY_STATUS, BATTERY_UPDATE_TIME,
                         DISTANCE, ZONE_DISTANCE, ZONE_DISTANCE_M, ZONE_DISTANCE_M_EDGE, HOME_DISTANCE,
                         MAX_DISTANCE,CALC_DISTANCE, WAZE_DISTANCE, WAZE_METHOD,
-                        TRAVEL_TIME, TRAVEL_TIME_MIN, DIR_OF_TRAVEL,
+                        TRAVEL_TIME, TRAVEL_TIME_MIN, TRAVEL_TIME_HHMM, ARRIVAL_TIME, DIR_OF_TRAVEL,
                         MOVED_DISTANCE, MOVED_TIME_FROM, MOVED_TIME_TO,
                         DEVICE_STATUS,
                         LAST_UPDATE, LAST_UPDATE_DATETIME,
                         NEXT_UPDATE, NEXT_UPDATE_DATETIME,
                         LAST_LOCATED, LAST_LOCATED_DATETIME,
                         INFO, GPS_ACCURACY, ALTITUDE, VERTICAL_ACCURACY,
-                        TFZ_ZONE_INFO, TFZ_DISTANCE, TFZ_ZONE_DISTANCE, TFZ_TRAVEL_TIME,
-                        TFZ_TRAVEL_TIME_MIN, TFZ_DIR_OF_TRAVEL,
+                        TFZ_ZONE_INFO, TFZ_DISTANCE, TFZ_ZONE_DISTANCE,  TFZ_DIR_OF_TRAVEL,
+                        TFZ_TRAVEL_TIME,TFZ_TRAVEL_TIME_MIN, TFZ_TRAVEL_TIME_HHMM, TFZ_ARRIVAL_TIME,
                         TOWARDS, AWAY_FROM, TOWARDS_HOME, AWAY_FROM_HOME, INZONE, INZONE_HOME, INZONE_STATIONARY,
                         SENSOR_EVENT_LOG_NAME, SENSOR_WAZEHIST_TRACK_NAME,
                         )
@@ -38,18 +38,19 @@ SENSOR_LIST_DEVICE =    [NAME, BADGE, BATTERY, BATTERY_STATUS,
                         GPS_ACCURACY, ALTITUDE, VERTICAL_ACCURACY,
                         ]
 SENSOR_LIST_TRACKING =  [NEXT_UPDATE, LAST_UPDATE, LAST_LOCATED,
-                        TRAVEL_TIME, TRAVEL_TIME_MIN, MOVED_DISTANCE, DIR_OF_TRAVEL,
+                        TRAVEL_TIME, TRAVEL_TIME_MIN, TRAVEL_TIME_HHMM, ARRIVAL_TIME,
+                        MOVED_DISTANCE, DIR_OF_TRAVEL,
                         WAZE_DISTANCE, CALC_DISTANCE,
                         ZONE_DISTANCE, ZONE_DISTANCE_M, ZONE_DISTANCE_M_EDGE, HOME_DISTANCE,
                         ZONE, ZONE_FNAME, ZONE_NAME, ZONE_DATETIME,
                         LAST_ZONE, LAST_ZONE_FNAME, LAST_ZONE_NAME,
                         ]
 SENSOR_LIST_TRACK_FROM_ZONE = [INFO, LAST_UPDATE, NEXT_UPDATE,
-                        TRAVEL_TIME, TRAVEL_TIME_MIN, DIR_OF_TRAVEL,
+                        TRAVEL_TIME, TRAVEL_TIME_MIN, TRAVEL_TIME_HHMM, ARRIVAL_TIME, DIR_OF_TRAVEL,
                         ]
 SENSOR_LIST_LOC_UPDATE =[TRIGGER, INTERVAL,
                         NEXT_UPDATE, LAST_UPDATE, LAST_LOCATED,
-                        TRAVEL_TIME, TRAVEL_TIME_MIN,
+                        TRAVEL_TIME, TRAVEL_TIME_MIN, TRAVEL_TIME_HHMM, ARRIVAL_TIME,
                         ]
 SENSOR_LIST_ZONE_NAME =[ZONE, ZONE_DISPLAY_AS, ZONE_FNAME, ZONE_NAME, ZONE_NAME, ZONE_FNAME,
                         LAST_ZONE_NAME, LAST_ZONE_DISPLAY_AS, LAST_ZONE_FNAME, LAST_ZONE,
@@ -65,10 +66,12 @@ SENSOR_GROUPS = {
                         NAME,
                         ZONE, ZONE_FNAME, ZONE_NAME, ZONE_DATETIME,
                         HOME_DISTANCE,
-                        TRAVEL_TIME, TRAVEL_TIME_MIN,
+                        TRAVEL_TIME, TRAVEL_TIME_MIN, TRAVEL_TIME_HHMM, ARRIVAL_TIME,
                         LAST_LOCATED,
-                        LAST_UPDATE,
-                        ],
+                        LAST_UPDATE,],
+        'track_from_zone': [
+                        TRAVEL_TIME, TRAVEL_TIME_MIN, TRAVEL_TIME_HHMM, ARRIVAL_TIME,
+                        ZONE_DISTANCE, DISTANCE, DIR_OF_TRAVEL, 'zone_info', ]
 }
 SENSOR_ICONS = {
         TOWARDS_HOME: 'mdi:home-import-outline',
@@ -200,14 +203,26 @@ SENSOR_DEFINITION = {
                 'TravelTime',
                 'timer, min',
                 'mdi:clock-outline',
-                [FROM_ZONE, TRAVEL_TIME, TRAVEL_TIME_MIN],
+                [FROM_ZONE, TRAVEL_TIME, TRAVEL_TIME_MIN, TRAVEL_TIME_HHMM, ARRIVAL_TIME],
                 0],
         TRAVEL_TIME_MIN: [
                 'TravelTimeMin',
                 'timer',
                 'mdi:clock-outline',
-                [FROM_ZONE, TRAVEL_TIME, TRAVEL_TIME_MIN],
+                [FROM_ZONE, TRAVEL_TIME, TRAVEL_TIME_MIN, TRAVEL_TIME_HHMM, ARRIVAL_TIME],
                 0],
+        TRAVEL_TIME_HHMM: [
+                'TravelTime (hh:mm)',
+                'text',
+                'mdi:clock-outline',
+                [FROM_ZONE, TRAVEL_TIME, TRAVEL_TIME_MIN, TRAVEL_TIME_HHMM, ARRIVAL_TIME],
+                BLANK_SENSOR_FIELD],
+        ARRIVAL_TIME: [
+                'ArrivalTime',
+                'text',
+                'mdi:clock-outline',
+                [FROM_ZONE, TRAVEL_TIME, TRAVEL_TIME_MIN, TRAVEL_TIME_HHMM, ARRIVAL_TIME],
+                BLANK_SENSOR_FIELD],
 
         # CONF_SENSORS_TRACKING_DISTANCE
         ZONE_DISTANCE: [
@@ -235,7 +250,7 @@ SENSOR_DEFINITION = {
                 'Direction',
                 'text, title',
                 'mdi:compass-outline',
-                [FROM_ZONE, TRAVEL_TIME, TRAVEL_TIME_MIN],
+                [FROM_ZONE, TRAVEL_TIME, TRAVEL_TIME_MIN, TRAVEL_TIME_HHMM, ARRIVAL_TIME],
                 BLANK_SENSOR_FIELD],
         MOVED_DISTANCE: [
                 'MovedDistance',
@@ -247,7 +262,7 @@ SENSOR_DEFINITION = {
                 'ZoneInfo',
                 'zone_info',
                 'mdi:map-marker-radius-outline',
-                [FROM_ZONE, TRAVEL_TIME, TRAVEL_TIME_MIN,
+                [FROM_ZONE, TRAVEL_TIME, TRAVEL_TIME_MIN, TRAVEL_TIME_HHMM, ARRIVAL_TIME,
                 DISTANCE, MAX_DISTANCE, CALC_DISTANCE, WAZE_DISTANCE, WAZE_METHOD, DIR_OF_TRAVEL],
                 BLANK_SENSOR_FIELD],
 
@@ -256,20 +271,32 @@ SENSOR_DEFINITION = {
                 'ZoneInfo',
                 'zone_info',
                 'mdi:map-marker-radius-outline',
-                [FROM_ZONE, TRAVEL_TIME, TRAVEL_TIME_MIN,
+                [FROM_ZONE, TRAVEL_TIME, TRAVEL_TIME_MIN, TRAVEL_TIME_HHMM, ARRIVAL_TIME,
                 DISTANCE, MAX_DISTANCE, CALC_DISTANCE, WAZE_DISTANCE, WAZE_METHOD, DIR_OF_TRAVEL],
                 BLANK_SENSOR_FIELD],
         TFZ_TRAVEL_TIME: [
                 'TravelTime',
                 'timer, mins',
                 'mdi:clock-outline',
-                [FROM_ZONE, TRAVEL_TIME, TRAVEL_TIME_MIN],
+                [FROM_ZONE, TRAVEL_TIME, TRAVEL_TIME_MIN, TRAVEL_TIME_HHMM, ARRIVAL_TIME],
                 BLANK_SENSOR_FIELD],
         TFZ_TRAVEL_TIME_MIN: [
                 'TravelTimeMin',
                 'timer',
                 'mdi:clock-outline',
-                [FROM_ZONE, TRAVEL_TIME, TRAVEL_TIME_MIN],
+                [FROM_ZONE, TRAVEL_TIME, TRAVEL_TIME_MIN, TRAVEL_TIME_HHMM, ARRIVAL_TIME],
+                BLANK_SENSOR_FIELD],
+        TFZ_TRAVEL_TIME_HHMM: [
+                'TravelTime (hh:mm)',
+                'text',
+                'mdi:clock-outline',
+                [FROM_ZONE, TRAVEL_TIME, TRAVEL_TIME_MIN, TRAVEL_TIME_HHMM, ARRIVAL_TIME],
+                BLANK_SENSOR_FIELD],
+        TFZ_ARRIVAL_TIME: [
+                'ArrivalTime',
+                'text',
+                'mdi:clock-outline',
+                [FROM_ZONE, TRAVEL_TIME, TRAVEL_TIME_MIN, TRAVEL_TIME_HHMM, ARRIVAL_TIME],
                 BLANK_SENSOR_FIELD],
         TFZ_DISTANCE: [
                 'ZoneDistance',
@@ -289,7 +316,8 @@ SENSOR_DEFINITION = {
                 'Direction',
                 'text, title',
                 'mdi:compass-outline',
-                [FROM_ZONE, TRAVEL_TIME, TRAVEL_TIME_MIN, DISTANCE, MAX_DISTANCE],
+                [FROM_ZONE, TRAVEL_TIME, TRAVEL_TIME_MIN, TRAVEL_TIME_HHMM, ARRIVAL_TIME,
+                        DISTANCE, MAX_DISTANCE],
                 BLANK_SENSOR_FIELD],
 
         # CONF_SENSORS_TRACKING_OTHER

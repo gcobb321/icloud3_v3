@@ -340,6 +340,8 @@ CONF_SENSORS_TRACKING_UPDATE_KEY_TEXT = {
 CONF_SENSORS_TRACKING_TIME_KEY_TEXT = {
         'travel_time':      'travel_time > Waze Travel time to Home or closest Track-from-Zone zone',
         'travel_time_min':  'travel_time_min > Waze Travel time to Home or closest Track-from-Zone zone in minutes',
+        'travel_time_hhmm': 'travel_time_hhmm > Waze Travel time to a Zone in hours:minutes',
+        'arrival_time':     'arrival_time > Home Zone arrival time based on Waze Travel time',
         }
 CONF_SENSORS_TRACKING_DISTANCE_KEY_TEXT = {
         'home_distance':    'home_distance > Distance to the Home zone',
@@ -348,12 +350,11 @@ CONF_SENSORS_TRACKING_DISTANCE_KEY_TEXT = {
         'moved_distance':   'moved_distance > Distance moved from the last location',
         }
 CONF_SENSORS_TRACK_FROM_ZONES_KEY_TEXT = {
-        'tfz_zone_info':    'zone_info_[zone] > Summary sensor with all zone distance & time attributes',
-        'tfz_travel_time':  'travel_time_[zone] > Waze Travel time to a Track-from-Zone',
-        'tfz_travel_time_min': 'travel_time_min_[zone] > Waze Travel time to a Track-from-Zone in minutes',
-        'tfz_distance':     'distance_[zone] > Distance from the Track-from-Zone ',
-        'tfz_dir_of_travel':'dir_of_travel_[zone] > Direction of Travel from the Track-from-Zone (Towards, AwayFrom, inZone, etc)',
+        'general_sensors':  'Include General Sensors (zone_info)',
+        'time_sensors':     'Include Travel Time Sensors (travel_time, travel_time_mins, travel_time_hhmm, arrival_time',
+        'distance_sensors': 'Include Zone Distance Sensors (zone_distance, distance, dir_of_travel)',
         }
+CONF_SENSORS_TRACK_FROM_ZONES_KEYS = ['general_sensors', 'time_sensors', 'distance_sensors']
 CONF_SENSORS_TRACKING_OTHER_KEY_TEXT = {
         'trigger':          'trigger > Last action that triggered a location update',
         'waze_distance':    'waze_distance > Waze distance from a TrackFrom zone',
@@ -405,7 +406,7 @@ PASSTHRU_ZONE_HEADER =     ("You may be driving through a non-tracked zone but n
                             "App issues an Enter Zone trigger when the device enters the zone and changes the "
                             "device_tracker entity state to the Zone. iCloud3 does not process the Enter Zone "
                             "trigger until the delay time has passed. This prevents processing a Zone Enter "
-                            "trigger that is immediately followed by an Exit Zone trigger.")
+                            "trig[er that is immediately followed by an Exit Zone trigger.")
 STAT_ZONE_HEADER =         ("A Stationary Zone is automatically created if the device remains in the same location "
                             "(store, friends house, doctor`s office, etc.) for an extended period of time")
 STAT_ZONE_BASE_HEADER =    ("The Stationary Zone is moved to it's 'Base Location' when it is not used by the device. "
@@ -1200,6 +1201,15 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
 
         if HOME_DISTANCE not in user_input[CONF_SENSORS_TRACKING_DISTANCE]:
             user_input[CONF_SENSORS_TRACKING_DISTANCE].append(HOME_DISTANCE)
+
+        tfz_sensors_base = ['zone_info']
+        tfz_sensors_base.extend(user_input[CONF_SENSORS_TRACKING_TIME])
+        tfz_sensors_base.extend(user_input[CONF_SENSORS_TRACKING_DISTANCE])
+        tfz_sensors = []
+        for sensor in tfz_sensors_base:
+            if sensor in SENSOR_GROUPS['track_from_zone']:
+                tfz_sensors.append(f"tfz_{sensor}")
+        user_input[CONF_SENSORS_TRACK_FROM_ZONES] = tfz_sensors
 
         if action_item == 'exclude_sensors':
             self.excluded_sensors = Gb.conf_sensors[CONF_EXCLUDED_SENSORS].copy()
@@ -2939,7 +2949,6 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
     def _remove_and_create_sensors(self, user_input):
         """ Remove unchecked sensor entities and create newly checked sensor entities """
 
-
         new_sensors_list, remove_sensors_list = \
                 self._sensor_form_identify_new_and_removed_sensors(user_input)
         self._remove_sensor_entity(remove_sensors_list)
@@ -4277,9 +4286,9 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
                 vol.Required(CONF_SENSORS_OTHER,
                             default=Gb.conf_sensors[CONF_SENSORS_OTHER]):
                             cv.multi_select(CONF_SENSORS_OTHER_KEY_TEXT),
-                vol.Required(CONF_SENSORS_TRACK_FROM_ZONES,
-                            default=Gb.conf_sensors[CONF_SENSORS_TRACK_FROM_ZONES]):
-                            cv.multi_select(CONF_SENSORS_TRACK_FROM_ZONES_KEY_TEXT),
+                # vol.Required(CONF_SENSORS_TRACK_FROM_ZONES,
+                #             default=Gb.conf_sensors[CONF_SENSORS_TRACK_FROM_ZONES]):
+                #             cv.multi_select(CONF_SENSORS_TRACK_FROM_ZONES_KEY_TEXT),
                 vol.Required(CONF_SENSORS_MONITORED_DEVICES,
                             default=Gb.conf_sensors[CONF_SENSORS_MONITORED_DEVICES]):
                             cv.multi_select(CONF_SENSORS_MONITORED_DEVICES_KEY_TEXT),
