@@ -62,7 +62,8 @@ from .const             import (DOMAIN, DATETIME_FORMAT,
                                 )
 from .const_sensor      import (SENSOR_GROUPS )
 from .helpers.common    import (instr, isnumber, obscure_field, zone_display_as, list_to_str, str_to_list, )
-from .helpers.messaging import (log_exception, log_debug_msg, _traceha, _trace, post_event, close_reopen_ic3_log_file, )
+from .helpers.messaging import (log_exception, log_debug_msg, _traceha, _trace,
+                                post_event, post_monitor_msg, close_reopen_ic3_log_file, )
 from .helpers           import entity_io
 from .                  import sensor as ic3_sensor
 from .                  import device_tracker as ic3_device_tracker
@@ -546,11 +547,6 @@ class iCloud3_ConfigFlow(config_entries.ConfigFlow, FlowHandler, domain=DOMAIN):
         if Gb.OptionsFlowHandler is None:
             Gb.OptionsFlowHandler = iCloud3_OptionsFlowHandler()
         OptFlow = Gb.OptionsFlowHandler
-        OptFlow_PyiCloud = OptFlow.PyiCloud
-        if Gb.PyiCloud:
-            PyiCloud = Gb.PyiCloud
-        elif OptFlow_PyiCloud:
-            PyiCloud = OptFlow.PyiCloud
 
         self.step_id = 'reauth'
         self.errors = errors or {}
@@ -570,24 +566,17 @@ class iCloud3_ConfigFlow(config_entries.ConfigFlow, FlowHandler, domain=DOMAIN):
             return self.async_abort(reason="verification_code_cancelled")
 
         if action_item == 'request_verification_code':
-            await Gb.hass.async_add_executor_job(pyicloud_ic3_interface.delete_pyicloud_cookies_session_files)
-            user_input[CONF_USERNAME] = Gb.username
-            user_input[CONF_PASSWORD] = Gb.password
-
-            await OptFlow._log_into_icloud_account(
-                            user_input, called_from_step_id='cf_reauth', request_verification_code=True)
-            PyiCloud = OptFlow.PyiCloud
-
-            if PyiCloud:
-                PyiCloud.new_2fa_code_already_requested_flag = True
-                self.errors['base'] = 'verification_code_requested2'
+            await Gb.hass.async_add_executor_job(
+                                        pyicloud_ic3_interface.pyicloud_reset_session,
+                                        Gb.PyiCloud)
+            self.errors['base'] = 'verification_code_requested2'
 
         elif (action_item == 'send_verification_code'
                 and CONF_VERIFICATION_CODE in user_input
                 and user_input[CONF_VERIFICATION_CODE]):
 
             valid_code = await Gb.hass.async_add_executor_job(
-                                    PyiCloud.validate_2fa_code,
+                                    Gb.PyiCloud.validate_2fa_code,
                                     user_input[CONF_VERIFICATION_CODE])
 
             # Do not restart iC3 right now if the username/password was changed on the
@@ -597,10 +586,10 @@ class iCloud3_ConfigFlow(config_entries.ConfigFlow, FlowHandler, domain=DOMAIN):
                 post_event( f"{EVLOG_NOTICE}The Verification Code was accepted ({user_input[CONF_VERIFICATION_CODE]})")
                 post_event(f"{EVLOG_NOTICE}iCLOUD ALERT > Apple ID Verification complete")
 
-                Gb.EvLog.clear_alert_events()
+                Gb.EvLog.clear_alert()
                 Gb.EvLog.update_event_log_display("")
                 start_ic3.set_primary_data_source(FAMSHR)
-                PyiCloud.new_2fa_code_already_requested_flag = False
+                Gb.PyiCloud.new_2fa_code_already_requested_flag = False
 
                 Gb.authenticated_time = time.time()
                 close_reopen_ic3_log_file()
@@ -1518,7 +1507,7 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
             if pname in Gb.conf_profile:
                 if Gb.conf_profile[pname] != pvalue:
                     Gb.conf_profile[pname] = pvalue
-                    updated_parms.update(['profile'])   #, 'restart'])
+                    updated_parms.update(['profile', 'evlog'])   #, 'restart'])
 
         if updated_parms != {''}:
             # If default or converted file, update version so the
@@ -1903,8 +1892,7 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
                 post_event( f"{EVLOG_NOTICE}The Verification Code was accepted ({user_input[CONF_VERIFICATION_CODE]})")
                 post_event(f"{EVLOG_NOTICE}iCLOUD ALERT > Apple ID Verification complete")
 
-                Gb.EvLog.clear_alert_events()
-                Gb.EvLog.update_event_log_display("")
+                clear_alert()
                 Gb.force_icloud_update_flag = True
                 PyiCloud.new_2fa_code_already_requested_flag = False
 

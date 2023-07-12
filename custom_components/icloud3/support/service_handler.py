@@ -23,7 +23,7 @@ from ..support              import start_ic3
 from ..support              import determine_interval as det_interval
 from ..helpers.common       import (instr, )
 from ..helpers.messaging    import (post_event, post_error_msg, post_monitor_msg,
-                                    write_ic3_log_recd,
+                                    write_ic3_log_recd, post_alert, clear_alert,
                                     log_info_msg, log_debug_msg, log_exception,
                                     open_ic3_log_file, close_ic3_log_file,
                                     close_reopen_ic3_log_file, delete_open_log_file,
@@ -222,21 +222,12 @@ def update_service_handler(action_entry=None, action_fname=None, devicename=None
         return
 
     action = action_entry
-    # if action == CMD_REFRESH_EVENT_LOG:
-        # flow_result = Gb.hass.async_create_task(Gb.ActionsFlow.async_init, 'icloud3')
-        # flow_result = asyncio.run_coroutine_threadsafe(
-        #             Gb.ActionsFlow.async_init('icloud3_af'), Gb.hass.loop).result()
-        # _traceha(f"FLOW {flow_result=}")
-        # Gb.hass.async_create_task(Gb.ActionsFlow.async_configure, flow_result['flow_id'])
-
-        # return asyncio.run_coroutine_threadsafe(
-        #             Gb.ActionsFlow.async_configure(flow_result['flow_id']), Gb.hass.loop).result()
 
     if action == f"{CMD_REFRESH_EVENT_LOG}+clear_alerts":
         action = CMD_REFRESH_EVENT_LOG
-        Gb.EvLog.clear_alert_events()
+        clear_alert()
 
-    Gb.EvLog.clear_alert_events()
+    clear_alert()
     if (action == CMD_REFRESH_EVENT_LOG
             and Gb.EvLog.secs_since_refresh <= 2
             and Gb.EvLog.last_refresh_devicename == devicename):
@@ -306,7 +297,6 @@ def update_service_handler(action_entry=None, action_fname=None, devicename=None
         devicename = 'startup_log'
 
     Gb.EvLog.update_event_log_display(devicename)
-    # Gb.EvLog.clear_alert_events()
 
 
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>

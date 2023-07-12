@@ -59,9 +59,9 @@ SENSOR_LIST_ZONE_NAME =[ZONE, ZONE_DISPLAY_AS, ZONE_FNAME, ZONE_NAME, ZONE_NAME,
 SENSOR_LIST_DISTANCE =  [DISTANCE, ZONE_DISTANCE, ZONE_DISTANCE_M, ZONE_DISTANCE_M_EDGE, HOME_DISTANCE,
                         ]
 SENSOR_GROUPS = {
-        'battery': [BATTERY, BATTERY_STATUS],
-        'md_badge': [BADGE],
-        'md_battery': [BATTERY, BATTERY_STATUS],
+        'battery':      [BATTERY, BATTERY_STATUS],
+        'md_badge':     [BADGE],
+        'md_battery':   [BATTERY, BATTERY_STATUS],
         'md_location_sensors': [
                         NAME,
                         ZONE, ZONE_FNAME, ZONE_NAME, ZONE_DATETIME,
@@ -81,8 +81,12 @@ SENSOR_ICONS = {
         INZONE: 'mdi:crosshairs-gps',
         INZONE_HOME: 'mdi:home-circle-outline',
         INZONE_STATIONARY: 'mdi:target-account',
-        # INZONE_STATIONARY: 'mdi:account-reactivate-outline',
+        'arrival_time_home': 'mdi:home-clock-outline',
+        'arrival_time_in_home': 'mdi:home-clock',
+        'arrival_time_tfz': 'mdi:map-clock-outline',
+        'arrival_time_in_tfz': 'mdi:map-clock',
         'other': 'mdi:compass-outline',
+        # INZONE_STATIONARY: 'mdi:account-reactivate-outline',
 }
 '''
 The Sensor Definition dictionary defines all sensors created by iCloud3.
@@ -206,7 +210,7 @@ SENSOR_DEFINITION = {
                 [FROM_ZONE, TRAVEL_TIME, TRAVEL_TIME_MIN, TRAVEL_TIME_HHMM, ARRIVAL_TIME],
                 0],
         TRAVEL_TIME_MIN: [
-                'TravelTimeMin',
+                'TravelTime (min)',
                 'timer',
                 'mdi:clock-outline',
                 [FROM_ZONE, TRAVEL_TIME, TRAVEL_TIME_MIN, TRAVEL_TIME_HHMM, ARRIVAL_TIME],
@@ -220,7 +224,7 @@ SENSOR_DEFINITION = {
         ARRIVAL_TIME: [
                 'ArrivalTime',
                 'text',
-                'mdi:clock-outline',
+                'mdi:home-clock-outline',
                 [FROM_ZONE, TRAVEL_TIME, TRAVEL_TIME_MIN, TRAVEL_TIME_HHMM, ARRIVAL_TIME],
                 BLANK_SENSOR_FIELD],
 

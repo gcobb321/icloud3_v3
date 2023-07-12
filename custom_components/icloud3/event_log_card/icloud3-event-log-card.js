@@ -22,7 +22,7 @@ class iCloud3EventLogCard extends HTMLElement {
     }
     //---------------------------------------------------------------------------
     setConfig(config) {
-        const version = "3.0.10"
+        const version = "3.0.11"
         const cardTitle = "iCloud3 v3 - Event Log"
 
         const root = this.shadowRoot
@@ -1869,7 +1869,7 @@ class iCloud3EventLogCard extends HTMLElement {
     }
 
      //---------------------------------------------------------------------------
-     _btnConfigHandler() {
+    _btnConfigHandler() {
         const hass      = this._hass
         const root      = this.shadowRoot
         const configUrl = hass.states['sensor.icloud3_event_log'].attributes["ha_config_ic3_url"]
@@ -1877,11 +1877,25 @@ class iCloud3EventLogCard extends HTMLElement {
 
         // Example: 'http://localhost:8123/config/integrations/integration/icloud3'
 
+        var targetUrl = ''
         if (configUrl == "") {
             var winLocUrl = window.location.href
-            var targetUrl = winLocUrl.split('/lovelace', 1)[0] + '/config/integrations/integration/icloud3'
+            if (winLocUrl.indexOf(":8123")) {
+                targetUrl = winLocUrl.split(':8123', 1)[0] + ':8123'
+            }
+            if (winLocUrl.indexOf("/lovelace")) {
+                targetUrl = winLocUrl.split('/lovelace', 1)[0]
+            }
+            if (winLocUrl.indexOf("/dashboard")) {
+                targetUrl = winLocUrl.split('/dashboard', 1)[0]
+            }
+            if (targetUrl == "") {
+                return
+            }
+            targetUrl = targetUrl + '/config/integrations/integration/icloud3'
+
         } else {
-            var targetUrl = configUrl
+            targetUrl = configUrl
         }
 
         btnConfig.setAttribute('href', targetUrl)
@@ -1917,6 +1931,7 @@ class iCloud3EventLogCard extends HTMLElement {
         } else if (buttonId == "btnConfig") {
             this._btnConfigHandler()
             this._displayInfoText("Configure iCloud3 Settings")
+            // this._displayTimeMsgR(btnConfig.href)
 
         } else if (buttonId == "btnIssues") {
             this._displayInfoText("Open GitHub Issue")

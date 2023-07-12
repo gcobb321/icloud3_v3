@@ -319,8 +319,7 @@ def determine_interval(Device, DeviceFmZone):
         interval_method += '+6.Away(Calc)'
         interval_multiplier = 2    #calc-increase timer
 
-    elif (dir_of_travel == NOT_SET
-            and interval > 180):
+    elif dir_of_travel == NOT_SET and interval > 180:
         interval_method += '+>180s'
         interval = 180
 

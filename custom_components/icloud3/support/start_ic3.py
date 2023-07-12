@@ -270,6 +270,7 @@ def set_global_variables_from_conf_parameters(evlog_msg=True):
         Gb.www_evlog_js_directory       = Gb.conf_profile[CONF_EVLOG_CARD_DIRECTORY]
         Gb.www_evlog_js_filename        = Gb.conf_profile[CONF_EVLOG_CARD_PROGRAM]
         Gb.ha_config_ic3_url            = Gb.conf_profile[CONF_HA_CONFIG_IC3_URL].strip()
+        Gb.EvLog.evlog_attrs["ha_config_ic3_url"] = Gb.ha_config_ic3_url
 
         Gb.um                           = Gb.conf_general[CONF_UNIT_OF_MEASUREMENT]
         Gb.time_format_12_hour          = Gb.conf_general[CONF_TIME_FORMAT].startswith('12')
@@ -584,8 +585,8 @@ def process_config_flow_parameter_updates():
     if 'restart' in Gb.config_flow_updated_parms:
         initialize_icloud_data_source()
         Gb.restart_icloud3_request_flag = True
-        if 'profile' in Gb.config_flow_updated_parms:
-            Gb.EvLog.display_user_message('The Browser may need to be refreshed')
+        #if 'profile' in Gb.config_flow_updated_parms:
+        #    Gb.EvLog.display_user_message('The Browser may need to be refreshed')
         return
 
     post_event(f"{EVLOG_IC3_STAGE_HDR}Configuration Update - Complete")
@@ -595,13 +596,14 @@ def process_config_flow_parameter_updates():
     if 'zone_formats' in Gb.config_flow_updated_parms:
         set_zone_display_as()
 
-    if 'profile' in Gb.config_flow_updated_parms:
-        post_event('Processing Event Log Profile Update')
+    if 'evlog' in Gb.config_flow_updated_parms:
+        post_event('Processing Event Log Settings Update')
+        Gb.ha_config_ic3_url = Gb.conf_profile[CONF_HA_CONFIG_IC3_URL].strip()
         check_ic3_event_log_file_version()
         Gb.hass.loop.create_task(update_lovelace_resource_event_log_js_entry())
         Gb.EvLog.setup_event_log_trackable_device_info()
-        if 'profile' in Gb.config_flow_updated_parms:
-            Gb.EvLog.display_user_message('The Browser may need to be refreshed')
+        #if 'profile' in Gb.config_flow_updated_parms:
+        #    Gb.EvLog.display_user_message('The Browser may need to be refreshed')
 
     if 'reauth' in Gb.config_flow_updated_parms:
         Gb.evlog_action_request = CMD_RESET_PYICLOUD_SESSION

@@ -1,12 +1,21 @@
+Beta 19.2 - 7/10/2023
+...................
+1. Bug Fix - Fixed a problem displaying the iCloud3 Configure Settings screen on an iPad or iPhone.
+2. Bug Fix - Fixed a problem requesting a new Apple Verification code from the Enter/Request Apple Verification code screen when it was selected from the HA Notifications > iCloud3 Reconfigure.
+3. Sensor tweaks:
+    1. `[devicename]_arrival_time` - Changed the icon to better show when the device was in the zone (house/map icon solid = arrived) or when you would arrive (house/map icon not solid = calculated arrival time).
+    2. `[devicename]_zone_distance`, `[devicename]_home_distance` - Changed the icon to show if you are going towards Home, away from Home or at Home.
+
+---> A BROWSER REFRESH WILL BE REQUESTED <---
+
+
 Beta 19.1 - 7/10/2023
 ...................
 1. Bug Fix - Fixed a problem that may be encountered if you have a watch paired to an iPhone and are tracking the iPhone but not the watch.
 2. New Sensors:
-    1. travel_time_hhmm - Displays the travel time to the zone in an hh:mm format.
-    2. arrival_time - The expected arrival time to the zone (current time + travel time)
+   1. `[devicename]_travel_time_hhmm` - Displays the travel time to the zone in an hh:mm format.
+    2. `[devicename]_arrival_time` - The expected arrival time to the zone (current time + travel time) (5:25p, 17:25) or the time you arrived in the Home or other Tracked From zone (@5:25p, @17:25)
 3. Simplified the sensors associated with track_from_zones other than Home.
-
-
 
 
 Beta 19 - 7/8/2023

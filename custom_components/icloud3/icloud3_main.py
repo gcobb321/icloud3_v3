@@ -62,7 +62,7 @@ from .helpers.common    import (instr, is_zone, is_statzone, isnot_statzone, isn
                                 zone_display_as, )
 from .helpers.messaging import (broadcast_info_msg,
                                 post_event, post_error_msg, post_monitor_msg, post_internal_error,
-                                open_ic3_log_file,
+                                open_ic3_log_file, post_alert, clear_alert,
                                 log_info_msg, log_exception, log_start_finish_update_banner,
                                 log_debug_msg, close_reopen_ic3_log_file, archive_log_file,
                                 _trace, _traceha, )
@@ -359,20 +359,6 @@ class iCloud3:
         if Device.primary_data_source == IOSAPP and Device.iosapp_data_updated_flag is False:
             if Device.next_update_secs <= Gb.this_update_secs and Device.interval_secs > 30:
                 Device.calculate_old_location_threshold()
-                # _trace=(f"Next-{secs_to_time(Device.next_update_secs)}, "
-                #     f"locData-{secs_to_time(Device.loc_data_secs)}, "
-                #     f"iosappData-{secs_to_time(Device.iosapp_data_secs)}, "
-                #     f"MsgSent-{secs_to_time(Device.iosapp_request_loc_sent_secs)}, "
-                #     #f"Interval-{Device.interval_secs}/"
-                #     #f"{((Gb.this_update_secs - Device.next_update_secs) % Device.interval_secs)}"
-                #     f"NextAlive-{secs_to_time(Device.next_update_secs+Device.interval_secs)}, "
-                #     f"{CRLF}"
-                #     f"Loc>Thresh-{secs_since(Device.loc_data_secs) > Device.old_loc_threshold_secs}, "
-                #     f"Next>loc-{Device.next_update_secs > Device.loc_data_secs}, "
-                #     f" IntervalMsg-{((Gb.this_update_secs - Device.next_update_secs) % Device.interval_secs == 0)}, "
-                #     # f"Alive%secs-{secs_since(Device.iosapp_request_loc_first_secs) % Gb.iosapp_alive_interval_secs == 0}"
-                # )
-                #post_monitor_msg(Device.devicename, _trace)
 
                 if  (secs_since(Device.loc_data_secs) > Device.old_loc_threshold_secs
                         and Device.next_update_secs > Device.loc_data_secs
@@ -929,12 +915,16 @@ class iCloud3:
             pass
 
         elif (Gb.PyiCloud.requires_2fa
-                and Gb.EvLog.user_message != 'iCloud Account authentication is needed'):
-            Gb.EvLog.display_user_message('iCloud Account authentication is needed')
+                and Gb.EvLog.alert_message != 'iCloud Account authentication is needed'):
+            post_alert('iCloud Account authentication is needed')
+            #     and Gb.EvLog.user_message != 'iCloud Account authentication is needed'):
+            # Gb.EvLog.display_user_message('iCloud Account authentication is needed')
 
         elif (Gb.PyiCloud.requires_2fa is False
-                and Gb.EvLog.user_message == 'iCloud Account authentication is needed'):
-            Gb.EvLog.display_user_message('', clear_alert=True)
+                and Gb.EvLog.alert_message == 'iCloud Account authentication is needed'):
+            clear_alert()
+            #     and Gb.EvLog.user_message == 'iCloud Account authentication is needed'):
+            # Gb.EvLog.display_user_message('', clear_alert=True)
 
 #----------------------------------------------------------------------------
     def _determine_interval_and_next_update(self, Device):
@@ -1400,6 +1390,10 @@ class iCloud3:
 
 #--------------------------------------------------------------------
     def _timer_tasks_midnight(self):
+        if instr(Gb.conf_general[CONF_LOG_LEVEL], 'auto-reset'):
+                start_ic3.set_log_level('info')
+                start_ic3.update_conf_file_log_level('info')
+
         for devicename, Device in Gb.Devices_by_devicename.items():
             Gb.pyicloud_authentication_cnt  = 0
             Gb.pyicloud_location_update_cnt = 0
@@ -1412,10 +1406,6 @@ class iCloud3:
             if Gb.wazehist_recalculate_time_dist_flag:
                 Gb.wazehist_recalculate_time_dist_flag = False
                 Gb.WazeHist.wazehist_recalculate_time_dist_all_zones()
-
-        if instr(Gb.conf_general[CONF_LOG_LEVEL], 'auto-reset'):
-                start_ic3.set_log_level('info')
-                start_ic3.update_conf_file_log_level('info')
 
         # Close log file, rename to '-1', open a new log file
         archive_log_file()

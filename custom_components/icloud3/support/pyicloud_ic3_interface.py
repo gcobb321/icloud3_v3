@@ -374,12 +374,13 @@ def delete_pyicloud_cookies_session_files(cookie_filename=None):
     cookie_filename   = cookie_filename or Gb.PyiCloud.cookie_filename
     session_directory = f"{cookie_directory}/session"
 
-    delete_msg = f"{EVLOG_ALERT}"
-    delete_msg += delete_file('iCloud Acct tokenpw', session_directory, f"{cookie_filename}.tpw")
-    delete_msg += CRLF
-    delete_msg += delete_file('iCloud Acct session', session_directory, cookie_filename, delete_old_sv_file=True)
-    delete_msg += CRLF
-    delete_msg += delete_file('iCloud Acct cookies', cookie_directory,  cookie_filename, delete_old_sv_file=True)
+    delete_msg =  f"Deleting iCloud Cookie & Session Files > ({cookie_directory})"
+    delete_msg += f"{CRLF_DOT}Cookies ({cookie_filename})"
+    delete_file('iCloud Acct cookies', cookie_directory,  cookie_filename, delete_old_sv_file=True)
+    delete_msg += f"{CRLF_DOT}Token Password ({cookie_filename}.tpw)"
+    delete_file('iCloud Acct tokenpw', session_directory, f"{cookie_filename}.tpw")
+    delete_msg += f"{CRLF_DOT}Session (/session/{cookie_filename})"
+    delete_file('iCloud Acct session', session_directory, cookie_filename, delete_old_sv_file=True)
     post_monitor_msg(delete_msg)
 
 #--------------------------------------------------------------------

@@ -965,6 +965,12 @@ class iCloud3_Device(TrackerEntity):
         return (self.iosapp_data_state in [NOT_HOME, NOT_SET])
 
     @property
+    def is_inzone_trackfrom(self):
+        return (self.loc_data_zone not in [NOT_HOME, NOT_SET]
+                    and self.loc_data_zone != HOME
+                    and self.loc_data_zone in self.DeviceFmZones_by_zone)
+
+    @property
     def was_inzone(self):
         return (self.sensors[ZONE] not in [NOT_HOME, AWAY, AWAY_FROM, NOT_SET])
 
@@ -1846,13 +1852,14 @@ class iCloud3_Device(TrackerEntity):
             self.sensors[HOME_DISTANCE]        = self.DeviceFmZoneHome.sensors[ZONE_DISTANCE]
             self.DeviceFmZoneClosest.dir_of_travel = dir_of_travel = \
                     self.DeviceFmZoneClosest.sensors[DIR_OF_TRAVEL]
+            # _trace(self.devicename, f"{dir_of_travel=}")
 
             # If moving towards a tracked from zone, change the direction to 'To-[zonename]'
             from_zone = zone_display_as(self.sensors[FROM_ZONE]).replace(' ', '')[:8]
-            if dir_of_travel in [TOWARDS, AWAY_FROM]:
-                self.sensors[DIR_OF_TRAVEL] = dir_of_travel if self.is_tracked_from_home else from_zone
+            # if dir_of_travel in [TOWARDS, AWAY_FROM]:
+            #     self.sensors[DIR_OF_TRAVEL] = dir_of_travel if self.is_tracked_from_home else from_zone
 
-            elif dir_of_travel in [INZONE, STATIONARY_FNAME]:
+            if dir_of_travel in [INZONE, STATIONARY_FNAME]:
                 self.sensors[DIR_OF_TRAVEL] = f"@{zone_display_as(self.loc_data_zone)[:8]}"
 
             else:
@@ -1920,14 +1927,26 @@ class iCloud3_Device(TrackerEntity):
         elif dir_of_travel.startswith('@') or dir_of_travel in [INZONE, STATIONARY_FNAME]:
             if self.loc_data_zone == HOME:
                 self.sensors_icon[DIR_OF_TRAVEL] = SENSOR_ICONS[INZONE_HOME]
+                self.sensors_icon[ARRIVAL_TIME]  = SENSOR_ICONS['arrival_time_in_home']
+
             elif self.is_in_statzone:
                 self.sensors_icon[DIR_OF_TRAVEL] = SENSOR_ICONS[INZONE_STATIONARY]
+
             else:
                 self.sensors_icon[DIR_OF_TRAVEL] = SENSOR_ICONS[INZONE]
 
-        if self.DeviceFmZoneNextToUpdate.from_zone != HOME:
-            self.sensors_icon[NEXT_UPDATE] = \
-                    f"mdi:alpha-{self.DeviceFmZoneNextToUpdate.from_zone[:1]}-circle"
+        # _trace(self.devicename, f"{dir_of_travel=} {self.sensors_icon=}")
+        if DIR_OF_TRAVEL in self.sensors_icon:
+            self.sensors_icon[ZONE_DISTANCE] = self.sensors_icon[HOME_DISTANCE] = \
+                    self.sensors_icon[DIR_OF_TRAVEL]
+
+        if self.is_inzone_trackfrom:
+            self.sensors_icon[NEXT_UPDATE] = f"mdi:alpha-{self.loc_data_zone[:1]}-circle"
+            self.sensors_icon[ARRIVAL_TIME] = SENSOR_ICONS['arrival_time_in_tfz']
+
+        elif self.is_inzone_trackfrom  or self.DeviceFmZoneNextToUpdate.from_zone != HOME:
+            self.sensors_icon[NEXT_UPDATE] = f"mdi:alpha-{self.DeviceFmZoneNextToUpdate.from_zone[:1]}-circle"
+            self.sensors_icon[ARRIVAL_TIME] = SENSOR_ICONS['arrival_time_tfz']
                     # f"mdi:alpha-{self.DeviceFmZoneNextToUpdate.from_zone[:1]}-circle-outline"
                     # f"mdi:alpha-{self.DeviceFmZoneNextToUpdate.from_zone[:1]}-box-outline"
 

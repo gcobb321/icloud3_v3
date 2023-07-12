@@ -564,8 +564,7 @@ class EventLog(object):
         self.devicename_cnts[devicename_type] += 1
 
 #------------------------------------------------------
-    def clear_alert_events(self):
-
+    def clear_alert(self):
         self.alert_message = ''
 
 #------------------------------------------------------
@@ -592,16 +591,6 @@ class EventLog(object):
             alert_msg = ( f"{EVLOG_HIGHLIGHT}{self.alert_message}")
             alert_recd = ['',alert_msg]
             time_text_recds.insert(0, alert_recd)
-            # self.alert_message = ''
-
-
-        # else:
-        #     time_text_recds_str = str(time_text_recds)
-
-        #     while len(time_text_recds_str) > 15000:
-        #         self.evlog_table = self.evlog_table[:len(self.evlog_table)-200]
-        #         time_text_recds = self._extract_filtered_evlog_recds(devicename)
-        #         time_text_recds_str = str(time_text_recds)
 
         time_text_recds.append(CONTROL_RECD)
 
@@ -622,7 +611,6 @@ class EventLog(object):
                 return [el_recd[1:3] for el_recd in self.evlog_table_startup
                                         if el_recd[ELR_TEXT].startswith(EVLOG_MONITOR) is False]
 
-        # Device = Gb.Devices_by_devicename.get(devicename)
         el_devicename_check = ['*', '**', 'nodevices', devicename]
 
         if Device := Gb.Devices_by_devicename.get(devicename):

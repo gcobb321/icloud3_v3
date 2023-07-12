@@ -164,6 +164,23 @@ def post_monitor_msg(devicename, event_msg='+'):
     # write_ic3_log_recd(f"{devicename} > {event_msg}")
 
 #-------------------------------------------------------------------------------------------
+def post_alert(alert_message):
+    '''
+    Post an Alert Message on the first line of the event log items
+    '''
+
+    if alert_message == '':
+        Gb.EvLog.clear_alert()
+    else:
+        Gb.EvLog.alert_message = alert_message
+    Gb.EvLog.display_user_message('')
+
+#-------------------------------------------------------------------------------------------
+def clear_alert():
+    Gb.EvLog.clear_alert()
+    Gb.EvLog.display_user_message('')
+
+#-------------------------------------------------------------------------------------------
 def resolve_system_event_msg(devicename, event_msg):
     if event_msg == '+':
         return ("*", devicename)
