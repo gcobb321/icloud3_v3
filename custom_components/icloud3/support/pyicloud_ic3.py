@@ -31,7 +31,7 @@ from ..const                import (AIRPODS_FNAME, NONE_FNAME,
                                     APPLE_SPECIAL_ICLOUD_SERVER_COUNTRY_CODE,
                                     ICLOUD_HORIZONTAL_ACCURACY,
                                     LOCATION, TIMESTAMP, LOCATION_TIME, DATA_SOURCE,
-                                    ICLOUD_BATTERY_STATUS, BATTERY_STATUS_REFORMAT, ICLOUD_DEVICE_STATUS,
+                                    ICLOUD_BATTERY_STATUS, BATTERY_STATUS_CODES, ICLOUD_DEVICE_STATUS,
                                     CONF_PASSWORD, CONF_MODEL_DISPLAY_NAME, CONF_RAW_MODEL,
                                     CONF_IC3_DEVICENAME, CONF_FNAME, CONF_FAMSHR_DEVICENAME, CONF_FMF_EMAIL,
                                     )
@@ -2176,13 +2176,12 @@ class PyiCloud_RawData():
             self.location_secs = 0
             self.location_time = HHMMSS_ZERO
 
-
         self.update_secs = time_now_secs()
 
         # Reformat and convert batteryStatus
         try:
             battery_status = self.device_data[ICLOUD_BATTERY_STATUS].lower()
-            self.device_data[ICLOUD_BATTERY_STATUS] = BATTERY_STATUS_REFORMAT.get(battery_status, battery_status)
+            self.device_data[ICLOUD_BATTERY_STATUS] = BATTERY_STATUS_CODES.get(battery_status, battery_status)
         except:
             pass
 

@@ -212,10 +212,11 @@ class Waze(object):
 
             event_msg =(f"Waze Route Info > {waze_source_msg}")
             if waze_source_msg == "":
-                event_msg += (  f"TravTime-{self.waze_mins_to_time_str(route_time)}, "
+                # event_msg += (  f"TravTime-{self.waze_mins_to_time_str(route_time)}, "
+                event_msg += (  f"TravTime-{secs_to_time_str(route_time * 60)}, "
                                 f"Dist-{format_dist_km(route_dist_km)}, "
-                                f"WazeMoved-{format_dist_km(dist_moved_km)}, "
-                                f"CalcMoved-{format_dist_km(Device.loc_data_dist_moved_km)}, "
+                                f"Moved-{format_dist_km(dist_moved_km)}"
+                                #f"CalcMoved-{format_dist_km(Device.loc_data_dist_moved_km)}, "
                                 f"{wazehist_save_msg}")
             post_event(Device.devicename, event_msg)
 
@@ -358,26 +359,26 @@ class Waze(object):
         post_event(log_msg)
 
 #--------------------------------------------------------------------
-    def waze_mins_to_time_str(self, waze_time_from_zone):
-        '''
-        Return the message displayed in the waze time field ►►
-        '''
+    # def waze_mins_to_time_str(self, waze_time_from_zone):
+    #     '''
+    #     Return the message displayed in the waze time field ►►
+    #     '''
 
-        #Display time to the nearest minute if more than 3 min away
-        if self.waze_status == WAZE_USED:
-            t = waze_time_from_zone * 60
-            r = 0
-            if t > 180:
-                t, r = divmod(t, 60)
-                t = t + 1 if r > 30 else t
-                t = t * 60
+    #     #Display time to the nearest minute if more than 3 min away
+    #     if self.waze_status == WAZE_USED:
+    #         t = waze_time_from_zone * 60
+    #         r = 0
+    #         if t > -1:   #180:
+    #             t, r = divmod(t, 60)
+    #             t = t + 1 if r > 30 else t
+    #             t = t * 60
 
-            waze_time_msg = secs_to_time_str(t)
+    #         waze_time_msg = secs_to_time_str(t)
 
-        else:
-            waze_time_msg = ''
+    #     else:
+    #         waze_time_msg = ''
 
-        return waze_time_msg
+    #     return waze_time_msg
 
     def __repr__(self):
         return (f"<Waze>")

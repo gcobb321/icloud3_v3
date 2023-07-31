@@ -25,9 +25,9 @@
 
 from .const          import (DEVICENAME_IOSAPP, VERSION, NOT_SET, HOME_FNAME, HOME, STORAGE_DIR, WAZE_USED,
                             FAMSHR, FMF, FAMSHR_FMF, ICLOUD, IOSAPP, FNAME, HIGH_INTEGER,
-                            DEFAULT_GENERAL_CONF, HA_CONFIG_IC3_URL,
+                            DEFAULT_GENERAL_CONF,
                             CONF_UNIT_OF_MEASUREMENT,
-                            CONF_DISPLAY_ZONE_FORMAT,
+                            CONF_DISPLAY_ZONE_FORMAT, CONF_DEVICE_TRACKER_STATE_SOURCE,
                             CONF_CENTER_IN_ZONE, CONF_DISPLAY_GPS_LAT_LONG,
                             CONF_TRAVEL_TIME_FACTOR, CONF_GPS_ACCURACY_THRESHOLD,
                             CONF_DISCARD_POOR_GPS_INZONE, CONF_OLD_LOCATION_THRESHOLD, CONF_OLD_LOCATION_ADJUSTMENT,
@@ -66,7 +66,7 @@ class GlobalVariables(object):
     entry_id        = None      # Has entry_id for iCloud3
     local_ip        = None      # from component/local_ip/async_get_source_ip in __init__
     network_url     = None      # from helpers/network/get_url in __init__
-    ha_config_ic3_url = ''
+    evlog_btnconfig_url = ''
     async_add_entities_sensor = None            # Initial add_entities link passed to sensor during ha startup
     async_add_entities_device_tracker = None    # Initial add_entities link passed to device_tracker during ha startup
     async_executor_call_parameters = None
@@ -120,8 +120,6 @@ class GlobalVariables(object):
     encode_password_flag         = True
     all_famshr_devices           = True
     entity_registry_file         = ''
-    evlog_card_directory         = ''
-    evlog_card_program           = ''
     devices                      = ''
 
     # Global Object Dictionaries
@@ -132,11 +130,11 @@ class GlobalVariables(object):
     Devices_by_icloud_device_id       = {}  # FmF/FamShr Device Configuration
     Devices_by_iosapp_devicename      = {}  # All Devices by the iosapp device_tracker.iosapp_devicename
     PairedDevices_by_paired_with_id   = {}  # Paired Devices by the paired_with_id (famshr prsID) id=[Dev1, Dev2]
-    # Devices_by_statzonename           = {}  # All Devices by the statzone.zone and statzone.display_as
     Zones                             = []  # Zones object list
     Zones_by_zone                     = {}  # Zone object by zone name
     zone_display_as                   = {}   # Zone display_as by zone distionary to ease displaying zone fname
     TrackedZones_by_zone              = {HOME, None}  # Tracked zones object by zone name set up with Devices.DeviceFmZones object
+    ActiveZones                       = []  # Active Zones - Not passive, radius > 0
     StatZones                         = []  # Stationary Zone objects
     StatZones_by_zone                 = {}  # Stationary Zone objects by their id number (1-10 --> ic3_#_stationary)
     HomeZone                          = None # Home Zone object
@@ -149,14 +147,18 @@ class GlobalVariables(object):
     dr_device_id_by_devicename        = {}  # HA device_registry device_id
     dr_area_id_by_devicename          = {}  # HA device_registry area_id
 
+    # Event Log operational fields
+    evlog_card_directory              = ''
+    evlog_card_program                = ''
+    evlog_disable_refresh_flag        = False
+    evlog_action_request              = ''
+    evlog_version                     = ''  # EvLog version reported back from the EvLog via the event_log_version svc call
 
     # System Wide variables control iCloud3 start/restart procedures
     polling_5_sec_loop_running      = False     # Indicates the 5-sec polling loop is set up
     start_icloud3_inprocess_flag    = False
     restart_icloud3_request_flag    = False     # iC3 needs to be restarted, set when a new_2fa code is needed in pyicloud_ic3_interface
-    evlog_disable_refresh_flag      = False
     any_device_was_updated_reason   = ''
-    evlog_action_request            = ''
     startup_alerts                  = []
 
     stage_4_no_devices_found_cnt    = 0         # Retry count to connect to iCloud and retrieve FamShr devices
@@ -193,6 +195,7 @@ class GlobalVariables(object):
     # Configuration parameters that can be changed in config_ic3.yaml
     um                     = DEFAULT_GENERAL_CONF[CONF_UNIT_OF_MEASUREMENT]
     time_format_12_hour    = True
+    time_format_24_hour    = not time_format_12_hour
     um_km_mi_factor        = .62137
     um_m_ft                = 'ft'
     um_kph_mph             = 'mph'
@@ -252,6 +255,7 @@ class GlobalVariables(object):
     travel_time_factor              = DEFAULT_GENERAL_CONF[CONF_TRAVEL_TIME_FACTOR]
     log_level                       = DEFAULT_GENERAL_CONF[CONF_LOG_LEVEL]
 
+    device_tracker_state_source     = DEFAULT_GENERAL_CONF[CONF_DEVICE_TRACKER_STATE_SOURCE]
     display_gps_lat_long_flag       = DEFAULT_GENERAL_CONF[CONF_DISPLAY_GPS_LAT_LONG]
     center_in_zone_flag             = DEFAULT_GENERAL_CONF[CONF_CENTER_IN_ZONE]
     display_zone_format             = DEFAULT_GENERAL_CONF[CONF_DISPLAY_ZONE_FORMAT]

@@ -3,7 +3,7 @@ from ..global_variables import GlobalVariables as Gb
 from ..const            import ( HIGH_INTEGER, NOT_SET,
                                 HOME, UTC_TIME, IOS_TRIGGER_ABBREVIATIONS,
                                 TRACE_ICLOUD_ATTRS_BASE, TRACE_ATTRS_BASE,
-                                BATTERY_LEVEL, BATTERY_STATUS, BATTERY_STATUS_REFORMAT,
+                                BATTERY_LEVEL, BATTERY_STATUS, BATTERY_STATUS_CODES,
                                 LAST_CHANGED_SECS, LAST_CHANGED_TIME, STATE,
                                 LOCATION, ATTRIBUTES, TRIGGER, RAW_MODEL)
 from .common            import (instr,  )
@@ -38,7 +38,6 @@ def get_state(entity_id):
         entity_state = ''
         entity_data  = Gb.hass.states.get(entity_id)
         entity_state = entity_data.state
-        #entity_attrs = entity_data.attributes.copy()
         last_changed_secs = int(entity_data.last_changed.timestamp())
 
         if entity_state in IOS_TRIGGER_ABBREVIATIONS:
@@ -46,13 +45,15 @@ def get_state(entity_id):
         else:
             state = Gb.state_to_zone.get(entity_state, entity_state.lower())
 
-        if instr(entity_id, BATTERY_STATUS):
-            state = BATTERY_STATUS_REFORMAT.get(state.lower(), state.lower())
+        if instr(entity_id, 'battery_state'):
+            state = state.lower()
+            state = BATTERY_STATUS_CODES.get(state, state)
+
         if instr(entity_id, BATTERY_LEVEL) and state == 'not_set':
             state = 0
 
     except Exception as err:
-        #log_exception(err)
+        log_exception(err)
         #When starting iCloud3, the device_tracker for the iosapp might
         #not have been set up yet. Catch the entity_id error here.
         state = NOT_SET
@@ -74,7 +75,10 @@ def get_attributes(entity_id):
         entity_attrs[STATE] = entity_state
         entity_attrs[LAST_CHANGED_SECS] = last_changed_secs
         entity_attrs[LAST_CHANGED_TIME] = secs_to_time(last_changed_secs)
-        #_traceha(f"{entity_id} {entity_attrs=}")
+
+        if BATTERY_STATUS in entity_attrs:
+            battery_status = entity_attrs[BATTERY_STATUS].lower()
+            entity_attrs[BATTERY_STATUS] = BATTERY_STATUS_CODES.get(battery_status, battery_status)
 
     except (KeyError, AttributeError):
         entity_attrs = {}

@@ -4,7 +4,7 @@
 #
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-VERSION                         = '3.0.0b19.2'
+VERSION                         = '3.0b20'
 
 DOMAIN                          = 'icloud3'
 ICLOUD3                         = 'iCloud3'
@@ -23,11 +23,12 @@ STORAGE_KEY_ENTITY_REGISTRY     = 'core.entity_registry'
 SENSOR_EVENT_LOG_NAME           = 'icloud3_event_log'
 EVLOG_CARD_WWW_DIRECTORY        = 'www/icloud3'
 EVLOG_CARD_WWW_JS_PROG          = 'icloud3-event-log-card.js'
+EVLOG_BTNCONFIG_DEFAULT_URL     = '/config/integrations/integration/icloud3'
+HA_CONFIG_IC3_URL     = '/config/integrations/integration/icloud3'
 WAZE_LOCATION_HISTORY_DATABASE  = 'icloud3.waze_location_history.db'
 SENSOR_WAZEHIST_TRACK_NAME      = 'icloud3_wazehist_track'
 IC3LOGGER_FILENAME              = 'icloud3-0.log'
 IC3_LOG_FILENAME                = 'icloud3-0.log'
-HA_CONFIG_IC3_URL               = '/config/integrations/integration/icloud3'
 
 DEVICE_TRACKER                  = 'device_tracker'
 DEVICE_TRACKER_DOT              = 'device_tracker.'
@@ -52,8 +53,10 @@ NEAR_HOME                       = 'NearHome'
 NOT_SET                         = 'not_set'
 NOT_SET_FNAME                   = 'NotSet'
 UNKNOWN                         = 'Unknown'
-STATIONARY                      = 'statzone'
-STATIONARY_FNAME                = 'StatZone'
+#STATIONARY                      = 'statzone'
+#STATIONARY_FNAME                = 'StatZone'
+STATIONARY                      = 'stationary'
+STATIONARY_FNAME                = 'Stationary'
 AWAY_FROM                       = 'AwayFrom'
 AWAY_FROM_HOME                  = 'AwayFromHome'
 AWAY                            = 'Away'
@@ -148,12 +151,18 @@ CMD_RESET_PYICLOUD_SESSION = 'reset_session'
 NEAR_DEVICE_DISTANCE       = 20
 PASS_THRU_ZONE_INTERVAL_SECS = 60       # Delay time before moving into a non-tracked zone to see if if just passing thru
 STATZONE_BASE_RADIUS_M     = 100
+ICLOUD3_ERROR_MSG        = "ICLOUD3 ERROR-SEE EVENT LOG"
 
+# Event Log variables
 EVLOG_TABLE_MAX_CNT_BASE = 1500         # Used to calculate the max recds to store
 EVLOG_TABLE_MAX_CNT_ZONE = 2000         # Used to calculate the max recds to store
 EVENT_LOG_CLEAR_SECS     = 900          # Clear event log data interval
 EVENT_LOG_CLEAR_CNT      = 50           # Number of recds to display when clearing event log
-ICLOUD3_ERROR_MSG        = "ICLOUD3 ERROR-SEE EVENT LOG"
+
+EVLOG_BTN_URLS           = {'btnConfig': '',
+                            'btnBuyMeACoffee': '',
+                            'btnIssues': '',
+                            'btnHelp': ''}
 
 #Devicename config parameter file extraction
 DI_DEVICENAME           = 0
@@ -252,12 +261,14 @@ CIRCLE_SLASH      = '⊘'
 CIRCLE_X          = 'ⓧ'
 DOT               = '• '
 DOT2              = '•'
+SQUARE_DOT        = '▪'
 HDOT              = '◦ '
 HDOT2             = '◦'
 LT                = '&lt;'
 GT                = '&gt;'
 LTE               = '≤'
 GTE               = '≥'
+PLUS_MINUS        = '±'
 CRLF_DOT          = f'{CRLF}{NBSP3}•{NBSP2}'
 CRLF_X            = f'{CRLF}{NBSP3}×{NBSP2}'
 CRLF_HDOT         = f'{CRLF}{NBSP6}◦{NBSP2}'
@@ -269,6 +280,7 @@ CRLF_SP3_DOT      = f'{CRLF}{NBSP3}•{NBSP}'
 CRLF_SP5_DOT      = f'{CRLF}{NBSP5}•{NBSP}'
 CRLF_SP3_HDOT     = f'{CRLF}{NBSP3}◦{NBSP}'
 CRLF_SP3_STAR     = f'{CRLF}{NBSP3}✪{NBSP}'
+CRLF_INDENT       = f'{CRLF}{NBSP6}{NBSP6}'
 
 NEARBY_DEVICE_USEABLE_SYM = '✓'
 BLANK_SENSOR_FIELD = '———'
@@ -277,6 +289,8 @@ RARROW2           = '→'         #U+27F6 (Long Arrow Right)  ⟹ ⟾
 LARROW            = ' <-- '     #U+27F5 (Long Arrow Left) ⟸ ⟽
 LARROW2           = '<--'       #U+27F5 (Long Arrow Left) ⟸ ⟽
 INFO_SEPARATOR    = '/' #'∻'
+DASH_20           = '━'*20
+OPT_NONE          = 0
 
 #tracking_method config parameter being used
 ICLOUD            = 'icloud'    #iCloud Location Services (FmF & FamShr)
@@ -298,7 +312,7 @@ TRACK_DEVICE      = 'track'
 MONITOR_DEVICE    = 'monitor'
 INACTIVE_DEVICE   = 'inactive'
 
-#Zone field names
+# Zone field names
 NAME              = 'name'
 FNAME             = 'fname'
 FNAME_HOME        = 'fname/Home'
@@ -315,28 +329,54 @@ NON_ZONE_ITEM_LIST = {
         STATIONARY_FNAME: STATIONARY_FNAME,
         'unknown': 'Unknown'}
 
-#config_ic3.yaml parameter validation items
-#LIST = 1
-#TIME = 2
-#NUMBER = 3
-#TRUE_FALSE = 4
-#VALID_TIME_TYPES = ['sec', 'secs', 'min', 'mins', 'hr', 'hrs']
-
-#-----►►Test configuration parameters ----------
-# VALID_CONF_DEVICES_ITEMS = [
-#         CONF_DEVICENAME, CONF_EMAIL, CONF_PICTURE, CONF_NAME,
-#         CONF_INZONE_INTERVAL, CONF_TRACK_FROM_ZONES, CONF_IOSAPP_SUFFIX,
-#         CONF_IOSAPP_ENTITY, CONF_IOSAPP_INSTALLED, CONF_NO_IOSAPP,
-#         CONF_NO_IOSAPP, CONF_TRACKING_METHOD, ]
-
-DASH_20  = '━'*20
-OPT_NONE = 0
-
+#Convert state non-fname value to internal zone/state value
+from homeassistant.const import (STATE_HOME, STATE_NOT_HOME, )
+STATE_TO_ZONE_BASE = {
+        'NotSet': 'not_set',
+        'Away': STATE_NOT_HOME,
+        "away": STATE_NOT_HOME,
+        'NotHome': STATE_NOT_HOME,
+        "nothome": STATE_NOT_HOME,
+        'not_home': STATE_NOT_HOME,
+        'home': STATE_HOME,
+        'Home': STATE_HOME,
+        STATIONARY: STATIONARY_FNAME,
+        STATIONARY_FNAME: STATIONARY_FNAME,
+        }
 
 TRK_METHOD_SHORT_NAME = {
         FMF: FMF_FNAME,
         FAMSHR: FAMSHR_FNAME,
         IOSAPP: IOSAPP_FNAME, }
+
+# Standardize the battery status text between the ios app and icloud famshr
+BATTERY_STATUS_CODES = {
+        'full': 'not charging',
+        'charged': 'not charging',
+        'charging': 'charging',
+        'notcharging': 'not charging',
+        'not charging': 'not charging',
+        'not_charging': 'not charging',
+        'unknown': 'unknown',
+        '': 'unknown',
+        }
+BATTERY_STATUS_FNAME = {
+        # 'full, full': 'Full, Not Charging',
+        'full, charging': 'Full, Charging',
+        'full, not charging': 'Full, Not Charging',
+        # 'charged': 'Full',
+        # 'full': 'Full',
+        'charging': 'Charging',
+        'not charging': 'Not Charging',
+        'unknown': 'Charging Unknown',
+        }
+
+# Device Tracker State Source
+DEVICE_TRACKER_STATE_SOURCE_DESC = {
+        'ic3_fname': 'iCloud3 Zone Friendly Name',
+        'ic3_evlog': 'iCloud3 EvLog Zone Display Name',
+        'ha_gps':    'HA GPS Coordinates'
+        }
 
 #iOS App Triggers defined in /iOS/Shared/Location/LocatioTrigger.swift
 BACKGROUND_FETCH          = 'Background Fetch'
@@ -384,19 +424,6 @@ IOS_TRIGGERS_VERIFY_LOCATION = [
 IOS_TRIGGERS_ENTER      = [ENTER_ZONE, ]
 IOS_TRIGGERS_EXIT       = [EXIT_ZONE, ]
 IOS_TRIGGERS_ENTER_EXIT = [ENTER_ZONE, EXIT_ZONE, ]
-
-#Convert state non-fname value to internal zone/state value
-STATE_TO_ZONE_BASE = {
-        'NotSet': 'not_set',
-        'Away': 'not_home',
-        "away": 'not_home',
-        'NotHome': 'not_home',
-        "nothome": 'not_home',
-        # 'Stationary': 'stationary',
-        # 'stationary': 'stationary',
-        STATIONARY: STATIONARY_FNAME,
-        STATIONARY_FNAME: STATIONARY_FNAME,
-        }
 
 #Lists to hold the group names, group objects and iCloud device configuration
 #The ICLOUD3_GROUPS is filled in on each platform load, the GROUP_OBJS is
@@ -447,7 +474,9 @@ DEVICE_ID                  = 'device_id'
 PASSIVE                    = 'passive'
 
 # entity attributes
+DEVICE_TRACKER_STATE       = 'device_tracker_state'
 LOCATION_SOURCE            = 'location_source'
+NEARBY_DEVICE_USED         = 'nearby_device_used'
 INTO_ZONE_DATETIME         = 'into_zone'
 FROM_ZONE                  = 'from_zone'
 TIMESTAMP                  = 'timestamp'
@@ -491,7 +520,23 @@ RAW_MODEL2                 = 'raw_model2'
 MODEL2                     = 'model2'
 MODEL_DISPLAY_NAME2        = 'model_display_name2'
 
+DEVICE_STATUS_SET = [
+        ICLOUD_DEVICE_CLASS,
+        ICLOUD_BATTERY_STATUS,
+        ICLOUD_LOW_POWER_MODE,
+        LOCATION
+        ]
+DEVICE_STATUS_CODES = {
+        '200': 'Online',
+        '201': 'Offline',
+        '203': 'Pending',
+        '204': 'Unregistered',
+        '0': 'Unknown',
+        }
 
+DEVICE_STATUS_ONLINE = ['Online', 'Pending', 'Unknown', 'unknown', '']
+DEVICE_STATUS_OFFLINE = ['Offline']
+DEVICE_STATUS_PENDING = ['Pending']
 #<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
 ICLOUD3_EVENT_LOG    = 'icloud3_event_log'
@@ -513,9 +558,10 @@ CONF_VERSION                    = 'version'
 CONF_IC3_VERSION                = 'ic3_version'
 CONF_VERSION_INSTALL_DATE       = 'version_install_date'
 CONF_UPDATE_DATE                = 'config_update_date'
-CONF_HA_CONFIG_IC3_URL          = 'ha_config_ic3_url'
+CONF_EVLOG_BTNCONFIG_URL        = 'event_log_btnconfig_url'
 CONF_EVLOG_CARD_DIRECTORY       = 'event_log_card_directory'
 CONF_EVLOG_CARD_PROGRAM         = 'event_log_card_program'
+CONF_EVLOG_VERSION_RUNNING      = 'event_log_version_running'
 
 # Account, Devices, Tracking Parameters
 CONF_USERNAME                   = 'username'
@@ -554,7 +600,8 @@ CONF_PASSTHRU_ZONE_TIME         = 'passthru_zone_time'
 CONF_LOG_LEVEL                  = 'log_level'
 CONF_DISPLAY_GPS_LAT_LONG       = 'display_gps_lat_long'
 
-# inZone Parameters
+# Zone Parameters
+CONF_DEVICE_TRACKER_STATE_SOURCE= 'device_tracker_state_source'
 CONF_DISPLAY_ZONE_FORMAT        = 'display_zone_format'
 CONF_CENTER_IN_ZONE             = 'center_in_zone'
 CONF_DISCARD_POOR_GPS_INZONE    = 'discard_poor_gps_inzone'
@@ -703,7 +750,8 @@ DEFAULT_PROFILE_CONF = {
         CONF_UPDATE_DATE: DATETIME_ZERO,
         CONF_EVLOG_CARD_DIRECTORY: EVLOG_CARD_WWW_DIRECTORY,
         CONF_EVLOG_CARD_PROGRAM: EVLOG_CARD_WWW_JS_PROG,
-        CONF_HA_CONFIG_IC3_URL: HA_CONFIG_IC3_URL,
+        CONF_EVLOG_BTNCONFIG_URL: '',
+        CONF_EVLOG_VERSION_RUNNING: ''
 }
 
 DEFAULT_TRACKING_CONF = {
@@ -758,6 +806,7 @@ DEFAULT_GENERAL_CONF = {
         CONF_UNIT_OF_MEASUREMENT: 'mi',
         CONF_TIME_FORMAT: '12-hour',
         CONF_DISPLAY_ZONE_FORMAT: 'fname',
+        CONF_DEVICE_TRACKER_STATE_SOURCE: 'ic3_fname',
         CONF_MAX_INTERVAL: 240,
         CONF_OFFLINE_INTERVAL: 20,
         CONF_EXIT_ZONE_INTERVAL: 3,
@@ -945,38 +994,6 @@ USE_RESTORE_STATE_VALUE_ON_STARTUP = {
         BATTERY_SOURCE: '',
 }
 
-BATTERY_STATUS_FNAME = {
-        'full': 'Full',
-        'charging': 'Charging',
-        'notcharging': 'Not Charging',
-        'not charging': 'Not Charging',
-        'not_charging': 'Not Charging',
-        'unknown': 'Unknown',
-        '': 'Unknown',
-        }
-# Standardize the battery status text between the ios app and icloud famshr
-BATTERY_STATUS_REFORMAT = {
-        'notcharging': 'not charging',
-        'Not Charging': 'not charging',
-        'unknown': '',
-        }
-DEVICE_STATUS_SET = [
-        ICLOUD_DEVICE_CLASS,
-        ICLOUD_BATTERY_STATUS,
-        ICLOUD_LOW_POWER_MODE,
-        LOCATION
-        ]
-DEVICE_STATUS_CODES = {
-        '200': 'Online',
-        '201': 'Offline',
-        '203': 'Pending',
-        '204': 'Unregistered',
-        '0': 'Unknown',
-        }
-DEVICE_STATUS_ONLINE = ['Online', 'Pending', 'Unknown', 'unknown', '']
-DEVICE_STATUS_OFFLINE = ['Offline']
-DEVICE_STATUS_PENDING = ['Pending']
-
 #<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 #
 #       TRACE AND RAWDATA VARIABLES
@@ -1030,7 +1047,7 @@ FMF_FAMSHR_LOCATION_FIELDS = [
         ICLOUD_BATTERY_STATUS, ]
 
 LOG_RAWDATA_FIELDS = [
-        LATITUDE,  LONGITUDE, LOCATION_SOURCE, TRACKING_METHOD, DATA_SOURCE,
+        LATITUDE,  LONGITUDE, LOCATION_SOURCE, TRACKING_METHOD, DATA_SOURCE, NEARBY_DEVICE_USED,
         ZONE, ZONE_DATETIME, INTO_ZONE_DATETIME, LAST_ZONE,
         TIMESTAMP, TIMESTAMP_SECS, TIMESTAMP_TIME, LOCATION_TIME, DATETIME, AGE,
         TRIGGER, BATTERY, BATTERY_LEVEL, BATTERY_STATUS,

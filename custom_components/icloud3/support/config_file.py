@@ -1,7 +1,7 @@
 
 from ..global_variables     import GlobalVariables as Gb
 from ..const                import (
-                                    APPLE_SPECIAL_ICLOUD_SERVER_COUNTRY_CODE,
+                                    ICLOUD3, APPLE_SPECIAL_ICLOUD_SERVER_COUNTRY_CODE,
                                     RARROW, HHMMSS_ZERO, DATETIME_ZERO, NONE_FNAME, INACTIVE_DEVICE,
                                     ICLOUD, FAMSHR, FMF,
                                     CONF_PARAMETER_TIME_STR,
@@ -13,7 +13,7 @@ from ..const                import (
                                     CONF_UNIT_OF_MEASUREMENT, CONF_TIME_FORMAT, CONF_LOG_LEVEL,
                                     CONF_DATA_SOURCE, CONF_DISPLAY_GPS_LAT_LONG,
                                     CONF_FAMSHR_DEVICENAME, CONF_FMF_EMAIL, CONF_IOSAPP_DEVICE, CONF_TRACKING_MODE,
-                                    CONF_STAT_ZONE_FNAME,
+                                    CONF_STAT_ZONE_FNAME, CONF_DEVICE_TRACKER_STATE_SOURCE,
                                     CF_DEFAULT_IC3_CONF_FILE,
                                     DEFAULT_PROFILE_CONF, DEFAULT_TRACKING_CONF, DEFAULT_GENERAL_CONF,
                                     DEFAULT_SENSORS_CONF,
@@ -22,7 +22,7 @@ from ..const                import (
                                     CONF_WAZE_USED, CONF_WAZE_REGION, CONF_WAZE_MAX_DISTANCE, CONF_DISTANCE_METHOD,
                                     WAZE_SERVERS_BY_COUNTRY_CODE, WAZE_SERVERS_FNAME,
                                     CONF_EXCLUDED_SENSORS, CONF_OLD_LOCATION_ADJUSTMENT, CONF_DISTANCE_BETWEEN_DEVICES,
-                                    CONF_HA_CONFIG_IC3_URL, HA_CONFIG_IC3_URL,
+                                    CONF_EVLOG_BTNCONFIG_URL,
                                     RANGE_DEVICE_CONF, RANGE_GENERAL_CONF, MIN, MAX, STEP, RANGE_UM,
                                     )
 
@@ -196,7 +196,7 @@ def config_file_add_new_parameters():
 
     update_config_file_flag = False
 
-    # v3.0.0 beta 1 - Fix time format from migration
+    # Fix time format from migration (b1)
     if instr(Gb.conf_data['general'][CONF_TIME_FORMAT], '-hour-hour'):
         Gb.conf_data['general'][CONF_TIME_FORMAT].replace('-hour-hour', '-hour')
         update_config_file_flag = True
@@ -204,7 +204,7 @@ def config_file_add_new_parameters():
     if Gb.conf_profile[CONF_EVLOG_CARD_DIRECTORY].startswith('www/') is False:
         Gb.conf_profile[CONF_EVLOG_CARD_DIRECTORY] = f"www/{Gb.conf_profile[CONF_EVLOG_CARD_DIRECTORY]}"
 
-    # v3.0.0 beta 3 - remove tracking_from_zone item from sensors list which shouldn't have been added
+    # Remove tracking_from_zone item from sensors list which shouldn't have been added (b3)
     if BATTERY_STATUS in Gb.conf_sensors[CONF_SENSORS_DEVICE]:
         Gb.conf_sensors[CONF_SENSORS_DEVICE].pop(BATTERY_STATUS, None)
         update_config_file_flag = True
@@ -221,40 +221,34 @@ def config_file_add_new_parameters():
             conf_device.pop(CONF_STAT_ZONE_FNAME)
             update_config_file_flag = True
 
-    # Add HOME_DISTANCE sensor to conf_sensors
+    # Add sensors.HOME_DISTANCE sensor to conf_sensors
     if HOME_DISTANCE not in Gb.conf_sensors[CONF_SENSORS_TRACKING_DISTANCE]:
         Gb.conf_sensors[CONF_SENSORS_TRACKING_DISTANCE].append(HOME_DISTANCE)
         update_config_file_flag = True
 
-    # Add CONF_SETUP_ICLOUD_SESSION_EARLY
+    # Add tracking.CONF_SETUP_ICLOUD_SESSION_EARLY
     update_config_file_flag = (_add_config_file_parameter(Gb.conf_tracking, CONF_SETUP_ICLOUD_SESSION_EARLY, True)
             or update_config_file_flag)
 
-    # Add CONF_EXCLUDED_SENSORS
+    # Add sensors.CONF_EXCLUDED_SENSORS
     update_config_file_flag = (_add_config_file_parameter(Gb.conf_sensors, CONF_EXCLUDED_SENSORS, ['None'])
             or update_config_file_flag)
 
-    # Add CONF_OLD_LOCATION_ADJUSTMENT
+    # Add general.CONF_OLD_LOCATION_ADJUSTMENT
     update_config_file_flag = (_add_config_file_parameter(Gb.conf_general, CONF_OLD_LOCATION_ADJUSTMENT, HHMMSS_ZERO)
             or update_config_file_flag)
 
-    # Add CONF_DISTANCE_BETWEEN_DEVICES
+    # Add generalCONF_DISTANCE_BETWEEN_DEVICES
     update_config_file_flag = (_add_config_file_parameter(Gb.conf_general, CONF_DISTANCE_BETWEEN_DEVICES, True)
             or update_config_file_flag)
 
-    # Add CONF_EXIT_ZONE_INTERVAL
+    # Add general.CONF_EXIT_ZONE_INTERVAL
     update_config_file_flag = (_add_config_file_parameter(Gb.conf_general, CONF_EXIT_ZONE_INTERVAL, 3)
             or update_config_file_flag)
 
-    # Add CONF_EXIT_ZONE_INTERVAL
+    # Add profile.CONF_VERSION_INSTALL_DATE
     update_config_file_flag = (_add_config_file_parameter(Gb.conf_profile, CONF_VERSION_INSTALL_DATE, DATETIME_ZERO)
             or update_config_file_flag)
-
-    # Add CONF_HA_CONFIG_IC3_URL that is used by EvLog to open Configuration Wizard
-    update_config_file_flag = (_add_config_file_parameter(Gb.conf_profile, CONF_HA_CONFIG_IC3_URL, '')
-            or update_config_file_flag)
-
-
 
     # Remove CONF_ZONE_SENSOR_EVLOG_FORMAT, Add CONF_ZONE_SENSOR_EVLOG_FORMAT
     dtf = 'zone'
@@ -270,7 +264,7 @@ def config_file_add_new_parameters():
         Gb.conf_general[CONF_WAZE_REGION] = 'row'
         update_config_file_flag = True
 
-    # beta 12 - Change all time fields from hh:mm:ss to minutes
+    # Change all time fields from hh:mm:ss to minutes (b12)
     update_config_file_flag = (_convert_hhmmss_to_minutes(Gb.conf_general)
             or update_config_file_flag)
     update_config_file_flag = (_convert_hhmmss_to_minutes(Gb.conf_general[CONF_INZONE_INTERVALS])
@@ -279,22 +273,42 @@ def config_file_add_new_parameters():
         update_config_file_flag = (_convert_hhmmss_to_minutes(conf_device)
                 or update_config_file_flag)
 
-    # beta 16 - Change StatZone friendly Name
+    # Change StatZone friendly Name (b16)
     if instr(Gb.conf_general[CONF_STAT_ZONE_FNAME], '[name]'):
         Gb.conf_general[CONF_STAT_ZONE_FNAME] = 'StatZon#'
         update_config_file_flag = True
 
-    # beta 17 - Add Display GPS coordinates Flag
+    # Add general.Display GPS coordinates Flag (b17)
     update_config_file_flag = (_add_config_file_parameter(Gb.conf_general, CONF_DISPLAY_GPS_LAT_LONG, True)
             or update_config_file_flag)
 
     if 'device_tracker_state_format' in Gb.conf_general:
         Gb.conf_general.pop('device_tracker_state_format')
 
-    # beta 16d - Change icloud to famshr since fmf no longer works
+    # Change icloud to famshr since fmf no longer works (b16d)
     if instr(Gb.conf_tracking[CONF_DATA_SOURCE], ICLOUD):
         Gb.conf_tracking[CONF_DATA_SOURCE] = \
             Gb.conf_tracking[CONF_DATA_SOURCE].replace(ICLOUD, FAMSHR)
+        update_config_file_flag = True
+
+          # Remove profile.CONF_HA_CONFIG_IC3_URL that is used by EvLog to open Configuration Wizard (b20)
+    if 'ha_config_ic3_url' in Gb.conf_profile:
+        Gb.conf_profile.pop('ha_config_ic3_url')
+        update_config_file_flag = True
+
+    # Add profile.CONF_EVLOG_BTNCONFIG_URL that is used by EvLog to open HA iCloud3 Configure screen (b20)
+    update_config_file_flag = (_add_config_file_parameter(Gb.conf_profile, CONF_EVLOG_BTNCONFIG_URL, '')
+            or update_config_file_flag)
+
+    # Add profile.event_log_version that is being used, set via action/event_log_version svc call (b20)
+    update_config_file_flag = (_add_config_file_parameter(Gb.conf_profile, 'event_log_version', '')
+            or update_config_file_flag)
+
+    # Add general.CONF_DEVICE_TRACKER_STATE_SOURCE, b20
+    update_config_file_flag = (_add_config_file_parameter(Gb.conf_general, CONF_DEVICE_TRACKER_STATE_SOURCE, 'ic3_fname')
+            or update_config_file_flag)
+    if Gb.conf_general[CONF_DEVICE_TRACKER_STATE_SOURCE] == ICLOUD3:
+        Gb.conf_general[CONF_DEVICE_TRACKER_STATE_SOURCE] = 'ic3_fname'
         update_config_file_flag = True
 
     if update_config_file_flag:

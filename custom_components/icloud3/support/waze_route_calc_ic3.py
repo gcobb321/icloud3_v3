@@ -163,7 +163,8 @@ class WazeRouteCalculator(object):
                 route_time, route_distance = self._add_up_route(route['results'])
 
                 if log_results_flag:
-                    log_info_msg(f"Waze Results > GPS-({from_lat:0.5f}, {from_long:0.5f}) --> ({to_lat:0.5f}, {to_long:0.5f}), "
+                    log_info_msg(f"Waze Results > GPS-({from_lat:0.5f}, {from_long:0.5f}) --> "
+                                    f"({to_lat:0.5f}, {to_long:0.5f}), "
                                     f"Time-{route_time:0.2f}min, "
                                     f"Distance-{route_distance:0.2f}km")
 

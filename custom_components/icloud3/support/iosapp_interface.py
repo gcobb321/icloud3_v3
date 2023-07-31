@@ -6,7 +6,7 @@ from ..const                import (NOTIFY,
                                     CRLF_DOT,
                                     )
 from ..helpers.common       import (instr, )
-from ..helpers.messaging    import (post_event, post_error_msg,
+from ..helpers.messaging    import (post_event, post_error_msg, post_alert,
                                     log_info_msg, log_exception, log_rawdata, _trace, _traceha, )
 from ..helpers.time_util    import (secs_to_time, secs_since, secs_to_time, secs_to_time_age_str, )
 from homeassistant.helpers  import entity_registry as er, device_registry as dr
@@ -60,11 +60,19 @@ def get_entity_registry_mobile_app_devices():
                 if 'device_id' not in dev_trkr_entity: continue
 
                 iosapp_devicename = dev_trkr_entity['entity_id'].replace('device_tracker.', '')
-                raw_model = 'Unknown'
+                dup_cnt = 1
+                while iosapp_devicename in iosapp_id_by_iosapp_devicename:
+                    dup_cnt += 1
+                    iosapp_devicename = f"{iosapp_devicename} ({dup_cnt})"
+                if dup_cnt > 1:
+                    alert_msg = (f"Duplicate iOS App devices in Entity Registry for "
+                                f"{dev_trkr_entity['entity_id']}")
+                    post_alert(alert_msg)
 
                 log_title = (f"iosapp entity_registry entry -- {iosapp_devicename})")
                 log_rawdata(log_title, dev_trkr_entity, log_rawdata_flag=True)
 
+                raw_model = 'Unknown'
                 device_id = dev_trkr_entity['device_id']
                 try:
                     # Get raw_model from HA device_registry
@@ -98,8 +106,6 @@ def get_entity_registry_mobile_app_devices():
             for sensor in battery_state_sensors:
                 if iosapp_devicename := iosapp_devicename_by_iosapp_id.get(sensor['device_id']):
                     battery_state_sensors_by_iosapp_devicename[iosapp_devicename] = sensor['entity_id'].replace('sensor.', '')
-
-        #notify_iosapp_devicenames = get_mobile_app_notifications()
 
     except Exception as err:
         log_exception(err)

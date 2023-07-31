@@ -1,8 +1,7 @@
 
 
 from ..global_variables import GlobalVariables as Gb
-from ..const            import (NOT_HOME, STATIONARY, CIRCLE_LETTERS_DARK, UNKNOWN, CRLF_DOT, CRLF,
-                                BATTERY_STATUS_FNAME,)
+from ..const            import (NOT_HOME, STATIONARY, CIRCLE_LETTERS_DARK, UNKNOWN, CRLF_DOT, CRLF, )
 from collections        import OrderedDict
 import os
 
@@ -104,14 +103,6 @@ def inlist(string, list_items):
 def round_to_zero(value):
     if abs(value) < .0001: value = 0
     return round(value, 8)
-
-#--------------------------------------------------------------------
-# def is_inzone_zone(zone):
-#     return (zone != NOT_HOME)
-
-#--------------------------------------------------------------------
-# def isnot_inzone_zone(zone):
-#     return (zone == NOT_HOME)
 
 #--------------------------------------------------------------------
 def is_zone(zone):

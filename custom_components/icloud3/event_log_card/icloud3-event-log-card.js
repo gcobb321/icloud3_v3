@@ -22,7 +22,7 @@ class iCloud3EventLogCard extends HTMLElement {
     }
     //---------------------------------------------------------------------------
     setConfig(config) {
-        const version = "3.0.11"
+        const version = "3.0.12"
         const cardTitle = "iCloud3 v3 - Event Log"
 
         const root = this.shadowRoot
@@ -74,7 +74,6 @@ class iCloud3EventLogCard extends HTMLElement {
 
         const infoText = document.createElement("div")
         infoText.id = "infoText"
-        // infoText.innerText = 'EvLog v' + version
         infoText.classList.add("lightgray")
 
 
@@ -314,7 +313,7 @@ class iCloud3EventLogCard extends HTMLElement {
         const btnHelp = document.createElement('A')
         btnHelp.id = "btnHelp"
         btnHelp.classList.add("btnHelp")
-        btnHelp.setAttribute('href', 'https://gcobb321.github.io/icloud3_v3/#/')
+        btnHelp.setAttribute('href', 'https://gcobb321.github.io/icloud3_v3_docs/#/')
         btnHelp.setAttribute('target', '_blank')
         btnHelp.innerHTML = `<svg fill="#ffffff" width="24px" height="24px" viewBox="-3.84 -3.84 71.68 71.68" version="1.1" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2;" stroke="#ffffff" stroke-width="0.00064">
         <g stroke-width="0"><rect x="-3.84" y="-3.84" width="71.68" height="71.68" rx="35.84" fill="#316ce3" strokewidth="0"></rect></g>
@@ -534,7 +533,7 @@ class iCloud3EventLogCard extends HTMLElement {
             }
             #background {
                 position: relative;
-                height: 675px;
+                height: 682px;
                 /*width: 473px;*/
             }
 
@@ -543,9 +542,9 @@ class iCloud3EventLogCard extends HTMLElement {
                 position: relative;
                 display: inline-block;
                 height: 20px;
-                margin: 4px 0px -6px 0px;
+                margin: 1px 0px -6px 0px;
                 width: 100%;
-                //border: 1px solid dodgerblue;
+                // border: 1px solid dodgerblue;
             }
             #title {
                 height: 100%;
@@ -686,7 +685,7 @@ class iCloud3EventLogCard extends HTMLElement {
                 display: block;
                 table-layout: fixed;
                 width: 100%;
-                height: 555px;
+                height: 568px;
                 border-collapse: collapse;
                 border: 1px solid rgba(var(--rgb-primary-color), 0.2);
                 border-top: 1px solid transparent;
@@ -957,8 +956,8 @@ class iCloud3EventLogCard extends HTMLElement {
         btnConfig.addEventListener("mouseout", event => { this._btnClassMouseOut("btnConfig"); })
         btnHelp.addEventListener("mouseover", event => { this._btnClassMouseOver("btnHelp"); })
         btnHelp.addEventListener("mouseout", event => { this._btnClassMouseOut("btnHelp"); })
-        btnHeart.addEventListener("mouseover", event => { this._btnClassMouseOver("btnHeart"); })
-        btnHeart.addEventListener("mouseout", event => { this._btnClassMouseOut("btnHeart"); })
+        btnAction.addEventListener("mouseover", event => { this._btnClassMouseOver("btnAction"); })
+        btnAction.addEventListener("mouseout", event => { this._btnClassMouseOut("btnAction"); })
 
         // Add to root
         this._config = config
@@ -976,12 +975,12 @@ class iCloud3EventLogCard extends HTMLElement {
         const statusTime     = root.getElementById("statusTime")
         const statusMsgPopup = root.getElementById("statusMsgPopup")
         const tblEvlog       = root.getElementById("tblEvlog")
-        const displayUserMsgFlag = root.getElementById("displayUserMsgFlag")
         const devType        = root.getElementById("devType")
+        const displayUserMsgFlag = root.getElementById("displayUserMsgFlag")
 
         try {
+            const ic3DirEvlogVersion = hass.states['sensor.icloud3_event_log'].attributes['versionEvLog']
             const updateTime     = hass.states['sensor.icloud3_event_log'].attributes['update_time']
-            const ic3DirEvlogVersion = hass.states['sensor.icloud3_event_log'].attributes['version']
             const userMessage    = hass.states['sensor.icloud3_event_log'].attributes['user_message']
             const aboutVersion   = root.getElementById("aboutVersion")
             const btnName0       = root.getElementById("btnName0")
@@ -991,7 +990,9 @@ class iCloud3EventLogCard extends HTMLElement {
                 this._classListRemove('btnName0', 'btnUserMessage')
                 this._setupDevType()
                 this._setupButtonNames()
+                this._btnSetUrlsHandler()
                 this._highlightSelectedNameButton(this._currentButtonId())
+                this._issue_evlog_version_svc_call()
 
             } else if (displayUserMsgFlag.innerText == 'false') {
                 'pass'
@@ -999,7 +1000,9 @@ class iCloud3EventLogCard extends HTMLElement {
             } else if (btnName0.innerText != userMessage && userMessage != '') {
                 displayUserMsgFlag.innerText = 'true'
                 this._setupButtonNames()
+                this._btnSetUrlsHandler()
                 this._displayDevicenameMsgL('')
+                this._issue_evlog_version_svc_call()
             }
 
             if (statusMsgPopup.innerHTML == 'cancelMsgDisplay') {
@@ -1048,6 +1051,7 @@ class iCloud3EventLogCard extends HTMLElement {
             }
 
             if (statusTime.innerText.indexOf(updateTime) == -1) {
+                // this._displayInfoText(updateTime)
                 this._setupEventLogTable('hass')
             }
         }
@@ -1108,12 +1112,15 @@ class iCloud3EventLogCard extends HTMLElement {
         const fname        = hass.states['sensor.icloud3_event_log'].attributes['fname']
         const fnamesList   = hass.states['sensor.icloud3_event_log'].attributes['fnames']
         const fnames       = Object.values(fnamesList)
+        const fnamesKeys   = Object.keys(fnamesList)
         var   fnamesCnt    = fnames.length
 
         const thisButtonId = root.getElementById("thisButtonId")
         const displayUserMsgFlag = root.getElementById("displayUserMsgFlag")
         var   userMessage  = hass.states['sensor.icloud3_event_log'].attributes['user_message']
-
+        // alert('fnames='+fnames)
+        // alert('fnamesKeys='+fnamesKeys)
+        // alert('gc='+fnamesList["gary_iphone"])
         // See if the user message display was overridden by pressing the displayed message
         // or Refresh. Seleting an Action. resets it to display again.
         if (displayUserMsgFlag.innerText == 'false') {
@@ -1176,6 +1183,7 @@ class iCloud3EventLogCard extends HTMLElement {
         const title        = root.getElementById('title')
 
         var logs = hass.states['sensor.icloud3_event_log'].attributes['logs']
+        var startedTime = hass.states['sensor.icloud3_event_log'].attributes['started_time']
 
         /*
         The Evlog table has been built and displayed but Hass usually calls this routine a
@@ -1190,6 +1198,7 @@ class iCloud3EventLogCard extends HTMLElement {
         if (logs.length == logRecdCnt.innerText) {
             if (hdrCellWidth.innerText.startsWith('0,')) {
                 this._resize_header_width()
+                this._set_evlog_body_height()
             }
 
             return
@@ -1406,6 +1415,7 @@ class iCloud3EventLogCard extends HTMLElement {
                     } else {
                         icloudUpdateCompleteFlag = true
                     }
+                    cancelEdgeBarFlag = (tText.length == 3)
                     completedItemHighlightNextRowFlag = true
                     classHeaderBar = ' updateRecdHdr'
                     classEdgeBar = ' updateEdgeBar'
@@ -1424,6 +1434,7 @@ class iCloud3EventLogCard extends HTMLElement {
 
                 // ^g^ = iCloud3 Stage # Header
                 } else if (tText.startsWith("^g^")) {
+                    cancelEdgeBarFlag = (tText.length == 3)
                     classHeaderBar = ' stageRecdHdr'
                     classEdgeBar = ' stageEdgeBar'
 
@@ -1561,6 +1572,7 @@ class iCloud3EventLogCard extends HTMLElement {
         tblEvlog.innerHTML = logTableHTML
 
         this._resize_header_width()
+        this._set_evlog_body_height()
 
         const updateTime    = hass.states['sensor.icloud3_event_log'].attributes['update_time'].slice(0, -7)
         const logLevelDebug = hass.states['sensor.icloud3_event_log'].attributes['log_level_debug']
@@ -1624,6 +1636,24 @@ class iCloud3EventLogCard extends HTMLElement {
         }
 
         return
+    }
+    //---------------------------------------------------------------------------
+    _set_evlog_body_height() {
+        // The height of the EvLog items table body is set at 568 which workd with one
+        // row of devicename buttons. Reduce the height if there are multiple rows
+        const root = this.shadowRoot
+        var buttonBar = root.getElementById("buttonBar")
+        var buttonBarDim = buttonBar.getBoundingClientRect()
+        var buttonBarHeight = buttonBarDim.height
+
+        var tblEvLogBody = root.getElementById("tblEvlogBody")
+        var tblEvLogBodyDim = tblEvLogBody.getBoundingClientRect()
+        var tblEvLogBodyHeight = tblEvLogBodyDim.height
+
+        if (tblEvLogBodyHeight > 568.5) {
+            var newHeight = (595 - buttonBarHeight) + 'px'
+            tblEvLogBody.style.setProperty('height', newHeight)
+        }
     }
     //---------------------------------------------------------------------------
     _setupDevType() {
@@ -1842,9 +1872,25 @@ class iCloud3EventLogCard extends HTMLElement {
     }
 
     //---------------------------------------------------------------------------
+    _issue_evlog_version_svc_call() {
+        /* Send an 'icloud3_action evlog_started' service call to iC3 to indicated the
+        event_log has started. If this does not happen within a minute of starting iC3,
+        an error message will be displayed indicating a restart is needed.
+        */
+        const root  = this.shadowRoot
+        const hass = this._hass
+        const aboutVersion = root.getElementById("aboutVersion")
+
+        this._hass.callService("icloud3", "action",
+        {
+            command: 'event_log_version ' + aboutVersion.innerText
+        })
+    }
+
+    //---------------------------------------------------------------------------
     _btnRefreshHandler() {
-        const hass           = this._hass
-        const root           = this.shadowRoot
+        const hass         = this._hass
+        const root         = this.shadowRoot
         const fnamesList   = hass.states['sensor.icloud3_event_log'].attributes['fnames']
         const devicenames  = Object.keys(fnamesList)
 
@@ -1868,35 +1914,46 @@ class iCloud3EventLogCard extends HTMLElement {
         })
     }
 
-     //---------------------------------------------------------------------------
+    //---------------------------------------------------------------------------
+    _btnSetUrlsHandler() {
+        const hass             = this._hass
+        const root             = this.shadowRoot
+        const btnHelp          = root.getElementById("btnHelp")
+        const btnIssues        = root.getElementById("btnIssues")
+        const btnBuyMeACoffee  = root.getElementById("btnBuyMeACoffee")
+        const btnConfig        = root.getElementById("btnConfig")
+        const evlogBtnUrlsList = hass.states['sensor.icloud3_event_log'].attributes['evlog_btn_urls']
+        // const evlogBtnUrlsListKeys   = Object.keys(evlogBtnUrlsList)
+        // const evlogBtnUrlsListValues = Object.values(evlogBtnUrlsList)
+
+        if (evlogBtnUrlsList["btnHelp"] != "")       { btnHelp.setAttribute('href', evlogBtnUrlsList["btnHelp"]) }
+        if (evlogBtnUrlsList["btnIssues"] != "")       { btnIssues.setAttribute('href', evlogBtnUrlsList["btnIssues"]) }
+        if (evlogBtnUrlsList["btnBuyMeACoffee"] != "") { btnBuyMeACoffee.setAttribute('href', evlogBtnUrlsList["btnBuyMeACoffee"]) }
+        if (evlogBtnUrlsList["btnConfig"] != "") { btnConfig.setAttribute('href', evlogBtnUrlsList["btnConfig"]) }
+    }
+
+    //---------------------------------------------------------------------------
     _btnConfigHandler() {
-        const hass      = this._hass
-        const root      = this.shadowRoot
-        const configUrl = hass.states['sensor.icloud3_event_log'].attributes["ha_config_ic3_url"]
-        const btnConfig = root.getElementById("btnConfig")
+        const hass             = this._hass
+        const root             = this.shadowRoot
+        const btnConfig        = root.getElementById("btnConfig")
+        const evlogBtnUrlsList = hass.states['sensor.icloud3_event_log'].attributes['evlog_btn_urls']
 
         // Example: 'http://localhost:8123/config/integrations/integration/icloud3'
 
-        var targetUrl = ''
-        if (configUrl == "") {
-            var winLocUrl = window.location.href
-            if (winLocUrl.indexOf(":8123")) {
-                targetUrl = winLocUrl.split(':8123', 1)[0] + ':8123'
-            }
-            if (winLocUrl.indexOf("/lovelace")) {
-                targetUrl = winLocUrl.split('/lovelace', 1)[0]
-            }
-            if (winLocUrl.indexOf("/dashboard")) {
-                targetUrl = winLocUrl.split('/dashboard', 1)[0]
-            }
-            if (targetUrl == "") {
-                return
-            }
-            targetUrl = targetUrl + '/config/integrations/integration/icloud3'
-
-        } else {
-            targetUrl = configUrl
+        if (evlogBtnUrlsList["btnConfig"] != "") {
+            btnConfig.setAttribute('href', evlogBtnUrlsList["btnConfig"])
+            return
         }
+
+        var targetUrl = ''
+        var winLocUrl = window.location.href
+        if (winLocUrl.indexOf(":8123"))      { targetUrl = winLocUrl.split(':8123', 1)[0] + ':8123' }
+        if (winLocUrl.indexOf("/lovelace"))  { targetUrl = winLocUrl.split('/lovelace', 1)[0] }
+        if (winLocUrl.indexOf("/dashboard")) { targetUrl = winLocUrl.split('/dashboard', 1)[0] }
+        if (targetUrl == "") { return }
+
+        targetUrl = targetUrl + '/config/integrations/integration/icloud3'
 
         btnConfig.setAttribute('href', targetUrl)
 
@@ -1909,17 +1966,20 @@ class iCloud3EventLogCard extends HTMLElement {
         const button  = root.getElementById(buttonId)
         const devType = root.getElementById("devType")
 
-        if (devType.innerText == "") {
-            this._classListAdd(buttonId, 'btnHoverName')
-        }
+        if (buttonId == "btnAction") { this._displayInfoText("Show Action Command List") }
+        if (devType.innerText == "") { this._classListAdd(buttonId, 'btnHoverName') }
     }
 
     //---------------------------------------------------------------------------
     _btnClassMouseOver(buttonId) {
 
+        const hass    = this._hass
         const root    = this.shadowRoot
-        const button  = root.getElementById(buttonId)
-        const devType = root.getElementById("devType")
+        var versionIc3   = hass.states['sensor.icloud3_event_log'].attributes['version_ic3']
+        var versionEvLog = hass.states['sensor.icloud3_event_log'].attributes['version_evlog']
+        const aboutVersion    = root.getElementById("aboutVersion")
+        // const button  = root.getElementById(buttonId)
+        // const devType = root.getElementById("devType")
         const btnConfig = root.getElementById("btnConfig")
 
         if (buttonId == "btnHelp") {
@@ -1931,7 +1991,6 @@ class iCloud3EventLogCard extends HTMLElement {
         } else if (buttonId == "btnConfig") {
             this._btnConfigHandler()
             this._displayInfoText("Configure iCloud3 Settings")
-            // this._displayTimeMsgR(btnConfig.href)
 
         } else if (buttonId == "btnIssues") {
             this._displayInfoText("Open GitHub Issue")
@@ -1939,11 +1998,18 @@ class iCloud3EventLogCard extends HTMLElement {
         } else if (buttonId == "btnBuyMeACoffee") {
             this._displayInfoText("Buy Me a Coffee")
 
-        } else if (buttonId == "btnHeart") {
-            this._displayInfoText("Be an iCloud3 v3 Stargazer → Go, then click the ☆ (top-right corner)")
-
         } else if (buttonId == "btnAction") {
-            this._displayTimeMsgR("Show Action Command List")
+            var versionMsg = ""
+            if (versionIc3   == null) {versionIc3 = '?.?' }
+            if (versionEvLog == null) {versionEvLog = '?.?'}
+            if (versionEvLog == aboutVersion.innerText) {
+                var versionThisEvlog = ''
+            } else {
+                var versionThisEvlog = "/v" + aboutVersion.innerText
+            }
+            versionMsg += "iCloud3 v" + versionIc3 +", "
+            versionMsg += "EventLog v" + versionEvLog + versionThisEvlog
+            this._displayInfoText(versionMsg)
         }
 
     }
@@ -2067,8 +2133,7 @@ class iCloud3EventLogCard extends HTMLElement {
         const infoText     = root.getElementById("infoText")
         const aboutVersion = root.getElementById("aboutVersion")
 
-        if (msg == 'Version') {
-            msg = 'EvLog v' + aboutVersion.innerText
+        if (msg.startsWith('iCloud3 v')) {
             this._classListAdd('infoText', 'lightgray')
             this._classListRemove('infoText', 'primarycolor')
         } else {

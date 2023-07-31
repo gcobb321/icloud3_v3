@@ -1,14 +1,14 @@
 
 
 from ..global_variables import GlobalVariables as Gb
-from ..const            import (
+from ..const            import (ICLOUD3,
                                 STORAGE_DIR, STORAGE_KEY_ENTITY_REGISTRY, IC3LOGGER_FILENAME,
                                 DEVICE_TRACKER, DEVICE_TRACKER_DOT, NOTIFY, DOMAIN,
                                 HOME, STATIONARY, ERROR,
                                 STATE_TO_ZONE_BASE, CMD_RESET_PYICLOUD_SESSION,
                                 EVLOG_INIT_HDR, EVLOG_ALERT, EVLOG_IC3_STARTING, EVLOG_NOTICE, EVLOG_IC3_STAGE_HDR,
                                 EVLOG_TABLE_MAX_CNT_BASE, EVLOG_TABLE_MAX_CNT_ZONE,
-                                CRLF, CRLF_DOT, CRLF_CHK, CRLF_SP3_DOT, CRLF_SP5_DOT, CRLF_HDOT, CRLF_X, DOT2, CTRL_STAR, CRLF_SP3_STAR,
+                                CRLF, CRLF_DOT, CRLF_CHK, CRLF_SP3_DOT, CRLF_SP5_DOT, CRLF_HDOT, CRLF_X, DOT2, CTRL_STAR, CRLF_SP3_STAR, CRLF_INDENT,
                                 RARROW, NBSP4, NBSP6, CIRCLE_STAR, INFO_SEPARATOR, DASH_20, CHECK_MARK,
                                 ICLOUD, FMF, FAMSHR,
                                 DEVICE_TYPE_FNAME,
@@ -22,7 +22,7 @@ from ..const            import (
                                 BATTERY_LEVEL, BATTERY_STATUS,
                                 CONF_ENCODE_PASSWORD,
                                 CONF_VERSION,  CONF_VERSION_INSTALL_DATE,
-                                CONF_EVLOG_CARD_DIRECTORY, CONF_EVLOG_CARD_PROGRAM, CONF_HA_CONFIG_IC3_URL,
+                                CONF_EVLOG_CARD_DIRECTORY, CONF_EVLOG_CARD_PROGRAM, CONF_EVLOG_BTNCONFIG_URL,
                                 CONF_USERNAME, CONF_PASSWORD,
                                 CONF_DATA_SOURCE, CONF_ICLOUD_SERVER_ENDPOINT_SUFFIX,
                                 CONF_DEVICE_TYPE, CONF_RAW_MODEL, CONF_MODEL, CONF_MODEL_DISPLAY_NAME,
@@ -34,7 +34,8 @@ from ..const            import (
                                 CONF_TFZ_TRACKING_MAX_DISTANCE, CONF_TRACK_FROM_BASE_ZONE, CONF_TRACK_FROM_HOME_ZONE,
                                 CONF_TRAVEL_TIME_FACTOR, CONF_PASSTHRU_ZONE_TIME, CONF_DISTANCE_BETWEEN_DEVICES,
                                 CONF_LOG_LEVEL,
-                                CONF_DISPLAY_ZONE_FORMAT, CONF_DISPLAY_GPS_LAT_LONG,
+                                CONF_DISPLAY_ZONE_FORMAT, CONF_DEVICE_TRACKER_STATE_SOURCE, DEVICE_TRACKER_STATE_SOURCE_DESC,
+                                CONF_DISPLAY_GPS_LAT_LONG,
                                 CONF_CENTER_IN_ZONE, CONF_DISCARD_POOR_GPS_INZONE,
                                 CONF_WAZE_USED, CONF_WAZE_REGION, CONF_WAZE_MAX_DISTANCE, CONF_WAZE_MIN_DISTANCE,
                                 CONF_WAZE_REALTIME, CONF_WAZE_HISTORY_DATABASE_USED, CONF_WAZE_HISTORY_MAX_DISTANCE,
@@ -51,14 +52,15 @@ from ..const            import (
                                 )
 
 from ..device               import iCloud3_Device
-from ..zone                 import iCloud3_Zone, iCloud3_StationaryZone
-from ..support.waze         import Waze
-from ..support.waze_history import WazeRouteHistory as WazeHist
+from ..zone                 import iCloud3_Zone
+from ..support              import config_file
+from ..helpers              import entity_io
 from ..support              import iosapp_interface
 from ..support              import iosapp_data_handler
 from ..support              import service_handler
-from ..support              import config_file
-from ..helpers              import entity_io
+from ..support              import stationary_zone as statzone
+from ..support.waze         import Waze
+from ..support.waze_history import WazeRouteHistory as WazeHist
 from ..helpers.common       import (instr, format_gps, circle_letter, zone_display_as, list_to_str, is_statzone,
                                     isnot_statzone, )
 from ..helpers.messaging    import (broadcast_info_msg,
@@ -196,6 +198,7 @@ def initialize_global_variables():
     # Configuration parameters that can be changed in config_ic3.yaml
     Gb.um                               = DEFAULT_GENERAL_CONF[CONF_UNIT_OF_MEASUREMENT]
     Gb.time_format_12_hour              = True
+    Gb.time_format_24_hour              = False
     Gb.um_km_mi_factor                  = .62137
     Gb.um_m_ft                          = 'ft'
     Gb.um_kph_mph                       = 'mph'
@@ -204,6 +207,7 @@ def initialize_global_variables():
     Gb.um_date_time_strfmt              = '%Y-%m-%d %H:%M:%S'
 
     # Configuration parameters
+    Gb.device_tracker_state_source     = DEFAULT_GENERAL_CONF[CONF_DEVICE_TRACKER_STATE_SOURCE]
     Gb.center_in_zone_flag             = DEFAULT_GENERAL_CONF[CONF_CENTER_IN_ZONE]
     Gb.display_zone_format             = DEFAULT_GENERAL_CONF[CONF_DISPLAY_ZONE_FORMAT]
     Gb.display_gps_lat_long_flag       = DEFAULT_GENERAL_CONF[CONF_DISPLAY_GPS_LAT_LONG]
@@ -269,11 +273,12 @@ def set_global_variables_from_conf_parameters(evlog_msg=True):
 
         Gb.www_evlog_js_directory       = Gb.conf_profile[CONF_EVLOG_CARD_DIRECTORY]
         Gb.www_evlog_js_filename        = Gb.conf_profile[CONF_EVLOG_CARD_PROGRAM]
-        Gb.ha_config_ic3_url            = Gb.conf_profile[CONF_HA_CONFIG_IC3_URL].strip()
-        Gb.EvLog.evlog_attrs["ha_config_ic3_url"] = Gb.ha_config_ic3_url
-
+        Gb.evlog_btnconfig_url          = Gb.conf_profile[CONF_EVLOG_BTNCONFIG_URL].strip()
+        Gb.evlog_version                = Gb.conf_profile['event_log_version']
         Gb.um                           = Gb.conf_general[CONF_UNIT_OF_MEASUREMENT]
         Gb.time_format_12_hour          = Gb.conf_general[CONF_TIME_FORMAT].startswith('12')
+        Gb.time_format_24_hour          = not Gb.time_format_12_hour
+        Gb.device_tracker_state_source  = Gb.conf_general[CONF_DEVICE_TRACKER_STATE_SOURCE]
         Gb.display_zone_format          = Gb.conf_general[CONF_DISPLAY_ZONE_FORMAT]
         Gb.display_gps_lat_long_flag    = Gb.conf_general[CONF_DISPLAY_GPS_LAT_LONG]
         Gb.center_in_zone_flag          = Gb.conf_general[CONF_CENTER_IN_ZONE]
@@ -340,6 +345,10 @@ def set_global_variables_from_conf_parameters(evlog_msg=True):
 
         evlog_table_max_cnt = set_evlog_table_max_cnt()
         config_event_msg += f"{CRLF_DOT}Set Event Log Record Limits ({evlog_table_max_cnt} Events)"
+
+        config_event_msg += f"{CRLF_DOT}Device Tracker State Value Source "
+        etds = Gb.device_tracker_state_source
+        config_event_msg += f"{CRLF_INDENT}({DEVICE_TRACKER_STATE_SOURCE_DESC.get(etds, etds)})"
 
         if evlog_msg:
             post_event(config_event_msg)
@@ -589,7 +598,7 @@ def process_config_flow_parameter_updates():
         #    Gb.EvLog.display_user_message('The Browser may need to be refreshed')
         return
 
-    post_event(f"{EVLOG_IC3_STAGE_HDR}Configuration Update - Complete")
+    post_event(f"{EVLOG_IC3_STAGE_HDR}")
     if 'general' in Gb.config_flow_updated_parms:
         set_global_variables_from_conf_parameters()
 
@@ -598,7 +607,7 @@ def process_config_flow_parameter_updates():
 
     if 'evlog' in Gb.config_flow_updated_parms:
         post_event('Processing Event Log Settings Update')
-        Gb.ha_config_ic3_url = Gb.conf_profile[CONF_HA_CONFIG_IC3_URL].strip()
+        Gb.evlog_btnconfig_url = Gb.conf_profile[CONF_EVLOG_BTNCONFIG_URL].strip()
         check_ic3_event_log_file_version()
         Gb.hass.loop.create_task(update_lovelace_resource_event_log_js_entry())
         Gb.EvLog.setup_event_log_trackable_device_info()
@@ -612,13 +621,15 @@ def process_config_flow_parameter_updates():
         set_waze_conf_parameters()
 
     if 'tracking' in Gb.config_flow_updated_parms:
+        post_event("Tracking parameters initialized")
         initialize_icloud_data_source()
 
     elif 'devices' in Gb.config_flow_updated_parms:
+        post_event("Device parameters initialized")
         initialize_icloud_data_source()
         pass
 
-    post_event(f"{EVLOG_IC3_STAGE_HDR}Configuration Update - Started")
+    post_event(f"{EVLOG_IC3_STAGE_HDR}Configuration Changes Applied")
     Gb.config_flow_updated_parms = {''}
 
 #------------------------------------------------------------------------------
@@ -860,6 +871,7 @@ def create_Zones_object():
 
     Gb.Zones = []
     Gb.Zones_by_zone = {}
+    Gb.ActiveZones = []
     Gb.zone_display_as = NON_ZONE_ITEM_LIST.copy()
 
     # isnot_real_zones -- Add away, not_set, not_home, stationary, etc. so display_name is set
@@ -912,6 +924,7 @@ def create_Zones_object():
                 crlf_dot_x = CTRL_STAR
                 passive_msg = ', Passive Zone'
             else:
+                Gb.ActiveZones.append(Zone)
                 crlf_dot_x = CRLF_DOT
                 passive_msg = ''
             zone_msg +=(f"{crlf_dot_x}{Zone.zone}, "
@@ -947,7 +960,6 @@ def create_Zones_object():
         event_msg = (   f"Primary 'Home' Zone > {zone_display_as(Gb.track_from_base_zone)} "
                         f"{circle_letter(Gb.track_from_base_zone)}")
         post_event(event_msg)
-
 
     event_msg = "Special Zone Setup >"
     if Gb.is_passthru_zone_used:
@@ -1735,24 +1747,28 @@ def setup_tracked_devices_for_iosapp():
         # at it's default value. Normally, raw_model is set when setting up FamShr if that is available, FmF does not
         # set raw_model since it is only shared via an email addres or phone number. This will also be saved in the
         # iCloud3 configuration file.
-        if Device.raw_model.lower() == Device.device_type:
-            raw_model, model, model_display_name = device_model_info_by_iosapp_devicename[iosapp_devicename]
-            Device.raw_model = raw_model # iPhone15,2
+        raw_model, model, model_display_name = device_model_info_by_iosapp_devicename[iosapp_devicename]
+        if (Device.raw_model != raw_model
+                or Device.model != model
+                or Device.model_display_name != model_display_name):
 
             for conf_device in Gb.conf_devices:
                 if conf_device[CONF_IOSAPP_DEVICE] == iosapp_devicename:
-                    conf_device[CONF_RAW_MODEL] = Device.raw_model
+                    Device.raw_model = conf_device[CONF_RAW_MODEL] = raw_model
+                    Device.model = conf_device[CONF_MODEL] = model
+                    Device.model_display_name = conf_device[CONF_MODEL_DISPLAY_NAME] = model_display_name
                     config_file.write_storage_icloud3_configuration_file()
                     break
 
         Gb.Devices_by_iosapp_devicename[iosapp_devicename] = Device
         Device.iosapp_entity[DEVICE_TRACKER] = f"device_tracker.{iosapp_devicename}"
         Device.iosapp_entity[TRIGGER]        = f"sensor.{last_updt_trig_by_iosapp_devicename.get(iosapp_devicename)}"
-        Device.iosapp_entity[BATTERY_LEVEL]  = f"sensor.{battery_level_sensors_by_iosapp_devicename.get(iosapp_devicename)}"
-        Device.iosapp_entity[BATTERY_STATUS] = f"sensor.{battery_state_sensors_by_iosapp_devicename.get(iosapp_devicename)}"
-
+        Device.iosapp_entity[BATTERY_LEVEL]  = Device.sensors['iosapp_sensor-battery_level'] = \
+            f"sensor.{battery_level_sensors_by_iosapp_devicename.get(iosapp_devicename)}"
+        Device.iosapp_entity[BATTERY_STATUS] = Device.sensors['iosapp_sensor-battery_status'] = \
+            f"sensor.{battery_state_sensors_by_iosapp_devicename.get(iosapp_devicename)}"
         tracked_msg += (f"{CRLF_CHK}{iosapp_fname} ({iosapp_devicename}){RARROW}{devicename} "
-                        f"({Device.raw_model})")
+                        f"{CRLF_INDENT}({Device.raw_model})")
 
         # Remove the iosapp device from the list since we know it is tracked
         if iosapp_devicename in not_monitored_iosapp_devices:
@@ -1769,10 +1785,10 @@ def setup_tracked_devices_for_iosapp():
 
         if iosapp_id_by_iosapp_devicename[iosapp_devicename].startswith('DISABLED'):
             tracked_msg += (f"{CTRL_STAR}{iosapp_fname} ({iosapp_devicename}){RARROW}DISABLED, "
-                            f"{device_info_by_iosapp_devicename[iosapp_devicename]}")
+                            f"{CRLF_INDENT}{device_info_by_iosapp_devicename[iosapp_devicename]}")
         else:
             tracked_msg += (f"{CRLF_DOT}{iosapp_fname} ({iosapp_devicename}){RARROW}Not Monitored, "
-                            f"{device_info_by_iosapp_devicename[iosapp_devicename]}")
+                            f"{CRLF_INDENT}{device_info_by_iosapp_devicename[iosapp_devicename]}")
     post_event(tracked_msg)
 
     return
@@ -1913,9 +1929,11 @@ def setup_trackable_devices():
             if iosapp_attrs:
                 iosapp_data_handler.update_iosapp_data_from_entity_attrs(Device, iosapp_attrs)
 
+            battery_status_sensor = f"... _battery{Device.iosapp_entity[BATTERY_STATUS].split('battery')[1]}"
             event_msg += (  f"{CRLF_DOT}iOSApp Entity: {Device.iosapp_entity[DEVICE_TRACKER]}"
                             f"{CRLF_DOT}Update Trigger: {Device.iosapp_entity[TRIGGER].replace('sensor.', '')}"
-                            f"{CRLF_DOT}Battery: {Device.iosapp_entity[BATTERY_LEVEL].replace('sensor.', '')}")
+                            f"{CRLF_DOT}Battery: {Device.iosapp_entity[BATTERY_LEVEL].replace('sensor.', '')}"
+                            f", {battery_status_sensor}")
             if Device.iosapp_entity[NOTIFY]:
                 event_msg += f"{CRLF_DOT}Notifications: {Device.iosapp_entity[NOTIFY].replace('sensor.', '')}"
             else:

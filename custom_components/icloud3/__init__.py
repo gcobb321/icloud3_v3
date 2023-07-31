@@ -18,7 +18,7 @@ import os
 import logging
 
 from .const import (DOMAIN, PLATFORMS, MODE_PLATFORM, MODE_INTEGRATION, CONF_VERSION,
-                    CONF_SETUP_ICLOUD_SESSION_EARLY,
+                    CONF_SETUP_ICLOUD_SESSION_EARLY, CONF_EVLOG_BTNCONFIG_URL,
                     SENSOR_EVENT_LOG_NAME, SENSOR_WAZEHIST_TRACK_NAME,
                     EVLOG_IC3_STARTING, VERSION, )
 
@@ -123,16 +123,20 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
         Gb.operating_mode = MODE_INTEGRATION
         await async_get_ha_location_info(hass)
 
-        recorder_prefilter.add_filter(hass, [SENSOR_EVENT_LOG_NAME, SENSOR_WAZEHIST_TRACK_NAME])
-        Gb.PyiCloud       = None
-        Gb.EvLog          = event_log.EventLog(Gb.hass)
-        Gb.start_icloud3_inprocess_flag = True
+        Gb.PyiCloud = None
 
+        recorder_prefilter.add_filter(hass, [SENSOR_EVENT_LOG_NAME, SENSOR_WAZEHIST_TRACK_NAME])
         start_ic3.initialize_directory_filenames()
         config_file.load_storage_icloud3_configuration_file()
         start_ic3.set_log_level(Gb.log_level)
         open_ic3_log_file(new_log_file=Gb.log_debug_flag)
+
+        Gb.evlog_btnconfig_url = Gb.conf_profile[CONF_EVLOG_BTNCONFIG_URL].strip()
+        Gb.evlog_version       = Gb.conf_profile['event_log_version']
+        Gb.EvLog = event_log.EventLog(Gb.hass)
         log_info_msg(f"Setting up iCloud3 {VERSION} - Using Integration method")
+
+        Gb.start_icloud3_inprocess_flag = True
 
         #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         try:

@@ -62,8 +62,13 @@ def calc_distance_m(from_gps, to_gps):
         return 0
 
     distance_m = distance(from_lat, from_long, to_lat, to_long)
+    distance_m = round_to_zero(distance_m)
+    distance_m = 0 if distance_m < .002 else distance_m
+    return distance_m
     return round_to_zero(distance_m)
-    #return round(round_to_zero(distance_m))
+
+    # distance_m = distance(from_lat, from_long, to_lat, to_long)
+    # return round_to_zero(distance_m)
 
 #--------------------------------------------------------------------
 def format_km_to_mi(dist_km):

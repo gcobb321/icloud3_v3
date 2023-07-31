@@ -18,6 +18,7 @@ from ..const                import (DOMAIN,
                                     ICLOUD_LOST_MODE_CAPABLE,
                                     )
 
+from ..support              import config_file
 from ..support              import iosapp_interface
 from ..support              import start_ic3
 from ..support              import determine_interval as det_interval
@@ -28,7 +29,8 @@ from ..helpers.messaging    import (post_event, post_error_msg, post_monitor_msg
                                     open_ic3_log_file, close_ic3_log_file,
                                     close_reopen_ic3_log_file, delete_open_log_file,
                                     _trace, _traceha, )
-from ..helpers.time_util    import (secs_to_time, time_str_to_secs, datetime_now, secs_since, time_now, )
+from ..helpers.time_util    import (secs_to_time, time_str_to_secs, datetime_now, secs_since,
+                                    time_now_secs, time_now, )
 # from ..config_flow          import ActionSettingsFlowManager
 # from ..                     import config_flow
 
@@ -64,7 +66,9 @@ GLOBAL_ACTIONS =  [CMD_EXPORT_EVENT_LOG,
                     CMD_CONFIG_FLOW,
                     CMD_LOG_LEVEL,
                     CMD_WAZEHIST_MAINTENANCE,
-                    CMD_WAZEHIST_TRACK, ]
+                    CMD_WAZEHIST_TRACK,
+                    'event_log_version',
+                    ]
 DEVICE_ACTIONS =  [CMD_REQUEST_LOCATION,
                     CMD_PAUSE,
                     CMD_RESUME,
@@ -76,7 +80,9 @@ NO_EVLOG_ACTION_POST_EVENT = [
                     REFRESH_EVLOG_FNAME,
                     HIDE_TRACKING_MONITORS_FNAME,
                     SHOW_TRACKING_MONITORS_FNAME,
-                    CMD_DISPLAY_STARTUP_EVENTS, ]
+                    CMD_DISPLAY_STARTUP_EVENTS,
+                    'event_log_version',
+                    'Event Log Version']
 
 SERVICE_SCHEMA = vol.Schema({
     vol.Optional('command'): cv.string,
@@ -242,6 +248,10 @@ def update_service_handler(action_entry=None, action_fname=None, devicename=None
     action        = action_entry.split(' ')[0]
     action_option = action_entry.replace(action, '').strip()
 
+    # EvLog version sent from the EvLog program already set, ignore the svc call
+    if action == 'event_log_version' and Gb.evlog_version == action_option:
+        return
+
     devicename_msg = devicename if devicename in Gb.Devices_by_devicename else None
     action_msg     = action_fname if action_fname else f"{action.title()}"
 
@@ -287,6 +297,9 @@ def update_service_handler(action_entry=None, action_fname=None, devicename=None
 
         elif action == 'delete_log':
             delete_open_log_file()
+
+        else:
+            return
 
 
     if devicename == 'startup_log':
@@ -357,6 +370,11 @@ def _handle_global_action(global_action, action_option):
         post_event(event_msg)
         Gb.WazeHist.wazehist_update_track_sensor()
         return
+
+    elif global_action == 'event_log_version':
+        Gb.conf_profile['event_log_version'] = action_option
+        config_file.write_storage_icloud3_configuration_file()
+
 
 #--------------------------------------------------------------------
 def handle_action_log_level(action_option, change_conf_log_level=True):

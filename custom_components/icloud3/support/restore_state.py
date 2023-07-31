@@ -3,7 +3,10 @@
 from ..global_variables     import GlobalVariables as Gb
 from ..const                import (RESTORE_STATE_FILE,
                                     DISTANCE_TO_OTHER_DEVICES, DISTANCE_TO_OTHER_DEVICES_DATETIME,
-                                    HHMMSS_ZERO, )
+                                    HHMMSS_ZERO, AWAY, AWAY_FROM, NOT_SET, NOT_HOME, STATIONARY, STATIONARY_FNAME,
+                                    ZONE, ZONE_DISPLAY_AS, ZONE_FNAME, ZONE_NAME, ZONE_INFO,
+                                    LAST_ZONE, LAST_ZONE_DISPLAY_AS, LAST_ZONE_FNAME, LAST_ZONE_NAME,
+                                    DIR_OF_TRAVEL, )
 
 from ..helpers.common       import (instr, )
 from ..helpers.messaging    import (log_info_msg, log_debug_msg, log_exception, _trace, _traceha, )
@@ -85,11 +88,19 @@ def read_storage_icloud3_restore_state_file():
             Gb.restore_state_devices   = Gb.restore_state_file_data['devices']
 
             for devicename, devicename_data in Gb.restore_state_devices.items():
-                devicename_data['sensors'][DISTANCE_TO_OTHER_DEVICES] = {}
-                devicename_data['sensors'][DISTANCE_TO_OTHER_DEVICES_DATETIME] = HHMMSS_ZERO
+                sensors = devicename_data['sensors']
+                sensors[DISTANCE_TO_OTHER_DEVICES] = {}
+                sensors[DISTANCE_TO_OTHER_DEVICES_DATETIME] = HHMMSS_ZERO
+
+                _reset_statzone_values_to_away(sensors)
+
+                from_zones = devicename_data['from_zone']
+                for from_zone, from_zone_sensors in from_zones.items():
+                    _reset_from_zone_statzone_values_to_away(from_zone_sensors)
+
         return True
 
-    except JSONDecodeError:
+    except json.decoder.JSONDecodeError:
         pass
     except Exception as err:
         log_exception(err)
@@ -117,3 +128,70 @@ def write_storage_icloud3_restore_state_file():
         log_exception(err)
 
     return False
+
+#--------------------------------------------------------------------
+def _reset_statzone_values_to_away(sensors):
+    '''
+    Sensors with a StatZone value needs to be set to Away since the StatZone is
+    not restored on an HA restart. The data structure is:
+
+    "sensors": {
+        "zone": "ic3_stationary_1",
+        "zone_display_as": "StatZon1",
+        "zone_fname": "StatZon1",
+        "zone_name": "Ic3Stationary1",
+        "last_zone": "ic3_statzone_2",
+        "last_zone_display_as": "StatZon2",
+        "last_zone_fname": "StatZon2",
+        "last_zone_name": "Ic3Statzone2",
+        "dir_of_travel": "@StatZon1",
+    }
+    '''
+    statzone_fname = Gb.statzone_fname.replace('#', '')
+
+    _reset_sensor_value(sensors, ZONE, "ic3_stationary_", NOT_HOME)
+    _reset_sensor_value(sensors, ZONE_DISPLAY_AS, statzone_fname, AWAY)
+    _reset_sensor_value(sensors, ZONE_FNAME, statzone_fname, AWAY)
+    _reset_sensor_value(sensors, ZONE_NAME, "Ic3Stationary", AWAY)
+    _reset_sensor_value(sensors, LAST_ZONE, "ic3_stationary_", NOT_SET)
+    _reset_sensor_value(sensors, LAST_ZONE_DISPLAY_AS, statzone_fname, NOT_SET)
+    _reset_sensor_value(sensors, LAST_ZONE_FNAME, statzone_fname, NOT_SET)
+    _reset_sensor_value(sensors, LAST_ZONE_NAME, "Ic3Stationary", NOT_SET)
+    _reset_sensor_value(sensors, DIR_OF_TRAVEL, f"@{statzone_fname}", AWAY)
+    _reset_sensor_value(sensors, DIR_OF_TRAVEL, STATIONARY, AWAY)
+    _reset_sensor_value(sensors, DIR_OF_TRAVEL, STATIONARY_FNAME, AWAY)
+
+#--------------------------------------------------------------------
+def _reset_from_zone_statzone_values_to_away(sensors):
+    '''
+    Sensors with a StatZone value needs to be set to Away since the StatZone is
+    not restored on an HA restart. The data structure is:
+
+    "from_zone": {
+        "zone_name_1": {
+            "dir_of_travel": "Stationary",
+            "zone_info": "@StatZon1"
+        },
+        "zone_name_2": {
+            "dir_of_travel": "Stationary",
+            "zone_info": "@StatZon1"
+        }
+    }
+    '''
+    statzone_fname = Gb.statzone_fname.replace('#', '')
+
+    _reset_sensor_value(sensors, ZONE_INFO, f"@{statzone_fname}", NOT_SET)
+    _reset_sensor_value(sensors, DIR_OF_TRAVEL, f"@{statzone_fname}", AWAY)
+    _reset_sensor_value(sensors, DIR_OF_TRAVEL, STATIONARY, AWAY)
+    _reset_sensor_value(sensors, DIR_OF_TRAVEL, STATIONARY_FNAME, AWAY)
+
+#--------------------------------------------------------------------
+def _reset_sensor_value(sensors, sensor, statzone_value, initial_value):
+
+    try:
+        if sensor in sensors and instr(sensors[sensor], statzone_value):
+            sensors[sensor] = initial_value
+
+    except Exception as err:
+        #log_exception(err)
+        pass

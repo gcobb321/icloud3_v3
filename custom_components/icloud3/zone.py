@@ -117,11 +117,11 @@ class iCloud3_Zone(object):
     #---------------------------------------------------------------------
     @property
     def is_statzone(self):
-        return self.zone.endswith(STATIONARY)
+        return instr(self.zone, STATIONARY)
 
     @property
     def isnot_statzone(self):
-        return self.zone.endswith(STATIONARY) is False
+        return instr(self.zone, STATIONARY) is False
 
     def is_my_statzone(self, Device):
         return self.zone == f"{Device.devicename}_{STATIONARY}"
@@ -145,12 +145,16 @@ class iCloud3_Zone(object):
     # Calculate distance in meters
     def distance_m(self, to_latitude, to_longitude):
         to_gps = (to_latitude, to_longitude)
-        return calc_distance_m(self.gps, to_gps)
+        distance = calc_distance_m(self.gps, to_gps)
+        distance = 0 if distance < .002 else distance
+        return distance
 
     # Calculate distance in kilometers
     def distance_km(self, to_latitude, to_longitude):
         to_gps = (to_latitude, to_longitude)
-        return calc_distance_km(self.gps, to_gps)
+        distance = calc_distance_km(self.gps, to_gps)
+        distance = 0 if distance < .00002 else distance
+        return distance
 
     # Return the DeviceFmZone obj from the devicename and this zone
     @property
@@ -201,6 +205,7 @@ class iCloud3_StationaryZone(iCloud3_Zone):
         # Initialize Zone with location
         super().__init__(self.zone, statzone_data)
         self.write_ha_zone_state(self.base_attrs)
+        self.name = self.title = self.display_as
 
         #away_attrs is used to move the stationary zone back to it's base
         self.away_attrs = self.base_attrs.copy()

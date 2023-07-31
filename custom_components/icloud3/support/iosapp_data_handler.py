@@ -18,7 +18,7 @@ from ..helpers.messaging    import (post_event, post_monitor_msg,
 from ..helpers.time_util    import (secs_to_time, secs_since, format_time_age, format_age, )
 from ..helpers.dist_util    import (format_dist_km, format_dist_m, )
 from ..helpers              import entity_io
-from ..support              import iosapp_interface #as iosapp_interface
+from ..support              import iosapp_interface
 from ..support              import stationary_zone as statzone
 
 
@@ -79,12 +79,11 @@ def check_iosapp_state_trigger_change(Device):
             iosapp_data_secs = device_trkr_attrs[TIMESTAMP_SECS] = iosapp_data_state_secs
             iosapp_data_time = device_trkr_attrs[TIMESTAMP_TIME] = iosapp_data_state_time
 
-        # if Gb.log_rawdata_flag:
-        if True is True:
+        if Gb.log_rawdata_flag:
             change_msg = ''
             if Device.iosapp_data_trigger != iosapp_data_trigger:
                 change_msg += f'Trigger ({Device.iosapp_data_trigger}{RARROW}{iosapp_data_trigger}, '
-            # if Device.iosapp_data_time != iosapp_data_time:
+
             # beta 13
             if abs(Device.iosapp_data_secs - iosapp_data_secs) >= 5:
                 change_msg += f'Time ({Device.iosapp_data_time}{RARROW}{iosapp_data_time}), '
@@ -100,7 +99,7 @@ def check_iosapp_state_trigger_change(Device):
 
         # Force a reject if periodic and has not moved
         if iosapp_data_trigger == 'periodic':
-            if (Device.dev_data_source != NOT_SET
+            if (Device.is_dev_data_source_SET
                     and device_trkr_attrs[LATITUDE] == Device.iosapp_data_latitude
                     and device_trkr_attrs[LONGITUDE] == Device.iosapp_data_longitude):
                 iosapp_data_change_flag = False

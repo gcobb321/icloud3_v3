@@ -5,7 +5,7 @@ from .const             import (DOMAIN, ICLOUD3, CONF_VERSION,
                                 DISTANCE_TO_DEVICES,
                                 NOT_SET, NOT_SET_FNAME, HOME, NOT_HOME,
                                 DEVICE_TYPE_ICONS, DEVICE_TYPE_FNAME,
-                                BLANK_SENSOR_FIELD, STATIONARY_FNAME,
+                                BLANK_SENSOR_FIELD, STATIONARY_FNAME, DEVICE_TRACKER_STATE,
                                 TRACK_DEVICE, INACTIVE_DEVICE,
                                 NAME, FNAME,
                                 PICTURE,
@@ -202,7 +202,7 @@ class iCloud3_DeviceTracker(TrackerEntity):
                 self.default_value = BLANK_SENSOR_FIELD
 
             self.triggers           = None
-            self.from_state_zonee   = ''
+            self.from_state_zone    = ''
             self.to_state_zone      = ''
             self._state             = self.default_value
             self._data              = data          # Used by .see to issue change triggers
@@ -226,6 +226,14 @@ class iCloud3_DeviceTracker(TrackerEntity):
         return f"{DOMAIN}_{self.devicename}"
 
     @property
+    def should_poll2(self):
+        return False
+
+    @property
+    def force_update(self):
+        return True
+
+    @property
     def name(self) -> str:
         """Return the name of the device."""
         return self.device_fname
@@ -233,7 +241,10 @@ class iCloud3_DeviceTracker(TrackerEntity):
     @property
     def location_name(self):
         """Return the location name of the device."""
-        return None
+        try:
+            return self.Device.sensors.get(DEVICE_TRACKER_STATE, None)
+        except:
+            return None
 
     @property
     def location_accuracy(self):
@@ -296,7 +307,8 @@ class iCloud3_DeviceTracker(TrackerEntity):
             extra_attrs = {}
 
             extra_attrs[GPS]                 = f"({self.latitude}, {self.longitude})"
-            extra_attrs['data_source']       = f"{self._get_sensor_value(LOCATION_SOURCE)} (iCloud3)"
+            extra_attrs['integration']       = ICLOUD3
+            extra_attrs['data_source']       = f"{self._get_sensor_value(LOCATION_SOURCE)}"
             extra_attrs[DEVICE_STATUS]       = self._get_sensor_value(DEVICE_STATUS)
             extra_attrs[NAME]                = self._get_sensor_value(NAME)
             extra_attrs[PICTURE]             = self._get_sensor_value(PICTURE)
@@ -345,6 +357,9 @@ class iCloud3_DeviceTracker(TrackerEntity):
 
             sensor_value = self.Device.sensors.get(sensor, None)
 
+            if instr(sensor, DEVICE_TRACKER_STATE):
+                return sensor_value
+
             if number and instr(sensor_value, ' '):
                 sensor_value = float(sensor_value.split(' ')[0])
 
@@ -352,8 +367,8 @@ class iCloud3_DeviceTracker(TrackerEntity):
             if number is False and type(sensor_value) is str:
                 if sensor_value is None or sensor_value.strip() == '' or sensor_value == NOT_SET:
                     sensor_value = BLANK_SENSOR_FIELD
-                elif is_statzone(sensor_value):
-                    sensor_value = STATIONARY_FNAME
+                # elif is_statzone(sensor_value):
+                #     sensor_value = STATIONARY_FNAME
 
         except Exception as err:
             log_error_msg(f"►INTERNAL ERROR (Create device_tracker object-{err})")

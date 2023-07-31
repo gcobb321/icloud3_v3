@@ -55,20 +55,20 @@ def is_icloud_update_needed_timers(Device):
     if (Device.is_passthru_zone_delay_active
             and Gb.this_update_secs > Device.passthru_zone_timer + \
                 Gb.passthru_zone_interval_secs * 4):
-        Device.icloud_update_reason = ( f"PassThru Zone timer expired")
+        Device.icloud_update_reason = f"PassThru Zone timer expired"
 
-    elif Device.is_next_update_time_reached:
-        Device.icloud_update_reason = 'Next Update Time Reached'
-        if (Device.isnot_inzone and Device.DeviceFmZoneNextToUpdate.from_zone != HOME):
-            Device.icloud_update_reason += (f" ({Device.DeviceFmZoneNextToUpdate.from_zone})")
-
-    elif (Device.statzone_timer_reached
-            and Device.old_loc_poor_gps_cnt == 0
-            and Gb.is_statzone_used):
+    elif Device.is_statzone_timer_reached and Device.old_loc_poor_gps_cnt == 0:
         Device.icloud_update_reason = "Stationary Zone Time Reached"
 
     elif Device.is_passthru_timer_set and Gb.this_update_secs >= Device.passthru_zone_timer:
         Device.icloud_update_reason = "Enter Zone Delay Time Reached"
+
+    elif Device.is_next_update_time_reached:
+        Device.icloud_update_reason = 'Next Update Time Reached'
+        if Device.is_statzone_timer_reached:
+            Device.icloud_update_reason += " (Stationary)"
+        elif Device.isnot_inzone and Device.DeviceFmZoneNextToUpdate.from_zone != HOME:
+            Device.icloud_update_reason += f" ({Device.DeviceFmZoneNextToUpdate.from_zone_display_as})"
 
     elif Device.is_next_update_overdue:
         Device.icloud_update_reason = 'Next Update Time Overdue'

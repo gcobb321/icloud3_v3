@@ -49,6 +49,9 @@ def secs_to_time_str(secs):
     """ Create the time string from seconds """
 
     try:
+        if secs < 1:
+            return '0 min'
+
         if secs >= 86400:
             time_str = f"{secs/86400:.2f} days"   #secs_to_dhms_str(secs)
         elif secs < 60:
@@ -74,6 +77,9 @@ def mins_to_time_str(mins):
     """ Create the time string from seconds """
 
     try:
+        if mins == 0:
+            return '0 min'
+
         if mins >= 86400:
             time_str = secs_to_dhms_str(mins*60)
         elif mins < 60:
@@ -93,13 +99,10 @@ def mins_to_time_str(mins):
 #--------------------------------------------------------------------
 def secs_to_hrs_mins_secs_str(secs):
     """ Create # hrs, # mins, # secs string """
-    return f"{secs/86400:.2f} days"
-    #hms_str = secs_to_dhms_str(secs)
-    #hms_str = hms_str.replace('s', ' secs')
-    #hms_str = hms_str.replace('m', ' mins, ')
-    #hms_str = hms_str.replace('h', ' hrs, ')
+    if secs < 1:
+        return '0 min'
 
-    #return hms_str
+    return f"{secs/86400:.2f} days"
 
 #---------------------------------------------------------
 def secs_to_hhmmss(secs):
@@ -108,6 +111,9 @@ def secs_to_hhmmss(secs):
     try:
         if instr(secs, ':'):
             return secs
+
+        if secs < 1:
+            return HHMMSS_ZERO
 
         w_secs = float(secs)
 
@@ -145,17 +151,11 @@ def secs_to_hhmm(secs):
 def secs_to_time_hhmm(secs):
     """ secs --> hh:mm or hh:mma or hh:mmp"""
     try:
+        if Gb.time_format_24_hour:
+            return secs_to_24hr_time(secs + 30)[:-3]
+
         hhmmss = secs_to_time(secs + 30)
-        hhmm = hhmmss[:-3]
-        if (Gb.time_format_12_hour is False
-                or hhmm.endswith('a')
-                or hhmm.endswith('p')):
-            return hhmm
-
-        if hhmm.endswith(':'): hhmm = hhmm[:-1]
-        hhmm = hhmm + hhmmss[-1:]
-
-        return hhmm
+        return hhmmss[:-4] + hhmmss[-1:]
 
     except:
         return '00:00'
@@ -181,23 +181,22 @@ def waze_mins_to_time_str(waze_time_from_zone):
         return  'N/A'
 
     mins = waze_time_from_zone * 60
-    secs = 0
-    if mins > 180:
-        mins, secs = divmod(mins, 60)
-        mins = mins + 1 if secs > 30 else mins
-        secs = mins * 60
+
+    mins, secs = divmod(mins, 60)
+    mins = mins + 1 if secs > 30 else mins
+    secs = mins * 60
 
     return secs_to_time_str(secs)
 
 #--------------------------------------------------------------------
 def secs_since(secs) -> int:
-    if secs == 0:
+    if secs < 1:
         return 0
 
     return round(time.time() - secs)
 #--------------------------------------------------------------------
 def secs_to(secs) -> int:
-    if secs == 0:
+    if secs < 1:
         return 0
 
     return round(secs - time.time())
@@ -219,16 +218,16 @@ def time_to_secs(hhmmss):
 #--------------------------------------------------------------------
 def secs_to_time(secs):
     """ Convert seconds to hh:mm:ss """
-    if secs is None or secs == 0 or secs == HIGH_INTEGER:
-        return HHMMSS_ZERO
+    if secs is None or secs < 1 or secs == HIGH_INTEGER:
+        return HHMMSS_ZERO if Gb.time_format_24_hour else '12:00:00a'
 
     return time_to_12hrtime(secs_to_24hr_time(secs))
 
 #--------------------------------------------------------------------
 def secs_to_24hr_time(secs):
     """ Convert seconds to hh:mm:ss """
-    if secs is None or secs == 0 or secs == HIGH_INTEGER:
-        return HHMMSS_ZERO
+    if secs is None or secs < 1 or secs == HIGH_INTEGER:
+        return HHMMSS_ZERO if Gb.time_format_24_hour else '12:00:00a'
 
     secs        = secs + Gb.timestamp_local_offset_secs
     time_format = '%H:%M:%S'
@@ -248,13 +247,12 @@ def time_to_12hrtime(hhmmss, ampm=True):
 
     try:
         if hhmmss == HHMMSS_ZERO:
-            return HHMMSS_ZERO
+            return HHMMSS_ZERO if Gb.time_format_24_hour else '12:00:00a'
 
-        if (Gb.time_format_12_hour is False
+        if (Gb.time_format_24_hour
                 or hhmmss.endswith('a')
                 or hhmmss.endswith('p')):
             return hhmmss
-
 
         hh_mm_ss    = hhmmss.split(':')
         hhmmss_hh   = int(hh_mm_ss[0])
@@ -411,7 +409,7 @@ def timestamp4(secs):
 #--------------------------------------------------------------------
 def secs_to_time_age_str(time_secs):
     """ Secs to '17:36:05 (2 sec ago)' """
-    if time_secs == 0 or time_secs == HIGH_INTEGER:
+    if time_secs < 1 or time_secs == HIGH_INTEGER:
         return '00:00:00'
 
     time_age_str = (f"{secs_to_time(time_secs)} "
@@ -430,7 +428,7 @@ def format_date_time_now(strftime_parameters):
 
 #--------------------------------------------------------------------
 def format_time_age(time_secs):
-    if time_secs == 0 or time_secs == HIGH_INTEGER:
+    if time_secs < 1 or time_secs == HIGH_INTEGER:
         return 'Never'
 
     time_age_str = (f"{secs_to_time(time_secs)} "
@@ -441,14 +439,14 @@ def format_time_age(time_secs):
 #--------------------------------------------------------------------
 def format_age(secs):
     """ Secs to `52.3y ago` """
-    if secs == 0:
+    if secs < 1:
         return 'Never'
 
     return f"{secs_to_time_str(secs)} ago"
 
 #--------------------------------------------------------------------
 def format_age_ts(time_secs):
-    if time_secs == 0:
+    if time_secs < 1:
         return 'Never'
 
     return (f"{secs_to_time_str(secs_since(time_secs))} ago")

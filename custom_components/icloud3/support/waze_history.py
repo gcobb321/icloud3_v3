@@ -1,9 +1,10 @@
 from ..global_variables     import GlobalVariables as Gb
 from ..const                import (EVLOG_NOTICE, EVLOG_ALERT, CRLF_DOT, CRLF, RARROW2, DATETIME_ZERO,
-                                    CONF_TRACK_FROM_ZONES
+                                    CONF_TRACK_FROM_ZONES, HIGH_INTEGER
                                     )
+from ..helpers.common       import (list_to_str,)
 from ..helpers.messaging    import (broadcast_info_msg,
-                                    post_event, post_internal_error, post_monitor_msg,
+                                    post_event, post_internal_error, post_monitor_msg, post_startup_alert,
                                     log_info_msg, log_error_msg, log_exception,
                                     _trace, _traceha, )
 from ..helpers.time_util    import (datetime_now, secs_to_time_str, mins_to_time_str, )
@@ -522,41 +523,13 @@ class WazeRouteHistory(object):
             # Check to see if all tracked from zones are in the zones table
             Gb.wazehist_zone_id = {}
 
-            # for from_zone, Zone in Gb.TrackedZones_by_zone.items():
             for from_zone, Zone in Gb.TrackedZones_by_zone.items():
                 # criteria = (f"zone='{from_zone}'")
-                criteria = (f"entity_id='{Zone.entity_id}'")
-                wazehist_zone_recd = self._get_record('zones', criteria)
+                criteria = f"entity_id='{Zone.entity_id}'"
+                zone_recd = self._get_record('zones', criteria)
 
-                if wazehist_zone_recd:
-                    # Fix the zone name if it different than the HA entity registry file. It was probably changed
-                    # by the user and needs to be corrected since the zone name is used to determine the tracked
-                    # from zone
-                    if from_zone != wazehist_zone_recd[ZON_ZONE]:
-                        zone_data = [from_zone, wazehist_zone_recd[ZON_ID]]
-
-                        self._update_record(UPDATE_ZONES_TABLE_ZONE_NAME, zone_data)
-
-                    Gb.wazehist_zone_id[from_zone] = wazehist_zone_recd[ZON_ID]
-
-                    # If the zone location was changed by more than 5m, all waze distances/times
-                    # need to be updated to the new location during the midnight maintenance check
-                    wazehist_zone_recd_gps = (wazehist_zone_recd[ZON_LAT], wazehist_zone_recd[ZON_LONG])
-                    zone_distance_check = calc_distance_km(Zone.gps, wazehist_zone_recd_gps)
-                    if zone_distance_check > .005:
-                        Gb.wazehist_zone_id[from_zone] = wazehist_zone_recd[ZON_ID] * -1
-
-                        event_msg =(f"{EVLOG_ALERT}Waze History Database Zone Location Change ({Zone.display_as}) > "
-                                    f"This zone`s location is {format_dist_km(zone_distance_check)} from it`s "
-                                    f"last location (>5m). The Waze History will not be used for this zone "
-                                    f"until the time/distance data has been recalculated. "
-                                    f"{CRLF_DOT}To Do this, select `Event Log > Action > WazeHistory-"
-                                    f"Recalculate Route Time/Dist` or,"
-                                    f"{CRLF_DOT}This will be done automatically tonight "
-                                    f"at midnight.")
-                        post_event(event_msg)
-
-                else:
+                if zone_recd is None:
+                    # Add new Tracked From Zone record
                     zone_data = [from_zone, Zone.entity_id, Zone.latitude, Zone.longitude, 0, datetime_now(), 0]
                     zone_id   = self._add_record(ADD_ZONE_RECORD, zone_data)
                     Gb.wazehist_zone_id[from_zone] = zone_id
@@ -564,6 +537,47 @@ class WazeRouteHistory(object):
                     post_monitor_msg(   f"WazeHistDB > Added zone, "
                                         f"{from_zone}, "
                                         f"zoneId-{zone_id}")
+                    continue
+
+                # Fix the zone name if it different than the HA entity registry file. It was probably changed
+                # by the user and needs to be corrected since the zone name is used to determine the tracked
+                # from zone
+                if from_zone != zone_recd[ZON_ZONE]:
+                    zone_data = [from_zone, zone_recd[ZON_ID]]
+
+                    self._update_record(UPDATE_ZONES_TABLE_ZONE_NAME, zone_data)
+
+                Gb.wazehist_zone_id[from_zone] = zone_recd[ZON_ID]
+
+                criteria  = f"zone_id='{zone_recd[ZON_ID]}'"
+                loc_recds = self._get_all_records('locations', criteria=criteria)
+
+                # If the zone location was changed by more than 100m, all waze distances/times
+                # need to be updated to the new location during the midnight maintenance check
+                zone_recd_gps = (zone_recd[ZON_LAT], zone_recd[ZON_LONG])
+                zone_distance_check = calc_distance_km(Zone.gps, zone_recd_gps)
+                if zone_distance_check > .100:
+                    Gb.wazehist_zone_id[from_zone] = zone_recd[ZON_ID] * -1
+                    evlog_alert_msg = f"Waze History > {Zone.display_as} Zone has moved and will not be used"
+                    event_msg =(f"{EVLOG_ALERT}Waze History > {Zone.display_as} Zone > Location has changed. "
+                                f"It is {format_dist_km(zone_distance_check)} from HistDB location (>100m). "
+                                f"The Waze History will not be used for this zone. "
+                                f"Used by Location Recds-{len(loc_recds)}. "
+                                f"{CRLF}{CRLF}Do one of the following:"
+                                f"{CRLF}1. Reset time/dist data now > `Event Log > Action > WazeHistory-"
+                                f"Recalculate Route Time/Dist`"
+                                f"{CRLF}or"
+                                f"{CRLF}2. Reset time/dist data at midnight > Already Scheduled")
+
+                    if zone_distance_check > 5:
+                        event_msg+=(f"{CRLF}{'-'*80}"
+                                    f"{CRLF}{Zone.display_as} Zone > THIS ZONE HAS MOVED MORE THAN 5km "
+                                    f"AND WILL BE REMOVED FROM THE WAZE HISTORY DATABASE")
+                        evlog_alert_msg = (f"Waze History > {Zone.display_as} Zone has moved "
+                                            f"{format_dist_km(zone_distance_check)} and will be removed "
+                                            f"from the Waze History Database")
+                    post_event(event_msg)
+                    post_startup_alert(evlog_alert_msg)
 
                 self._update_sensor_ic3_wazehist_track(Zone.latitude5, Zone.longitude5)
 
@@ -835,19 +849,47 @@ class WazeRouteHistory(object):
 #   WAZE HISTORY TRACK SENSOR UPDATE, RUNS EACH NIGHT AT MIDNIGHT
 #
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-    def wazehist_delete_invalid_rcords(self):
+    def wazehist_delete_invalid_rcords(self, zone_ids=None):
 
         if self.connection is None:
             return
 
-        # Delete invalid zones
-        zone_ids = str([v for v in Gb.wazehist_zone_id.values()]).replace('[', '').replace(']', '')
-        criteria = (f" zone_id NOT IN ({zone_ids})")
-        records  = self._get_all_records('locations', criteria=criteria)
+        # Cycle through moved zones, delete any > 5km from db zone location
+        moved_zones = {zone_name:abs(zone_id) for (zone_name, zone_id) in Gb.wazehist_zone_id.items() if zone_id < 0}
 
+        for zone_name, zone_id in moved_zones.items():
+            try:
+                criteria = f"zone_id='{zone_id}'"
+                zone_recd = self._get_record('zones', criteria)
+                Zone = Gb.Zones_by_zone[zone_name]
+                zone_recd_gps = (zone_recd[ZON_LAT], zone_recd[ZON_LONG])
+                zone_distance_check = calc_distance_km(Zone.gps, zone_recd_gps)
+                Gb.wazehist_zone_id[zone_name] = zone_id if zone_distance_check <= 5 else HIGH_INTEGER
+
+            except Exception as err:
+                log_exception(err)
+                post_event(f"Waze History > Error removing {zone_name} from History Database")
+
+        # Delete invalid zones
+        deleted_msg = ""
+        zone_ids = str([v for v in Gb.wazehist_zone_id.values()]).replace('[', '').replace(']', '')
+        criteria = f" zone_id NOT IN ({zone_ids})"
+
+        records = self._get_all_records('zones', criteria=criteria)
         if records:
-            post_event(f"Waze History > Deleted Locations with Invalid Zones, Cnt-{len(records)}")
+            zones = set()
+            zones = {zone[1] for zone in records}
+            deleted_msg += f"{CRLF_DOT}Zones - {list_to_str(zones)}"
+            self._delete_record('zones', criteria=criteria)
+
+        records = self._get_all_records('locations', criteria=criteria)
+        if records:
+            deleted_msg += f"{CRLF_DOT}Locations - {len(records)} records"
             self._delete_record('locations', criteria=criteria)
+
+        if deleted_msg != "":
+            post_event( f"Waze History > Delete records for zones not "
+                        f"tracked from: {deleted_msg}:")
 
     #------------------------------------------------------------------------------
     def wazehist_update_track_sensor(self):

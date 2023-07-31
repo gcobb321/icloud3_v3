@@ -35,6 +35,22 @@ def format_list(arg_list):
     formatted_list = formatted_list.replace("'", "").replace(",", f"{CRLF_DOT}")
 
     return (f"{CRLF_DOT}{formatted_list}")
+
 #--------------------------------------------------------------------
-def format_cnt(desc, n):#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+def format_cnt(desc, n):
     return f", {desc}(#{n})" if n > 1 else ''
+
+#--------------------------------------------------------------------
+def icon_circle(zone):
+    return f"mdi:alpha-{zone[:1].lower()}-circle"
+
+#--------------------------------------------------------------------
+def icon_circle_outline(zone):
+    return f"{icon_circle(zone)}-outline"
+
+#--------------------------------------------------------------------
+def icon_box(zone):
+    return f"mdi:alpha-{zone[:1].lower()}-box"
+#--------------------------------------------------------------------
+def icon_box_outline(zone):
+    return f"{icon_box(zone)}-outline"

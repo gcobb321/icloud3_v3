@@ -14,11 +14,12 @@ from ..global_variables     import GlobalVariables as Gb
 from ..const                import (HOME,
                                     HHMMSS_ZERO, HIGH_INTEGER, NONE, IOSAPP,
                                     EVLOG_TABLE_MAX_CNT_BASE, EVENT_LOG_CLEAR_SECS,
-                                    EVENT_LOG_CLEAR_CNT, EVLOG_TABLE_MAX_CNT_ZONE,
+                                    EVENT_LOG_CLEAR_CNT, EVLOG_TABLE_MAX_CNT_ZONE, EVLOG_BTN_URLS,
                                     EVLOG_TIME_RECD, EVLOG_HIGHLIGHT, EVLOG_MONITOR,
                                     EVLOG_ERROR, EVLOG_ALERT, EVLOG_UPDATE_START, EVLOG_UPDATE_END,
                                     EVLOG_IC3_STARTING, EVLOG_IC3_STAGE_HDR,
                                     CRLF, CRLF_DOT, CRLF_CHK, RARROW, DOT, LT, GT,
+                                    CONF_EVLOG_BTNCONFIG_URL,
                                     )
 
 from ..helpers.common       import instr, circle_letter
@@ -74,18 +75,45 @@ class EventLog(object):
         self.user_message            = ''       # Display a message in the name0 button
         self.user_message_alert_flag = False    # Do not clear the message if this is True
         self.alert_message           = ''
+        self.evlog_btn_urls          = EVLOG_BTN_URLS.copy()
+
+        v2_v3_browser_refresh_msg ={"Browser Refresh Required":
+                                   ("✪✪ This is Event Log v2, not "
+                                    "v3. A Browser Refresh is "
+                                    "Required ✪✪ "
+                                    "───────────────── "
+                                    "Ctrl-Shift-Del, then Refresh "
+                                    "the browser tab. You may have to "
+                                    "do this several times. "
+                                    "────────────────── "
+                                    "If 'iCloud3 v3 - Event Log' is "
+                                    "not displayed, restart HA. Also "
+                                    "do this on devices running the iOS App. "
+                                    "───────────────── "
+                                    "See the iCloud3 User Guide: "
+                                    "https://gcobb321.github.io/icloud3_v3_docs/#/chapters/0.1-migrating-v2.4-to-v3.0?"
+                                    "id=step-5-clear-the-browsers-cache "
+                                    "───────────────── "
+                                    )}
 
         self.evlog_sensor_state_value       = ''
+        self.evlog_btn_urls['btnConfig']    = Gb.evlog_btnconfig_url
+
         self.evlog_attrs                    = {}
+        self.evlog_attrs["version_ic3"]     = Gb.version
+        self.evlog_attrs["version_evlog"]   = Gb.version_evlog
         self.evlog_attrs["log_level_debug"] = ''
         self.evlog_attrs["run_mode"]        = 'Initialize'
-        self.evlog_attrs["ha_config_ic3_url"] = ''
+        self.evlog_attrs["evlog_btn_urls"]  = self.evlog_btn_urls
         self.evlog_attrs["user_message"]    = self.user_message
         self.evlog_attrs["update_time"]     = ''
-        self.evlog_attrs["version"]         = Gb.version_evlog
         self.evlog_attrs["devicename"]      = ''
         self.evlog_attrs["fname"]           = ''
         self.evlog_attrs["fnames"]          = {'Setup': 'Initializing iCloud3'}
+        self.evlog_attrs["filtername"]      = 'Initialize'
+        self.evlog_attrs["name"]            = {"Browser Refresh is Required to load v3":
+                                                  "Browser Refresh is Required to load v3"}
+        self.evlog_attrs["names"]           = v2_v3_browser_refresh_msg
         self.evlog_attrs["logs"]            = []
 
         self.devicename_cnts = {}
@@ -130,13 +158,20 @@ class EventLog(object):
                 self.devicename = next(iter(self.devicename_by_fnames))
                 self.fname_selected = self.devicename_by_fnames[self.devicename]
 
-            self.evlog_attrs["run_mode"]    = "Initialize"
-            self.evlog_attrs["ha_config_ic3_url"] = Gb.ha_config_ic3_url
-            self.evlog_attrs["update_time"] = "setup"
-            self.evlog_attrs["devicename"]  = self.devicename
-            self.evlog_attrs["fname"]       = self.fname_selected
-            self.evlog_attrs["fnames"]      = self.devicename_by_fnames
-            self.evlog_attrs["version"]     = Gb.version_evlog
+            if Gb.evlog_version.startswith('3'):
+                self.evlog_attrs["name"] = ''
+                self.evlog_attrs["names"] = ''
+
+            self.evlog_btn_urls['btnConfig']   = Gb.evlog_btnconfig_url
+            self.evlog_attrs["version_ic3"]    = Gb.version
+            self.evlog_attrs["version_evlog"]  = Gb.version_evlog
+            self.evlog_attrs["run_mode"]       = "Initialize"
+            self.evlog_attrs["evlog_btn_urls"] = self.evlog_btn_urls
+            self.evlog_attrs["update_time"]    = "setup"
+            self.evlog_attrs["devicename"]     = self.devicename
+            self.evlog_attrs["fname"]          = self.fname_selected
+            self.evlog_attrs["fnames"]         = self.devicename_by_fnames
+            self.evlog_attrs["filtername"]     = 'Initialize'
 
             Gb.EvLogSensor.async_update_sensor()
 

@@ -10,10 +10,10 @@
 from ..global_variables  import GlobalVariables as Gb
 from ..const             import (LATITUDE, LONGITUDE, STATZONE_BASE_RADIUS_M, )
 from ..zone              import iCloud3_StationaryZone
-from ..helpers.common    import (isbetween, format_gps, )
+from ..helpers.common    import (isbetween, is_statzone, format_gps, )
 from ..helpers.messaging import (post_event, post_error_msg, post_monitor_msg,
                                 log_debug_msg, log_exception, log_rawdata, _trace, _traceha, )
-from ..helpers.time_util import (datetime_now, format_time_age, )
+from ..helpers.time_util import (secs_to_time, datetime_now, format_time_age, )
 
 
 #--------------------------------------------------------------------
@@ -22,11 +22,7 @@ def move_device_into_statzone(Device):
     The timer has expired, move the statzone to the device's location and move the device
     into it
     '''
-    # _traceha(f"{Device.interval_secs=} {Gb.statzone_inzone_interval_secs=}")
-    if (Device.old_loc_poor_gps_cnt > 0
-            # or Device.interval_secs > Gb.statzone_inzone_interval_secs
-            or Gb.is_statzone_used is False):
-        _clear_statzone_timer_distance(Device)
+    if Device.old_loc_poor_gps_cnt > 0 or Gb.is_statzone_used is False:
         return
 
     latitude  = Device.loc_data_latitude
@@ -43,18 +39,6 @@ def move_device_into_statzone(Device):
         return
 
     if _is_too_close_to_another_zone(Device): return
-    # # Too close if inside zone_radius + statzone_radius_gps_accuracy +25
-    # too_close_to_zone = [Zone for Zone in Gb.Zones
-    #                     if (Zone.passive is False
-    #                             and Zone.distance_m(latitude, longitude) <= \
-    #                                     (Zone.radius_m + Gb.statzone_radius_m + 25 + \
-    #                                     Device.loc_data_gps_accuracy))]
-
-    # if too_close_to_zone != []:
-    #     log_msg = f"{Device.devicename} > StatZone not created, too close to {too_close_to_zone}"
-    #     log_debug_msg(log_msg)
-    #     _clear_statzone_timer_distance(Device)
-    #     return
 
     # Get next available StatZone
     for StatZone in Gb.StatZones:
@@ -83,7 +67,7 @@ def move_device_into_statzone(Device):
     Device.loc_data_zone      = StatZone.zone
     Device.into_zone_datetime = datetime_now()
 
-    event_msg =(f"Setting StatZone Location ({StatZone.display_as}) > "
+    event_msg =(f"Setting Up Stationary Zone ({StatZone.display_as}) > "
                 f"StationarySince-{format_time_age(still_since_secs)}, "
                 f"GPS-{format_gps(latitude, longitude, 0)}")
     post_event(Device.devicename, event_msg)
@@ -105,7 +89,6 @@ def create_StationaryZones_object():
 
     Gb.Zones.append(StatZone)
     Gb.Zones_by_zone[StatZone.zone] = StatZone
-
     Gb.state_to_zone[StatZone.zone] = StatZone.zone
 
     return StatZone
@@ -200,16 +183,18 @@ def move_statzone_to_base_location(StatZone, Device=None):
 def _is_too_close_to_another_zone(Device):
     # Too close if inside zone_radius + statzone_radius_gps_accuracy +25
 
-    too_close_to_zone = [Zone.display_as for Zone in Gb.Zones
+    CloseZones = [Zone for Zone in Gb.Zones
                         if (Zone.passive is False
                                 and Zone.distance_m(Device.loc_data_latitude, Device.loc_data_longitude) <= \
                                     (Zone.radius_m + Gb.statzone_radius_m + 25 + \
                                     Device.loc_data_gps_accuracy))]
 
-    if too_close_to_zone != []:
-        log_msg = f"{Device.devicename} > StatZone not created, too close to {too_close_to_zone}"
+    if CloseZones == []: return
+
+    if is_statzone(CloseZones[0].zone):
+        log_msg = f"{Device.devicename} > StatZone not created, too close to {CloseZones[0].display_as}"
         log_debug_msg(log_msg)
-        _clear_statzone_timer_distance(Device)
+        # _clear_statzone_timer_distance(Device)
 
         return True
 #--------------------------------------------------------------------

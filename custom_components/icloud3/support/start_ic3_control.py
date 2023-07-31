@@ -42,9 +42,11 @@ def stage_1_setup_variables():
         Gb.start_icloud3_inprocess_flag = True
         Gb.restart_icloud3_request_flag = False
         Gb.all_tracking_paused_flag     = False
-        Gb.config_track_devices_change_flag = False
         Gb.startup_alerts               = []
         Gb.EvLog.alert_message          = ''
+        Gb.config_track_devices_change_flag = False
+        Gb.reinitialize_icloud_devices_flag = False     # Set when no devices are tracked and iC3 needs to automatically restart
+        Gb.reinitialize_icloud_devices_cnt  = 0
 
         if Gb.initial_icloud3_loading_flag is False:
             post_event( f"{EVLOG_IC3_STARTING}Restarting iCloud3 v{Gb.version} > "
@@ -92,7 +94,6 @@ def stage_2_prepare_configuration():
 
         if Gb.initial_icloud3_loading_flag is False:
             Gb.PyiCloud = None
-            # start_ic3.initialize_PyiCloud()
 
         start_ic3.create_Zones_object()
         # start_ic3.reset_StationaryZones_object()
@@ -177,9 +178,9 @@ def stage_4_setup_data_sources(retry=False):
             Gb.conf_data_source_FAMSHR = False
             Gb.conf_data_source_FMF    = False
             Gb.primary_data_source_ICLOUD = False
-            post_startup_alert('iCloud username/password not set up')
+            post_startup_alert('iCloud username/password not set up or incorrect')
             event_msg =(f"{EVLOG_ALERT}CONFIGURATION ALERT > The iCloud username or password has not been "
-                        f"configured. iCloud will not be used for location tracking")
+                        f"set up or is incorrect. iCloud will not be used for location tracking")
             post_event(event_msg)
 
     return_code = True
@@ -343,6 +344,9 @@ def stage_7_initial_locate():
 
     # The restart will be requested if using iCloud as a data source and no data was returned
     # from PyiCloud
+    if Gb.PyiCloud is None:
+            return
+
     if Gb.reinitialize_icloud_devices_flag and Gb.conf_famshr_device_cnt > 0:
         return_code = reinitialize_icloud_devices()
 
@@ -377,6 +381,9 @@ def reinitialize_icloud_devices():
             - False - Restart failes
     '''
     try:
+        if Gb.PyiCloud is None:
+            return
+
         Gb.reinitialize_icloud_devices_cnt += 1
         if Gb.reinitialize_icloud_devices_cnt > 2:
             return
@@ -412,6 +419,7 @@ def reinitialize_icloud_devices():
                     f"{CRLF_DOT}iCloud3 Configuration Errors"
                     f"{CRLF_DOT}iCloud Location Svcs may be down or slow"
                     f"{CRLF_DOT}The internet may be down"
+                    f"{CRLF_DOT}The username/password is not set up or incorrect"
                     f"{CRLF}{'-'*50}{CRLF}Check the Event Log error messages, "
                     f"correct any problems and restart iCloud3")
         post_event(alert_msg)
