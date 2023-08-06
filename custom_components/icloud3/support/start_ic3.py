@@ -2,13 +2,13 @@
 
 from ..global_variables import GlobalVariables as Gb
 from ..const            import (ICLOUD3,
-                                STORAGE_DIR, STORAGE_KEY_ENTITY_REGISTRY, IC3LOGGER_FILENAME,
-                                DEVICE_TRACKER, DEVICE_TRACKER_DOT, NOTIFY, DOMAIN,
-                                HOME, STATIONARY, ERROR,
+                                STORAGE_DIR, STORAGE_KEY_ENTITY_REGISTRY,
+                                DEVICE_TRACKER, DEVICE_TRACKER_DOT, NOTIFY,
+                                HOME,  ERROR,
                                 STATE_TO_ZONE_BASE, CMD_RESET_PYICLOUD_SESSION,
-                                EVLOG_INIT_HDR, EVLOG_ALERT, EVLOG_IC3_STARTING, EVLOG_NOTICE, EVLOG_IC3_STAGE_HDR,
+                                EVLOG_ALERT, EVLOG_IC3_STARTING, EVLOG_NOTICE, EVLOG_IC3_STAGE_HDR,
                                 EVLOG_TABLE_MAX_CNT_BASE, EVLOG_TABLE_MAX_CNT_ZONE,
-                                CRLF, CRLF_DOT, CRLF_CHK, CRLF_SP3_DOT, CRLF_SP5_DOT, CRLF_HDOT, CRLF_X, DOT2, CTRL_STAR, CRLF_SP3_STAR, CRLF_INDENT,
+                                CRLF, CRLF_DOT, CRLF_CHK, CRLF_SP3_DOT, CRLF_SP5_DOT, CRLF_HDOT, CRLF_X, DOT2, CRLF_STAR, CRLF_SP3_STAR, CRLF_INDENT,
                                 RARROW, NBSP4, NBSP6, CIRCLE_STAR, INFO_SEPARATOR, DASH_20, CHECK_MARK,
                                 ICLOUD, FMF, FAMSHR,
                                 DEVICE_TYPE_FNAME,
@@ -298,6 +298,7 @@ def set_global_variables_from_conf_parameters(evlog_msg=True):
         Gb.distance_between_device_flag = Gb.conf_general[CONF_DISTANCE_BETWEEN_DEVICES]
 
         Gb.tfz_tracking_max_distance   = Gb.conf_general[CONF_TFZ_TRACKING_MAX_DISTANCE]
+        Gb.monitored_devices_location_sensors_flag = 'md_location_sensors' in Gb.conf_sensors['monitored_devices']
 
         # Setup the Stationary Zone location and times
         # The stat_zone_base_lat/long will be adjusted after the Home zone is set up
@@ -414,7 +415,6 @@ def set_primary_data_source(data_source):
     if (Gb.conf_profile[CONF_VERSION] > 0
             and Gb.primary_data_source_ICLOUD
             and (Gb.username == '' or Gb.password == '')):
-        # post_startup_alert('iCloud username/password not set up')
         alert_msg =(f"{EVLOG_ALERT}iCloud3 Alert > The username or password has not "
                     f"been set up, iCloud Location Services will not be used. ")
 
@@ -558,7 +558,7 @@ def set_zone_display_as():
 
         if Zone.radius_m > 1:
             if Zone.passive:
-                crlf_dot_x = CTRL_STAR
+                crlf_dot_x = CRLF_STAR
                 passive_msg = ', Passive Zone'
             else:
                 crlf_dot_x = CRLF_DOT
@@ -571,7 +571,7 @@ def set_zone_display_as():
         StatZone.initialize_updatable_items()
         StatZone.write_ha_zone_state(StatZone.attrs)
 
-        crlf_dot_x = CTRL_STAR if StatZone.passive else CRLF_DOT
+        crlf_dot_x = CRLF_STAR if StatZone.passive else CRLF_DOT
         zone_msg +=(f"{crlf_dot_x}{StatZone.zone}, "
                     f"{StatZone.display_as} (r{StatZone.radius_m}m)")
 
@@ -860,9 +860,6 @@ def create_Zones_object():
     except:
         pass
 
-    #log_msg = (f"Reloading Zone.yaml config file")
-    #log_debug_msg(log_msg)
-
     zone_entities = Gb.hass.states.entity_ids(ZONE)
     er_zones, zone_entity_data = entity_io.get_entity_registry_data(platform=ZONE)
 
@@ -921,7 +918,7 @@ def create_Zones_object():
 
         if Zone.radius_m > 0:
             if Zone.passive:
-                crlf_dot_x = CTRL_STAR
+                crlf_dot_x = CRLF_STAR
                 passive_msg = ', Passive Zone'
             else:
                 Gb.ActiveZones.append(Zone)
@@ -949,7 +946,7 @@ def create_Zones_object():
         Gb.Zones_by_zone[zone]   = Zone
         Gb.zone_display_as[zone] = Zone.display_as
 
-        crlf_dot_x = CTRL_STAR if Zone.passive else CRLF_DOT
+        crlf_dot_x = CRLF_STAR if Zone.passive else CRLF_DOT
         zone_msg +=(f"{crlf_dot_x}{Zone.zone}, "
                     f"{Zone.display_as} (r{Zone.radius_m}m)")
 
@@ -1223,7 +1220,7 @@ def setup_tracked_devices_for_famshr(PyiCloud=None):
 
             if instr(device_fname, '*') or instr(exception_msg, "INACTIVE"):
                 device_fname = device_fname.replace('*', '')
-                crlf_mark = CTRL_STAR
+                crlf_mark = CRLF_STAR
             else:
                 crlf_mark = CRLF_DOT
 
@@ -1276,7 +1273,7 @@ def setup_tracked_devices_for_famshr(PyiCloud=None):
             elif (instr(exception_msg, "INACTIVE")
                     or instr(exception_msg, "TRACKING DISABLED")
                     or instr(exception_msg, "NO LOCATION")):
-                crlf_mark = CTRL_STAR
+                crlf_mark = CRLF_STAR
 
             else:
                 crlf_mark = CRLF_DOT
@@ -1417,7 +1414,7 @@ def setup_tracked_devices_for_fmf(PyiCloud=None):
 
             elif device[CONF_TRACKING_MODE] == INACTIVE_DEVICE:
                 exception_msg = 'INACTIVE'
-                crlf_mark = CTRL_STAR
+                crlf_mark = CRLF_STAR
 
             if exception_msg:
                 exception_event_msg += (f"{crlf_mark}{fmf_email}{RARROW}{exception_msg}")
@@ -1452,7 +1449,7 @@ def setup_tracked_devices_for_fmf(PyiCloud=None):
                                 f"{DEVICE_TYPE_FNAME.get(device_type, device_type)}"
                                 f"{exception_msg}")
             else:
-                event_msg += (  f"{CTRL_STAR}"
+                event_msg += (  f"{CRLF_STAR}"
                                 f"{fmf_email}{RARROW}{devicename}, "
                                 f"{DEVICE_TYPE_FNAME.get(device_type, device_type)}"
                                 f"{exception_msg}")
@@ -1659,20 +1656,22 @@ def setup_tracked_devices_for_iosapp():
     device_info_by_iosapp_devicename           = devices_desc[2]
     device_model_info_by_iosapp_devicename     = devices_desc[3]
     last_updt_trig_by_iosapp_devicename        = devices_desc[4]
-    notify_iosapp_devicenames                  = devices_desc[5]
+    mobile_app_notify_devicenames              = devices_desc[5]
     battery_level_sensors_by_iosapp_devicename = devices_desc[6]
     battery_state_sensors_by_iosapp_devicename = devices_desc[7]
 
     Gb.iosapp_device_verified_cnt = 0
 
-    not_monitored_iosapp_devices = iosapp_id_by_iosapp_devicename.copy()
+    unmatched_iosapp_devices = iosapp_id_by_iosapp_devicename.copy()
+    verified_iosapp_fnames = []
+
 
     tracked_msg = f"iOS App Devices > {Gb.conf_iosapp_device_cnt} of {len(Gb.conf_devices)} Configured Devices"
 
     for devicename, Device in Gb.Devices_by_devicename.items():
         broadcast_info_msg(f"Set up iOS App Devices > {devicename}")
 
-        monitored_iosapp_devices = []
+        matched_iosapp_devices = []
         conf_iosapp_device = Device.iosapp_entity[DEVICE_TRACKER].replace(DEVICE_TRACKER_DOT, '')
 
         # Set iosapp devicename to icloud devicename if nothing is specified. Set to not monitored
@@ -1697,10 +1696,10 @@ def setup_tracked_devices_for_iosapp():
         else:
             conf_iosapp_device = conf_iosapp_device.replace('Search: ', '')
 
-            monitored_iosapp_devices = [k for k, v in iosapp_id_by_iosapp_devicename.items()
+            matched_iosapp_devices = [k for k, v in iosapp_id_by_iosapp_devicename.items()
                             if k.startswith(conf_iosapp_device) and v.startswith('DISABLED') is False]
 
-            if len(monitored_iosapp_devices) == 0:
+            if len(matched_iosapp_devices) == 0:
                 post_startup_alert(f"iOS App device_tracker entity not found for {Device.fname_devicename}")
                 alert_msg =(f"{EVLOG_ALERT}iOS App Device Configuration Error, {Device.fname_devicename} > "
                             f"The iOS `device_tracker.{conf_iosapp_device}_???` search failed. "
@@ -1710,11 +1709,11 @@ def setup_tracked_devices_for_iosapp():
                 post_event(alert_msg)
                 continue
 
-            elif len(monitored_iosapp_devices) == 1:
-                iosapp_devicename = monitored_iosapp_devices[0]
+            elif len(matched_iosapp_devices) == 1:
+                iosapp_devicename = matched_iosapp_devices[0]
 
-            elif len(monitored_iosapp_devices) > 1:
-                iosapp_devicename = monitored_iosapp_devices[-1]
+            elif len(matched_iosapp_devices) > 1:
+                iosapp_devicename = matched_iosapp_devices[-1]
                 post_startup_alert(f"iOS App device_tracker entity search failed for {Device.fname_devicename}")
 
                 alert_msg =(f"{EVLOG_ALERT}CONFIGURATION ALERT > {Device.fname_devicename} > "
@@ -1722,8 +1721,8 @@ def setup_tracked_devices_for_iosapp():
                         f"entity failure. More than one entity found. "
                         f"{CRLF}Review and correct the mobile_app device_tracker entities and delete the older ones. "
                         f"{CRLF}{'-'*25}"
-                        f"{CRLF}Count-{len(monitored_iosapp_devices)}, "
-                        f"{CRLF}Entities-{', '.join(monitored_iosapp_devices)}, "
+                        f"{CRLF}Count-{len(matched_iosapp_devices)}, "
+                        f"{CRLF}Entities-{', '.join(matched_iosapp_devices)}, "
                         f"{CRLF}Monitored-{iosapp_devicename}")
                 post_event(alert_msg)
 
@@ -1733,15 +1732,17 @@ def setup_tracked_devices_for_iosapp():
         if iosapp_id_by_iosapp_devicename[iosapp_devicename].startswith('DISABLED'):
             continue
 
+        try:
+            iosapp_fname = device_info_by_iosapp_devicename[iosapp_devicename].rsplit('(')[0]
+        except:
+            iosapp_fname = f"{iosapp_devicename.replace('_', ' ').title()}(?)"
+
+        verified_iosapp_fnames.append(iosapp_fname)
         Device.verified_flag = True
         Device.iosapp_monitor_flag = True
         Gb.iosapp_device_verified_cnt += 1
         if Device.is_data_source_FAMSHR_FMF is False:
             Device.data_source = IOSAPP
-        try:
-            iosapp_fname = device_info_by_iosapp_devicename[iosapp_devicename].rsplit('(')[0]
-        except:
-            iosapp_fname = f"{iosapp_devicename.replace('_', ' ').title()}(?)"
 
         # Set raw_model that will get picked up by device_tracker and set in the device registry if it is still
         # at it's default value. Normally, raw_model is set when setting up FamShr if that is available, FmF does not
@@ -1771,24 +1772,29 @@ def setup_tracked_devices_for_iosapp():
                         f"{CRLF_INDENT}({Device.raw_model})")
 
         # Remove the iosapp device from the list since we know it is tracked
-        if iosapp_devicename in not_monitored_iosapp_devices:
-            not_monitored_iosapp_devices.pop(iosapp_devicename)
+        if iosapp_devicename in unmatched_iosapp_devices:
+            unmatched_iosapp_devices.pop(iosapp_devicename)
 
     setup_notify_service_name_for_iosapp_devices()
 
     # Devices in the list were not matched with an iCloud3 device or are disabled
-    for iosapp_devicename, iosapp_id in not_monitored_iosapp_devices.items():
+    for iosapp_devicename, iosapp_id in unmatched_iosapp_devices.items():
         try:
             iosapp_fname = device_info_by_iosapp_devicename[iosapp_devicename].rsplit('(')[0]
         except:
             iosapp_fname = f"{iosapp_devicename.replace('_', ' ').title()}(?)"
 
         if iosapp_id_by_iosapp_devicename[iosapp_devicename].startswith('DISABLED'):
-            tracked_msg += (f"{CTRL_STAR}{iosapp_fname} ({iosapp_devicename}){RARROW}DISABLED, "
+            tracked_msg += (f"{CRLF_STAR}{iosapp_fname} ({iosapp_devicename}){RARROW}DISABLED, "
                             f"{CRLF_INDENT}{device_info_by_iosapp_devicename[iosapp_devicename]}")
         else:
-            tracked_msg += (f"{CRLF_DOT}{iosapp_fname} ({iosapp_devicename}){RARROW}Not Monitored, "
-                            f"{CRLF_INDENT}{device_info_by_iosapp_devicename[iosapp_devicename]}")
+            if iosapp_fname in verified_iosapp_fnames:
+                crlf_symb = CRLF_STAR
+                duplicate_msg = ' (DUPLICATE NAME)'
+            else:
+                crlf_symb = CRLF_DOT
+            tracked_msg += (f"{crlf_symb}{iosapp_fname} ({iosapp_devicename}){RARROW}Not Monitored, "
+                            f"{CRLF_INDENT}{device_info_by_iosapp_devicename[iosapp_devicename]}{duplicate_msg}")
     post_event(tracked_msg)
 
     return
@@ -1805,20 +1811,20 @@ def setup_notify_service_name_for_iosapp_devices(post_event_msg=False):
                 when they are set up when this is run after HA has started
 
     '''
-    notify_iosapp_devicenames = iosapp_interface.get_mobile_app_notifications()
+    mobile_app_notify_devicenames = iosapp_interface.get_mobile_app_notify_devicenames()
 
     setup_msg = ''
 
     # Cycle thru the ha notify names and match them up with a device. This function runs
     # while iC3 is starting and again when ha has started. HA may run iC3 before
     # 'notify.mobile_app' so running again when ha has started makes sure they are set up.
-    for notify_iosapp_devicename in notify_iosapp_devicenames:
-        iosapp_devicename = notify_iosapp_devicename.replace('mobile_app_', '')
+    for mobile_app_notify_devicename in mobile_app_notify_devicenames:
+        iosapp_devicename = mobile_app_notify_devicename.replace('mobile_app_', '')
         for devicename, Device in Gb.Devices_by_devicename.items():
             if instr(iosapp_devicename, devicename) or instr(devicename, iosapp_devicename):
                 if Device.iosapp_entity[NOTIFY] == '':
-                    Device.iosapp_entity[NOTIFY] = notify_iosapp_devicename
-                    setup_msg += (f"{CRLF_DOT}{Device.devicename_fname}{RARROW}{notify_iosapp_devicename}")
+                    Device.iosapp_entity[NOTIFY] = mobile_app_notify_devicename
+                    setup_msg += (f"{CRLF_DOT}{Device.devicename_fname}{RARROW}{mobile_app_notify_devicename}")
                 break
 
     if setup_msg and post_event_msg:
@@ -1956,9 +1962,6 @@ def setup_trackable_devices():
         post_event(event_msg)
 
     if Gb.primary_data_source_ICLOUD is False:
-        # Gb.is_passthru_zone_used = False
-        # Gb.is_statzone_used      = False
-
         if Gb.conf_data_source_ICLOUD:
             post_event("iCloud Location Tracking is not available")
         else:
@@ -1982,7 +1985,7 @@ def display_inactive_devices():
         return
 
     event_msg = f"Inactive/Untracked Devices > "
-    event_msg+= list_to_str(inactive_devices, separator=CTRL_STAR)
+    event_msg+= list_to_str(inactive_devices, separator=CRLF_STAR)
     post_event(event_msg)
 
     if len(inactive_devices) == len(Gb.conf_devices):
@@ -2009,7 +2012,7 @@ def display_object_lists():
 
     for Device in Gb.Devices:
         monitor_msg = (f"Device-{Device.devicename}, "
-                        f"DeviceFmZones-{list_to_str(Device.DeviceFmZones_by_zone.keys())}")
+                        f"FromZones-{list_to_str(Device.FromZones_by_zone.keys())}")
         post_monitor_msg(monitor_msg)
 
     monitor_msg = (f"Zones-{list_to_str(Gb.Zones_by_zone.keys())}")

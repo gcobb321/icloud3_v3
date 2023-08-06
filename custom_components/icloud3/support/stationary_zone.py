@@ -66,6 +66,7 @@ def move_device_into_statzone(Device):
     Device.StatZone           = StatZone
     Device.loc_data_zone      = StatZone.zone
     Device.into_zone_datetime = datetime_now()
+    Device.selected_zone_results = []
 
     event_msg =(f"Setting Up Stationary Zone ({StatZone.display_as}) > "
                 f"StationarySince-{format_time_age(still_since_secs)}, "

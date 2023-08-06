@@ -11,8 +11,8 @@
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 from ..global_variables     import GlobalVariables as Gb
-from ..const                import (HOME,
-                                    HHMMSS_ZERO, HIGH_INTEGER, NONE, IOSAPP,
+from ..const                import (HOME, HOME_FNAME, TOWARDS,
+                                    HHMMSS_ZERO, HIGH_INTEGER, NONE, IOSAPP, DOT2,
                                     EVLOG_TABLE_MAX_CNT_BASE, EVENT_LOG_CLEAR_SECS,
                                     EVENT_LOG_CLEAR_CNT, EVLOG_TABLE_MAX_CNT_ZONE, EVLOG_BTN_URLS,
                                     EVLOG_TIME_RECD, EVLOG_HIGHLIGHT, EVLOG_MONITOR,
@@ -50,6 +50,15 @@ ELR_TEXT = 2
 # EVLOG_ALERT       = "^4^"
 # EVLOG_TRACE       = "^5^"
 # EVLOG_MONITOR     = "^6^"
+
+MONITORED_DEVICE_EVENT_FILTERS = [
+    'iCloud Acct Auth',
+    'Nearby Devices',
+    'iOSApp Location',
+    'Updated',
+    'Trigger',
+    'Old',
+]
 
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 class EventLog(object):
@@ -112,7 +121,7 @@ class EventLog(object):
         self.evlog_attrs["fnames"]          = {'Setup': 'Initializing iCloud3'}
         self.evlog_attrs["filtername"]      = 'Initialize'
         self.evlog_attrs["name"]            = {"Browser Refresh is Required to load v3":
-                                                  "Browser Refresh is Required to load v3"}
+                                                "Browser Refresh is Required to load v3"}
         self.evlog_attrs["names"]           = v2_v3_browser_refresh_msg
         self.evlog_attrs["logs"]            = []
 
@@ -145,7 +154,7 @@ class EventLog(object):
                             for devicename, Device in Gb.Devices_by_devicename_monitored.items()
                             if devicename != ''})
 
-            tfz_cnt = sum([len(Device.DeviceFmZones_by_zone) for Device in Gb.Devices])
+            tfz_cnt = sum([len(Device.FromZones_by_zone) for Device in Gb.Devices])
             self.evlog_table_max_cnt = EVLOG_TABLE_MAX_CNT_ZONE*tfz_cnt
 
             if self.devicename_by_fnames == {}:
@@ -192,6 +201,7 @@ class EventLog(object):
         The event_log lovelace card will display the event in a special color if
         the text starts with a special character:
         '''
+
         if event_text == '+':
             event_text = devicename
             devicename = "*" if Gb.start_icloud3_inprocess_flag else '**'
@@ -202,6 +212,15 @@ class EventLog(object):
                 or len(event_text) == 0
                 or instr(event_text, "event_log")):
             return
+
+        # If monitored device and the event msg is a status msg for other devices,
+        # do not display it on a monitoed device screen
+        Device = Gb.Devices_by_devicename.get(devicename)
+        if Device and Device.is_monitored:
+            start_pos = 2 if event_text.startswith('^') else 0
+            for filter_text in MONITORED_DEVICE_EVENT_FILTERS:
+                if event_text[start_pos:].startswith(filter_text):
+                    return
 
         # Drop duplicate event_text item that has already been displayed. Also,
         # if a ^c^ start header is immediately follows an ^s^ header, the group is empty,
@@ -232,7 +251,9 @@ class EventLog(object):
                     or event_text.startswith(EVLOG_UPDATE_END)
                     or event_text.startswith(EVLOG_IC3_STARTING)
                     or event_text.startswith(EVLOG_IC3_STAGE_HDR)):
-                if Gb.log_rawdata_flag:
+                if len(event_text) <= 5:
+                    this_update_time = ''
+                elif Gb.log_rawdata_flag:
                     this_update_time = 'Rawdata'
                 elif Gb.log_debug_flag:
                     this_update_time = 'Debug'
@@ -243,14 +264,20 @@ class EventLog(object):
                 this_update_time = dt_util.now().strftime('%H:%M:%S')
                 this_update_time = time_to_12hrtime(this_update_time)
 
-                # Display Track-from-Zone in time field if not Home
+                # If tracking from more than one zone and the tfz results are being displayed,
+                # display tfz zone name in the time field. Capitalize if going towards
                 if devicename.startswith('*') is False:
                     Device = Gb.Devices_by_devicename.get(devicename)
                     if Device:
                         Device.last_evlog_msg_secs = time_now_secs()
-                        if (Device.DeviceFmZoneBeingUpdated.from_zone != HOME
-                                or event_text.startswith(EVLOG_TIME_RECD)):
-                            this_update_time = (f"»{Device.DeviceFmZoneBeingUpdated.from_zone_display_as[:6]}")
+                        from_zone_display_as = Device.FromZone_BeingUpdated.from_zone_display_as
+                        if event_text.startswith(EVLOG_TIME_RECD):
+                            this_update_time = f"»{from_zone_display_as[:6]}"
+                            if (Device.FromZone_BeingUpdated is Device.FromZone_TrackFrom
+                                    and Device.FromZone_BeingUpdated is not Device.FromZone_Home):
+                                this_update_time = this_update_time.upper()
+                        elif from_zone_display_as != HOME_FNAME:
+                            this_update_time = f"»{from_zone_display_as[:6]}"
 
         except Exception as err:
             log_exception(err)

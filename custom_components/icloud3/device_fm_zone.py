@@ -62,10 +62,11 @@ class iCloud3_DeviceFmZone():
             self.interval_secs           = 0
             self.interval_str            = '0'
             self.interval_method         = ''
-            self.last_tavel_time         = ''
+            self.last_travel_time        = ''
             self.last_distance_str       = ''
             self.last_distance_km        = 0
             self.dir_of_travel           = NOT_SET
+            self.dir_of_travel_history   = ''
             self.last_update_time        = HHMMSS_ZERO
             self.last_update_secs        = 0
             self.next_update_time        = HHMMSS_ZERO
@@ -124,7 +125,7 @@ class iCloud3_DeviceFmZone():
         from_this_zone_sensors = {k:v for k, v in Sensors_from_zone.items()
                                         if v.from_zone == self.from_zone}
         for sensor, Sensor in from_this_zone_sensors.items():
-            Sensor.DeviceFmZone = self
+            Sensor.FromZone = self
 
     def __repr__(self):
         return (f"<DeviceFmZone: {self.devicename_zone}>")
@@ -156,3 +157,33 @@ class iCloud3_DeviceFmZone():
     @property
     def isnot_going_awayfrom(self):
         return self.dir_of_travel != AWAY_FROM
+
+    @property
+    def format_dir_of_travel_history(self):
+        '''
+        Format the dir_of_travel_history into groups.
+        Example: 'TTTTTTTTTTAAAAAAAAAASSSSSSSSSS'
+        Return   'TT<10>TT,AA<10>AA,SS<10>SS'
+        '''
+        if self.dir_of_travel_history == '':
+            return
+
+        hist_char = list(self.dir_of_travel_history)
+        hist_group = ''
+        last_char = '' if len(hist_char) == 0 else hist_char[0]
+        cnt = 1
+        for char in hist_char:
+            if last_char == char:
+                cnt += 1
+            else:
+                group = f"{last_char * cnt}," if cnt <= 6 else \
+                        f"{last_char}{last_char}◦{cnt}◦{last_char}{last_char},"
+                hist_group += group
+                cnt = 1
+            last_char = char
+
+        group = f"{last_char * cnt}," if cnt <= 6 else \
+                f"{last_char}{last_char}◦{cnt}◦{last_char}{last_char},"
+        hist_group += group
+
+        return hist_group[:-1]

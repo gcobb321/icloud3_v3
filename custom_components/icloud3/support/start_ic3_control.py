@@ -3,7 +3,7 @@ from ..const                import (NOT_SET,
                                     NEW_LINE, CRLF, CRLF_DOT,
                                     EVLOG_ALERT, EVLOG_IC3_STARTING, EVLOG_IC3_STAGE_HDR,
                                     SETTINGS_INTEGRATIONS_MSG, INTEGRATIONS_IC3_CONFIG_MSG,
-                                    CONF_VERSION, ICLOUD_FNAME,
+                                    CONF_VERSION, ICLOUD_FNAME, ZONE_DISTANCE,
                                     )
 
 from ..support              import start_ic3
@@ -365,6 +365,8 @@ def stage_7_initial_locate():
 
         else:
             continue
+
+        post_event(Device.devicename, 'Trigger > Initial Locate')
 
         Device.update_sensors_flag = True
 

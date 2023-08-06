@@ -4,7 +4,7 @@
 #
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-VERSION                         = '3.0b20'
+VERSION                         = '3.0rc1'
 
 DOMAIN                          = 'icloud3'
 ICLOUD3                         = 'iCloud3'
@@ -273,8 +273,7 @@ CRLF_DOT          = f'{CRLF}{NBSP3}•{NBSP2}'
 CRLF_X            = f'{CRLF}{NBSP3}×{NBSP2}'
 CRLF_HDOT         = f'{CRLF}{NBSP6}◦{NBSP2}'
 CRLF_CHK          = f'{CRLF}{NBSP3}✓{NBSP}'
-CTRL_STAR         = f'{CRLF}{NBSP2}✪{NBSP}'
-CRLF_STAR         = f'{CRLF}{NBSP2}✪{NBSP}'
+CRLF_STAR         = f'{CRLF}{NBSP3}✪{NBSP}'
 CRLF_CIRCLE_X     = f'{CRLF}{NBSP2}ⓧ{NBSP}'
 CRLF_SP3_DOT      = f'{CRLF}{NBSP3}•{NBSP}'
 CRLF_SP5_DOT      = f'{CRLF}{NBSP5}•{NBSP}'

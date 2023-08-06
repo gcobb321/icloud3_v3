@@ -414,9 +414,9 @@ class SensorBase(SensorEntity):
 
             self.Device          = Gb.Devices_by_devicename.get(devicename)
             if self.Device and from_zone:
-                self.DeviceFmZone = self.Device.DeviceFmZones_by_zone.get(from_zone)
+                self.FromZone = self.Device.FromZones_by_zone.get(from_zone)
             else:
-                self.DeviceFmZone = None
+                self.FromZone = None
 
 
             self._attr_force_update = True
@@ -632,12 +632,12 @@ class SensorBase(SensorEntity):
         '''
         try:
             if (self.Device is None
-                    or self.DeviceFmZone is None):
+                    or self.FromZone is None):
                 return self._get_restore_or_default_value(sensor)
 
             # Strip off zone to get the actual tfz dictionary item
             tfz_sensor   = sensor.replace(f"_{self.from_zone}", "")
-            sensor_value = self.DeviceFmZone.sensors.get(tfz_sensor, None)
+            sensor_value = self.FromZone.sensors.get(tfz_sensor, None)
 
             if (sensor_value is None
                     or sensor_value == NOT_SET

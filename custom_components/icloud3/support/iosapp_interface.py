@@ -12,8 +12,10 @@ from ..helpers.time_util    import (secs_to_time, secs_since, secs_to_time, secs
 from homeassistant.helpers  import entity_registry as er, device_registry as dr
 
 import json
-from homeassistant.components import ios
-from homeassistant.components.ios import notify
+# from homeassistant.components import ios
+# from homeassistant.components.ios import notify
+from homeassistant.util             import slugify
+from homeassistant.components.mobile_app import notify as mobile_app_notify
 from homeassistant.components.notify import (
     ATTR_DATA,
     ATTR_MESSAGE,
@@ -36,7 +38,7 @@ def get_entity_registry_mobile_app_devices():
     device_model_info_by_iosapp_devicename = {} # [raw_model, model, model_display_name]
                                                 # ['iPhone15,2', 'iPhone', 'iPhone 14 Pro']
     last_updt_trig_by_iosapp_devicename = {}
-    notify_iosapp_devicenames           = []
+    mobile_app_notify_devicename           = []
     battery_level_sensors_by_iosapp_devicename = {}
     battery_state_sensors_by_iosapp_devicename = {}
 
@@ -115,33 +117,31 @@ def get_entity_registry_mobile_app_devices():
             device_info_by_iosapp_devicename,
             device_model_info_by_iosapp_devicename,
             last_updt_trig_by_iosapp_devicename,
-            notify_iosapp_devicenames,
+            mobile_app_notify_devicename,
             battery_level_sensors_by_iosapp_devicename,
             battery_state_sensors_by_iosapp_devicename]
 
 #-----------------------------------------------------------------------------------------------------
-def get_mobile_app_notifications():
+def get_mobile_app_notify_devicenames():
     '''
     Get the mobile_app_[devicename] notify services entries from ha that are used to
     send notifications to a device.
     '''
 
-    notify_iosapp_devicenames = []
+    mobile_app_notify_devicenames = []
     try:
-        # Get notification ids for each device
-        services = Gb.hass.services
-        notify_services = dict(services.__dict__)['_services']['notify']
+        notify_targets = mobile_app_notify.push_registrations(Gb.hass)
+        for notify_target in notify_targets:
+            mobile_app_notify_devicenames.append(f"mobile_app_{slugify(notify_target)}")
 
-        for notify_service in notify_services:
-            if notify_service.startswith("mobile_app_"):
-                notify_iosapp_devicenames.append(notify_service)
+        return mobile_app_notify_devicenames
 
     except Exception as err:
         #log_info_msg("iOS App Notify Service has not been set up yet. iCloud3 will retry later.")
-        # log_exception(err)
+        log_exception(err)
         pass
 
-    return notify_iosapp_devicenames
+    return mobile_app_notify_devicenames
 
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 #

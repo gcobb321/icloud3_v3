@@ -22,7 +22,7 @@ class iCloud3EventLogCard extends HTMLElement {
     }
     //---------------------------------------------------------------------------
     setConfig(config) {
-        const version = "3.0.12"
+        const version = "3.0.13"
         const cardTitle = "iCloud3 v3 - Event Log"
 
         const root = this.shadowRoot
@@ -478,11 +478,22 @@ class iCloud3EventLogCard extends HTMLElement {
                                 }
             .updateRecdHdr      {color: white;
                                 background-color: rgba(var(--rgb-primary-color), 0.85);
+                                border-top: 2px solid var(--light-primary-color);
+                                border-bottom: 2px solid var(--light-primary-color);
+                                font-weight: 450;
+                                }
+            .updateRecdHdrTime  {color: black;
+                                background-color: rgba(var(--rgb-primary-color), 0.85);
+                                border-top: 2px solid var(--light-primary-color);
+                                border-bottom: 2px solid var(--light-primary-color);
+                                }
+            .1px-updateRecdHdr      {color: white;
+                                background-color: rgba(var(--rgb-primary-color), 0.85);
                                 border-top: 1px solid var(--light-primary-color);
                                 border-bottom: 1px solid var(--light-primary-color);
                                 font-weight: 450;
                                 }
-            .updateRecdHdrTime  {color: black;
+            .1px-updateRecdHdrTime  {color: black;
                                 background-color: rgba(var(--rgb-primary-color), 0.85);
                                 border-top: 1px solid var(--light-primary-color);
                                 border-bottom: 1px solid var(--light-primary-color);
@@ -1408,14 +1419,14 @@ class iCloud3EventLogCard extends HTMLElement {
                     classHeaderBar = ' updateRecdHdr'
                     cancelEdgeBarFlag = true
 
-                    // ^c^ - update completed text, start edge block
+                // ^c^ - update completed text, start edge block
                 } else if (tText.startsWith("^c^")) {
                     if (tText.indexOf("iOS App") >= 0) {
                         iosappUpdateCompleteFlag = true
                     } else {
                         icloudUpdateCompleteFlag = true
                     }
-                    cancelEdgeBarFlag = (tText.length == 3)
+                    // cancelEdgeBarFlag = (tText.length == 3)
                     completedItemHighlightNextRowFlag = true
                     classHeaderBar = ' updateRecdHdr'
                     classEdgeBar = ' updateEdgeBar'

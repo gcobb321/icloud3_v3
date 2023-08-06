@@ -158,7 +158,7 @@ class iCloud3_Zone(object):
 
     # Return the DeviceFmZone obj from the devicename and this zone
     @property
-    def DeviceFmZone(self, Device):
+    def FromZone(self, Device):
         return (f"{Device.devicename}:{self.zone}")
 
 

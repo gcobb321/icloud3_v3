@@ -35,10 +35,11 @@ def get_state(entity_id):
     """
 
     try:
-        entity_state = ''
-        entity_data  = Gb.hass.states.get(entity_id)
+        entity_data = Gb.hass.states.get(entity_id)
+
+        if entity_data is None: return NOT_SET
+
         entity_state = entity_data.state
-        last_changed_secs = int(entity_data.last_changed.timestamp())
 
         if entity_state in IOS_TRIGGER_ABBREVIATIONS:
             state = IOS_TRIGGER_ABBREVIATIONS[entity_state]
@@ -46,16 +47,15 @@ def get_state(entity_id):
             state = Gb.state_to_zone.get(entity_state, entity_state.lower())
 
         if instr(entity_id, 'battery_state'):
-            state = state.lower()
-            state = BATTERY_STATUS_CODES.get(state, state)
+            state = BATTERY_STATUS_CODES.get(state.lower(), state)
 
         if instr(entity_id, BATTERY_LEVEL) and state == 'not_set':
             state = 0
 
+    # When starting iCloud3, the device_tracker for the iosapp might
+    # not have been set up yet. Catch the entity_id error here.
     except Exception as err:
-        log_exception(err)
-        #When starting iCloud3, the device_tracker for the iosapp might
-        #not have been set up yet. Catch the entity_id error here.
+        #log_exception(err)
         state = NOT_SET
 
     return state
@@ -70,6 +70,7 @@ def get_attributes(entity_id):
         entity_data  = Gb.hass.states.get(entity_id)
         entity_state = entity_data.state
         entity_attrs = entity_data.attributes.copy()
+
         last_changed_secs = int(entity_data.last_changed.timestamp())
 
         entity_attrs[STATE] = entity_state
@@ -82,10 +83,9 @@ def get_attributes(entity_id):
 
     except (KeyError, AttributeError):
         entity_attrs = {}
-        pass
 
     except Exception as err:
-        log_exception(err)
+        #log_exception(err)
         entity_attrs = {}
         entity_attrs[TRIGGER] = (f"Error {err}")
 

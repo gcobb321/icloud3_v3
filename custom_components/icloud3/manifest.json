@@ -1,7 +1,7 @@
 {
   "domain": "icloud3",
   "name": "iCloud3 v3: iDevice Tracker",
-  "after_dependencies": ["recorder", "ios"],
+  "after_dependencies": ["recorder", "ios", "device_tracker", "sensor"],
   "codeowners": ["@gcobb321"],
   "config_flow": true,
   "dependencies": [],

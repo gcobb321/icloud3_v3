@@ -1,3 +1,19 @@
+rc1 - Release Candidate 1 - 8/6/2023
+...............................
+1. Event Log - Changed the text on the heading for each update. Now the Arrival Time (if going towards Home or another Track-fromZone) or the Next Update time is displayed.
+2. Short interval tracking (15-secs when close to a zone) - The current location data is used if it is below the old location threshold. When interval is short (5-secs) after leaving or approaching a zone, that location was reused when the next interval was reached since it was not old and still acceptable. Now, the next update interval time is taken into consideration when determining if the locaqtion should be refreshed.
+3. iOS APP Loation Request - If the iCloud account (FamShr) location is old a number of times in a row, a location request will be sent to the iOS App on every 4th iCloud request.
+4. Improvements to Monitored Devices tracking.
+
+beta 20.1 - 8/3/2023
+...............................
+1. The HA 2023.08 broke the way iCloud3 set up the notifications for iOSApp devices and the way the iOS App state and attributes values were being read. This has been fixed.
+2. Direction of Travel - Tweaked the method used to determine how the direction of travel was being set.
+3. Tracking from another zone - The zone name that is used to determine the next update is now capitalized. Also, it will only be used when traveling towards that zone, not away from it. When traveling away from it, the Home zone is used.
+4. Monitored Devices - Their information is now displayed using the same 'next_update_time' method as tracked devices. This greatly reduces the duplicate results in the Event Log.
+5. Event Log - Tweaked some display methods to improve readability. A browser refresh is needed.
+
+
 beta 20 - 7/29/2023 - THE LAST BETA BEFORE RELEASE CANDIDATE 1 (I HOPE)
 ...............................
 1. Bug Fixes

@@ -16,7 +16,8 @@ from ..helpers.common       import (instr, is_statzone, )
 from ..helpers.messaging    import (post_event, post_error_msg, post_monitor_msg,
                                     log_exception, log_start_finish_update_banner, log_rawdata,
                                     _trace, _traceha, )
-from ..helpers.time_util    import (time_now_secs, secs_to_time, secs_to_time_age_str, secs_since, secs_to, )
+from ..helpers.time_util    import (time_now_secs, secs_to_time, secs_to_time_str, secs_to_age_str,
+                                    secs_since, secs_to, )
 from .pyicloud_ic3          import (PyiCloudAPIResponseException, PyiCloud2FARequiredException, )
 
 
@@ -67,8 +68,8 @@ def is_icloud_update_needed_timers(Device):
         Device.icloud_update_reason = 'Next Update Time Reached'
         if Device.is_statzone_timer_reached:
             Device.icloud_update_reason += " (Stationary)"
-        elif Device.isnot_inzone and Device.DeviceFmZoneNextToUpdate.from_zone != HOME:
-            Device.icloud_update_reason += f" ({Device.DeviceFmZoneNextToUpdate.from_zone_display_as})"
+        elif Device.isnot_inzone and Device.FromZone_NextToUpdate.from_zone != HOME:
+            Device.icloud_update_reason += f" ({Device.FromZone_NextToUpdate.from_zone_display_as})"
 
     elif Device.is_next_update_overdue:
         Device.icloud_update_reason = 'Next Update Time Overdue'
@@ -494,8 +495,19 @@ def _get_devdata_useable_status(Device, data_source):
     if device_id is None or RawData is None:
         return False, False, False, 0, 0, ''
 
-    loc_secs        = RawData.location_secs
-    loc_time_ok     = secs_since(loc_secs) <= Device.old_loc_threshold_secs
+    loc_secs     = RawData.location_secs
+    loc_age_secs = secs_since(loc_secs)
+    loc_time_ok  = loc_age_secs <= Device.old_loc_threshold_secs
+
+    # If loc time is under threshold, check to see if the loc time is older than the interval
+    # The interval may be < 15 secs if just trying to force a quick update with the current data. If so, do not check it
+    if loc_time_ok and Device.FromZone_BeingUpdated.interval_secs >= 15:
+        loc_time_ok = Device.FromZone_BeingUpdated.interval_secs > loc_age_secs - 5
+
+        if loc_time_ok is False:
+            event_msg = f"Location Refreshing > Older than Update Interval ({secs_to_time_str(loc_age_secs)})"
+            post_event(Device.devicename, event_msg)
+
     gps_accuracy_ok = RawData.is_gps_good
     gps_accuracy    = round(RawData.gps_accuracy)
     time_str        = f"{secs_to_time(loc_secs)}"

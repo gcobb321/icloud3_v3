@@ -1,5 +1,4 @@
 
-
 from ..global_variables         import GlobalVariables as Gb
 from ..const                    import ( HIGH_INTEGER, HHMMSS_ZERO, DATETIME_ZERO, DATETIME_FORMAT, WAZE_USED, )
 
@@ -55,9 +54,9 @@ def secs_to_time_str(secs):
         if secs >= 86400:
             time_str = f"{secs/86400:.2f} days"   #secs_to_dhms_str(secs)
         elif secs < 60:
-            time_str = f"{secs:.0f} sec"
+            time_str = f"{secs:.0f} secs"
         elif secs < 3600:
-            time_str = f"{secs/60:.0f} min"
+            time_str = f"{secs/60:.0f} mins"
         elif secs == 3600:
             time_str = "1 hr"
         else:

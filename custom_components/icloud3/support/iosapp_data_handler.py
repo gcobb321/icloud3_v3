@@ -418,8 +418,8 @@ def update_iosapp_data_from_entity_attrs(Device, device_trkr_attrs):
     Device.iosapp_data_vertical_accuracy = entity_io.extract_attr_value(device_trkr_attrs, VERT_ACCURACY, NUMERIC)
     Device.iosapp_data_altitude          = entity_io.extract_attr_value(device_trkr_attrs, ALTITUDE, NUMERIC)
 
-    if Device.DeviceFmZoneHome:
-        home_dist = format_dist_km(Device.DeviceFmZoneHome.distance_km_iosapp)
+    if Device.FromZone_Home:
+        home_dist = format_dist_km(Device.FromZone_Home.distance_km_iosapp)
     else:
         home_dist = ''
 
@@ -427,4 +427,6 @@ def update_iosapp_data_from_entity_attrs(Device, device_trkr_attrs):
                     f"{CRLF_DOT}Loc-{Device.iosapp_data_time}, "
                     f"Home-{home_dist}, "
                     f"{Device.iosapp_data_fgps}")
-    post_monitor_msg(monitor_msg)
+    if monitor_msg != Device.update_iosapp_data_monitor_msg:
+        Device.update_iosapp_data_monitor_msg = monitor_msg
+        post_monitor_msg(monitor_msg)

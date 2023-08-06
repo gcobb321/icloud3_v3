@@ -100,10 +100,10 @@ class Waze(object):
 #   WAZE ROUTINES
 #
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-    def get_route_time_distance(self, Device, DeviceFmZone, check_hist_db=True):
+    def get_route_time_distance(self, Device, FromZone, check_hist_db=True):
         '''
         Get the travel time and distance for the Device's current location from the
-        track from zone (DeviceFmZone) using the Waze History Database, the Waze Route
+        track from zone (FromZone) using the Waze History Database, the Waze Route
         Service or the direct calculation. Also determine the distance moved from the
         last location.
 
@@ -119,11 +119,11 @@ class Waze(object):
                 return (WAZE_NOT_USED, 0, 0, 0)
             elif self.is_status_PAUSED:
                 return (WAZE_PAUSED, 0, 0, 0)
-            elif Device.loc_data_zone == DeviceFmZone.from_zone:
+            elif Device.loc_data_zone == FromZone.from_zone:
                 return (WAZE_NOT_USED, 0, 0, 0)
 
             try:
-                from_zone         = DeviceFmZone.from_zone
+                from_zone         = FromZone.from_zone
                 waze_status       = WAZE_USED
                 route_time        = 0
                 route_dist_km     = 0
@@ -135,18 +135,18 @@ class Waze(object):
                 if self.is_historydb_USED:
                     waze_status, route_time, route_dist_km, dist_moved_km, \
                             location_id, waze_source_msg = \
-                            self.get_history_time_distance(Device, DeviceFmZone, check_hist_db=True)
+                            self.get_history_time_distance(Device, FromZone, check_hist_db=True)
 
                 # Get data from Waze if not in history and not being reused or if history is not used
                 if location_id == 0:
                     waze_status, route_time, route_dist_km = \
                                     self.get_waze_distance(
                                                 Device,
-                                                DeviceFmZone,
+                                                FromZone,
                                                 Device.loc_data_latitude,
                                                 Device.loc_data_longitude,
-                                                DeviceFmZone.FromZone.latitude,
-                                                DeviceFmZone.FromZone.longitude,
+                                                FromZone.FromZone.latitude,
+                                                FromZone.FromZone.longitude,
                                                 ZONE)
 
                     if waze_status == WAZE_NO_DATA:
@@ -160,7 +160,7 @@ class Waze(object):
                     try:
                         if (self.is_historydb_USED
                                 and Gb.wazehist_zone_id
-                                and DeviceFmZone.distance_km < Gb.WazeHist.max_distance
+                                and FromZone.distance_km < Gb.WazeHist.max_distance
                                 and route_time > .25
                                 and Gb.wazehist_zone_id.get(from_zone, 0) > 0):
                             location_id = Gb.WazeHist.add_location_record(
@@ -182,7 +182,7 @@ class Waze(object):
                 else:
                     last_status, last_time, dist_moved_km = \
                                     self.get_waze_distance(
-                                                    Device, DeviceFmZone,
+                                                    Device, FromZone,
                                                     Device.sensors[LATITUDE],
                                                     Device.sensors[LONGITUDE],
                                                     Device.loc_data_latitude,
@@ -220,9 +220,9 @@ class Waze(object):
                                 f"{wazehist_save_msg}")
             post_event(Device.devicename, event_msg)
 
-            DeviceFmZone.waze_results = (WAZE_USED, route_time, route_dist_km, dist_moved_km)
+            FromZone.waze_results = (WAZE_USED, route_time, route_dist_km, dist_moved_km)
 
-            return DeviceFmZone.waze_results
+            return FromZone.waze_results
 
         except Exception as err:
             self._set_waze_not_available_error(err)
@@ -230,14 +230,14 @@ class Waze(object):
             return (WAZE_NO_DATA, 0, 0, 0)
 
 #--------------------------------------------------------------------
-    def get_history_time_distance(self, Device, DeviceFmZone, check_hist_db=True):
+    def get_history_time_distance(self, Device, FromZone, check_hist_db=True):
         '''
         Get the time & distance from the history database or the previous results
 
         Return: [route_time, route_dist_km, location_id]
         '''
 
-        from_zone       = DeviceFmZone.from_zone
+        from_zone       = FromZone.from_zone
         waze_status     = WAZE_USED
         route_time      = 0
         route_dist_km   = 0
@@ -246,12 +246,12 @@ class Waze(object):
 
         if (Device.is_location_gps_good
                 and Device.loc_data_dist_moved_km <= .020        # 20m
-                and DeviceFmZone.waze_results):
+                and FromZone.waze_results):
 
             # If haven't move and accuracte location, use waze data
             # from last time
             waze_status, route_time, route_dist_km, dist_moved_km = \
-                            DeviceFmZone.waze_results
+                            FromZone.waze_results
 
             location_id = -2
             waze_source_msg = "Using Previous Waze Location Info "
@@ -281,7 +281,7 @@ class Waze(object):
         return waze_status, route_time, route_dist_km, dist_moved_km, location_id, waze_source_msg
 
 #--------------------------------------------------------------------
-    def get_waze_distance(self, Device, DeviceFmZone, from_lat, from_long,
+    def get_waze_distance(self, Device, FromZone, from_lat, from_long,
                     to_lat, to_long, route_from):
         """
         Example output:

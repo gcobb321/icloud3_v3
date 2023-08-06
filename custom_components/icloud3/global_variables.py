@@ -283,6 +283,7 @@ class GlobalVariables(object):
     statzone_inzone_interval_secs   = DEFAULT_GENERAL_CONF[CONF_STAT_ZONE_INZONE_INTERVAL] * 60
     statzone_still_time_secs        = DEFAULT_GENERAL_CONF[CONF_STAT_ZONE_STILL_TIME] * 60
     is_statzone_used                = (14400 > statzone_still_time_secs > 0)   # time > 0 and < 4 hrs
+    monitored_devices_location_sensors_flag = False
 
     # Initialize Stat Zone size based on Home zone size
     statzone_min_dist_from_zone_km = .2
