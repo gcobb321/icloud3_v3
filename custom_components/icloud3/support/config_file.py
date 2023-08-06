@@ -551,4 +551,47 @@ def build_initial_config_file_structure():
         pass
 
 
-#--------------------------------------------------------------------:)
+#--------------------------------------------------------------------
+def count_lines_of_code(start_directory, total_file_lines=0, total_code_lines=0, begin_start=None):
+
+    if begin_start is None:
+        log_info_msg(f"Lines Of Code Count - {start_directory}")
+        log_info_msg(" ")
+        log_info_msg("---All Lines---     ---Code Lines---   Module")
+        log_info_msg("Total     Lines     Total     Lines")
+        #           ("11111111  22222222  33333333  44444444
+
+    for file_name in os.listdir(start_directory):
+        file_name = os.path.join(start_directory, file_name)
+        if os.path.isfile(file_name):
+            if file_name.endswith('.py') or file_name.endswith('.js'):
+                with open(file_name, 'r') as f:
+                    lines = f.readlines()
+                    line_cnt = len(lines)
+                    total_file_lines += line_cnt
+                    code_cnt = 0
+                    for line in lines:
+                        if line is not None and len(line.strip()) > 3:
+                            if (line.startswith("'")
+                                    or line.startswith('#')):
+                                continue
+
+                        code_cnt += 1
+
+                    total_code_lines += code_cnt
+
+                    if begin_start is not None:
+                        reldir_of_file_name = '.' + file_name.replace(begin_start, '')
+                    else:
+                        reldir_of_file_name = '.' + file_name.replace(start_directory, '')
+
+                    log_info_msg(   f"{total_file_lines:<9} {line_cnt:<9} {total_code_lines:<9} "
+                                    f"{code_cnt:<8} {reldir_of_file_name}")
+
+    for file_name in os.listdir(start_directory):
+        file_name = os.path.join(start_directory, file_name)
+        if os.path.isdir(file_name):
+            total_file_lines, total_code_lines = \
+                count_lines_of_code(file_name, total_file_lines, total_code_lines, begin_start=start_directory)
+
+    return total_file_lines, total_code_lines
