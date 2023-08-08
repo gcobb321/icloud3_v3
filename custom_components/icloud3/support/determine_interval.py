@@ -415,8 +415,8 @@ def determine_interval(Device, FromZone):
         FromZone.interval_method  = interval_method
         FromZone.dir_of_travel    = dir_of_travel
         if FromZone.zone_dist < 100:
-            FromZone.dir_of_travel_history += dir_of_travel[0:1].replace('i', '@')
-            monitor_msg = (f"DirectionHistory-{FromZone.format_dir_of_travel_history}<")
+            FromZone.dir_of_travel_history += dir_of_travel[0:1]
+            monitor_msg = (f"DirHist-{FromZone.format_dir_of_travel_history}")
             post_monitor_msg(devicename, monitor_msg)
 
         if inzone_home_flag: FromZone.dir_of_travel_history = ''
@@ -1124,8 +1124,8 @@ def copy_near_device_results(Device, FromZone):
     FromZone.last_distance_str = NearFromZone.last_distance_str
     FromZone.dir_of_travel     = NearFromZone.dir_of_travel
     if NearFromZone.zone_dist < 100:
-        FromZone.dir_of_travel_history += NearFromZone.dir_of_travel[0:1].replace('i', '@')
-        monitor_msg = (f"DirectionHistory-{FromZone.format_dir_of_travel_history}<")
+        FromZone.dir_of_travel_history += NearFromZone.dir_of_travel[0:1]
+        monitor_msg = (f"DirHist-{FromZone.format_dir_of_travel_history}")
         post_monitor_msg(Device.devicename, monitor_msg)
 
     FromZone.sensors.update(NearFromZone.sensors)
