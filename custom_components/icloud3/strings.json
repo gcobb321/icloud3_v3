@@ -287,7 +287,7 @@
           "iosapp_alive_interval": "Send a location request to the iOS App if there has been no contact after this amount of time. This will check to see if the iOS App is responding to location requests or is asleep and not running.",
           "offline_interval": "Location request interval when offline (Airplane mode, dead cell area, etc.)",
           "travel_time_factor": "Next location time = Waze travel time to zone * this value",
-          "ha_config_ic3_url": "Normally, this is blank and iCloud3 will determine the URL for it's Configure Settings screen. However, if there is a problem caused by running HA in a virtual environment, docker or on another device and the actual URL can not be detemined, a 404 not found error may be encountered. If that happens, select it the normal way (HA Devices & Services > Integration > iCloud3 > Configure Settings gear) and copy the URL from the browser into this field."
+          "event_log_btnconfig_url": "Normally, this is blank and iCloud3 will determine the URL for it's Configure Settings screen. However, if there is a problem caused by running HA in a virtual environment, docker or on another device and the actual URL can not be detemined, a 404 not found error may be encountered. If that happens, select it the normal way (HA Devices & Services > Integration > iCloud3 > Configure Settings gear) and copy the URL from the browser into this field."
         }
       },
       "inzone_intervals": {
