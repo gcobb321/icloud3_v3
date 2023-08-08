@@ -497,12 +497,18 @@ def _get_devdata_useable_status(Device, data_source):
 
     loc_secs     = RawData.location_secs
     loc_age_secs = secs_since(loc_secs)
-    loc_time_ok  = loc_age_secs <= Device.old_loc_threshold_secs
+    loc_time_ok  = (loc_age_secs <= Device.old_loc_threshold_secs)
 
     # If loc time is under threshold, check to see if the loc time is older than the interval
     # The interval may be < 15 secs if just trying to force a quick update with the current data. If so, do not check it
-    if loc_time_ok and Device.FromZone_BeingUpdated.interval_secs >= 15:
-        loc_time_ok = Device.FromZone_BeingUpdated.interval_secs > loc_age_secs - 5
+    if (loc_time_ok
+            and Device.FromZone_BeingUpdated.interval_secs >= 15
+            and Device.is_passthru_timer_set is False):
+        loc_time_ok = (Device.FromZone_BeingUpdated.interval_secs > (loc_age_secs - 5))
+
+        # if Device.FromZone_BeingUpdated.interval_secs <= 60:
+        #     _trace(Device.devicename, f"ok={loc_time_ok} interval={Device.FromZone_BeingUpdated.interval_secs} age={loc_age_secs - 5} "
+        #     f"old={Device.FromZone_BeingUpdated.interval_secs > loc_age_secs - 5}")
 
         if loc_time_ok is False:
             event_msg = f"Location Refreshing > Older than Update Interval ({secs_to_time_str(loc_age_secs)})"

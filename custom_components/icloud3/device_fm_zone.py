@@ -186,4 +186,4 @@ class iCloud3_DeviceFmZone():
                 f"{last_char}{last_char}◦{cnt}◦{last_char}{last_char},"
         hist_group += group
 
-        return hist_group[:-1]
+        return hist_group[-50:-1]

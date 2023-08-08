@@ -982,8 +982,8 @@ def create_Zones_object():
     Gb.TrackedZones_by_zone = {}
     for conf_device in Gb.conf_devices:
         for from_zone in conf_device[CONF_TRACK_FROM_ZONES]:
-            Gb.TrackedZones_by_zone[from_zone] = Gb.Zones_by_zone[from_zone]
-
+            if from_zone in Gb.Zones_by_zone:
+                Gb.TrackedZones_by_zone[from_zone] = Gb.Zones_by_zone[from_zone]
 
 
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -1121,6 +1121,7 @@ def create_Devices_object():
                 # Added the try/except to not generate an error if the device was not in the registry
                 # Get the ha device_registry device_id
                 Device.ha_device_id = device_tracker_entity_data[f"{DEVICE_TRACKER_DOT}{devicename}"]['device_id']
+                Gb.Devices_by_ha_device_id[Device.ha_device_id] = Device
 
                 # Initialize device_tracker entity to display before PyiCloud starts up
                 Device.write_ha_device_tracker_state()
@@ -1164,7 +1165,7 @@ def setup_tracked_devices_for_famshr(PyiCloud=None):
         post_event(event_msg)
         return
 
-    event_msg += f"{Gb.conf_famshr_device_cnt} of {len(Gb.conf_devices)} Configured Devices"
+    event_msg += f"{Gb.conf_famshr_device_cnt} of {len(Gb.conf_devices)} iCloud3 Devices Configured"
     if Gb.conf_famshr_device_cnt == 0:
         return
 
@@ -1367,7 +1368,7 @@ def setup_tracked_devices_for_fmf(PyiCloud=None):
         event_msg += "Not used as a data source"
         post_event(event_msg)
         return
-    event_msg += f"{Gb.conf_fmf_device_cnt} of {len(Gb.conf_devices)} Configured Devices"
+    event_msg += f"{Gb.conf_fmf_device_cnt} of {len(Gb.conf_devices)} iCloud3 Devices Configured"
     post_event(event_msg)
     if Gb.conf_fmf_device_cnt == 0:
         return
@@ -1666,7 +1667,7 @@ def setup_tracked_devices_for_iosapp():
     verified_iosapp_fnames = []
 
 
-    tracked_msg = f"iOS App Devices > {Gb.conf_iosapp_device_cnt} of {len(Gb.conf_devices)} Configured Devices"
+    tracked_msg = f"iOS App Devices > {Gb.conf_iosapp_device_cnt} of {len(Gb.conf_devices)} iCloud3 Devices Configured"
 
     for devicename, Device in Gb.Devices_by_devicename.items():
         broadcast_info_msg(f"Set up iOS App Devices > {devicename}")
@@ -1793,6 +1794,8 @@ def setup_tracked_devices_for_iosapp():
                 duplicate_msg = ' (DUPLICATE NAME)'
             else:
                 crlf_symb = CRLF_DOT
+                duplicate_msg = ''
+
             tracked_msg += (f"{crlf_symb}{iosapp_fname} ({iosapp_devicename}){RARROW}Not Monitored, "
                             f"{CRLF_INDENT}{device_info_by_iosapp_devicename[iosapp_devicename]}{duplicate_msg}")
     post_event(tracked_msg)

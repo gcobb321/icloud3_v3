@@ -1134,6 +1134,13 @@ class iCloud3:
         if zone_selected in Gb.StatZones_by_zone:
             Device.StatZone = Gb.StatZones_by_zone[zone_selected]
 
+        # In a zone and the iosapp enter zone info was not set, set it now
+        if (zone_selected != Device.iosapp_zone_enter_zone
+                and is_zone(zone_selected) and isnot_zone(Device.iosapp_zone_enter_zone)):
+            Device.iosapp_zone_enter_secs = Gb.this_update_secs
+            Device.iosapp_zone_enter_time = Gb.this_update_tine
+            Device.iosapp_zone_enter_zone = zone_selected
+
         zones_distance_list = \
             [f"{int(zone_data[ZD_DIST_M]):08}| {zone_data[ZD_DISPLAY_AS]}-{format_dist_m(zone_data[ZD_DIST_M])}"
                     for zone_data in zones_data if zone_data[ZD_NAME] != zone_selected]

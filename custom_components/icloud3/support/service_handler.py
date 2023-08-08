@@ -84,6 +84,14 @@ NO_EVLOG_ACTION_POST_EVENT = [
                     'event_log_version',
                     'Event Log Version']
 
+ACTION_FNAME_TO_ACTION = {
+                    'Restart iCloud3': 'restart',
+                    'Pause Tracking': 'pause',
+                    'Resume Tracking': 'resume',
+                    'Locate Device(s) using iCloud FamShr': 'locate',
+                    'Send Locate Request to iOS App': 'locate iosapp'
+}
+
 SERVICE_SCHEMA = vol.Schema({
     vol.Optional('command'): cv.string,
     vol.Optional('action'): cv.string,
@@ -103,11 +111,14 @@ from   homeassistant.util.location import distance
 def process_update_service_request(call):
     """ icloud3.update service call request """
 
-    action       = call.data.get('command') or call.data.get('action')
+    action       = call.data.get('command').lower() or call.data.get('action').lower()
     action_fname = call.data.get('action_fname')
     devicename   = call.data.get(CONF_DEVICENAME)
 
-    update_service_handler(action, action_fname, devicename)
+    action, devicename = resolve_action_devicename_values(action, devicename)
+
+    if action is not None:
+        update_service_handler(action, action_fname, devicename)
 
 #--------------------------------------------------------------------
 def process_restart_icloud3_service_request(call):
@@ -120,6 +131,7 @@ def process_find_iphone_alert_service_request(call):
     """Call the find_iphone_alert to play a sound on the phone"""
 
     devicename = call.data.get(CONF_DEVICENAME)
+    action, devicename = resolve_action_devicename_values("", devicename)
 
     find_iphone_alert_service_handler(devicename)
 
@@ -130,6 +142,7 @@ def process_lost_device_alert_service_request(call):
     devicename = call.data.get(CONF_DEVICENAME)
     number     = call.data.get('number')
     message    = call.data.get('message')
+    action, devicename = resolve_action_devicename_values("", devicename)
 
     try:
         Device = Gb.Devices_by_devicename.get(devicename)
@@ -161,6 +174,27 @@ def process_lost_device_alert_service_request(call):
         result_msg = "Internal Error"
 
     post_event(f"{EVLOG_ERROR}Lost Mode Alert > {result_msg}")
+
+#--------------------------------------------------------------------
+def resolve_action_devicename_values(action, devicename):
+    '''
+    Convert the action and devicenames to their actual intervalues when they are being executed
+    from the Developer Tools/Services screen.
+        - action text dexcription --> action parameter
+        - ha_device_id --> devicename parameter
+
+    Return the action and devicename values
+    '''
+    # Convert action and devicename to the real values if the service call
+    # is coming in from the Developer Tools/Services screen
+    if action in ACTION_FNAME_TO_ACTION:
+        action = ACTION_FNAME_TO_ACTION[action]
+    if devicename in Gb.Devices_by_ha_device_id:
+        devicename = Gb.Devices_by_ha_device_id[devicename].devicename
+    if devicename not in Gb.Devices_by_devicename:
+        devicename = None
+
+    return action, devicename
 
 #--------------------------------------------------------------------
 def _post_device_event_msg(devicename, msg):
@@ -200,6 +234,7 @@ def register_icloud3_services():
     except Exception as err:
         log_exception(err)
 
+
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 #
 #   ROUTINES THAT HANDLE THE INDIVIDUAL SERVICE REQUESTS
@@ -224,7 +259,8 @@ def update_service_handler(action_entry=None, action_fname=None, devicename=None
     """
     # Ignore Action requests during startup. They are caused by the devicename changes
     # to the EvLog attributes indicating the startup stage.
-    if Gb.start_icloud3_inprocess_flag:
+    if (Gb.start_icloud3_inprocess_flag
+            or action_entry is None):
         return
 
     action = action_entry

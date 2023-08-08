@@ -301,9 +301,9 @@ DISPLAY_ZONE_FORMAT_ITEMS_KEY_TEXT_BASE = {
         'title':    'iCloud3 reformated Zone entity_id (zone.the_shores → The Shores)'
         }
 DEVICE_TRACKER_STATE_SOURCE_ITEMS_KEY_TEXT = {
-        'ic3_fname': 'iCloud3 Determines the Zone - Set to Zone Friendly Name (gps & accuracy)',
-        'ic3_evlog': 'iCloud3 Determines the Zone - Set to EvLog Zone Display Name (gps & accuracy)',
-        'ha_gps':    'HA Determines the Zone - Based on gps coordinates (except Stationary Zones)'
+        'ic3_evlog': 'iCloud3 Zone - Use EvLog Zone Display Name (gps & accuracy) →→→ PREFERRED',
+        'ic3_fname': 'iCloud3 Zone - Use Zone Friendly Name (gps & accuracy)',
+        'ha_gps':    'HA Zone - Use gps coordinates to determine the zone (except Stationary Zones)'
 }
 LOG_LEVEL_ITEMS_KEY_TEXT = {
         'info':     'Info - Log General Information',

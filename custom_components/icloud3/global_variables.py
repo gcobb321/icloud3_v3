@@ -127,7 +127,8 @@ class GlobalVariables(object):
     Devices_by_devicename             = {}  # All Devices by devicename
     Devices_by_devicename_monitored   = {}  # All monitored Devices by devicename
     Devices_by_devicename_tracked     = {}  # All monitored Devices by devicename
-    Devices_by_icloud_device_id       = {}  # FmF/FamShr Device Configuration
+    Devices_by_icloud_device_id       = {}  # Devices by the icloud device_id receive from Apple
+    Devices_by_ha_device_id           = {}  # Device by the device_id in the entity/device registry
     Devices_by_iosapp_devicename      = {}  # All Devices by the iosapp device_tracker.iosapp_devicename
     PairedDevices_by_paired_with_id   = {}  # Paired Devices by the paired_with_id (famshr prsID) id=[Dev1, Dev2]
     Zones                             = []  # Zones object list
