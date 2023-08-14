@@ -162,28 +162,19 @@ class iCloud3_DeviceFmZone():
     def format_dir_of_travel_history(self):
         '''
         Format the dir_of_travel_history into groups.
-        Example: 'TTTTTTTTTTAAAAAAAAAASSSSSSSSSS'
-        Return   'TT<10>TT,AA<10>AA,SS<10>SS'
         '''
         if self.dir_of_travel_history == '':
             return
 
-        hist_char = list(self.dir_of_travel_history)
-        hist_group = ''
-        last_char = '' if len(hist_char) == 0 else hist_char[0]
-        cnt = 1
-        for char in hist_char:
-            if last_char == char:
-                cnt += 1
-            else:
-                group = f"{last_char * cnt}," if cnt <= 6 else \
-                        f"{last_char}{last_char}◦{cnt}◦{last_char}{last_char},"
-                hist_group += group
-                cnt = 1
-            last_char = char
+        hist_chars = list(self.dir_of_travel_history[-36:])
+        hist_disp = ''
+        cnt = 0
+        for hist_char in hist_chars:
+            hist_disp += hist_char
+            cnt += 1
+            if cnt == 10:
+                hist_disp += ','
+                cnt = 0
+        if hist_disp.endswith(','): hist_disp = hist_disp[:-1]
 
-        group = f"{last_char * cnt}," if cnt <= 6 else \
-                f"{last_char}{last_char}◦{cnt}◦{last_char}{last_char},"
-        hist_group += group
-
-        return hist_group[-50:-1]
+        return hist_disp.replace('i', '^')

@@ -3,6 +3,7 @@ rc2 - Release Candidate 2 - 8/8/2023
 1. Fixed the problem causing the `duplicate_msg` error during start up.
 2. Services - Added the iCloud3 Service Calls to the Developer tools > Services screen.
 3. Cleaned up some code.
+4. Direction of Travel History - Reformatted the history that is display when showing Tracking Monitors
 
 
 rc1 - Release Candidate 1 - 8/6/2023

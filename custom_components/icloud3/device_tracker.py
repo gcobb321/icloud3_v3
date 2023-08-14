@@ -45,23 +45,23 @@ from homeassistant.const                import (CONF_DEVICE_ID, CONF_DOMAIN, CON
                                                 CONF_PLATFORM, CONF_TYPE, CONF_ZONE, )
 
 import logging
-# _LOGGER = logging.getLogger(__name__)
-_LOGGER = logging.getLogger(f"icloud3")
+_HA_LOGGER = logging.getLogger(__name__)
+# _LOGGER = logging.getLogger(f"icloud3")
 
 #-------------------------------------------------------------------------------------------
 async def async_setup_scanner(hass: HomeAssistant, config, see, discovery_info=None):
     """Old way of setting up the iCloud tracker."""
     Gb.ha_config_platform_stmt = True
-    if Gb.conf_profile[CONF_VERSION] == 1:
-        return True
+    # if Gb.conf_profile[CONF_VERSION] == 1:
+    #     return True
 
-    _LOGGER.warning("ICLOUD3 ALERT: The HA `configuration.yaml` file contains a `PLATFORM: ICLOUD3` statement. iCloud3 v3 is "
-                    "now an integration and does not use the `configuration.yaml` or `config_ic3.yam` files. \n\n"
-                    "1. Remove `PLATFORM: ICLOUD3` statements from `configuration.yaml`.\n"
-                    "2. Restart Home Assistant\n"
-                    "3. Add iCloud3 on the `Devices & Settings > Integrations` screen\n"
-                    "4. Configure iCloud3 on the Integrations screen\n"
-                    "5. Restart iCloud3")
+    # _LOGGER.warning("ICLOUD3 ALERT: The HA `configuration.yaml` file contains a `PLATFORM: ICLOUD3` statement. iCloud3 v3 is "
+    #                 "now an integration and does not use the `configuration.yaml` or `config_ic3.yam` files. \n\n"
+    #                 "1. Remove `PLATFORM: ICLOUD3` statements from `configuration.yaml`.\n"
+    #                 "2. Restart Home Assistant\n"
+    #                 "3. Add iCloud3 on the `Devices & Settings > Integrations` screen\n"
+    #                 "4. Configure iCloud3 on the Integrations screen\n"
+    #                 "5. Restart iCloud3")
     return True
 
 #-------------------------------------------------------------------------------------------
@@ -97,14 +97,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
         # Set the total count of the device_trackers that will be created
         if Gb.device_trackers_cnt == 0:
             Gb.device_trackers_cnt = len(NewDeviceTrackers)
-            log_info_msg(f'Device Tracker entities created: {Gb.device_trackers_cnt}')
+            log_info_msg(f'Device Tracker entities: {Gb.device_trackers_cnt}')
 
         if NewDeviceTrackers is not []:
             async_add_entities(NewDeviceTrackers, True)
             _get_dr_device_ids_from_device_registry(hass)
+            _HA_LOGGER.info(f"iCloud3 Device Tracker entities: {Gb.device_trackers_cnt}")
 
     except Exception as err:
-        _LOGGER.exception(err)
+        _HA_LOGGER.exception(err)
         log_exception(err)
         log_msg = f"►INTERNAL ERROR (Create device_tracker loop-{err})"
         log_error_msg(log_msg)
@@ -152,6 +153,11 @@ def _get_dr_device_id_from_device_entry(hass, device, device_entry):
         id='9045bf3f0363c28957353cf2c47163d0', orphaned_timestamp=None
     '''
     try:
+        if device_entry.name == ICLOUD3:
+            Gb.dr_device_id_by_devicename[ICLOUD3] = device_entry.id
+            Gb.dr_area_id_by_devicename[ICLOUD3]   = device_entry.area_id
+            return
+
         de_identifiers = device_entry.identifiers
         for identifiers in de_identifiers:
             if 'icloud3' in identifiers or 'iCloud3' in identifiers:
@@ -461,7 +467,7 @@ class iCloud3_DeviceTracker(TrackerEntity):
             Gb.hass.async_create_task(self.async_remove(force_remove=True))
 
         except Exception as err:
-            _LOGGER.exception(err)
+            log_exception(err)
 
 #-------------------------------------------------------------------------------------------
     def after_removal_cleanup(self):

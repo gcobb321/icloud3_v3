@@ -200,6 +200,9 @@ class iCloud3:
         if Gb.restart_icloud3_request_flag:
             self.start_icloud3()
             Gb.restart_icloud3_request_flag = False
+        # elif Gb.restart_ha_flag:
+        #     log_info_msg(f"HA has started {Gb.restart_ha_flag=}")
+        #     start_ic3.ha_restart()
 
         # Exit 5-sec loop if no devices, updating a device now, or restarting iCloud3
         if (self.loop_ctrl_master_update_in_process_flag

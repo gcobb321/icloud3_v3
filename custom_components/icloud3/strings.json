@@ -23,10 +23,11 @@
     "step": {
       "user": {
         "data": {
-          "continue": "Select to continue iCloud3 installation"
+          "continue": "Select to continue iCloud3 installation (and parameter migration)",
+          "continue_restart_ha": "Select to continue iCloud3 installation. Then RESTART HOME ASSISTANT."
         },
-        "description": "iCloud3 Integration is being set up. Select Submit and then select CONFIGURE to configure iCloud3",
-        "title": "iCloud3 Integration Installation"
+        "description": "iCloud3 v3 Integration is being set up. Select SUBMIT, then select CONFIGURE to configure iCloud3. If you are running iCloud3 v2, the Configuration Parameters will be migrated from v2 to v3.",
+        "title": "iCloud3 v3 Integration Installer"
       },
       "reauth": {
         "title": "Apple ID Verification Code (HA Notifications)",
@@ -34,6 +35,13 @@
         "data": {
           "verification_code": "ICLOUD ACCOUNT VERIFICATION CODE",
           "action_items": "═════════════════════════════════════════════════════"
+        }
+      },
+      "restart_ha": {
+        "title": "Confirm Restarting Home Assistant",
+        "description": "iCloud3 needs to restart Home Assistant to prevent device_tracker entity name conflicts",
+        "data": {
+          "action_items": ""
         }
       }
     }
@@ -43,6 +51,8 @@
       "config_update_complete": "iCloud3 configuration updated successfully",
       "already_configured": "iCloud3 is already installed and can not be installed again. Select CONFIGURE in the iCloud3 Integration entry to configure iCloud3",
       "disabled": "iCloud3 is DISABLED and can not be installed again. Enable iCloud, then select CONFIGURE in the iCloud3 Integration entry to configure iCloud3",
+      "ha_restarting": "Home Assistant is Restarting",
+      "ic3_reloading": "iCloud3 is Reloading (You may have to refresh the browser screen)",
       "reauth_successful": "The reauthentication has been successfully completed"
     },
     "error": {
@@ -53,8 +63,8 @@
       "icloud_acct_logging_into": "Logging into iCloud Account",
       "icloud_acct_logged_into": "Successfully Logged into the iCloud Account",
       "icloud_acct_already_logged_into": "Already Logged into the iCloud Account",
-      "icloud_acct_login_error": "iCloud Account Loginu Unsuccessful, Invalid Username or Password",
-      "icloud_acct_not_set_up": "The iCloud Account Username or Password has not been set up",
+      "icloud_acct_login_error": "iCloud Account Login Failed, Invalid Username or Password",
+      "icloud_acct_not_set_up": "The iCloud Account Username or Password needs to be entered",
       "icloud_acct_no_data_source": "No Data Source has been selected",
 
       "verification_code_requested": "The Apple ID Verification Code was requested, BROWSER REFRESH MAY BE NEEDED",
@@ -112,6 +122,7 @@
       "duplicate_other_devicename": "This name is already used in another integration or platform",
       "action_completed": "Requested Action has been completed",
       "action_cancelled": "Requested Action has been cancelled",
+      "restart_ha": "Home Assistant needs to be restarted to continue",
       "excluded_sensors_ha_restart": "Excluded Sensors were Updated. An HA restart is required"
 
     },
@@ -126,6 +137,20 @@
       "restart_icloud3": {
         "title": "Confirm Restarting iCloud3",
         "description": "Note: Changes to tracked devices require restarting iCloud3",
+        "data": {
+          "action_items": ""
+        }
+      },
+      "restart_ha_ic3": {
+        "title": "Restart Home Assistant or iCloud3",
+        "description": "Restart Home Assistant or reload and reinitialize the iCloud3 Integration",
+        "data": {
+          "action_items": ""
+        }
+      },
+      "restart_ha_ic3_load_error": {
+        "title": "iCloud3 Load Error",
+        "description": "iCloud3 did not load and initialize when HA started. Reload iCloud3 again or restart HA",
         "data": {
           "action_items": ""
         }

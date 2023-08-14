@@ -158,7 +158,8 @@ class GlobalVariables(object):
     # System Wide variables control iCloud3 start/restart procedures
     polling_5_sec_loop_running      = False     # Indicates the 5-sec polling loop is set up
     start_icloud3_inprocess_flag    = False
-    restart_icloud3_request_flag    = False     # iC3 needs to be restarted, set when a new_2fa code is needed in pyicloud_ic3_interface
+    restart_icloud3_request_flag    = False     # iC3 needs to be restarted
+    restart_ha_flag                 = False     # HA needs to be restarted
     any_device_was_updated_reason   = ''
     startup_alerts                  = []
 

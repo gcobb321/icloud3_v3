@@ -63,8 +63,8 @@ import homeassistant.util.dt as dt_util
 # from homeassistant.helpers.entity       import Entity
 
 import logging
-# _LOGGER = logging.getLogger(__name__)
-_LOGGER = logging.getLogger(f"icloud3")
+_HA_LOGGER = logging.getLogger(__name__)
+# _LOGGER = logging.getLogger(f"icloud3")
 
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities):
@@ -80,14 +80,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
             start_ic3.load_storage_icloud3_configuration_file()
 
         NewSensors = []
-        if Gb.EvLogSensor is None:
+        if True is True: #Gb.EvLogSensor is None:
             Gb.EvLogSensor = Sensor_EventLog('iCloud3 Event Log', SENSOR_EVENT_LOG_NAME)
             if Gb.EvLogSensor:
                 NewSensors.append(Gb.EvLogSensor)
             else:
                 log_error_msg("Error setting up Event Log Sensor")
 
-        if Gb.WazeHistTrackSensor is None:
+        if True is True: #Gb.WazeHistTrackSensor is None:
             Gb.WazeHistTrackSensor = Sensor_WazeHistTrack('iCloud3 Waze History Track', SENSOR_WAZEHIST_TRACK_NAME)
             if Gb.WazeHistTrackSensor:
                 NewSensors.append(Gb.WazeHistTrackSensor)
@@ -118,8 +118,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
         if NewSensors != []:
             async_add_entities(NewSensors, True)
             _setup_recorder_exclude_sensor_filter(NewSensors)
+            _HA_LOGGER.info(f'iCloud3 Sensor entities: {len(NewSensors)}')
 
     except Exception as err:
+        _HA_LOGGER.exception(err)
         log_exception(err)
         log_msg = (f"►INTERNAL ERROR (UpdtSensorUpdate-{err})")
         log_error_msg(log_msg)
@@ -410,7 +412,7 @@ class SensorBase(SensorEntity):
 
             self.entity_name     = f"{devicename}_{self.sensor}"
             self.entity_id       = f"sensor.{self.entity_name}"
-            self.device_id       = Gb.dr_device_id_by_devicename.get(self.devicename)
+            self.device_id       = Gb.dr_device_id_by_devicename.get(ICLOUD3)
 
             self.Device          = Gb.Devices_by_devicename.get(devicename)
             if self.Device and from_zone:
@@ -744,7 +746,7 @@ class SensorBase(SensorEntity):
             Gb.hass.async_create_task(self.async_remove(force_remove=True))
 
         except Exception as err:
-            _LOGGER.exception(err)
+            log_exception(err)
 
 #-------------------------------------------------------------------------------------------
     def after_removal_cleanup(self):
@@ -1149,7 +1151,8 @@ class Support_SensorBase(SensorEntity):
         self.entity_name       = entity_name
         self.entity_id         = f"sensor.{self.entity_name}"
         self._unsub_dispatcher = None
-        self._device           = f"{DOMAIN}"
+        self._device           = DOMAIN
+        # self.ic3_device_id = Gb.ic3_device_id = Gb.dr_device_id_by_devicename.get(DOMAIN)
         self.current_state_value = ''
         self.history_exclude_flag = True
 

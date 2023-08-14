@@ -18,7 +18,7 @@ import voluptuous as vol
 
 
 from .global_variables  import GlobalVariables as Gb
-from .const             import (DOMAIN, DATETIME_FORMAT,
+from .const             import (DOMAIN, ICLOUD3, DATETIME_FORMAT,
                                 RARROW, CRLF_DOT, CIRCLE_STAR, EVLOG_NOTICE, EVLOG_ALERT,
                                 IPHONE_FNAME, IPHONE, IPAD, WATCH, AIRPODS, ICLOUD, FAMSHR, FMF, OTHER, HOME,
                                 DEVICE_TYPES, DEVICE_TYPE_FNAME, DEVICE_TRACKER_DOT,
@@ -64,7 +64,8 @@ from .const             import (DOMAIN, DATETIME_FORMAT,
 from .const_sensor      import (SENSOR_GROUPS )
 from .helpers.common    import (instr, isnumber, obscure_field, zone_display_as, list_to_str, str_to_list, )
 from .helpers.messaging import (log_exception, log_debug_msg, _traceha, _trace,
-                                post_event, post_monitor_msg, close_reopen_ic3_log_file, )
+                                post_event, post_monitor_msg,
+                                open_ic3_log_file, close_reopen_ic3_log_file, )
 from .helpers           import entity_io
 from .                  import sensor as ic3_sensor
 from .                  import device_tracker as ic3_device_tracker
@@ -176,9 +177,10 @@ ACTION_LIST_ITEMS_KEY_TEXT = {
         'inactive_to_track':        'TRACK ALL OR SELECTED > Change the \'Tracking Mode\' of all of the devices (or the selected devices) from \'Inactive\' to \Tracked\'',
         'inactive_keep_inactive':   'DO NOT TRACK, KEEP INACTIVE > None of these devices should be \'Tracked\' and should remain \'Inactive\'',
 
-        'restart_ha':               'RESTART HOME ASSISTANT > Restart HA & iCloud3 now to load the updated configuration',
-        'restart_now':              'RESTART NOW > Restart iCloud3 now to load the updated configuration',
-        'restart_later':            'RESTART LATER > The configuration changes have been saved. Load the updated configuration the next time iCloud3 is started',
+        'restart_ha':               'RESTART HOME ASSISTANT > Restart HA and reload iCloud3',
+        'restart_ic3_now':          'RESTART NOW > Restart iCloud3 now to load the updated configuration',
+        'restart_ic3_later':        'RESTART LATER > The configuration changes have been saved. Load the updated configuration the next time iCloud3 is started',
+        'reload_icloud3':           'RELOAD ICLOUD3 > Reload and restart the iCloud3 Integration',
         'review_inactive_devices':  'REVIEW INACTIVE DEVICES > Some Devices are `Inactive` and will not be located or tracked',
 
         'select_text_as':           'SELECT > Update selected \'Display Text As\' field',
@@ -249,8 +251,9 @@ REVIEW_INACTIVE_DEVICES =  [
         ACTION_LIST_ITEMS_KEY_TEXT['inactive_keep_inactive']]
 RESTART_NOW_LATER_ACTIONS = [
         ACTION_LIST_ITEMS_KEY_TEXT['restart_ha'],
-        ACTION_LIST_ITEMS_KEY_TEXT['restart_now'],
-        ACTION_LIST_ITEMS_KEY_TEXT['restart_later'],
+        ACTION_LIST_ITEMS_KEY_TEXT['reload_icloud3'],
+        ACTION_LIST_ITEMS_KEY_TEXT['restart_ic3_now'],
+        ACTION_LIST_ITEMS_KEY_TEXT['restart_ic3_later'],
         ACTION_LIST_ITEMS_KEY_TEXT['review_inactive_devices']]
 
 
@@ -396,6 +399,7 @@ ACTIONS_SCREEN_ITEMS_KEY_TEXT = {
         "wazehist_maint":   "WAZE HIST DATABASE > Recalc time/distance data at midnight",
         "wazehist_track":   "WAZE HIST MAP TRACK > Load route locations for map display",
         "divider4":         "═══════════════════════════════════════════════",
+        "restart_ha":       "RESTART HA, RELOAD ICLOUD3 > Restart HA or Reload iCloud3",
         "return":           "MAIN MENU > Return to the Main Menu"
         }
 ACTIONS_SCREEN_ITEMS_TEXT  = [text for text in ACTIONS_SCREEN_ITEMS_KEY_TEXT.values()]
@@ -454,7 +458,11 @@ class iCloud3_ConfigFlow(config_entries.ConfigFlow, FlowHandler, domain=DOMAIN):
 
         return Gb.OptionsFlowHandler
 
-#----------------------------------------------------------------------
+#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+#
+#                  CONFIG_FLOW FORMS
+#
+#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     async def async_step_user(self, user_input=None):
         '''
         Invoked when a user initiates a '+ Add Integration' on the Integerations screen
@@ -501,23 +509,23 @@ class iCloud3_ConfigFlow(config_entries.ConfigFlow, FlowHandler, domain=DOMAIN):
             config_file.load_storage_icloud3_configuration_file()
             start_ic3.initialize_icloud_data_source()
 
-            # Convert the .storage/icloud3.configuration file if it is at a default
-            # state or has never been updated via config_flow using 'HA Integrations > iCloud3'
-            if Gb.conf_profile[CONF_VERSION] == -1:
-                config_file.load_icloud3_ha_config_yaml('')
-                v2v3_config_migration = iCloud3_v2v3ConfigMigration()
-                v2v3_config_migration.convert_v2_config_files_to_v3()
-                Gb.v2v3_config_migrated = True
+        # Convert the .storage/icloud3.configuration file if it is at a default
+        # state or has never been updated via config_flow using 'HA Integrations > iCloud3'
+        if Gb.conf_profile[CONF_VERSION] == -1:
+            self.migrate_v2_config_to_v3()
 
         if user_input is not None:
             _CF_LOGGER.info(f"Added iCloud3 Integration")
+
+            if Gb.restart_ha_flag:
+                return await self.async_step_restart_ha()
 
             data = {}
             data = {'added': dt_util.now().strftime(DATETIME_FORMAT)[0:19]}
             return self.async_create_entry(title="iCloud3", data=data)
 
         schema = vol.Schema({
-            vol.Required("continue", default=True): bool})
+            vol.Required('continue', default=True): bool})
 
         return self.async_show_form(step_id="user",
                                     data_schema=schema,
@@ -552,7 +560,6 @@ class iCloud3_ConfigFlow(config_entries.ConfigFlow, FlowHandler, domain=DOMAIN):
         # functions so we need to set up that link when a reauth is needed
         if Gb.OptionsFlowHandler is None:
             Gb.OptionsFlowHandler = iCloud3_OptionsFlowHandler()
-        OptFlow = Gb.OptionsFlowHandler
 
         self.step_id = 'reauth'
         self.errors = errors or {}
@@ -564,7 +571,7 @@ class iCloud3_ConfigFlow(config_entries.ConfigFlow, FlowHandler, domain=DOMAIN):
                                         data_schema=self.form_schema(self.step_id),
                                         errors=self.errors)
 
-        user_input, action_item = OptFlow._action_text_to_item(user_input)
+        user_input, action_item = Gb.OptionsFlowHandler._action_text_to_item(user_input)
         log_debug_msg(f"{self.step_id} ({action_item}) > UserInput-{user_input}, Errors-{errors}")
 
         if (action_item == 'cancel_verification_entry'
@@ -609,8 +616,61 @@ class iCloud3_ConfigFlow(config_entries.ConfigFlow, FlowHandler, domain=DOMAIN):
         return self.async_show_form(step_id=self.step_id,
                                     data_schema=self.form_schema(self.step_id),
                                     errors=self.errors)
+#-------------------------------------------------------------------------------------------
+    async def async_step_restart_ha(self, user_input=None, errors=None):
+        '''
+        A restart is required if there were devicenames in known_devices.yaml
+        '''
+        if Gb.OptionsFlowHandler is None:
+            Gb.OptionsFlowHandler = iCloud3_OptionsFlowHandler()
 
-#----------------------------------------------------------------------
+        self.step_id = 'restart_ha'
+        self.errors = errors or {}
+        self.errors_user_input = {}
+        user_input, action_item = Gb.OptionsFlowHandler._action_text_to_item(user_input)
+
+        if user_input is not None or action_item is not None:
+            if action_item.startswith('restart_ha'):
+                await Gb.hass.services.async_call("homeassistant", "restart")
+
+            data = {}
+            data = {'added': dt_util.now().strftime(DATETIME_FORMAT)[0:19]}
+            return self.async_create_entry(title="iCloud3", data=data)
+
+        return self.async_show_form(step_id=self.step_id,
+                        data_schema=self.form_schema('restart_ha'),
+                        errors=self.errors,
+                        last_step=False)
+
+#-------------------------------------------------------------------------------------------
+    def migrate_v2_config_to_v3(self):
+        '''
+        Migrate v2 to v3 if needed
+
+        conf_version goes from:
+            -1 --> 0 (default version installed) --> (v2 migrated to v3)
+            0 --> 1 (configurator/config_flow opened and configuration file was accessed/updated).
+        '''
+        # if a platform: icloud3 statement or config_ic3.yaml, migrate the files
+        if Gb.ha_config_platform_stmt:
+            config_file.load_icloud3_ha_config_yaml(Gb.config)
+        elif os.path.exists(Gb.hass.config.path('config_ic3.yaml')):
+            pass
+        else:
+            return
+
+        v2v3_config_migration = iCloud3_v2v3ConfigMigration()
+        v2v3_config_migration.convert_v2_config_files_to_v3()
+        v2v3_config_migration.remove_ic3_devices_from_known_devices_yaml_file()
+
+        config_file.load_storage_icloud3_configuration_file()
+        open_ic3_log_file()
+        Gb.v2v3_config_migrated = True
+
+        if Gb.restart_ha_flag:
+            pass
+
+#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     def form_schema(self, step_id):
         if step_id == 'reauth':
             self.actions_list = REAUTH_CONFIG_FLOW_ACTIONS.copy()
@@ -624,6 +684,22 @@ class iCloud3_ConfigFlow(config_entries.ConfigFlow, FlowHandler, domain=DOMAIN):
                                 options=self.actions_list, mode='list')),
                 })
 
+#------------------------------------------------------------------------
+        elif step_id == 'restart_ha':
+
+            restart_default = 'restart_ha'
+            self.actions_list = []
+            self.actions_list.append(ACTION_LIST_ITEMS_KEY_TEXT['restart_ha'])
+            self.actions_list.append(ACTION_LIST_ITEMS_KEY_TEXT['restart_ic3_later'])
+
+            actions_list_default = Gb.OptionsFlowHandler.action_default_text(restart_default)
+
+            return  vol.Schema({
+                vol.Required('action_items',
+                            default=actions_list_default):
+                            selector.SelectSelector(selector.SelectSelectorConfig(
+                                options=self.actions_list, mode='list')),
+                })
 
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 #
@@ -655,7 +731,8 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
                                         MENU_KEY_TEXT_PAGE_1[MENU_PAGE_1_INITIAL_ITEM]]
         self.menu_page_no          = 0      # Menu currently displayed
         self.header_msg            = None   # Message displayed on menu after update
-        self.called_from_step_id   = ''     # Form/Fct to return to when verifying the icloud auth code
+        self.called_from_step_id_1   = ''     # Form/Fct to return to when verifying the icloud auth code
+        self.called_from_step_id_1_2 = ''     # Form/Fct to return to when verifying the icloud auth code
 
         self.actions_list               = []     # Actions list at the bottom of the screen
         self.actions_list_default       = ''     # Default action_itemss to reassign on screen redisplay
@@ -666,19 +743,6 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
         # Variables used for icloud_account update forms
         self.logging_into_icloud_flag = False
         self._existing_entry          = None
-
-        # PyiCloud object and variables. Using local variables rather than the Gb PyiCloud variables
-        # in case the username/password is changed and another account is accessed. These will not
-        # intefer with ones already in use by iC3. The Global Gb variables will be set to the local
-        # variables if they were changes and a iC3 Restart was selected when finishing the config setup.
-
-        self.PyiCloud                 = None
-        if Gb.PyiCloud: self.PyiCloud = Gb.PyiCloud
-        self.username                 = Gb.username or Gb.conf_tracking[CONF_USERNAME]
-        self.password                 = Gb.password or Gb.conf_tracking[CONF_PASSWORD]
-        self.obscure_username         = ''
-        self.obscure_password         = ''
-        self.show_username_password   = False
 
         # Variables used for device selection and update on the device_list and device_update forms
         self.form_devices_list_all         = []         # List of the devices in the Gb.conf_tracking[DEVICES] parameter
@@ -745,10 +809,28 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
         self.excluded_sensors_removed = []
         self.sensors_list_filter    = '?'
 
+        self.abort_flag = ('xversion' not in Gb.conf_profile)
+        if self.abort_flag: return
+
+        # PyiCloud object and variables. Using local variables rather than the Gb PyiCloud variables
+        # in case the username/password is changed and another account is accessed. These will not
+        # intefer with ones already in use by iC3. The Global Gb variables will be set to the local
+        # variables if they were changes and a iC3 Restart was selected when finishing the config setup
+        self.PyiCloud                 = None
+        if Gb.PyiCloud: self.PyiCloud = Gb.PyiCloud
+        self.username                 = Gb.username or Gb.conf_tracking[CONF_USERNAME]
+        self.password                 = Gb.password or Gb.conf_tracking[CONF_PASSWORD]
+        self.obscure_username         = ''
+        self.obscure_password         = ''
+        self.show_username_password   = False
+
     async def async_step_init(self, user_input=None):
         if self.initialize_options_required_flag:
             self.initialize_options()
         self.errors = {}
+
+        if self.abort_flag:
+            return await self.async_step_restart_ha_ic3_load_error()
 
         return await self.async_step_menu()
 
@@ -764,7 +846,7 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
         # user_input = self._check_if_from_svc_call(user_input)
 
         self.step_id = 'menu'
-        self.called_from_step_id = ''
+        self.called_from_step_id_1 = self.called_from_step_id_2 =''
         self.current_menu_step_id = self.step_id
         self.errors = {}
 
@@ -861,14 +943,14 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
             if action_item == 'cancel':
                 return await self.async_step_menu()
 
-            elif action_item == 'restart_later':
+            elif action_item == 'restart_ic3_later':
                 self.config_flow_updated_parms.remove('restart')
                 Gb.config_flow_updated_parms = self.config_flow_updated_parms
 
             # If the polling loop has been set up, set the restart flag to trigger a restart when
             # no devices are being updated. Otherwise, there were probably no devices to track
             # when first loaded and a direct restart must be done.
-            elif action_item == 'restart_now':
+            elif action_item == 'restart_ic3_now':
                 self.config_flow_updated_parms.remove('restart')
                 Gb.restart_icloud3_request_flag = True
                 if (self.PyiCloud is not None
@@ -877,11 +959,13 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
                     Gb.username = self.username
                     Gb.password = self.password
 
-            elif action_item == 'restart_ha':
+            elif action_item.startswith('restart_ha'):
+                #return await self.step_restart_ha()
                 await Gb.hass.services.async_call("homeassistant", "restart")
+                return self.async_abort(reason="ha_restarting")
 
             elif action_item == 'review_inactive_devices':
-                self.called_from_step_id = self.step_id
+                self.called_from_step_id_1 = self.step_id
                 return await self.async_step_review_inactive_devices()
 
 
@@ -929,7 +1013,7 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
                 self.config_flow_updated_parms.update(['tracking', 'restart'])
                 self.header_msg = 'action_completed'
 
-            if self.called_from_step_id == 'restart_icloud3':
+            if self.called_from_step_id_1 == 'restart_icloud3':
                 return await self.async_step_restart_icloud3()
 
             return await self.async_step_menu()
@@ -1027,7 +1111,7 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
     async def async_step_change_device_order(self, user_input=None, errors=None, called_from_step_id=None):
         self.step_id = 'change_device_order'
         user_input, action_item = self._action_text_to_item(user_input)
-        self.called_from_step_id = called_from_step_id or self.called_from_step_id or 'menu'
+        self.called_from_step_id_1 = called_from_step_id or self.called_from_step_id_1 or 'menu'
 
         if user_input is None:
             log_debug_msg(f"{self.step_id} ({action_item}) > UserInput-{user_input}, Errors-{errors}")
@@ -1052,8 +1136,8 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
             action_item = 'cancel'
 
         if action_item == 'cancel':
-            return self.async_show_form(step_id=self.called_from_step_id,
-                                        data_schema=self.form_schema(self.called_from_step_id),
+            return self.async_show_form(step_id=self.called_from_step_id_1,
+                                        data_schema=self.form_schema(self.called_from_step_id_1),
                                         errors=self.errors)
 
         self.cdo_curr_idx = self.cdo_devicenames.index(user_input['device_desc'])
@@ -1424,10 +1508,31 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
         if instr(user_input.get('action_items'), ' >'):
             action_item_text = user_input['action_items']
             action_item = ACTIONS_SCREEN_ITEMS_KEY_BY_TEXT[action_item_text]
-
             user_input.pop('action_items')
 
-            self._process_action_request(action_item)
+            # await self._process_action_request(action_item)
+            if action_item == 'return':
+                return
+
+            elif action_item in [   'restart', 'pause', 'resume',
+                                    'wazehist_maint', 'wazehist_track',
+                                    'evlog_export', ]:
+                service_handler.update_service_handler(action_item)
+
+            elif action_item.startswith('debug'):
+                service_handler.handle_action_log_level('debug', change_conf_log_level=False)
+
+            elif action_item.startswith('rawdata'):
+                service_handler.handle_action_log_level('rawdata', change_conf_log_level=False)
+
+            elif action_item == 'commit':
+                close_reopen_ic3_log_file(closed_by='Configurator')
+
+            elif action_item == 'restart_ha':
+                return await self.async_step_restart_ha_ic3()
+
+            if self.header_msg is None:
+                self.header_msg = 'action_completed'
 
             return await self.async_step_menu()
 
@@ -1436,15 +1541,16 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
                                     errors=self.errors)
 
 #--------------------------------------------------------------------------------
-    def _process_action_request(self, action_item):
+    async def _process_action_request(self, action_item):
         #update_service_handler(action=None, action_fname=None, devicename=None):#
         self.header_msg = None
 
         if action_item == 'return':
             return
-        elif action_item in [ 'restart', 'pause', 'resume',
-                            'wazehist_maint', 'wazehist_track',
-                            'evlog_export', ]:
+
+        elif action_item in [   'restart', 'pause', 'resume',
+                                'wazehist_maint', 'wazehist_track',
+                                'evlog_export', ]:
             service_handler.update_service_handler(action_item)
 
         elif action_item.startswith('debug'):
@@ -1453,11 +1559,55 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
         elif action_item.startswith('rawdata'):
             service_handler.handle_action_log_level('rawdata', change_conf_log_level=False)
 
+
         elif action_item == 'commit':
             close_reopen_ic3_log_file(closed_by='Configurator')
 
         if self.header_msg is None:
             self.header_msg = 'action_completed'
+
+#-------------------------------------------------------------------------------------------
+    async def async_step_restart_ha_ic3_load_error(self, user_input=None, errors=None):
+        self.step_id = 'restart_ha_ic3_load_error'
+        return await self.async_restart_ha_ic3(user_input, errors)
+
+#-------------------------------------------------------------------------------------------
+    async def async_step_restart_ha_ic3(self, user_input=None, errors=None):
+        self.step_id = 'restart_ha_ic3'
+        return await self.async_restart_ha_ic3(user_input, errors)
+        # return await self.async_step_menu()
+
+#-------------------------------------------------------------------------------------------
+    async def async_restart_ha_ic3(self, user_input, errors):
+        '''
+        A restart HA or reload iCloud3
+        '''
+        # self.step_id = 'restart_ha_ic3'
+        self.errors = errors or {}
+        self.errors_user_input = {}
+        user_input, action_item = self._action_text_to_item(user_input)
+
+        if user_input is None or action_item is None:
+            return self.async_show_form(step_id=self.step_id,
+                                    data_schema=self.form_schema(self.step_id),
+                                    errors=self.errors)
+
+        if action_item == 'restart_ha':
+            await Gb.hass.services.async_call("homeassistant", "restart")
+            return self.async_abort(reason="ha_restarting")
+
+        elif action_item == 'reload_icloud3':
+            await Gb.hass.services.async_call(
+                    "homeassistant",
+                    "reload_config_entry",
+                    {"entry_id": Gb.entry_id}
+                    )
+                    # {'device_id': Gb.dr_device_id_by_devicename[ICLOUD3]},
+
+            return self.async_abort(reason="ic3_reloading")
+
+        return await self.async_step_menu()
+
 
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 #
@@ -1739,11 +1889,12 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
 #
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-    async def async_step_icloud_account(self, user_input=None, errors=None):
+    async def async_step_icloud_account(self, user_input=None, errors=None, called_from_step_id=None):
         self.step_id = 'icloud_account'
         self.errors = errors or {}
         self.errors_user_input = {}
         action_item = ''
+        self.called_from_step_id_2 = called_from_step_id or self.called_from_step_id_2 or 'menu'
 
         try:
             if user_input is None:
@@ -1803,6 +1954,8 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
                         Gb.username = self.username
                         Gb.password = self.password
 
+                    await self._build_device_form_selection_lists()
+                    self._prepare_device_selection_list()
 
                     if (self.PyiCloud and self.PyiCloud.requires_2fa):
                         errors = {'base': 'verification_code_needed'}
@@ -1815,7 +1968,9 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
                         and (self.errors == {} or self.errors.get('base', '') == 'icloud_acct_logged_into')):
                     self._update_configuration_file(user_input)
 
-                    return await self.async_step_menu()
+                    return self.async_show_form(step_id=self.called_from_step_id_2,
+                                            data_schema=self.form_schema(self.called_from_step_id_2),
+                                            errors=self.errors)
 
         except Exception as err:
             log_exception(err)
@@ -1832,7 +1987,6 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
 #            ICLOUD VERIFICATION CODE ENTRY FORM
 #
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-
     async def async_step_reauth(self, user_input=None, errors=None, called_from_step_id=None):
         '''
         Ask the verification code to the user.
@@ -1860,7 +2014,7 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
         self.errors = errors or {}
         self.errors_user_input = {}
         action_item = ''
-        self.called_from_step_id = called_from_step_id or self.called_from_step_id or 'menu'
+        self.called_from_step_id_1 = called_from_step_id or self.called_from_step_id_1 or 'menu'
 
         if user_input is None:
             return self.async_show_form(step_id=self.step_id,
@@ -1879,8 +2033,8 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
             action_item = 'cancel'
 
         if action_item == 'cancel':
-            return self.async_show_form(step_id=self.called_from_step_id,
-                                        data_schema=self.form_schema(self.called_from_step_id),
+            return self.async_show_form(step_id=self.called_from_step_id_1,
+                                        data_schema=self.form_schema(self.called_from_step_id_1),
                                         errors=self.errors)
 
         if action_item == 'request_verification_code':
@@ -1910,8 +2064,8 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
 
                 self.errors['base'] = self.header_msg = 'verification_code_accepted'
 
-                return self.async_show_form(step_id=self.called_from_step_id,
-                                            data_schema=self.form_schema(self.called_from_step_id),
+                return self.async_show_form(step_id=self.called_from_step_id_1,
+                                            data_schema=self.form_schema(self.called_from_step_id_1),
                                             errors=self.errors)
 
             else:
@@ -2062,7 +2216,10 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
             if (Gb.conf_tracking[CONF_USERNAME] == ''
                     or Gb.conf_tracking[CONF_PASSWORD] == ''):
                 self.header_msg = 'icloud_acct_not_set_up'
-                return await self.async_step_icloud_account()
+                errors = {'base': 'icloud_acct_not_set_up'}
+                return await self.async_step_icloud_account(user_input=None,
+                                                    errors=errors,
+                                                    called_from_step_id='device_list')
 
             elif (self.PyiCloud is None
                     and Gb.conf_tracking[CONF_USERNAME]
@@ -2072,7 +2229,7 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
             if (self.PyiCloud and self.PyiCloud.requires_2fa):
                 errors = {'base': 'verification_code_needed'}
                 return await self.async_step_reauth(user_input=None,
-                                                    errors={'base': 'verification_code_needed'},
+                                                    errors=errors,
                                                     called_from_step_id='device_list')
 
         device_cnt = len(Gb.conf_devices)
@@ -3627,14 +3784,14 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
         elif step_id == 'restart_icloud3':
 
             self.actions_list = []
-            restart_default='restart_now'
+            restart_default='restart_ic3_now'
 
             if 'restart_ha' in self.config_flow_updated_parms:
                 restart_default='restart_ha'
                 self.actions_list.append(ACTION_LIST_ITEMS_KEY_TEXT['restart_ha'])
 
-            self.actions_list.append(ACTION_LIST_ITEMS_KEY_TEXT['restart_now'])
-            self.actions_list.append(ACTION_LIST_ITEMS_KEY_TEXT['restart_later'])
+            self.actions_list.append(ACTION_LIST_ITEMS_KEY_TEXT['restart_ic3_now'])
+            self.actions_list.append(ACTION_LIST_ITEMS_KEY_TEXT['restart_ic3_later'])
 
             actions_list_default = self.action_default_text(restart_default)
             if self._inactive_device_cnt() > 0:
@@ -4354,6 +4511,23 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
 
                 vol.Required('action_items',
                             default=self.action_default_text('filter_sensors')):
+                            selector.SelectSelector(selector.SelectSelectorConfig(
+                                options=self.actions_list, mode='list')),
+                })
+
+        #------------------------------------------------------------------------
+        elif step_id.startswith('restart_ha_ic3'):
+            restart_default = 'reload_icloud3'
+            self.actions_list = []
+            self.actions_list.append(ACTION_LIST_ITEMS_KEY_TEXT['restart_ha'])
+            self.actions_list.append(ACTION_LIST_ITEMS_KEY_TEXT['reload_icloud3'])
+            self.actions_list.append(ACTION_LIST_ITEMS_KEY_TEXT['cancel'])
+
+            actions_list_default = self.action_default_text(restart_default)
+
+            return vol.Schema({
+                vol.Required('action_items',
+                            default=actions_list_default):
                             selector.SelectSelector(selector.SelectSelectorConfig(
                                 options=self.actions_list, mode='list')),
                 })

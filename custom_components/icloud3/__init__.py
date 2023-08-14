@@ -9,7 +9,6 @@ from homeassistant.config_entries   import ConfigEntry
 from homeassistant.const            import EVENT_HOMEASSISTANT_STARTED, EVENT_HOMEASSISTANT_STOP
 from homeassistant.core             import HomeAssistant
 from homeassistant.helpers.typing   import ConfigType
-from homeassistant.helpers          import network
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 import homeassistant.helpers.config_validation as cv
 import homeassistant.util.dt as dt_util
@@ -17,7 +16,8 @@ import homeassistant.util.location  as ha_location_info
 import os
 import logging
 
-from .const import (DOMAIN, PLATFORMS, MODE_PLATFORM, MODE_INTEGRATION, CONF_VERSION,
+
+from .const import (DOMAIN, PLATFORMS, ICLOUD3, MODE_PLATFORM, MODE_INTEGRATION, CONF_VERSION,
                     CONF_SETUP_ICLOUD_SESSION_EARLY, CONF_EVLOG_BTNCONFIG_URL,
                     SENSOR_EVENT_LOG_NAME, SENSOR_WAZEHIST_TRACK_NAME,
                     EVLOG_IC3_STARTING, VERSION, )
@@ -28,6 +28,7 @@ CONFIG_SCHEMA = cv.empty_config_schema(DOMAIN)
 
 from .global_variables              import GlobalVariables as Gb
 from .helpers.messaging             import (_trace, _traceha, open_ic3_log_file,
+                                            post_alert, post_startup_alert,
                                             log_info_msg, log_debug_msg, log_error_msg, log_exception)
 from .support.v2v3_config_migration import iCloud3_v2v3ConfigMigration
 from .support                       import start_ic3
@@ -40,7 +41,7 @@ from .support                       import recorder_prefilter
 from .icloud3_main                  import iCloud3
 from .                              import config_flow
 
-# _LOGGER = logging.getLogger(__name__)
+_HA_LOGGER = logging.getLogger(__name__)
 Gb.HALogger = _LOGGER = logging.getLogger('icloud3')
 
 successful_startup = True
@@ -52,32 +53,36 @@ successful_startup = True
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>><><><><><><><><><>
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
-    if 'device_tracker' not in config:
-        return True
+    # if 'device_tracker' not in config:
+    #     Gb.v2v3_config_migrated = True
+    #     return True
 
     hass.data.setdefault(DOMAIN, {})
 
-    Gb.hass = hass
+    Gb.hass   = hass
     Gb.config = config
     Gb.ha_config_platform_stmt = True
     Gb.operating_mode = MODE_PLATFORM
-    await async_get_ha_location_info(hass)
+    try:
+        log_info_msg(f"Initializing iCloud3 {VERSION} - Using Platform method")
 
-    recorder_prefilter.add_filter(hass, [SENSOR_EVENT_LOG_NAME, SENSOR_WAZEHIST_TRACK_NAME])
-    start_ic3.initialize_directory_filenames()
-    config_file.load_storage_icloud3_configuration_file()
-    start_ic3.initialize_icloud_data_source()
-    open_ic3_log_file()
-    log_info_msg(f"Initializing iCloud3 {VERSION} - Using Platform method")
+        # device_trackers = config.get('device_tracker')
+        # if device_trackers:
+        #     for tracker in device_trackers:
+        #         if tracker['platform'] == DOMAIN:
+        #             log_info_msg("Platform: icloud3 can be removed from configuration.yaml")
 
-    # Convert the .storage/icloud3.configuration file if it is at a default
-    # state or has never been updated via config_flow using 'HA Integrations > iCloud3'
-    if Gb.conf_profile[CONF_VERSION] == -1:
-        config_file.load_icloud3_ha_config_yaml(config)
-        v2v3_config_migration = iCloud3_v2v3ConfigMigration()
-        v2v3_config_migration.convert_v2_config_files_to_v3()
+        # Initialize the config/.storage/icloud3/configuration file before the config_glow
+        # has set up the integration
+        start_ic3.initialize_directory_filenames()
         config_file.load_storage_icloud3_configuration_file()
-        Gb.v2v3_config_migrated = True
+
+        if Gb.conf_profile[CONF_VERSION] == 1:
+            log_info_msg(f"Initializing iCloud3 {VERSION} - Remove Platform: iCloud3 statement")
+
+    except Exception as err:
+        log_exception(err)
+
 
     return True
 
@@ -121,6 +126,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
         Gb.config_entry   = entry
         Gb.entry_id       = entry.entry_id
         Gb.operating_mode = MODE_INTEGRATION
+
+        if Gb.restart_ha_flag:
+            log_error_msg("iCloud3 > Waiting for HA restart to remove legacy devices before continuing")
+            return False
+
         await async_get_ha_location_info(hass)
 
         Gb.PyiCloud = None
@@ -136,6 +146,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
         Gb.evlog_version       = Gb.conf_profile['event_log_version']
         Gb.EvLog = event_log.EventLog(Gb.hass)
         log_info_msg(f"Setting up iCloud3 {VERSION} - Using Integration method")
+        # log_info_msg(f"Setting up iCloud3 {VERSION} - {Gb.entry_id=}")
 
         Gb.start_icloud3_inprocess_flag = True
 
@@ -152,20 +163,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
         start_ic3.initialize_icloud_data_source()
         restore_state.load_storage_icloud3_restore_state_file()
 
-        # Create device_tracker and sensor entities
-        #await hass.config_entries.async_forward_configuration_file()
-        await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+        # Create  device_tracker entities
+        if Gb.conf_devices != []:
+            await hass.config_entries.async_forward_entry_setups(entry, ['device_tracker'])
 
-        # conf_version goes from:
-        #     -1 --> 0 (default version installed) --> (v2 migrated to v3)
-        #      0 --> 1 (configurator/config_flow opened and configuration file was accessed/updated).
-        if (Gb.conf_profile[CONF_VERSION] == -1 and Gb.v2v3_config_migrated is False):
-            config_file.load_icloud3_ha_config_yaml('')
-            v2v3_config_migration = iCloud3_v2v3ConfigMigration()
-            v2v3_config_migration.convert_v2_config_files_to_v3()
-            config_file.load_storage_icloud3_configuration_file()
-            open_ic3_log_file()
-            Gb.v2v3_config_migrated = True
+        # Create sensor entities
+        await hass.config_entries.async_forward_entry_setups(entry, ['sensor'])
 
         # Do not start if loading/initialization failed
         if successful_startup is False:
