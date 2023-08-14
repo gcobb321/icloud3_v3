@@ -52,7 +52,7 @@
       "already_configured": "iCloud3 is already installed and can not be installed again. Select CONFIGURE in the iCloud3 Integration entry to configure iCloud3",
       "disabled": "iCloud3 is DISABLED and can not be installed again. Enable iCloud, then select CONFIGURE in the iCloud3 Integration entry to configure iCloud3",
       "ha_restarting": "Home Assistant is Restarting",
-      "ic3_reloading": "iCloud3 is Reloading (You may have to refresh the browser screen)",
+      "ic3_reloading": "iCloud3 is Reloading (Refresh the browser)",
       "reauth_successful": "The reauthentication has been successfully completed"
     },
     "error": {
