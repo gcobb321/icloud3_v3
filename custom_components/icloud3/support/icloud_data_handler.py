@@ -331,7 +331,7 @@ def update_device_with_latest_raw_data(Device, all_devices=False):
                             post_event(_Device.devicename, event_msg)
 
             if (_RawData is None
-                    or _RawData.location_secs == 0 and _Device.iosapp_data_secs == 0
+                    or (_RawData.location_secs == 0 and _Device.iosapp_data_secs == 0)
                     or _RawData.gps_accuracy > Gb.gps_accuracy_threshold):
                 pass
 
@@ -364,7 +364,7 @@ def update_device_with_latest_raw_data(Device, all_devices=False):
                 Device.display_update_location_msg()
 
             # If Rejected msg being displayed, no need to display the Old Loc msg too
-            if Device.is_location_old_or_gps_poor:  # or Device.old_loc_poor_gps_cnt >= 1:
+            if Device.is_location_old_or_gps_poor:
                 continue
 
             # Display appropriate message for the Device being updated or a monitor msg for all other Devices

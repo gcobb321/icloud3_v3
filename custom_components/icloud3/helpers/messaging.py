@@ -23,7 +23,8 @@ from ..const            import (DOT, ICLOUD3_ERROR_MSG, EVLOG_DEBUG, EVLOG_ERROR
                                 BADGE,
                                 )
 
-import homeassistant.util.dt as dt_util
+import homeassistant.util.dt   as dt_util
+from homeassistant.components  import persistent_notification
 
 import os
 import time
@@ -202,6 +203,19 @@ def post_startup_alert(alert_msg):
 
     if alert_msg not in Gb.startup_alerts:
         Gb.startup_alerts.append(alert_msg)
+
+#-------------------------------------------------------------------------------------------
+def ha_notification(msg_line1, msg_line2=None) -> None:
+
+    if msg_line2:
+        msg_line1 += f"<br />{msg_line2}"
+
+    persistent_notification.create(
+        Gb.hass,
+        f"Notification: {msg_line1}",
+        title=f"iCloud3 Notification",
+        notification_id="icloud3",
+    )
 
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 #

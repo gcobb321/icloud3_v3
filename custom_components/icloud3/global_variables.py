@@ -231,7 +231,8 @@ class GlobalVariables(object):
     sensors_created_cnt         = 0               # Number of sensors that have been set up (incremented in sensor.py)
     device_trackers_cnt         = 0               # Number of device_trackers that will be creted (__init__.py)
     device_trackers_created_cnt = 0               # Number of device_trackers that have been set up (incremented in device_tracker.py)
-
+    area_id_personal_device     = None
+    
     # restore_state file
     restore_state_file_data = {}
     restore_state_profile   = {}

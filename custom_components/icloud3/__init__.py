@@ -53,32 +53,26 @@ successful_startup = True
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>><><><><><><><><><>
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
-    # if 'device_tracker' not in config:
-    #     Gb.v2v3_config_migrated = True
-    #     return True
-
+    """Old way of setting up the iCloud tracker with platform: icloud3 statement."""
     hass.data.setdefault(DOMAIN, {})
-
     Gb.hass   = hass
     Gb.config = config
-    Gb.ha_config_platform_stmt = True
-    Gb.operating_mode = MODE_PLATFORM
+
     try:
-        log_info_msg(f"Initializing iCloud3 {VERSION} - Using Platform method")
+        device_trackers = config.get('device_tracker')
+        if device_trackers:
+            for tracker in device_trackers:
+                if tracker['platform'] == DOMAIN:
+                    Gb.ha_config_platform_stmt = True
+                    Gb.operating_mode = MODE_PLATFORM
 
-        # device_trackers = config.get('device_tracker')
-        # if device_trackers:
-        #     for tracker in device_trackers:
-        #         if tracker['platform'] == DOMAIN:
-        #             log_info_msg("Platform: icloud3 can be removed from configuration.yaml")
+                    # Initialize the config/.storage/icloud3/configuration file before the config_glow
+                    # has set up the integration
+                    start_ic3.initialize_directory_filenames()
+                    config_file.load_storage_icloud3_configuration_file()
 
-        # Initialize the config/.storage/icloud3/configuration file before the config_glow
-        # has set up the integration
-        start_ic3.initialize_directory_filenames()
-        config_file.load_storage_icloud3_configuration_file()
-
-        if Gb.conf_profile[CONF_VERSION] == 1:
-            log_info_msg(f"Initializing iCloud3 {VERSION} - Remove Platform: iCloud3 statement")
+                    if Gb.conf_profile[CONF_VERSION] == 1:
+                        _HA_LOGGER.info(f"Initializing iCloud3 {VERSION} - Remove Platform: iCloud3 statement")
 
     except Exception as err:
         log_exception(err)
@@ -146,7 +140,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
         Gb.evlog_version       = Gb.conf_profile['event_log_version']
         Gb.EvLog = event_log.EventLog(Gb.hass)
         log_info_msg(f"Setting up iCloud3 {VERSION} - Using Integration method")
-        # log_info_msg(f"Setting up iCloud3 {VERSION} - {Gb.entry_id=}")
 
         Gb.start_icloud3_inprocess_flag = True
 

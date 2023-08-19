@@ -408,6 +408,8 @@ def _handle_global_action(global_action, action_option):
         return
 
     elif global_action == 'event_log_version':
+        # Gb.evlog_version = action_option
+        # Gb.EvLog.evlog_attrs["version_evlog"] = action_option
         Gb.conf_profile['event_log_version'] = action_option
         config_file.write_storage_icloud3_configuration_file()
 

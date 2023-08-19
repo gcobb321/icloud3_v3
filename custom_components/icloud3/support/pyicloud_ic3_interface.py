@@ -191,7 +191,10 @@ def authenticate_icloud_account(PyiCloud, called_from='unknown', initial_setup=F
         return False
 
     except Exception as err:
-        log_exception(err)
+        event_msg =(f"{EVLOG_ALERT}iCloud3 Error > An error occurred logging into the iCloud Account. "
+                    f"Error-{err}")
+        post_error_msg(event_msg)
+        # log_exception(err)
         return False
 
     return True

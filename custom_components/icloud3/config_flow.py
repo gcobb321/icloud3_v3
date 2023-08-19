@@ -384,7 +384,7 @@ CONF_SENSORS_OTHER_KEY_TEXT = {
         }
 
 ACTIONS_SCREEN_ITEMS_KEY_TEXT = {
-        "divider1":         "════════════ ICLOUD3 CONTROL ACTIONS ════════════",
+        "divider1":         "═════════════ ICLOUD3 CONTROL ACTIONS ══════════════",
         "restart":          "RESTART > Restart iCloud3",
         "pause":            "PAUSE > Pause polling on all devices",
         "resume":           "RESUME > Resume Polling on all devices, Refresh all locations",
@@ -394,7 +394,7 @@ ACTIONS_SCREEN_ITEMS_KEY_TEXT = {
         "rawdata_start":    "START RAWDATA LOGGING > Start or stop debug rawdata logging",
         "rawdata_stop":     "STOP RAWDATA LOGGING > Start or stop debug rawdata logging",
         "commit":           "COMMIT DEBUG LOG RECORDS > Verify all debug log file records are written",
-        "divider3":         "═════════════════ OTHER COMMANDS ════════════════",
+        "divider3":         "════════════════ OTHER COMMANDS ═══════════════",
         "evlog_export":     "EXPORT EVENT LOG > Export Event Log data",
         "wazehist_maint":   "WAZE HIST DATABASE > Recalc time/distance data at midnight",
         "wazehist_track":   "WAZE HIST MAP TRACK > Load route locations for map display",
@@ -809,7 +809,7 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
         self.excluded_sensors_removed = []
         self.sensors_list_filter    = '?'
 
-        self.abort_flag = ('xversion' not in Gb.conf_profile)
+        self.abort_flag = ('version' not in Gb.conf_profile)
         if self.abort_flag: return
 
         # PyiCloud object and variables. Using local variables rather than the Gb PyiCloud variables
@@ -1512,7 +1512,7 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
 
             # await self._process_action_request(action_item)
             if action_item == 'return':
-                return
+                return await self.async_step_menu()
 
             elif action_item in [   'restart', 'pause', 'resume',
                                     'wazehist_maint', 'wazehist_track',
@@ -2523,7 +2523,7 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
 
         if not self.errors:
             if change_flag:
-                ui_devicename  = user_input[CONF_IC3_DEVICENAME]
+                ui_devicename = user_input[CONF_IC3_DEVICENAME]
 
                 self.conf_device_selected.update(user_input)
 

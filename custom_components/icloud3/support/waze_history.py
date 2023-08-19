@@ -605,10 +605,11 @@ class WazeRouteHistory(object):
         if self.connection is None:
             return
 
+        _Device = Gb.Devices[0] if len(Gb.Devices) > 0 else None
+
         # Cycle through the zones. If the location change flag is set, cycle through the
         # Waze History Database for those zones and recalculate the time & distance.
         try:
-            Device = Gb.Devices[0]
             records = self._get_all_records('locations')
             total_recds_cnt = len(records)
 
@@ -621,7 +622,8 @@ class WazeRouteHistory(object):
             # in another thread or as an asyncio task
             if self.wazehist_recalculate_time_dist_running_flag:
                 self.wazehist_recalculate_time_dist_abort_flag = True
-                Device.display_info_msg("Waze History > Update stopped")
+                if _Device:
+                    _Device.display_info_msg("Waze History > Update stopped")
                 return
 
             total_recd_cnt    = 0
@@ -679,7 +681,8 @@ class WazeRouteHistory(object):
         '''
 
         '''
-        Device = Gb.Devices[0]
+        _Device = Gb.Devices[0] if len(Gb.Devices) > 0 else None
+
         criteria = (f"zone_id={abs(zone_id)}")
         orderby  = "lat_long_key"
         records  = self._get_all_records('locations', criteria=criteria, orderby=orderby)
@@ -748,7 +751,8 @@ class WazeRouteHistory(object):
                             f"Time-({record[LOC_TIME]:0.1f}{RARROW2}{new_time:0.1f}min), "
                             f"Dist-({record[LOC_DIST]:0.1f}{RARROW2}{new_dist:0.1f}km) "
                             "ToCancel-Select `EventLog > Action > Recalculate Route Time/Dist` again")
-                Device.display_info_msg(info_msg)
+                if _Device:
+                    _Device.display_info_msg(info_msg)
 
                 if (recd_cnt % 100) == 0:
                     running_time = time.perf_counter() - start_time
@@ -902,7 +906,7 @@ class WazeRouteHistory(object):
         if self.connection is None:
             return
 
-        Device = Gb.Devices[0]
+        _Device = Gb.Devices[0] if len(Gb.Devices) > 0 else None
 
         if self.track_direction_north_south_flag:
             orderby = 'latitude, longitude'
@@ -931,16 +935,18 @@ class WazeRouteHistory(object):
             recd_cnt = 0
             for record in records:
                 recd_cnt += 1
-                info_msg = (f"Waze History > "
-                            f"Records-{recd_cnt}/{total_recds_cnt}, "
-                            f"GPS-{record[LOC_LAT_LONG_KEY]}")
-                Device.display_info_msg(info_msg)
+                if _Device:
+                    info_msg = (f"Waze History > "
+                                f"Records-{recd_cnt}/{total_recds_cnt}, "
+                                f"GPS-{record[LOC_LAT_LONG_KEY]}")
+                    _Device.display_info_msg(info_msg)
 
                 self._update_sensor_ic3_wazehist_track(record[LOC_LAT], record[LOC_LONG])
 
             self._update_sensor_ic3_wazehist_track(Gb.HomeZone.latitude, Gb.HomeZone.longitude)
 
-            Device.display_info_msg(Device.format_info_msg)
+            if _Device:
+                _Device.display_info_msg(_Device.format_info_msg)
 
         except Exception as err:
             log_exception(err)

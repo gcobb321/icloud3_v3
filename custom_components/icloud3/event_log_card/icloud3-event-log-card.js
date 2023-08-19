@@ -22,7 +22,7 @@ class iCloud3EventLogCard extends HTMLElement {
     }
     //---------------------------------------------------------------------------
     setConfig(config) {
-        const version = "3.0.13"
+        const version = "3.0.15"
         const cardTitle = "iCloud3 v3 - Event Log"
 
         const root = this.shadowRoot
@@ -67,6 +67,10 @@ class iCloud3EventLogCard extends HTMLElement {
         const aboutVersion = document.createElement("div")
         aboutVersion.id = "aboutVersion"
         aboutVersion.innerText = version
+
+        const versionSentFlag = document.createElement("div")
+        versionSentFlag.id = "versionSentFlag"
+        versionSentFlag.innerText = -1
 
         const displayUserMsgFlag = document.createElement("div")
         displayUserMsgFlag.id = "displayUserMsgFlag"
@@ -478,25 +482,14 @@ class iCloud3EventLogCard extends HTMLElement {
                                 }
             .updateRecdHdr      {color: white;
                                 background-color: rgba(var(--rgb-primary-color), 0.85);
-                                border-top: 2px solid var(--light-primary-color);
-                                border-bottom: 2px solid var(--light-primary-color);
+                                border-top: 1px solid rgba(108, 204, 249, .5);
+                                border-bottom: 1px solid rgba(108, 204, 249, .5);
                                 font-weight: 450;
                                 }
             .updateRecdHdrTime  {color: black;
                                 background-color: rgba(var(--rgb-primary-color), 0.85);
-                                border-top: 2px solid var(--light-primary-color);
-                                border-bottom: 2px solid var(--light-primary-color);
-                                }
-            .1px-updateRecdHdr      {color: white;
-                                background-color: rgba(var(--rgb-primary-color), 0.85);
-                                border-top: 1px solid var(--light-primary-color);
-                                border-bottom: 1px solid var(--light-primary-color);
-                                font-weight: 450;
-                                }
-            .1px-updateRecdHdrTime  {color: black;
-                                background-color: rgba(var(--rgb-primary-color), 0.85);
-                                border-top: 1px solid var(--light-primary-color);
-                                border-bottom: 1px solid var(--light-primary-color);
+                                border-top: 1px solid rgba(108, 204, 249, .5);
+                                border-bottom: 1px solid rgba(108, 204, 249, .5);
                                 }
             .updateEdgeBar      {border-left: 2px solid var(--dark-primary-color);}
             .highlightBar       {color: white;
@@ -577,7 +570,8 @@ class iCloud3EventLogCard extends HTMLElement {
                 /*border: 1px solid dodgerblue;*/
             }
             /* Hidden variable fields */
-            #thisButtonId, #logRecdCnt, #devType, #hdrCellWidth, #aboutVersion, #displayUserMsgFlag {
+            #thisButtonId, #logRecdCnt, #devType, #hdrCellWidth, #aboutVersion,
+            #versionSentFlag, #displayUserMsgFlag {
                 /*font-size: 2px;*/
                 visiblity: hidden;
                 color: transparent;
@@ -907,6 +901,7 @@ class iCloud3EventLogCard extends HTMLElement {
         utilityBar.appendChild(devType)
         utilityBar.appendChild(hdrCellWidth)
         utilityBar.appendChild(aboutVersion)
+        utilityBar.appendChild(versionSentFlag)
         utilityBar.appendChild(infoText)
         utilityBar.appendChild(displayUserMsgFlag)
 
@@ -988,6 +983,7 @@ class iCloud3EventLogCard extends HTMLElement {
         const tblEvlog       = root.getElementById("tblEvlog")
         const devType        = root.getElementById("devType")
         const displayUserMsgFlag = root.getElementById("displayUserMsgFlag")
+        const versionSentFlag = root.getElementById("versionSentFlag")
 
         try {
             const ic3DirEvlogVersion = hass.states['sensor.icloud3_event_log'].attributes['versionEvLog']
@@ -1003,7 +999,7 @@ class iCloud3EventLogCard extends HTMLElement {
                 this._setupButtonNames()
                 this._btnSetUrlsHandler()
                 this._highlightSelectedNameButton(this._currentButtonId())
-                this._issue_evlog_version_svc_call()
+                // this._issue_evlog_version_svc_call()
 
             } else if (displayUserMsgFlag.innerText == 'false') {
                 'pass'
@@ -1013,7 +1009,7 @@ class iCloud3EventLogCard extends HTMLElement {
                 this._setupButtonNames()
                 this._btnSetUrlsHandler()
                 this._displayDevicenameMsgL('')
-                this._issue_evlog_version_svc_call()
+                // this._issue_evlog_version_svc_call()
             }
 
             if (statusMsgPopup.innerHTML == 'cancelMsgDisplay') {
@@ -1062,8 +1058,10 @@ class iCloud3EventLogCard extends HTMLElement {
             }
 
             if (statusTime.innerText.indexOf(updateTime) == -1) {
-                // this._displayInfoText(updateTime)
                 this._setupEventLogTable('hass')
+            }
+            if (versionSentFlag.innerText == -1) {
+                versionSentFlag.innerText = 0
             }
         }
 
@@ -1192,6 +1190,7 @@ class iCloud3EventLogCard extends HTMLElement {
         const devType      = root.getElementById("devType")
         const btnAction    = root.getElementById('btnAction')
         const title        = root.getElementById('title')
+        const versionSentFlag = root.getElementById('versionSentFlag')
 
         var logs = hass.states['sensor.icloud3_event_log'].attributes['logs']
         var startedTime = hass.states['sensor.icloud3_event_log'].attributes['started_time']
@@ -1211,7 +1210,6 @@ class iCloud3EventLogCard extends HTMLElement {
                 this._resize_header_width()
                 this._set_evlog_body_height()
             }
-
             return
         }
 
@@ -1332,12 +1330,16 @@ class iCloud3EventLogCard extends HTMLElement {
                         if (tStat == 'Stationary') { tStat = 'Stationry' }
                         if (tZone == 'Stationary') { tZone = 'Stationry' }
 
+                        tIntv = tIntv.replace(' secs', 's')
                         tIntv = tIntv.replace(' sec', 's')
+                        tIntv = tIntv.replace(' mins', 'm')
                         tIntv = tIntv.replace(' min', 'm')
                         tIntv = tIntv.replace(' hrs', 'h')
                         tIntv = tIntv.replace(' hr', 'h')
 
+                        tTrav = tTrav.replace(' secs', 's')
                         tTrav = tTrav.replace(' sec', 's')
+                        tTrav = tTrav.replace(' mins', 'm')
                         tTrav = tTrav.replace(' min', 'm')
                         tTrav = tTrav.replace(' hrs', 'h')
                         tTrav = tTrav.replace(' hr', 'h')
@@ -1617,6 +1619,10 @@ class iCloud3EventLogCard extends HTMLElement {
         } else {
             this._displayTimeMsgR(infoTimeText)
         }
+
+        if (versionSentFlag.innerText == 0) {
+            this._issue_evlog_version_svc_call()
+        }
     }
 
     //---------------------------------------------------------------------------
@@ -1888,14 +1894,25 @@ class iCloud3EventLogCard extends HTMLElement {
         event_log has started. If this does not happen within a minute of starting iC3,
         an error message will be displayed indicating a restart is needed.
         */
-        const root  = this.shadowRoot
+        const root = this.shadowRoot
         const hass = this._hass
+        var versionEvLog   = hass.states['sensor.icloud3_event_log'].attributes['version_evlog']
         const aboutVersion = root.getElementById("aboutVersion")
+        const versionSentFlag = root.getElementById("versionSentFlag")
+
+        if (versionSentFlag.innerText == 1) {
+            return
+        }
+        if (aboutVersion == versionEvLog) {
+            versionSentFlag.innerText = 1
+            return
+        } else {
+            versionSentFlag.innerText = 0
+        }
 
         this._hass.callService("icloud3", "action",
-        {
-            command: 'event_log_version ' + aboutVersion.innerText
-        })
+                        {command: 'event_log_version ' + aboutVersion.innerText})
+        versionSentFlag.innerText = 1
     }
 
     //---------------------------------------------------------------------------

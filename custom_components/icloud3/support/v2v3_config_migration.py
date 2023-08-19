@@ -114,11 +114,11 @@ from ..helpers.common       import (instr, )
 from ..helpers.messaging    import (_traceha, log_info_msg, log_warning_msg, log_exception,
                                     open_ic3_log_file, write_ic3_log_recd, )
 from ..helpers.time_util    import (time_str_to_secs, datetime_now, )
-# from ..support              import start_ic3
 from .                      import config_file
 
 import os
 import json
+import yaml
 from   homeassistant.util    import slugify
 import homeassistant.util.yaml.loader as yaml_loader
 import logging
@@ -127,28 +127,6 @@ _LOGGER = logging.getLogger(__name__)
 #<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 class iCloud3_v2v3ConfigMigration(object):
 
-    def __init__(self):
-        self.config_track_devices_fields = []
-        self.config_ic3_track_devices_fields = []
-        self.devicename_list = []
-
-        # self.config_parm          = DEFAULT_CONFIG_VALUES.copy()
-        self.config_parm_general  = DEFAULT_GENERAL_CONF.copy()
-        self.config_parm_tracking = DEFAULT_TRACKING_CONF.copy()
-        self.config_parm_sensors  = {}
-
-        Gb.conf_profile   = DEFAULT_PROFILE_CONF.copy()
-        Gb.conf_tracking  = DEFAULT_TRACKING_CONF.copy()
-        Gb.conf_devices   = []
-        Gb.conf_general   = DEFAULT_GENERAL_CONF.copy()
-        Gb.conf_sensors   = DEFAULT_SENSORS_CONF.copy()
-        Gb.conf_file_data = CF_DEFAULT_IC3_CONF_FILE.copy()
-
-        try:
-            self.log_filename_name  = Gb.hass.config.path("icloud3-migration.log")
-            self.migration_log_file = open(self.log_filename_name, 'w', encoding='utf8')
-        except Exception as err:
-            log_exception(err)
 
     #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     #
@@ -171,11 +149,26 @@ class iCloud3_v2v3ConfigMigration(object):
     #       if not found, check the /config directory
     #
     #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+    def initialize_configuration(self):
+        self.conf_parm_devices = []
+        self.devicename_list = []
+
+        self.conf_parm_general  = Gb.conf_general.copy()
+        self.conf_parm_tracking = Gb.conf_tracking.copy()
+        self.conf_parm_sensors  = Gb.conf_sensors.copy()
+
+        try:
+            self.log_filename_name  = Gb.hass.config.path("icloud3-migration.log")
+            self.migration_log_file = open(self.log_filename_name, 'w', encoding='utf8')
+        except Exception as err:
+            log_exception(err)
+
+ #-------------------------------------------------------------------------
     def convert_v2_config_files_to_v3(self):
         DEBUG_LOG_LINE_TABS = "\t\t\t\t\t\t\t\t\t\t"
 
+        self.initialize_configuration()
         self.write_migration_log_msg(f"\nMigration Started, {datetime_now()}\n")
-        self._rename_known_devices_yaml_file()
         log_warning_msg('iCloud3 - Migrating Configuration Parameters')
         self._extract_config_parameters(Gb.ha_config_yaml_icloud3_platform)
 
@@ -191,6 +184,7 @@ class iCloud3_v2v3ConfigMigration(object):
             self.write_migration_config_items('Tracking', Gb.conf_tracking)
             self.write_migration_config_items('General', Gb.conf_general)
             self.write_migration_config_items('Sensors', Gb.conf_sensors)
+            self.remove_ic3_devices_from_known_devices_yaml_file()
 
         except Exception as err:
             self.log_exception(err)
@@ -205,12 +199,11 @@ class iCloud3_v2v3ConfigMigration(object):
         write_ic3_log_recd(f"{DEBUG_LOG_LINE_TABS}{Gb.ha_location_info}")
         write_ic3_log_recd("")
 
-        for conf_device in Gb.conf_devices:
+        for Gb.conf_device in Gb.conf_devices:
             write_ic3_log_recd(   f"{Gb.conf_device[CONF_FNAME]}, {Gb.conf_device[CONF_IC3_DEVICENAME]}:\n"
                                         f"{DEBUG_LOG_LINE_TABS}{Gb.conf_device}")
         write_ic3_log_recd("")
         write_ic3_log_recd("iCloud3 - Migration Complete")
-
 
     #-------------------------------------------------------------------------
     def _extract_config_parameters(self, config_yaml_recds):
@@ -249,7 +242,7 @@ class iCloud3_v2v3ConfigMigration(object):
 
             if pname == CONF_DEVICES:
                 pvalue = json.loads(json.dumps(pvalue))
-                self.config_ic3_track_devices_fields.extend(\
+                self.conf_parm_devices.extend(\
                         self._get_devices_list_from_config_devices_parm(pvalue, CONFIG_IC3))
 
             else:
@@ -397,11 +390,11 @@ class iCloud3_v2v3ConfigMigration(object):
             if pname == 'stationary_still_time':      pname = CONF_STAT_ZONE_STILL_TIME
             if pname == 'stationary_inzone_interval': pname = CONF_STAT_ZONE_INZONE_INTERVAL
 
-            if pname in self.config_parm_general:
-                self.config_parm_general[pname] = pvalue
+            if pname in self.conf_parm_general:
+                self.conf_parm_general[pname] = pvalue
 
-            elif pname in self.config_parm_tracking:
-                self.config_parm_tracking[pname] = pvalue
+            elif pname in self.conf_parm_tracking:
+                self.conf_parm_tracking[pname] = pvalue
 
             elif pname in ['exclude_sensors', 'create_sensors']:
                 self._set_sensors(pname, pvalue)
@@ -419,12 +412,12 @@ class iCloud3_v2v3ConfigMigration(object):
                 inzone_intervals[WATCH]     = iztype_iztime.get(WATCH, 15)
                 inzone_intervals[AIRPODS]   = iztype_iztime.get(AIRPODS, 15)
                 inzone_intervals[NO_IOSAPP] = iztype_iztime.get(NO_IOSAPP, 15)
-                self.config_parm_general[CONF_INZONE_INTERVALS] = inzone_intervals.copy()
+                self.conf_parm_general[CONF_INZONE_INTERVALS] = inzone_intervals.copy()
 
             elif pname == 'stationary_zone_offset':
                 sz_offset = pvalue.split(',')
-                self.config_parm_general[CONF_STAT_ZONE_BASE_LATITUDE]  = float(sz_offset[0])
-                self.config_parm_general[CONF_STAT_ZONE_BASE_LONGITUDE] = float(sz_offset[1])
+                self.conf_parm_general[CONF_STAT_ZONE_BASE_LATITUDE]  = float(sz_offset[0])
+                self.conf_parm_general[CONF_STAT_ZONE_BASE_LONGITUDE] = float(sz_offset[1])
 
 
         except Exception as err:
@@ -539,52 +532,50 @@ class iCloud3_v2v3ConfigMigration(object):
 
         # Convert operational parameters
         Gb.conf_profile[CONF_VERSION]                    = 0
-        Gb.conf_profile[CONF_EVLOG_CARD_DIRECTORY]       = self.config_parm_general.get(CONF_EVLOG_CARD_DIRECTORY, V2_EVLOG_CARD_WWW_DIRECTORY)
+        Gb.conf_profile[CONF_EVLOG_CARD_DIRECTORY]       = self.conf_parm_general.get(CONF_EVLOG_CARD_DIRECTORY, V2_EVLOG_CARD_WWW_DIRECTORY)
         if instr(Gb.conf_profile[CONF_EVLOG_CARD_DIRECTORY], 'www') is False:
             Gb.conf_profile[CONF_EVLOG_CARD_DIRECTORY]   = f"www/{Gb.conf_profile[CONF_EVLOG_CARD_DIRECTORY]}"
-        Gb.conf_profile[CONF_EVLOG_CARD_PROGRAM]         = self.config_parm_general.get(CONF_EVLOG_CARD_PROGRAM, EVLOG_CARD_WWW_JS_PROG)
+        Gb.conf_profile[CONF_EVLOG_CARD_PROGRAM]         = self.conf_parm_general.get(CONF_EVLOG_CARD_PROGRAM, EVLOG_CARD_WWW_JS_PROG)
 
         # Convert iCloud Account Parameters
-        Gb.conf_tracking[CONF_USERNAME]                  = self.config_parm_tracking[CONF_USERNAME]
-        Gb.conf_tracking[CONF_PASSWORD]                  = self.config_parm_tracking[CONF_PASSWORD]
-        Gb.conf_tracking[CONF_DEVICES]                   = self.config_ic3_track_devices_fields
+        Gb.conf_tracking[CONF_USERNAME]                  = self.conf_parm_tracking[CONF_USERNAME]
+        Gb.conf_tracking[CONF_PASSWORD]                  = self.conf_parm_tracking[CONF_PASSWORD]
+        Gb.conf_devices                                  = self.conf_parm_devices
 
         # Convert General parameters
-        #Gb.conf_general[CONF_LOG_LEVEL]                  = self.config_parm_general[CONF_LOG_LEVEL]
-        Gb.conf_general[CONF_UNIT_OF_MEASUREMENT]        = self.config_parm_general[CONF_UNIT_OF_MEASUREMENT].lower()
-        #12/17/2022 (beta 1) - The time format was being converted to 12_hour_hour instead of 12_hour
-        Gb.conf_general[CONF_TIME_FORMAT]                = (f"{self.config_parm_general[CONF_TIME_FORMAT]}-hour").replace('-hour-hour', '-hour')
-        Gb.conf_general[CONF_TRAVEL_TIME_FACTOR]         = self.config_parm_general[CONF_TRAVEL_TIME_FACTOR]
-        Gb.conf_general[CONF_MAX_INTERVAL]               = time_str_to_secs(self.config_parm_general[CONF_MAX_INTERVAL]) / 60
-        Gb.conf_general[CONF_GPS_ACCURACY_THRESHOLD]     = self.config_parm_general[CONF_GPS_ACCURACY_THRESHOLD]
-        Gb.conf_general[CONF_OLD_LOCATION_THRESHOLD]     = time_str_to_secs(self.config_parm_general[CONF_OLD_LOCATION_THRESHOLD]) / 60
-        Gb.conf_general[CONF_DISPLAY_ZONE_FORMAT]        = self.config_parm_general[CONF_DISPLAY_ZONE_FORMAT].lower()
-        Gb.conf_general[CONF_CENTER_IN_ZONE]             = self.config_parm_general[CONF_CENTER_IN_ZONE]
-        Gb.conf_general[CONF_DISCARD_POOR_GPS_INZONE]    = self.config_parm_general.get(CONF_DISCARD_POOR_GPS_INZONE, False)
-        Gb.conf_general[CONF_DISPLAY_TEXT_AS]           = self.config_parm_general[CONF_DISPLAY_TEXT_AS]
+        Gb.conf_general[CONF_UNIT_OF_MEASUREMENT]        = self.conf_parm_general[CONF_UNIT_OF_MEASUREMENT].lower()
+        Gb.conf_general[CONF_TIME_FORMAT]                = (f"{self.conf_parm_general[CONF_TIME_FORMAT]}-hour").replace('-hour-hour', '-hour')
+        Gb.conf_general[CONF_TRAVEL_TIME_FACTOR]         = self.conf_parm_general[CONF_TRAVEL_TIME_FACTOR]
+        Gb.conf_general[CONF_MAX_INTERVAL]               = time_str_to_secs(self.conf_parm_general[CONF_MAX_INTERVAL]) / 60
+        Gb.conf_general[CONF_GPS_ACCURACY_THRESHOLD]     = self.conf_parm_general[CONF_GPS_ACCURACY_THRESHOLD]
+        Gb.conf_general[CONF_OLD_LOCATION_THRESHOLD]     = time_str_to_secs(self.conf_parm_general[CONF_OLD_LOCATION_THRESHOLD]) / 60
+        Gb.conf_general[CONF_DISPLAY_ZONE_FORMAT]        = self.conf_parm_general[CONF_DISPLAY_ZONE_FORMAT].lower()
+        Gb.conf_general[CONF_CENTER_IN_ZONE]             = self.conf_parm_general[CONF_CENTER_IN_ZONE]
+        Gb.conf_general[CONF_DISCARD_POOR_GPS_INZONE]    = self.conf_parm_general.get(CONF_DISCARD_POOR_GPS_INZONE, False)
+        Gb.conf_general[CONF_DISPLAY_TEXT_AS]           = self.conf_parm_general[CONF_DISPLAY_TEXT_AS]
 
         # Convert Waze Parameters
-        if CONF_WAZE_USED in self.config_parm_general:
-            Gb.conf_general[CONF_WAZE_USED]              = self.config_parm_general[CONF_WAZE_USED]
-        elif 'distance_method' in self.config_parm_general:
-            Gb.conf_general[CONF_WAZE_USED]              = self.config_parm_general['distance_method'].lower() == 'waze'
-        # Gb.conf_general[CONF_WAZE_REGION]                = self.config_parm_general[CONF_WAZE_REGION].lower()
+        if CONF_WAZE_USED in self.conf_parm_general:
+            Gb.conf_general[CONF_WAZE_USED]              = self.conf_parm_general[CONF_WAZE_USED]
+        elif 'distance_method' in self.conf_parm_general:
+            Gb.conf_general[CONF_WAZE_USED]              = self.conf_parm_general['distance_method'].lower() == 'waze'
+
         Gb.conf_general[CONF_WAZE_REGION]                = WAZE_SERVERS_BY_COUNTRY_CODE.get(Gb.country_code, 'row')
-        Gb.conf_general[CONF_WAZE_MIN_DISTANCE]          = self.config_parm_general[CONF_WAZE_MIN_DISTANCE]
-        Gb.conf_general[CONF_WAZE_MAX_DISTANCE]          = self.config_parm_general[CONF_WAZE_MAX_DISTANCE]
-        Gb.conf_general[CONF_WAZE_REALTIME]              = self.config_parm_general[CONF_WAZE_REALTIME]
+        Gb.conf_general[CONF_WAZE_MIN_DISTANCE]          = self.conf_parm_general[CONF_WAZE_MIN_DISTANCE]
+        Gb.conf_general[CONF_WAZE_MAX_DISTANCE]          = self.conf_parm_general[CONF_WAZE_MAX_DISTANCE]
+        Gb.conf_general[CONF_WAZE_REALTIME]              = self.conf_parm_general[CONF_WAZE_REALTIME]
 
         # Convert Stationary Zone Parameters
-        if instr(self.config_parm_general[CONF_STAT_ZONE_STILL_TIME], ':'):
-            Gb.conf_general[CONF_STAT_ZONE_STILL_TIME]   = self.config_parm_general[CONF_STAT_ZONE_STILL_TIME]
+        if instr(self.conf_parm_general[CONF_STAT_ZONE_STILL_TIME], ':'):
+            Gb.conf_general[CONF_STAT_ZONE_STILL_TIME]   = self.conf_parm_general[CONF_STAT_ZONE_STILL_TIME]
         else:
-            Gb.conf_general[CONF_STAT_ZONE_STILL_TIME]   = time_str_to_secs(self.config_parm_general[CONF_STAT_ZONE_STILL_TIME]) / 60
-        if instr(self.config_parm_general[CONF_STAT_ZONE_INZONE_INTERVAL], ':'):
-            Gb.conf_general[CONF_STAT_ZONE_INZONE_INTERVAL] = self.config_parm_general[CONF_STAT_ZONE_INZONE_INTERVAL]
+            Gb.conf_general[CONF_STAT_ZONE_STILL_TIME]   = time_str_to_secs(self.conf_parm_general[CONF_STAT_ZONE_STILL_TIME]) / 60
+        if instr(self.conf_parm_general[CONF_STAT_ZONE_INZONE_INTERVAL], ':'):
+            Gb.conf_general[CONF_STAT_ZONE_INZONE_INTERVAL] = self.conf_parm_general[CONF_STAT_ZONE_INZONE_INTERVAL]
         else:
-            Gb.conf_general[CONF_STAT_ZONE_INZONE_INTERVAL] = time_str_to_secs(self.config_parm_general[CONF_STAT_ZONE_INZONE_INTERVAL]) / 60
-        Gb.conf_general[CONF_STAT_ZONE_BASE_LATITUDE]   = self.config_parm_general[CONF_STAT_ZONE_BASE_LATITUDE]
-        Gb.conf_general[CONF_STAT_ZONE_BASE_LONGITUDE]  = self.config_parm_general[CONF_STAT_ZONE_BASE_LONGITUDE]
+            Gb.conf_general[CONF_STAT_ZONE_INZONE_INTERVAL] = time_str_to_secs(self.conf_parm_general[CONF_STAT_ZONE_INZONE_INTERVAL]) / 60
+        Gb.conf_general[CONF_STAT_ZONE_BASE_LATITUDE]   = self.conf_parm_general[CONF_STAT_ZONE_BASE_LATITUDE]
+        Gb.conf_general[CONF_STAT_ZONE_BASE_LONGITUDE]  = self.conf_parm_general[CONF_STAT_ZONE_BASE_LONGITUDE]
 
         self.write_migration_log_msg(f"\nCreated iCloud3 configuration file: {Gb.icloud3_config_filename}")
 
@@ -615,15 +606,52 @@ class iCloud3_v2v3ConfigMigration(object):
 
         return (fname, device_type)
 
-    #--------------------------------------------------------------------
-    def _rename_known_devices_yaml_file(self):
-        known_devices_file     = Gb.hass.config.path('known_devices.yaml')
-        known_devices_file_new = f"{known_devices_file.replace('.yaml', '')}.IC3.CAN.DELETE.yaml"
 
-        if (os.path.isfile(known_devices_file) 
-                and os.path.isfile(known_devices_file_new) is False):
-            os.rename(known_devices_file, known_devices_file_new)
-            self.write_migration_log_msg(f"\nRenamed {known_devices_file} to {known_devices_file_new}")
+#--------------------------------------------------------------------
+    def remove_ic3_devices_from_known_devices_yaml_file(self):
+        '''
+        Remove the ic3 devicenames from the known_devices.yaml file if any are
+        found
+        '''
+        try:
+
+            known_devices_file = Gb.hass.config.path('known_devices.yaml')
+
+            if os.path.isfile(known_devices_file) is False:
+                return
+
+            ic3_devicenames = []
+            new_kdf_devicenames = {}
+            ic3_devicename_found_flag = False
+            for conf_device in Gb.conf_devices:
+                ic3_devicenames.append(conf_device["ic3_devicename"])
+
+            log_info_msg(f"{ic3_devicenames}")
+            with open(known_devices_file, 'r') as kdf:
+                kdf_devicenames = yaml.safe_load(kdf)
+
+                log_info_msg(f"{kdf_devicenames}")
+                for kdf_devicename in kdf_devicenames:
+                    log_info_msg(f"{kdf_devicename} {kdf_devicenames[kdf_devicename]}")
+                    if kdf_devicename in ic3_devicenames:
+                        ic3_devicename_found_flag = True
+                        continue
+
+                    new_kdf_devicenames[kdf_devicename] = kdf_devicenames[kdf_devicename]
+            log_info_msg(f"{new_kdf_devicenames=}")
+
+            if ic3_devicename_found_flag:
+                with open(f"{known_devices_file}", 'w') as kdf:
+                    yaml.dump(new_kdf_devicenames, kdf)
+
+                Gb.restart_ha_flag = True
+                log_info_msg(f'Restart ha {Gb.restart_ha_flag=}')
+            return
+
+        except Exception as err:
+            log_exception(err)
+            pass
+
 
     #--------------------------------------------------------------------
     def log_exception(self, err):

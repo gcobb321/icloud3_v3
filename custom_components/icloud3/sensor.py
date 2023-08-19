@@ -16,7 +16,7 @@
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 from .global_variables  import GlobalVariables as Gb
-from .const             import (DOMAIN, VERSION, ICLOUD3,
+from .const             import (DOMAIN, VERSION, ICLOUD3,RARROW,
                                 SENSOR_EVENT_LOG_NAME, SENSOR_WAZEHIST_TRACK_NAME,
                                 HOME, HOME_FNAME, NOT_SET, NOT_SET_FNAME, NONE_FNAME,
                                 DATETIME_ZERO, HHMMSS_ZERO,
@@ -80,19 +80,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
             start_ic3.load_storage_icloud3_configuration_file()
 
         NewSensors = []
-        if True is True: #Gb.EvLogSensor is None:
-            Gb.EvLogSensor = Sensor_EventLog('iCloud3 Event Log', SENSOR_EVENT_LOG_NAME)
-            if Gb.EvLogSensor:
-                NewSensors.append(Gb.EvLogSensor)
-            else:
-                log_error_msg("Error setting up Event Log Sensor")
+        Gb.EvLogSensor = Sensor_EventLog('iCloud3 Event Log', SENSOR_EVENT_LOG_NAME)
+        if Gb.EvLogSensor:
+            NewSensors.append(Gb.EvLogSensor)
+        else:
+            log_error_msg("Error setting up Event Log Sensor")
 
-        if True is True: #Gb.WazeHistTrackSensor is None:
-            Gb.WazeHistTrackSensor = Sensor_WazeHistTrack('iCloud3 Waze History Track', SENSOR_WAZEHIST_TRACK_NAME)
-            if Gb.WazeHistTrackSensor:
-                NewSensors.append(Gb.WazeHistTrackSensor)
-            else:
-                log_error_msg("Error setting up Waze History Track Sensor")
+        Gb.WazeHistTrackSensor = Sensor_WazeHistTrack('iCloud3 Waze History Track', SENSOR_WAZEHIST_TRACK_NAME)
+        if Gb.WazeHistTrackSensor:
+            NewSensors.append(Gb.WazeHistTrackSensor)
+        else:
+            log_error_msg("Error setting up Waze History Track Sensor")
 
         # Create the selected sensors for each devicename
         # Cycle through each device being tracked or monitored and create it's sensors
@@ -305,7 +303,6 @@ def create_monitored_device_sensors(devicename, conf_device, new_sensors_list=No
 
             devicename_sensor = f"{devicename}_{sensor}"
             if devicename_sensor in excluded_sensors_list:
-                # Gb.sensors_created_cnt += 1
                 log_debug_msg(f"Sensor entity excluded: sensor.{devicename_sensor}")
                 continue
 
@@ -707,15 +704,17 @@ class SensorBase(SensorEntity):
         if new_fname is None:
             return
 
-        entity_registry   = er.async_get(Gb.hass)
-        self.sensor_fname = (f"{new_fname} "
+        self.sensor_fname =(f"{new_fname} "
                             f"{self._get_sensor_definition(self.sensor, SENSOR_FNAME)}"
                             f"{self.from_zone_fname}")
 
+        log_debug_msg(f"Sensor entity changed: {self.entity_id}, {self.sensor_fname}")
+
         kwargs = {}
         kwargs['original_name'] = self.sensor_fname
-        entity_registry.async_update_entity(self.entity_id, **kwargs)
 
+        entity_registry = er.async_get(Gb.hass)
+        entity_registry.async_update_entity(self.entity_id, **kwargs)
 
         """
             Typically used:
@@ -1067,6 +1066,9 @@ class Sensor_Distance(SensorBase):
 
         if Gb.um == 'mi':
             for devicename, dist_to_other_devices in self.Device.sensors[DISTANCE_TO_OTHER_DEVICES].items():
+                # if devicename not in Gb.Devices_by_devicename:
+                #     continue
+
                 dist_m = dist_to_other_devices[0]
                 if dist_m < 500:
                     dist = m_to_ft(dist_m)
@@ -1074,13 +1076,18 @@ class Sensor_Distance(SensorBase):
                 else:
                     dist = km_to_mi(dist_m/1000)
                     um = 'mi'
-                Device = Gb.Devices_by_devicename[devicename]
-                dist_attrs[f" {DOT}{um} - {Device.fname_devicename}"] = self._set_precision(dist, um)
+
+                if Device := Gb.Devices_by_devicename.get(devicename):
+                    dist_attrs[f" {DOT}{um} - {Device.fname_devicename}"] = self._set_precision(dist, um)
 
         for devicename, dist_to_other_devices in self.Device.sensors[DISTANCE_TO_OTHER_DEVICES].items():
+            # if devicename not in Gb.Devices_by_devicename:
+            #     continue
+
             dist_m = dist_to_other_devices[0]
-            Device = Gb.Devices_by_devicename[devicename]
-            dist_attrs[f" {DOT}m - {Device.fname_devicename}"] = self._set_precision(dist_m, 'm')
+            if Device := Gb.Devices_by_devicename.get(devicename):
+                # Device = Gb.Devices_by_devicename[devicename]
+                dist_attrs[f" {DOT}m - {Device.fname_devicename}"] = self._set_precision(dist_m, 'm')
 
         extra_attrs.update(dist_attrs)
         return extra_attrs
@@ -1183,8 +1190,8 @@ class Support_SensorBase(SensorEntity):
     def device_info(self) -> DeviceInfo:
         """Return information about the device """
         return DeviceInfo(  identifiers = {(DOMAIN, DOMAIN)},
-                            manufacturer = 'iCloud3',
-                            model        = 'Internal',
+                            manufacturer = 'gcobb321',
+                            model        = 'Intergration',
                             name         = 'iCloud3'
                         )
 

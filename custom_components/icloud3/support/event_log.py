@@ -244,7 +244,8 @@ class EventLog(object):
                         if self.evlog_table[idx][ELR_TEXT].startswith(EVLOG_MONITOR) is False:
                             break
         except Exception as err:
-            log_exception(err)
+            # log_exception(err)
+            pass
 
         try:
             if (event_text.startswith(EVLOG_UPDATE_START)
@@ -676,9 +677,11 @@ class EventLog(object):
         el_devicename_check = ['*', '**', 'nodevices', devicename]
 
         if Device := Gb.Devices_by_devicename.get(devicename):
-            primary_data_source_IOSAPP = (Device.primary_data_source == IOSAPP)
+            filter_record = (Device.primary_data_source == IOSAPP) \
+                                or Device.is_monitored 
         else:
-            primary_data_source_IOSAPP = False
+            Device = None
+            filter_record = False
 
         # Select devicename recds, keep time & test elements, drop devicename
         try:
@@ -689,10 +692,10 @@ class EventLog(object):
             if Gb.evlog_trk_monitors_flag:
                 return [el_recd[1:3] for el_recd in devicename_recds]
 
-            elif primary_data_source_IOSAPP:
+            elif filter_record:
                 return [el_recd[1:3] for el_recd in devicename_recds
                                                 if (el_recd[ELR_TEXT].startswith(EVLOG_MONITOR) is False
-                                                    and self._iosapp_filter(el_recd[ELR_TEXT]))]
+                                                    and self._filter_record(Device, el_recd[ELR_TEXT]))]
             else:
                 return [el_recd[1:3] for el_recd in devicename_recds
                                                 if (el_recd[ELR_TEXT].startswith(EVLOG_MONITOR) is False)]
@@ -710,9 +713,9 @@ class EventLog(object):
 
 #--------------------------------------------------------------------
     @staticmethod
-    def _iosapp_filter(el_recd_text):
+    def _filter_record(Device, el_recd_text):
         '''
-        File icloud account records from events  for a device when its primary
+        Filter icloud account records from events for a device when its primary
         data source it's the ios app
 
         Return True if the record should be displayed
@@ -722,7 +725,6 @@ class EventLog(object):
             return False
 
         return True
-
 
 #--------------------------------------------------------------------
     def _export_ic3_event_log_reformat_recds(self, devicename, el_records):

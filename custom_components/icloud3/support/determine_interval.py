@@ -20,7 +20,7 @@
 
 from ..global_variables     import GlobalVariables as Gb
 from ..const                import (HOME, NOT_HOME, AWAY, NOT_SET, HIGH_INTEGER,
-                                    CHECK_MARK, CIRCLE_X, LTE, LT, PLUS_MINUS,
+                                    CRLF, CHECK_MARK, CIRCLE_X, LTE, LT, PLUS_MINUS, RED_X,
                                     STATIONARY, STATIONARY_FNAME, WATCH, IOSAPP_FNAME,
                                     AWAY_FROM, TOWARDS, PAUSED, INZONE, NEAR, NEAR_HOME,
                                     ERROR, UNKNOWN,
@@ -31,7 +31,7 @@ from ..const                import (HOME, NOT_HOME, AWAY, NOT_SET, HIGH_INTEGER,
                                     OLD_LOC_POOR_GPS_CNT, AUTH_ERROR_CNT, RETRY_INTERVAL_RANGE_1, IOSAPP_REQUEST_LOC_CNT,
                                     RETRY_INTERVAL_RANGE_2,
                                     EVLOG_TIME_RECD, EVLOG_ALERT,
-                                    RARROW, NEARBY_DEVICE_USEABLE_SYM,
+                                    RARROW, NEAR_DEVICE_USEABLE_SYM,
                                     EXIT_ZONE,
                                     ZONE, ZONE_INFO, INTERVAL,
                                     DISTANCE, ZONE_DISTANCE, ZONE_DISTANCE_M, ZONE_DISTANCE_M_EDGE,
@@ -109,7 +109,7 @@ def determine_interval(Device, FromZone):
     #--------------------------------------------------------------------------------
     Device.write_ha_sensor_state(LAST_LOCATED, Device.loc_data_time)
 
-    if used_nearby_device_results(Device, FromZone):
+    if used_near_device_results(Device, FromZone):
         return FromZone.sensors
 
     Device.NearDeviceUsed = None
@@ -589,6 +589,46 @@ def post_zone_time_dist_event_msg(Device, FromZone):
 #   retry intervals based on current retry count.
 #
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+def determine_interval_monitored_device_offline(Device):
+    '''
+    Handle errors where the device can not be or should not be updated with
+    the current data. The update will be retried 4 times on a 15 sec interval.
+    If the error continues, the interval will increased based on the retry
+    count using the following cycles:
+    '''
+    if Device.is_online:
+        Device.offline_secs = 0
+        return False
+
+    if (Device.is_offline and Device.offline_secs == 0):
+        Device.offline_secs = Gb.this_update_secs
+
+    age = secs_since(Device.loc_data_secs)
+    if age > 3600:
+        interval_secs = 3600        # 1-hr
+    elif age > 1800:
+        interval_secs = 1800        #30-min
+    elif age > 3600:
+        interval_secs = 900         #15-min
+    else:
+        interval_secs = 300         # 5-min
+
+    update_all_device_fm_zone_sensors_interval(Device, interval_secs)
+
+    event_msg =(f"{RED_X}Offline > "
+                f"Since-{secs_to_time_age_str(Device.loc_data_secs)}, "
+                f"CheckNext-{Device.sensors[NEXT_UPDATE_TIME]}")
+    post_event(Device.devicename, event_msg)
+
+    return True
+
+#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+#
+#   iCloud FmF or FamShr authentication returned an error or no location
+#   data is available. Update counter and device attributes and set
+#   retry intervals based on current retry count.
+#
+#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 def determine_interval_after_error(Device, counter=OLD_LOC_POOR_GPS_CNT):
     '''
     Handle errors where the device can not be or should not be updated with
@@ -633,6 +673,9 @@ def determine_interval_after_error(Device, counter=OLD_LOC_POOR_GPS_CNT):
         # happens after a reauthentication. If so, do not display an error on the
         # first retry.
 
+        threshold_msg = ''  if interval_secs == Device.interval_secs \
+                            else f", OldThreshold-{secs_to_time_str(Device.old_loc_threshold_secs)}"
+
         next_update_secs = Gb.this_update_secs + interval_secs
         Device.update_sensors_error_msg = Device.update_sensors_error_msg or Device.old_loc_poor_gps_msg
 
@@ -661,7 +704,8 @@ def determine_interval_after_error(Device, counter=OLD_LOC_POOR_GPS_CNT):
         if event_msg == '' and Device.update_sensors_error_msg != '':
             event_msg =(f"{Device.update_sensors_error_msg}, "
                         f"RefreshAt-{secs_to_time(next_update_secs)} "
-                        f"({Device.FromZone_Home.interval_str})")
+                        f"({Device.FromZone_Home.interval_str})"
+                        f"{threshold_msg}")
             Device.icloud_update_reason = "Newer Data is Available"
 
         if event_msg:
@@ -1075,18 +1119,18 @@ def _get_interval_for_error_retry_cnt(Device, counter=OLD_LOC_POOR_GPS_CNT, paus
 #   If OK, use the results of another device that is nearby. It must be
 #
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-def used_nearby_device_results(Device, FromZone):
+def used_near_device_results(Device, FromZone):
     if (Device.NearDevice is None
             or Device.NearDevice.NearDevice is Device
             or FromZone.from_zone not in Device.NearDevice.FromZones_by_zone):
-        Device.nearby_device_used = ''
+        Device.near_device_used = ''
         return False
 
     neardevice_fname      = Device.NearDevice.fname_devtype
-    neardevice_fname_chk  = f"{NEARBY_DEVICE_USEABLE_SYM}{neardevice_fname}"
-    Device.dist_apart_msg = Device.dist_apart_msg.replace(NEARBY_DEVICE_USEABLE_SYM, '')
+    neardevice_fname_chk  = f"{NEAR_DEVICE_USEABLE_SYM}{neardevice_fname}"
+    Device.dist_apart_msg = Device.dist_apart_msg.replace(NEAR_DEVICE_USEABLE_SYM, '')
     Device.dist_apart_msg = Device.dist_apart_msg.replace(neardevice_fname, neardevice_fname_chk)
-    Device.nearby_device_used = f"{Device.NearDevice.fname_devtype} ({format_dist_m(Device.near_device_distance)})"
+    Device.near_device_used = f"{Device.NearDevice.fname_devtype} ({format_dist_m(Device.near_device_distance)})"
     event_msg =(f"Using Nearby Device Results > {Device.NearDevice.fname}, "
                 f"Distance-{format_dist_m(Device.near_device_distance)}")
     post_event(Device.devicename, event_msg)
@@ -1149,7 +1193,7 @@ def copy_near_device_results(Device, FromZone):
     return FromZone.sensors
 
 #--------------------------------------------------------------------------------
-def update_nearby_device_info(Device):
+def update_near_device_info(Device):
     '''
     Cycle through the devices and see if this device is in the same location as
     another device updated earlier in this 5-sec polling loop.
@@ -1194,7 +1238,7 @@ def update_nearby_device_info(Device):
         elif Device.loc_data_zone != _Device.loc_data_zone:
             useable_symbol = '×'
         else:
-            useable_symbol = NEARBY_DEVICE_USEABLE_SYM
+            useable_symbol = NEAR_DEVICE_USEABLE_SYM
 
         age_secs = secs_since(loc_data_secs)
         time_msg = f"/{secs_to_time_str(age_secs).replace(' ', '+ ')} ago" if age_secs > 120 else ''
@@ -1206,7 +1250,7 @@ def update_nearby_device_info(Device):
         # The nearby devices can not point to each other and other criteria
         if (Device.is_tracked
                 and _Device.is_tracked
-                and useable_symbol == NEARBY_DEVICE_USEABLE_SYM
+                and useable_symbol == NEAR_DEVICE_USEABLE_SYM
                 and _Device.FromZone_Home.interval_secs > 0
                 and _Device.old_loc_poor_gps_cnt == 0
                 and _Device.is_online):

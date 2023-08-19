@@ -155,7 +155,7 @@ class PyiCloudSession(Session):
 
 
         except Exception as err:
-            log_exception(err)
+            # log_exception(err)
             self._raise_error(-2, "Failed to establish a new connection")
 
         content_type = response.headers.get("Content-Type", "").split(";")[0]
@@ -310,8 +310,13 @@ class PyiCloudSession(Session):
         elif code in [400, 404]:
             reason = f"Apple Verification Code Invalid ({code})"
 
+        elif code == -2:
+            reason = f"Could not connect to iCloud Location Servers ({code})"
+            log_info_msg(reason)
+            return
+
         elif reason == "ACCESS_DENIED":
-            reason = (reason + ".  Please wait a few minutes then try again."
+            reason = (reason + ". Please wait a few minutes then try again."
                                 "The remote servers might be trying to throttle requests.")
 
         if api_error is None:

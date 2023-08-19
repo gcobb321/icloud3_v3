@@ -52,7 +52,7 @@ def secs_to_time_str(secs):
             return '0 min'
 
         if secs >= 86400:
-            time_str = f"{secs/86400:.2f} days"   #secs_to_dhms_str(secs)
+            time_str = f"{secs/86400:.1f} days"   #secs_to_dhms_str(secs)
         elif secs < 60:
             time_str = f"{secs:.0f} secs"
         elif secs < 3600:
@@ -64,6 +64,7 @@ def secs_to_time_str(secs):
 
         # change xx.0 min/hr --> xx min/hr
         time_str = time_str.replace('.0 ', ' ')
+        if time_str == '1 mins': time_str = '1 min'
 
     except Exception as err:
         #_LOGGER.exception(err)

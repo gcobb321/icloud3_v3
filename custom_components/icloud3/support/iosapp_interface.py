@@ -8,7 +8,8 @@ from ..const                import (NOTIFY,
 from ..helpers.common       import (instr, )
 from ..helpers.messaging    import (post_event, post_error_msg, post_alert,
                                     log_info_msg, log_exception, log_rawdata, _trace, _traceha, )
-from ..helpers.time_util    import (secs_to_time, secs_since, secs_to_time, secs_to_time_age_str, )
+from ..helpers.time_util    import (secs_to_time, secs_since, secs_to_time, secs_to_time_age_str,
+                                    secs_to_time_str, )
 from homeassistant.helpers  import entity_registry as er, device_registry as dr
 
 import json
@@ -137,8 +138,8 @@ def get_mobile_app_notify_devicenames():
         return mobile_app_notify_devicenames
 
     except Exception as err:
-        #log_info_msg("iOS App Notify Service has not been set up yet. iCloud3 will retry later.")
-        log_exception(err)
+        log_info_msg("iOS App Notify Service has not been set up yet. iCloud3 will retry later.")
+        # log_exception(err)
         pass
 
     return mobile_app_notify_devicenames
@@ -221,6 +222,7 @@ def request_location(Device, is_alive_check=False, force_request=False):
             return
 
         elif Device.is_iosapp_data_good:
+
             return
 
         if is_alive_check:
@@ -232,6 +234,8 @@ def request_location(Device, is_alive_check=False, force_request=False):
         else:
             event_msg =(f"iOSApp Location Requested > "
                         f"LastLocated-{secs_to_time_age_str(Device.iosapp_data_secs)}")
+            if Device.old_loc_poor_gps_cnt > 2:
+                event_msg += f", OldThreshold-{secs_to_time_str(Device.old_loc_threshold_secs)}"
         post_event(devicename, event_msg)
 
         if Device.iosapp_request_loc_first_secs == 0:

@@ -8,12 +8,13 @@ from ..const            import (ICLOUD3,
                                 STATE_TO_ZONE_BASE, CMD_RESET_PYICLOUD_SESSION,
                                 EVLOG_ALERT, EVLOG_IC3_STARTING, EVLOG_NOTICE, EVLOG_IC3_STAGE_HDR,
                                 EVLOG_TABLE_MAX_CNT_BASE, EVLOG_TABLE_MAX_CNT_ZONE,
-                                CRLF, CRLF_DOT, CRLF_CHK, CRLF_SP3_DOT, CRLF_SP5_DOT, CRLF_HDOT, CRLF_X, DOT2, CRLF_STAR, CRLF_SP3_STAR, CRLF_INDENT,
+                                CRLF, CRLF_DOT, CRLF_CHK, CRLF_SP3_DOT, CRLF_SP5_DOT, CRLF_HDOT, CRLF_SP3_STAR, CRLF_INDENT,
+                                CRLF_RED_X, RED_X, CRLF_STAR,
                                 RARROW, NBSP4, NBSP6, CIRCLE_STAR, INFO_SEPARATOR, DASH_20, CHECK_MARK,
                                 ICLOUD, FMF, FAMSHR,
                                 DEVICE_TYPE_FNAME,
                                 IPHONE, IPAD, IPOD, WATCH, AIRPODS,
-                                IOSAPP, NO_IOSAPP,
+                                IOSAPP, NO_IOSAPP, ICLOUD_DEVICE_STATUS, TIMESTAMP,
                                 INACTIVE_DEVICE, DATA_SOURCE_FNAME,
                                 NAME, FNAME, TITLE, RADIUS, NON_ZONE_ITEM_LIST, FRIENDLY_NAME,
                                 LOCATION, LATITUDE, RADIUS,
@@ -69,7 +70,7 @@ from ..helpers.messaging    import (broadcast_info_msg,
                                     open_ic3_log_file, close_ic3_log_file,
                                     internal_error_msg2, _trace, _traceha, )
 from ..helpers.dist_util    import (format_dist_km, )
-from ..helpers.time_util    import (secs_to_time_str, )
+from ..helpers.time_util    import (secs_to_time_str, secs_to_time_age_str, )
 
 import os
 import json
@@ -376,6 +377,8 @@ def ha_stopping(dummy_parameter):
     post_event("HA Shutting Down")
     close_ic3_log_file()
 
+def ha_restart(dummp_parameter):
+    Gb.hass.services.call("homeassistant", "restart")
 #------------------------------------------------------------------------------
 #
 #   SET THE GLOBAL DATA SOURCES
@@ -1961,6 +1964,17 @@ def setup_trackable_devices():
                 event_msg += f"{CRLF_DOT}Track from Base Zone: {zone_display_as(Device.track_from_base_zone)}"
         if Device.track_from_zones != [HOME]:
             event_msg += (f"{CRLF_DOT}Track from Zones: {', '.join(Device.track_from_zones)}")
+
+        try:
+            device_status = Device.PyiCloud_RawData_famshr.device_data[ICLOUD_DEVICE_STATUS]
+            timestamp     = Device.PyiCloud_RawData_famshr.device_data[LOCATION][TIMESTAMP]
+            if device_status == '201':
+                event_msg += (f"{CRLF_RED_X}DEVICE IS OFFLINE > "
+                            f"Since-{secs_to_time_age_str(timestamp)}")
+                Device.offline_secs = timestamp
+        except Exception as err:
+            # log_exception(err)
+            pass
 
         post_event(event_msg)
 

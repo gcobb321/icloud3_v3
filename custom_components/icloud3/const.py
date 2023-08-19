@@ -254,6 +254,8 @@ NBSP5             = '⠟' #'&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'
 NBSP6             = '⠿' #'&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'
 CRLF              = '⣇' #'<br>'
 CHECK_MARK        = '✓ '
+RED_X             = '❌'
+SMALL_X           = '× '
 CIRCLE_STAR       = '✪ '
 CIRCLE_STAR2      = '✪'
 CIRCLE_BIG_X      = '⊗'
@@ -270,10 +272,12 @@ LTE               = '≤'
 GTE               = '≥'
 PLUS_MINUS        = '±'
 CRLF_DOT          = f'{CRLF}{NBSP3}•{NBSP2}'
+CRLF_XD           = f'{CRLF}{NBSP2}×{NBSP2}'
 CRLF_X            = f'{CRLF}{NBSP3}×{NBSP2}'
 CRLF_HDOT         = f'{CRLF}{NBSP6}◦{NBSP2}'
 CRLF_CHK          = f'{CRLF}{NBSP3}✓{NBSP}'
 CRLF_STAR         = f'{CRLF}{NBSP3}✪{NBSP}'
+CRLF_RED_X        = f'{CRLF}❌'
 CRLF_CIRCLE_X     = f'{CRLF}{NBSP2}ⓧ{NBSP}'
 CRLF_SP3_DOT      = f'{CRLF}{NBSP3}•{NBSP}'
 CRLF_SP5_DOT      = f'{CRLF}{NBSP5}•{NBSP}'
@@ -281,7 +285,7 @@ CRLF_SP3_HDOT     = f'{CRLF}{NBSP3}◦{NBSP}'
 CRLF_SP3_STAR     = f'{CRLF}{NBSP3}✪{NBSP}'
 CRLF_INDENT       = f'{CRLF}{NBSP6}{NBSP6}'
 
-NEARBY_DEVICE_USEABLE_SYM = '✓'
+NEAR_DEVICE_USEABLE_SYM = '✓'
 BLANK_SENSOR_FIELD = '———'
 RARROW            = ' → '       #U+27F6 (Long Arrow Right)  ⟹ ⟾
 RARROW2           = '→'         #U+27F6 (Long Arrow Right)  ⟹ ⟾
@@ -475,7 +479,7 @@ PASSIVE                    = 'passive'
 # entity attributes
 DEVICE_TRACKER_STATE       = 'device_tracker_state'
 LOCATION_SOURCE            = 'location_source'
-NEARBY_DEVICE_USED         = 'nearby_device_used'
+NEAR_DEVICE_USED           = 'nearby_device_used'
 INTO_ZONE_DATETIME         = 'into_zone'
 FROM_ZONE                  = 'from_zone'
 TIMESTAMP                  = 'timestamp'
@@ -1046,7 +1050,7 @@ FMF_FAMSHR_LOCATION_FIELDS = [
         ICLOUD_BATTERY_STATUS, ]
 
 LOG_RAWDATA_FIELDS = [
-        LATITUDE,  LONGITUDE, LOCATION_SOURCE, TRACKING_METHOD, DATA_SOURCE, NEARBY_DEVICE_USED,
+        LATITUDE,  LONGITUDE, LOCATION_SOURCE, TRACKING_METHOD, DATA_SOURCE, NEAR_DEVICE_USED,
         ZONE, ZONE_DATETIME, INTO_ZONE_DATETIME, LAST_ZONE,
         TIMESTAMP, TIMESTAMP_SECS, TIMESTAMP_TIME, LOCATION_TIME, DATETIME, AGE,
         TRIGGER, BATTERY, BATTERY_LEVEL, BATTERY_STATUS,
