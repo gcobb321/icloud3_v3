@@ -180,7 +180,7 @@ ACTION_LIST_ITEMS_KEY_TEXT = {
         'restart_ha':               'RESTART HOME ASSISTANT > Restart HA and reload iCloud3',
         'restart_ic3_now':          'RESTART NOW > Restart iCloud3 now to load the updated configuration',
         'restart_ic3_later':        'RESTART LATER > The configuration changes have been saved. Load the updated configuration the next time iCloud3 is started',
-        'reload_icloud3':           'RELOAD ICLOUD3 > Reload and restart the iCloud3 Integration',
+        'reload_icloud3':           'RELOAD ICLOUD3 > Reload & Restart iCloud3 (EXPERIMENTAL: THIS MAY NOT WORK)',
         'review_inactive_devices':  'REVIEW INACTIVE DEVICES > Some Devices are `Inactive` and will not be located or tracked',
 
         'select_text_as':           'SELECT > Update selected \'Display Text As\' field',
@@ -1600,9 +1600,9 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
             await Gb.hass.services.async_call(
                     "homeassistant",
                     "reload_config_entry",
-                    {"entry_id": Gb.entry_id}
+                    {'device_id': Gb.dr_device_id_by_devicename[ICLOUD3]},
                     )
-                    # {'device_id': Gb.dr_device_id_by_devicename[ICLOUD3]},
+                    # {"entry_id": Gb.entry_id}
 
             return self.async_abort(reason="ic3_reloading")
 
@@ -4517,7 +4517,7 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
 
         #------------------------------------------------------------------------
         elif step_id.startswith('restart_ha_ic3'):
-            restart_default = 'reload_icloud3'
+            restart_default = 'restart_ha'
             self.actions_list = []
             self.actions_list.append(ACTION_LIST_ITEMS_KEY_TEXT['restart_ha'])
             self.actions_list.append(ACTION_LIST_ITEMS_KEY_TEXT['reload_icloud3'])

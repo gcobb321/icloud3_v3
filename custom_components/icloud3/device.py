@@ -1702,7 +1702,7 @@ class iCloud3_Device(TrackerEntity):
 #
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     def update_dev_loc_data_from_raw_data_IOSAPP(self, RawData=None):
-        if (self.iosapp_data_secs <= self.loc_data_secs
+        if (self.loc_data_secs >= self.iosapp_data_secs
                 or self.iosapp_data_secs == 0):
             return
 

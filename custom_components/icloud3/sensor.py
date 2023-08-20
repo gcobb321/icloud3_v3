@@ -132,6 +132,7 @@ def create_tracked_device_sensors(devicename, conf_device, new_sensors_list=None
     '''
     try:
         NewSensors = []
+        Gb.sensors_created_cnt = 0
 
         if new_sensors_list is None:
             new_sensors_list = []
@@ -222,6 +223,7 @@ def _create_track_from_zone_sensors(devicename, conf_device, sensors_list):
     excluded_sensors_list        = _excluded_sensors_list()
 
     NewSensors = []
+
     for sensor in sensors_list:
         if (sensor not in SENSOR_DEFINITION
                 or sensor.startswith('tfz_') is False):
@@ -1192,7 +1194,7 @@ class Support_SensorBase(SensorEntity):
         return DeviceInfo(  identifiers = {(DOMAIN, DOMAIN)},
                             manufacturer = 'gcobb321',
                             model        = 'Intergration',
-                            name         = 'iCloud3'
+                            name         = 'iCloud3 Integration'
                         )
 
 #-------------------------------------------------------------------------------------------

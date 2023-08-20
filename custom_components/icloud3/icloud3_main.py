@@ -381,6 +381,8 @@ class iCloud3:
         if Device.iosapp_data_updated_flag:
             Device.iosapp_data_invalid_error_cnt = 0
 
+            if instr(Device.iosapp_data_change_reason, ' ') is False:
+                Device.iosapp_data_change_reason = Device.iosapp_data_change_reason.title()
             event_msg = f"Trigger > {Device.iosapp_data_change_reason}"
             post_event(devicename, event_msg)
 

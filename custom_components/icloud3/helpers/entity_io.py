@@ -276,8 +276,7 @@ def extract_attr_value(attributes, attribute_name, numeric=False):
         return ''
 
 #--------------------------------------------------------------------
-def trace_device_attributes(Device,
-                description, fct_name, attrs):
+def trace_device_attributes(Device, description, fct_name, attrs):
 
     try:
         #Extract only attrs needed to update the device

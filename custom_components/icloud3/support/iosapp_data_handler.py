@@ -105,8 +105,9 @@ def check_iosapp_state_trigger_change(Device):
                 iosapp_data_change_flag = False
 
         # Update Device iosapp_data with the state & trigger location data
-        if iosapp_data_change_flag:
-            update_iosapp_data_from_entity_attrs(Device, device_trkr_attrs)
+        # rc3 - Always try update, will check time in update_data fct
+        # if iosapp_data_change_flag:
+        update_iosapp_data_from_entity_attrs(Device, device_trkr_attrs)
 
         Device.iosapp_data_trigger = iosapp_data_trigger
 
@@ -172,7 +173,9 @@ def check_iosapp_state_trigger_change(Device):
 
         # Reject State and trigger changes older than the current data
         elif (Device.iosapp_data_secs <= Device.last_update_loc_secs):
-            Device.iosapp_data_reject_reason = "Before Last Update"
+            Device.iosapp_data_reject_reason = (f"Before Last Update "
+                                                f"({secs_to_time(Device.iosapp_data_secs)} <= "
+                                                f"{secs_to_time(Device.last_update_loc_secs)})")
 
         elif iosapp_data_change_flag is False:
             Device.iosapp_data_reject_reason = "Data has not changed"
@@ -399,24 +402,31 @@ def update_iosapp_data_from_entity_attrs(Device, device_trkr_attrs):
 
     if (device_trkr_attrs is None
             or LATITUDE not in device_trkr_attrs):
-        log_error_msg(Device.devicename, 'iOSApp Date Error > No data available')
+        log_error_msg(Device.devicename, 'iOSApp Data Error > No data available')
+        return
+
+    iosapp_data_secs = device_trkr_attrs.get(TIMESTAMP_SECS, Device.iosapp_data_state_secs)
+    iosapp_data_time = device_trkr_attrs.get(TIMESTAMP_TIME, Device.iosapp_data_state_time)
+    gps_accuracy     = device_trkr_attrs.get(GPS_ACCURACY, 99999)
+
+    if Device.iosapp_data_secs >= iosapp_data_secs or gps_accuracy > Gb.gps_accuracy_threshold:
         return
 
     log_rawdata(f"iOS App - {Device.devicename}", device_trkr_attrs)
 
-    Device.iosapp_data_state      = device_trkr_attrs.get(DEVICE_TRACKER, NOT_SET)
-    Device.iosapp_data_state_secs = device_trkr_attrs.get(f"state_{TIMESTAMP_SECS}", 0)
-    Device.iosapp_data_state_time = device_trkr_attrs.get(f"state_{TIMESTAMP_TIME}", HHMMSS_ZERO)
+    Device.iosapp_data_state             = device_trkr_attrs.get(DEVICE_TRACKER, NOT_SET)
+    Device.iosapp_data_state_secs        = device_trkr_attrs.get(f"state_{TIMESTAMP_SECS}", 0)
+    Device.iosapp_data_state_time        = device_trkr_attrs.get(f"state_{TIMESTAMP_TIME}", HHMMSS_ZERO)
 
-    Device.iosapp_data_trigger   = device_trkr_attrs.get("trigger", NOT_SET)
-    Device.iosapp_data_secs      = device_trkr_attrs.get(TIMESTAMP_SECS, Device.iosapp_data_state_secs)
-    Device.iosapp_data_time      = device_trkr_attrs.get(TIMESTAMP_TIME, Device.iosapp_data_state_time)
+    Device.iosapp_data_trigger           = device_trkr_attrs.get("trigger", NOT_SET)
+    Device.iosapp_data_secs              = iosapp_data_secs
+    Device.iosapp_data_time              = iosapp_data_time
     Device.iosapp_data_invalid_error_cnt = 0
-    Device.iosapp_data_latitude          = entity_io.extract_attr_value(device_trkr_attrs, LATITUDE, NUMERIC)
-    Device.iosapp_data_longitude         = entity_io.extract_attr_value(device_trkr_attrs, LONGITUDE, NUMERIC)
-    Device.iosapp_data_gps_accuracy      = entity_io.extract_attr_value(device_trkr_attrs, GPS_ACCURACY, NUMERIC)
-    Device.iosapp_data_vertical_accuracy = entity_io.extract_attr_value(device_trkr_attrs, VERT_ACCURACY, NUMERIC)
-    Device.iosapp_data_altitude          = entity_io.extract_attr_value(device_trkr_attrs, ALTITUDE, NUMERIC)
+    Device.iosapp_data_latitude          = device_trkr_attrs.get(LATITUDE, 0)
+    Device.iosapp_data_longitude         = device_trkr_attrs.get(LONGITUDE, 0)
+    Device.iosapp_data_gps_accuracy      = gps_accuracy
+    Device.iosapp_data_vertical_accuracy = device_trkr_attrs.get(VERT_ACCURACY, 99999)
+    Device.iosapp_data_altitude          = device_trkr_attrs.get(ALTITUDE, 0)
 
     if Device.FromZone_Home:
         home_dist = format_dist_km(Device.FromZone_Home.distance_km_iosapp)
@@ -429,4 +439,4 @@ def update_iosapp_data_from_entity_attrs(Device, device_trkr_attrs):
                     f"{Device.iosapp_data_fgps}")
     if monitor_msg != Device.update_iosapp_data_monitor_msg:
         Device.update_iosapp_data_monitor_msg = monitor_msg
-        post_monitor_msg(monitor_msg)
+        post_monitor_msg(Device.devicename, monitor_msg)

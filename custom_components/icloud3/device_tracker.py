@@ -87,6 +87,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
             log_exception(err)
 
         NewDeviceTrackers = []
+        Gb.device_trackers_cnt = 0
         for conf_device in Gb.conf_devices:
             devicename = conf_device[CONF_IC3_DEVICENAME]
             if devicename == '':
@@ -185,7 +186,7 @@ def _get_dr_device_id_from_device_entry(hass, device, device_entry):
         id='9045bf3f0363c28957353cf2c47163d0', orphaned_timestamp=None
     '''
     try:
-        if device_entry.name in [DOMAIN, ICLOUD3]:
+        if device_entry.name in [DOMAIN, ICLOUD3, 'iCloud3 Integration']:
             Gb.dr_device_id_by_devicename[ICLOUD3] = device_entry.id
             Gb.dr_area_id_by_devicename[ICLOUD3]   = device_entry.area_id
             return

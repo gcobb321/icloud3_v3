@@ -476,8 +476,8 @@ def _handle_action_device_location_iosapp(Device):
         Device.iosapp_data_change_reason = f"Location Requested@{time_now()}"
         iosapp_interface.request_location(Device, force_request=True)
 
-    Device.resume_tracking()
-    Device.write_ha_sensor_state(NEXT_UPDATE, 'Locating')
+    # Device.resume_tracking()
+    # Device.write_ha_sensor_state(NEXT_UPDATE, 'Locating')
 
 #--------------------------------------------------------------------
 def _handle_action_device_locate(Device, action_option):

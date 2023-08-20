@@ -4,7 +4,7 @@
 #
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-VERSION                         = '3.0rc3'
+VERSION                         = '3.0rc3a'
 
 DOMAIN                          = 'icloud3'
 ICLOUD3                         = 'iCloud3'
@@ -395,6 +395,7 @@ EXIT_ZONE                 = 'Exit Zone'
 INITIAL                   = 'Initial'
 MANUAL                    = 'Manual'
 LAUNCH                    = "Launch",
+PERIODIC                  = "Periodic"
 SIGNIFICANT_LOC_CHANGE    = 'Significant Location Change'
 SIGNIFICANT_LOC_UPDATE    = 'Significant Location Update'
 SIG_LOC_CHANGE            = 'Sig Loc Change'
