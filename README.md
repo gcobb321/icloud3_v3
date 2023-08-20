@@ -1,4 +1,6 @@
-# iCloud3 v3 Device Tracker Custom Component
+# iCloud3 v3 Developers Version
+
+#### *This is used for testing new features and updates. It is not the version of iCloud3 that is available for gener*
 
 ------
 
