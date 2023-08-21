@@ -1,6 +1,6 @@
-# iCloud3 v3 Developers Version
+# iCloud3 v3, Developers Version
 
-#### *This is used for testing new features and updates. It is not the version of iCloud3 that is available for general use.*
+#### *This repo is used for testing new features and updates to iCloud3 v3. It is not the version of iCloud3 that is available for general use. The general availability version is found on the iCloud3 repo [here](https://github.com/gcobb321/icloud3) *
 
 ------
 
