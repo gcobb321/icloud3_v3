@@ -8,7 +8,7 @@
 #
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 from ..global_variables  import GlobalVariables as Gb
-from ..const             import (LATITUDE, LONGITUDE, STATZONE_BASE_RADIUS_M, )
+from ..const             import (LATITUDE, LONGITUDE, STATZONE_RADIUS_1M, )
 from ..zone              import iCloud3_StationaryZone
 from ..helpers.common    import (isbetween, is_statzone, format_gps, )
 from ..helpers.messaging import (post_event, post_error_msg, post_monitor_msg,
@@ -28,6 +28,7 @@ def move_device_into_statzone(Device):
     latitude  = Device.loc_data_latitude
     longitude = Device.loc_data_longitude
 
+    # ''' Start of commented out code to test of moving device into a statzone while home
     # See if there is an existing zone this device can move into (real & statzones) when
     # the zone is selected
     available_zones = [Zone for Zone in Gb.Zones
@@ -39,10 +40,11 @@ def move_device_into_statzone(Device):
         return
 
     if _is_too_close_to_another_zone(Device): return
+    # ''' End of commented out code to test of moving device into a statzone while home
 
     # Get next available StatZone
     for StatZone in Gb.StatZones:
-        if StatZone.is_at_base:
+        if StatZone.passive or StatZone.exists_in_ha is False:
             break
 
     else:
@@ -105,8 +107,8 @@ def exit_all_statzones():
     '''
     for Device in Gb.Devices:
         StatZone = Device.StatZone
-        if StatZone and StatZone.isnot_at_base:
-            move_statzone_to_base_location(StatZone, Device)
+        if StatZone and StatZone.passive is False:
+            remove_statzone(StatZone, Device)
 
 #--------------------------------------------------------------------
 def exit_statzone(Device):
@@ -127,7 +129,7 @@ def exit_statzone(Device):
 
     # Move to base is no one else is using it
     if Devices_in_statzone == []:
-        move_statzone_to_base_location(StatZone, Device)
+        remove_statzone(StatZone, Device)
 
 
 #--------------------------------------------------------------------
@@ -164,16 +166,16 @@ def move_statzone_to_device_location(Device, latitude=None, longitude=None):
     Device.loc_data_zone = StatZone.zone
 
 #--------------------------------------------------------------------
-def move_statzone_to_base_location(StatZone, Device=None):
+def remove_statzone(StatZone, Device=None):
     ''' Move stationary zone back to base location '''
     # Set new location, it will be updated when Device's attributes are updated in main routine
 
-    if StatZone.is_at_base: return
+    if StatZone is None: return
 
-    StatZone.radius_m = STATZONE_BASE_RADIUS_M
+    StatZone.radius_m = STATZONE_RADIUS_1M
     StatZone.passive  = True
 
-    StatZone.write_ha_zone_state(StatZone.base_attrs)
+    StatZone.remove_ha_zone()
 
     if Device:
         _clear_statzone_timer_distance(Device)

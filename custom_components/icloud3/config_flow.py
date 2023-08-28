@@ -420,9 +420,9 @@ PASSTHRU_ZONE_HEADER =     ("You may be driving through a non-tracked zone but n
                             "trig[er that is immediately followed by an Exit Zone trigger.")
 STAT_ZONE_HEADER =         ("A Stationary Zone is automatically created if the device remains in the same location "
                             "(store, friends house, doctor`s office, etc.) for an extended period of time")
-STAT_ZONE_BASE_HEADER =    ("The Stationary Zone is moved to it's 'Base Location' when it is not used by the device. "
-                            "This prevents the iOS App from moving the device into the Stationary Zone when it shouldn`t "
-                            "and helps prevent it from overlapping other zones")
+# STAT_ZONE_BASE_HEADER =    ("The Stationary Zone is moved to it's 'Base Location' when it is not used by the device. "
+#                             "This prevents the iOS App from moving the device into the Stationary Zone when it shouldn`t "
+#                             "and helps prevent it from overlapping other zones")
 TRK_FROM_HOME_ZONE_HEADER =("Normally, the Home zone is used as the base location for all tracking (travel time, distance, "
                             "etc).  However, a different zone can be used as the base location if you are away from Home for "
                             "an extended period or the device is normally at another location (vacation house, second home, "
@@ -4321,8 +4321,6 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
             whuh_default = [WAZE_HISTORY_USED_HEADER] if Gb.conf_general[CONF_WAZE_HISTORY_DATABASE_USED] else []
             return vol.Schema({
                 vol.Optional(CONF_WAZE_USED,
-                            # default=Gb.conf_general[CONF_WAZE_USED]):
-                            # selector.BooleanSelector(),
                             default=wuh_default):
                             cv.multi_select([WAZE_USED_HEADER]),
                 vol.Optional(CONF_WAZE_SERVER,
@@ -4342,8 +4340,6 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
                             selector.BooleanSelector(),
 
                 vol.Required(CONF_WAZE_HISTORY_DATABASE_USED,
-                            # default=Gb.conf_general[CONF_WAZE_HISTORY_DATABASE_USED]):
-                            # selector.BooleanSelector(),
                             default=whuh_default):
                             cv.multi_select([WAZE_HISTORY_USED_HEADER]),
                 vol.Required(CONF_WAZE_HISTORY_MAX_DISTANCE,
@@ -4372,7 +4368,7 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
 
             ptzh_default = [PASSTHRU_ZONE_HEADER] if pass_thru_zone_used else []
             szh_default  = [STAT_ZONE_HEADER] if stat_zone_used else []
-            sbzh_default = [STAT_ZONE_BASE_HEADER] if stat_zone_used else []
+            # sbzh_default = [STAT_ZONE_BASE_HEADER] if stat_zone_used else []
             tfzh_default = [TRK_FROM_HOME_ZONE_HEADER] if track_from_zone_home else []
 
             return vol.Schema({
@@ -4399,15 +4395,15 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
                             selector.NumberSelector(selector.NumberSelectorConfig(
                                 min=5, max=60, unit_of_measurement='minutes')),
 
-                vol.Optional('base_offset_header',
-                            default=sbzh_default):
-                            cv.multi_select([STAT_ZONE_BASE_HEADER]),
-                vol.Required(CONF_STAT_ZONE_BASE_LATITUDE,
-                            default=Gb.conf_general[CONF_STAT_ZONE_BASE_LATITUDE]):
-                            selector.NumberSelector(selector.NumberSelectorConfig(min=-90, max=90)),
-                vol.Required(CONF_STAT_ZONE_BASE_LONGITUDE,
-                            default=Gb.conf_general[CONF_STAT_ZONE_BASE_LONGITUDE]):
-                            selector.NumberSelector(selector.NumberSelectorConfig(min=-180, max=180)),
+                # vol.Optional('base_offset_header',
+                #             default=sbzh_default):
+                #             cv.multi_select([STAT_ZONE_BASE_HEADER]),
+                # vol.Required(CONF_STAT_ZONE_BASE_LATITUDE,
+                #             default=Gb.conf_general[CONF_STAT_ZONE_BASE_LATITUDE]):
+                #             selector.NumberSelector(selector.NumberSelectorConfig(min=-90, max=90)),
+                # vol.Required(CONF_STAT_ZONE_BASE_LONGITUDE,
+                #             default=Gb.conf_general[CONF_STAT_ZONE_BASE_LONGITUDE]):
+                #             selector.NumberSelector(selector.NumberSelectorConfig(min=-180, max=180)),
 
                 vol.Optional('track_from_zone_header',
                             default=tfzh_default):

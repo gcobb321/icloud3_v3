@@ -200,9 +200,6 @@ class iCloud3:
         if Gb.restart_icloud3_request_flag:
             self.start_icloud3()
             Gb.restart_icloud3_request_flag = False
-        # elif Gb.restart_ha_flag:
-        #     log_info_msg(f"HA has started {Gb.restart_ha_flag=}")
-        #     start_ic3.ha_restart()
 
         # Exit 5-sec loop if no devices, updating a device now, or restarting iCloud3
         if (self.loop_ctrl_master_update_in_process_flag
@@ -239,6 +236,21 @@ class iCloud3:
             #   CHECK TIMERS
             #<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>
             self._main_5sec_loop_special_time_control()
+
+            '''
+            Start of uncommented out code to test of moving device into a statzone while home
+            if Gb.this_update_time.endswith('5:00'):
+                if Gb.Devices[0].StatZone is None:
+                    _trace(f"{Gb.Devices[0].fname} creating")
+                    statzone.move_device_into_statzone(Gb.Devices[0])
+                    _trace(f"{Gb.Devices[0].StatZone.zone} created")
+            if Gb.this_update_time.endswith('0:00'):
+                if Gb.Devices[0].StatZone:
+                    _trace(f"{Gb.Devices[0].StatZone.zone} removing")
+                    statzone.remove_statzone(Gb.Devices[0].StatZone, Gb.Devices[0])
+                    _trace(f"{Gb.Devices[0].StatZone.zone} removed")
+            End of uncommented out code to test of moving device into a statzone while home
+            '''
 
             if Gb.all_tracking_paused_flag:
                 return
@@ -1142,7 +1154,7 @@ class iCloud3:
         if (zone_selected != Device.iosapp_zone_enter_zone
                 and is_zone(zone_selected) and isnot_zone(Device.iosapp_zone_enter_zone)):
             Device.iosapp_zone_enter_secs = Gb.this_update_secs
-            Device.iosapp_zone_enter_time = Gb.this_update_tine
+            Device.iosapp_zone_enter_time = Gb.this_update_time
             Device.iosapp_zone_enter_zone = zone_selected
 
         zones_distance_list = \

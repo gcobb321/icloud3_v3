@@ -4,7 +4,7 @@
 #
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-VERSION                         = '3.0pr1.3'
+VERSION                         = '3.0pr1.4'
 
 DOMAIN                          = 'icloud3'
 ICLOUD3                         = 'iCloud3'
@@ -146,11 +146,11 @@ RANGE_UM = 3
 #Other constants
 IOSAPP_DT_ENTITY = True
 ICLOUD_DT_ENTITY = False
-ICLOUD_LOCATION_DATA_ERROR = False
-CMD_RESET_PYICLOUD_SESSION = 'reset_session'
-NEAR_DEVICE_DISTANCE       = 20
+ICLOUD_LOCATION_DATA_ERROR   = False
+CMD_RESET_PYICLOUD_SESSION   = 'reset_session'
+NEAR_DEVICE_DISTANCE         = 20
 PASS_THRU_ZONE_INTERVAL_SECS = 60       # Delay time before moving into a non-tracked zone to see if if just passing thru
-STATZONE_BASE_RADIUS_M     = 100
+STATZONE_RADIUS_1M       = 1
 ICLOUD3_ERROR_MSG        = "ICLOUD3 ERROR-SEE EVENT LOG"
 
 # Event Log variables

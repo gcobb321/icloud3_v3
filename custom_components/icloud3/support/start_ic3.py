@@ -980,9 +980,7 @@ def create_Zones_object():
         event_msg += (  f"{CRLF_DOT}Stationary Zone > "
                         f"Radius-{Gb.HomeZone.radius_m * 2}m, "
                         f"DistMoveLimit-{format_dist_km(Gb.statzone_dist_move_limit_km)}, "
-                        f"MinDistFromAnotherZone-{format_dist_km(Gb.statzone_min_dist_from_zone_km)}, "
-                        f"BaseDistFromHome-{format_dist_km(dist)}, "
-                        f"BaseLocation-{format_gps(Gb.statzone_base_latitude, Gb.statzone_base_longitude, 0)}")
+                        f"MinDistFromAnotherZone-{format_dist_km(Gb.statzone_min_dist_from_zone_km)}")
     else:
         event_msg += f"{CRLF_DOT}STATIONARY ZONES ARE NOT BEING USED"
 
