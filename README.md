@@ -4,7 +4,7 @@
 
 ------
 
-### Prerelease Version - v3.0-pr1a (8/20/2023)
+### Prerelease Version - v3.0-pr1.3 (8/24/2023)
 
 ------
 
