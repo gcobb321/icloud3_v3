@@ -23,7 +23,8 @@ from .const             import (HOME, NOT_HOME, STATIONARY, HIGH_INTEGER,
 from .helpers.common    import (instr, is_statzone, format_gps, zone_display_as,)
 from .helpers.messaging import (post_event, post_error_msg, post_monitor_msg,
                                 log_exception, log_rawdata,_trace, _traceha, )
-from .helpers.time_util import (time_now_secs, datetime_now, secs_to_time,   secs_to_datetime, format_time_age, )
+from .helpers.time_util import (time_now_secs, datetime_now, secs_to_time, secs_since,
+                                secs_to_datetime, format_time_age, )
 from .helpers.dist_util import (calc_distance_m, calc_distance_km, format_dist_km, format_dist_m, )
 
 
@@ -183,11 +184,7 @@ class iCloud3_StationaryZone(iCloud3_Zone):
         self.zone        = f"ic3_{STATIONARY}_{statzone_id}"
         self.statzone_id = statzone_id
 
-        # True  = Indicates StatZone info has been written to hass and the zone exists in HA
-        # False = This StatZone existed at one time but has been removed and can be readded.
-        #         A StatZone is removed from HA when it is moved back to its base location
-        #         but still exists in iCloud3 and can be reused
-        self.exists_in_ha = False
+        self.removed_from_ha_secs = HIGH_INTEGER
 
         self.base_attrs = {}
         self.fname = f"StatZon{self.statzone_id}"
@@ -195,10 +192,21 @@ class iCloud3_StationaryZone(iCloud3_Zone):
         Gb.zone_display_as[self.zone] = self.fname
 
         #base_attrs is used to move the stationary zone back to it's base
-        self.base_attrs[NAME]          = self.zone
-        self.base_attrs[ICON]          = f"mdi:numeric-{statzone_id}-circle-outline"
-        self.base_attrs[RADIUS]        = STATZONE_RADIUS_1M
-        self.base_attrs[PASSIVE]       = True
+        self.base_attrs[NAME]    = self.zone
+        self.base_attrs[RADIUS]  = STATZONE_RADIUS_1M
+        self.base_attrs[PASSIVE] = True
+
+        statzone_num = int(statzone_id)
+        if statzone_num < 10:
+            self.base_attrs[ICON] = f"mdi:numeric-{statzone_num}-circle-outline"
+        elif statzone_num < 20:
+            self.base_attrs[ICON] = f"mdi:numeric-{statzone_num-10}-box-outline"
+        elif statzone_num < 30:
+            self.base_attrs[ICON] = f"mdi:numeric-{statzone_num-20}-circle"
+        elif statzone_num < 40:
+            self.base_attrs[ICON] = f"mdi:numeric-{statzone_num-30}-box"
+        else:
+            self.base_attrs[ICON] = f"mdi:numeric-9-plus-circle-outline"
 
         self.initialize_updatable_items()
 
@@ -235,11 +243,11 @@ class iCloud3_StationaryZone(iCloud3_Zone):
     def __repr__(self):
         return (f"<StatZone: {self.zone}>")
 
-    #---------------------------------------------------------------------
+#---------------------------------------------------------------------
     # Return True if the device has not set up a Stationary Zone
     @property
     def is_at_base(self):
-        return  self.passive
+        return self.passive
 
     # Return True if the device has set up a Stat Zone
     @property
@@ -267,7 +275,6 @@ class iCloud3_StationaryZone(iCloud3_Zone):
         '''
         try:
             Gb.hass.states.async_set(f"zone.{self.zone}", 0, attrs, force_update=True)
-            self.exists_in_ha = True
 
         except Exception as err:
             pass
@@ -276,14 +283,13 @@ class iCloud3_StationaryZone(iCloud3_Zone):
 #--------------------------------------------------------------------
     def remove_ha_zone(self):
         '''
-        Remove the zone entity.
-        This is done when it is moved back to its base location
+        Remove the zone entity from HA when there are no Devices in it
         '''
-        if self.exists_in_ha is False: return
 
         try:
             Gb.hass.states.async_remove(f"zone.{self.zone}")
-            self.exists_in_ha = False
+            # item = Gb.StatZones_by_zone.pop(self.zone, None)
+
             post_monitor_msg(f"REMOVED StationaryZone > {self.fname} ({self.zone})")
 
         except Exception as err:

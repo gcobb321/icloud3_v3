@@ -155,14 +155,14 @@
         }
       },
       "icloud_account": {
-        "title": "Data Sources - iCloud Account & iOS App",
+        "title": "iCloud Account & iOS App Data Sources",
         "description": "",
         "data": {
-          "data_source_icloud": "ICLOUD - Location data is provided by the Apple iCloud account",
-          "username": "APPPLE ID - The email address used to sign in to the iCloud Account",
+          "data_source_icloud": "ICLOUD ACCOUNT - Location data is provided by the Apple iCloud account",
+          "username": "APPLE ID (USERNAME) - The email address used to sign in to the iCloud Account",
           "password": "PASSWORD - The iCloud Account Password",
           "data_source_iosapp": "iOS APP - Location data is provided by the HA iOS App",
-          "icloud_server_endpoint_suffix": "ICLOUD SERVER LOCATION -  Countries having localized Apple iCloud Servers (Not Normally Used)s",
+          "icloud_server_endpoint_suffix": "ICLOUD SERVER LOCATION -  Countries having localized Apple iCloud Servers (Not Normally Used)",
           "action_items": "═════════════════════════════════════════════════════"
         },
         "data_description": {

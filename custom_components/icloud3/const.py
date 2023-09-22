@@ -194,9 +194,11 @@ WAZE_NO_DATA      = 4
 # poor_location_gps cnt, icloud_authentication cnt (default)
 OLD_LOC_POOR_GPS_CNT   = 1.1
 AUTH_ERROR_CNT         = 1.2
-RETRY_INTERVAL_RANGE_1 = {0:.25, 4:1, 8:5, 12:30, 16:60, 20:120, 22:240, 24:240}
+RETRY_INTERVAL_RANGE_1 = {0:.25, 4:1, 8:5, 12:30, 16:60, 20:60}
+# RETRY_INTERVAL_RANGE_1 = {0:.25, 4:1, 8:5, 12:30, 16:60, 20:120, 22:240, 24:240}
 IOSAPP_REQUEST_LOC_CNT = 2.1
-RETRY_INTERVAL_RANGE_2 = {0:.5, 4:2, 8:30, 12:60, 14:120, 16:180, 18:240, 20:240}
+RETRY_INTERVAL_RANGE_2 = {0:.5, 4:2, 8:30, 12:60, 16:60}
+# RETRY_INTERVAL_RANGE_2 = {0:.5, 4:2, 8:30, 12:60, 14:120, 16:180, 18:240, 20:240}
 
 # Used by the 'update_method' in the polling_5_sec loop
 IOSAPP_UPDATE     = "IOSAPP"
@@ -324,8 +326,8 @@ RADIUS            = 'radius'
 NON_ZONE_ITEM_LIST = {
         'not_home': 'Away',
         'Not_Home': 'Away',
-        'not_set': 'NotSet',
-        'Not_Set': 'NotSet',
+        'not_set': '──',
+        'Not_Set': '──',
         # 'stationary': 'Stationary',
         # 'Stationary': 'Stationary',
         STATIONARY: STATIONARY_FNAME,

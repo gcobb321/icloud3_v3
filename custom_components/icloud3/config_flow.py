@@ -106,7 +106,7 @@ def dict_value_to_list(key_value_dict):
     return value_list
 #-----------------------------------------------------------------------------------------
 MENU_KEY_TEXT = {
-        'icloud_account':       'DATA SOURCES - iCLOUD & iOS APP > ⠤Location Data Source, ⠤iCloud Account Username/Password',
+        'icloud_account':       'iCLOUD ACCOUNT & iOS APP > ⠤Location Data Source, ⠤iCloud Account Username/Password',
         'device_list':          'ICLOUD3 DEVICES > ⠤Add, Change and Delete tracked and monitored devices',
         'verification_code':    'ENTER/REQUEST AN APPLE ID VERIFICATION CODE > ⠤Enter (or Request) the 6-digit Apple ID Verification Code',
         'change_device_order':  'CHANGE DEVICE ORDER > ⠤Change the tracking order of the Devices and their display sequence on the Event Log',
@@ -710,6 +710,7 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
     '''Handles options flow for the component.'''
 
     def __init__(self, settings=False):
+        #_trace(f"dt {Gb.hass=} {self.hass=}. {hass=}")
         self.initialize_options_required_flag = True
         self.step_id        = ''       # step_id for the window displayed
         self.errors         = {}       # Errors en.json error key
@@ -2283,9 +2284,9 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
 
         self._prepare_device_selection_list()
         self.sensor_entity_attrs_changed = {}
-
-        if Gb.async_add_entities_device_tracker is None:
-            self.errors='no_add_entities_device_tracker_fct'
+        #pr1.4
+        #if Gb.async_add_entities_device_tracker is None:
+        #    self.errors = {'base': 'no_add_entities_device_tracker_fct'}
 
         self.step_id = 'device_list'
 
@@ -2449,8 +2450,9 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
         self.errors = errors or {}
         self.errors_user_input = {}
 
-        if Gb.async_add_entities_device_tracker is None:
-            return await self.async_step_device_list(errors='no_add_entities_device_tracker_fct')
+        #pr1.4
+        #if Gb.async_add_entities_device_tracker is None:
+        #    return await self.async_step_device_list(errors='no_add_entities_device_tracker_fct')
 
         if user_input is None:
             return self.async_show_form(step_id=self.step_id,
@@ -2564,6 +2566,8 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
 
                 # Update the device_tracker & sensor entities now that the configuration has been updated
                 if 'add_device' in self.sensor_entity_attrs_changed:
+                    if Gb.async_add_entities_device_tracker is None:
+                        await Gb.hass.config_entries.async_forward_entry_setups(Gb.config_entry, ['device_tracker'])
                     self._create_device_tracker_and_sensor_entities(ui_devicename, self.conf_device_selected)
 
                 else:
@@ -3979,6 +3983,8 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
                         famshr_list_text_by_fname[famshr_devicename] = f"{famshr_devicename} > {SERVICE_NOT_AVAILABLE}"
                 except:
                     famshr_list_text_by_fname[famshr_devicename] = f"{famshr_devicename} > {SERVICE_NOT_STARTED_YET}"
+            elif 'base' not in self.errors:
+                self.errors['base'] = 'icloud_acct_login_error'
 
             # If conf_fmf_email is not in available fmf emails list, add it
             fmf_email = self.conf_device_selected[CONF_FMF_EMAIL]
@@ -3994,6 +4000,8 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
                         fmf_list_text_by_email[fmf_email] = f"{fmf_email} > {SERVICE_NOT_AVAILABLE}"
                 except:
                     fmf_list_text_by_email[fmf_email] = f"{fmf_email} > {SERVICE_NOT_STARTED_YET}"
+            elif 'base' not in self.errors:
+                self.errors['base'] = 'icloud_acct_login_error'
 
             # If conf_iosapp_device is not in available iosapp devices list, add it
             iosapp_device = self.conf_device_selected[CONF_IOSAPP_DEVICE]
@@ -4009,7 +4017,7 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
                 error_key = f"{error_key}_picture"
                 self.errors[CONF_PICTURE] = 'unknown_picture'
                 picture_by_filename[picture_filename] = f"{picture_filename}{UNKNOWN_DEVICE_TEXT}"
-            if error_key:
+            if error_key and 'base' not in self.errors:
                 self.errors['base'] = f'unknown{error_key}'
 
             if self.conf_device_selected[CONF_TRACKING_MODE] == INACTIVE_DEVICE:
