@@ -4,7 +4,7 @@
 #
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-VERSION                         = '3.0pr1.4'
+VERSION                         = '3.0.pr1.5'
 
 DOMAIN                          = 'icloud3'
 ICLOUD3                         = 'iCloud3'
@@ -102,7 +102,7 @@ OTHER                           = 'other'
 
 # Apple is using a country specific iCloud server based on the country code in pyicloud_ic3.
 # Add to the HOME_ENDPOINT & SETUP_ENDPOINT urls if the HA country code is one of these values.
-APPLE_SPECIAL_ICLOUD_SERVER_COUNTRY_CODE = ['cn']
+APPLE_SPECIAL_ICLOUD_SERVER_COUNTRY_CODE = ['cn', 'CN']
 
 DEVICE_TYPES = [
         IPHONE, IPAD, IPOD, WATCH, ICLOUD_FNAME, AIRPODS,

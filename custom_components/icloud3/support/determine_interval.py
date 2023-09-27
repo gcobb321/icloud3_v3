@@ -677,7 +677,7 @@ def determine_interval_after_error(Device, counter=OLD_LOC_POOR_GPS_CNT):
         # happens after a reauthentication. If so, do not display an error on the
         # first retry.
 
-        threshold_msg = ''  if interval_secs == Device.interval_secs \
+        threshold_msg = ''  if interval_secs == Device.FromZone_Home.interval_secs \
                             else f", OldThreshold-{secs_to_time_str(Device.old_loc_threshold_secs)}"
 
         next_update_secs = Gb.this_update_secs + interval_secs

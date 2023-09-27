@@ -22,7 +22,7 @@ from .const             import (DOMAIN, ICLOUD3, DATETIME_FORMAT,
                                 RARROW, CRLF_DOT, CIRCLE_STAR, EVLOG_NOTICE, EVLOG_ALERT,
                                 IPHONE_FNAME, IPHONE, IPAD, WATCH, AIRPODS, ICLOUD, FAMSHR, FMF, OTHER, HOME,
                                 DEVICE_TYPES, DEVICE_TYPE_FNAME, DEVICE_TRACKER_DOT,
-                                IOSAPP, NO_IOSAPP,
+                                IOSAPP, NO_IOSAPP, APPLE_SPECIAL_ICLOUD_SERVER_COUNTRY_CODE,
                                 TRACK_DEVICE, MONITOR_DEVICE, INACTIVE_DEVICE,
                                 NAME,  FRIENDLY_NAME, FNAME, TITLE, BATTERY,
                                 ZONE, HOME_DISTANCE, WAZE_SERVERS_FNAME,
@@ -31,7 +31,7 @@ from .const             import (DOMAIN, ICLOUD3, DATETIME_FORMAT,
                                 CONF_USERNAME, CONF_PASSWORD, CONF_DEVICES, CONF_SETUP_ICLOUD_SESSION_EARLY,
                                 CONF_DATA_SOURCE, CONF_VERIFICATION_CODE,
                                 CONF_TRACK_FROM_ZONES, CONF_TRACK_FROM_BASE_ZONE, CONF_TRACK_FROM_HOME_ZONE,
-                                CONF_NO_IOSAPP,
+                                CONF_NO_IOSAPP, CONF_ICLOUD_SERVER_ENDPOINT_SUFFIX,
                                 CONF_PICTURE, CONF_DEVICE_TYPE, CONF_INZONE_INTERVALS,
                                 CONF_RAW_MODEL, CONF_MODEL, CONF_MODEL_DISPLAY_NAME, CONF_FAMSHR_DEVICE_ID,
                                 CONF_UNIT_OF_MEASUREMENT, CONF_TIME_FORMAT,
@@ -106,7 +106,7 @@ def dict_value_to_list(key_value_dict):
     return value_list
 #-----------------------------------------------------------------------------------------
 MENU_KEY_TEXT = {
-        'icloud_account':       'iCLOUD ACCOUNT & iOS APP > ⠤Location Data Source, ⠤iCloud Account Username/Password',
+        'icloud_account':       'iCLOUD ACCOUNT & iOS APP > ⠤iCloud Account Username/Password, ⠤Location Data Sources',
         'device_list':          'ICLOUD3 DEVICES > ⠤Add, Change and Delete tracked and monitored devices',
         'verification_code':    'ENTER/REQUEST AN APPLE ID VERIFICATION CODE > ⠤Enter (or Request) the 6-digit Apple ID Verification Code',
         'change_device_order':  'CHANGE DEVICE ORDER > ⠤Change the tracking order of the Devices and their display sequence on the Event Log',
@@ -121,7 +121,7 @@ MENU_KEY_TEXT = {
         'tracking_parameters':  'TRACKING & OTHER PARAMETERS > ⠤Use Nearby Device Info, ⠤Accuracy Thresholds, ⠤Maximum, Device Offline & Other Intervals, ⠤Event Log Custom Card Directory, etc.',
 
         'select':               'SELECT > Select the parameter update form',
-        'next_page_0':          'PAGE 1 > DEVICES & SENSORS > ⠤iCloud Account Login Credentials, ⠤iCloud3 Devices, ⠤Enter/Request Verification Code, ⠤Change Device Order, ⠤Sensors, ⠤Action Commands',
+        'next_page_0':          'PAGE 1 > DEVICES & SENSORS > ⠤iCloud Account & iOS App, ⠤iCloud3 Devices, ⠤Enter/Request Verification Code, ⠤Change Device Order, ⠤Sensors, ⠤Action Commands',
         'next_page_1':          'PAGE 2 > GENERAL PARAMETERS > ⠤Format Parameters, ⠤Display Text As, ⠤Waze Route Dist & Time, Waze History, ⠤inZone Intervals, ⠤Special Zones, ⠤ Other Parameters',
         'exit':                 'EXIT AND RESTART ICLOUD3'
 }
@@ -156,7 +156,7 @@ ACTION_LIST_ITEMS_KEY_TEXT = {
         'next_page_waze':           'NEXT PAGE > Waze History Database parameters',
         'select_form':              'SELECT > Select the parameter update form',
 
-        'login_icloud_account':     'LOGIN > Log into the iCloud Account. Logged Into-Not Logged In',
+        'login_icloud_account':     'LOGIN > Log into the iCloud Account. StatusMsg',
         'verification_code':        'ENTER/REQUEST AN APPLE ID VERIFICATION CODE > Enter (or Request) the 6-digit Apple ID Verification Code',
 
         'enter_verification_code':  'ENTER APPLE ID VERIFICATION CODE > Enter the 6-digit Apple ID Verification Code',
@@ -710,7 +710,6 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
     '''Handles options flow for the component.'''
 
     def __init__(self, settings=False):
-        #_trace(f"dt {Gb.hass=} {self.hass=}. {hass=}")
         self.initialize_options_required_flag = True
         self.step_id        = ''       # step_id for the window displayed
         self.errors         = {}       # Errors en.json error key
@@ -824,6 +823,8 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
         self.obscure_username         = ''
         self.obscure_password         = ''
         self.show_username_password   = False
+        self.endpoint_suffix          = Gb.icloud_server_endpoint_suffix or \
+                                        Gb.conf_tracking[CONF_ICLOUD_SERVER_ENDPOINT_SUFFIX]
 
     async def async_step_init(self, user_input=None):
         if self.initialize_options_required_flag:
@@ -955,10 +956,13 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
                 self.config_flow_updated_parms.remove('restart')
                 Gb.restart_icloud3_request_flag = True
                 if (self.PyiCloud is not None
-                    and (self.username != Gb.username or self.password != Gb.password)):
+                        and (self.username != Gb.username
+                        or self.password != Gb.password
+                        or self.endpoint_suffix != Gb.icloud_server_endpoint_suffix)):
                     Gb.PyiCloud = self.PyiCloud
                     Gb.username = self.username
                     Gb.password = self.password
+                    Gb.icloud_server_endpoint_suffix = self.endpoint_suffix
 
             elif action_item.startswith('restart_ha'):
                 #return await self.step_restart_ha()
@@ -1940,20 +1944,22 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
 
             if self.errors == {}:
                 # Set the data_source so pyicloud will get all the devices
-                Gb.conf_data_source_FAMSHR  = instr(user_input[CONF_DATA_SOURCE], FAMSHR)
-                Gb.conf_data_source_FMF     = instr(user_input[CONF_DATA_SOURCE], FMF)
+                Gb.conf_data_source_FAMSHR    = instr(user_input[CONF_DATA_SOURCE], FAMSHR)
+                Gb.conf_data_source_FMF       = instr(user_input[CONF_DATA_SOURCE], FMF)
                 Gb.primary_data_source_ICLOUD = Gb.conf_data_source_FAMSHR or Gb.conf_data_source_FMF
 
+                user_input['endpoint_suffix'] = 'cn' if user_input['url_suffix_china'] is True else 'None'
+
                 # Action Login or Save will login into the account if the username changed
-                if (action_item in ['login_icloud_account', 'save']
-                        and (user_input[CONF_USERNAME] != Gb.conf_tracking[CONF_USERNAME]
-                            or user_input[CONF_PASSWORD] != Gb.conf_tracking[CONF_PASSWORD])):
+                if (action_item in ['login_icloud_account', 'save']):
+
                     await self._log_into_icloud_account(user_input, called_from_step_id='icloud_account')
 
                     if action_item == 'save' and self.PyiCloud != Gb.PyiCloud:
                         Gb.PyiCloud = Gb.PyiCloudInit = self.PyiCloud
                         Gb.username = self.username
                         Gb.password = self.password
+                        Gb.icloud_server_endpoint_suffix = self.endpoint_suffix
 
                     await self._build_device_form_selection_lists()
                     self._prepare_device_selection_list()
@@ -1967,6 +1973,7 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
                 # Save the login username/password
                 if (action_item == 'save'
                         and (self.errors == {} or self.errors.get('base', '') == 'icloud_acct_logged_into')):
+                    user_input[CONF_ICLOUD_SERVER_ENDPOINT_SUFFIX] = self.endpoint_suffix
                     self._update_configuration_file(user_input)
 
                     return self.async_show_form(step_id=self.called_from_step_id_2,
@@ -2120,16 +2127,19 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
         if CONF_USERNAME in user_input:
             self.username = user_input[CONF_USERNAME].lower()
             self.password = user_input[CONF_PASSWORD]
+            self.endpoint_suffix = user_input['endpoint_suffix']
             verify_password = self.username != Gb.conf_tracking[CONF_USERNAME]
         else:
             self.username = Gb.conf_tracking[CONF_USERNAME]
             self.password = Gb.conf_tracking[CONF_PASSWORD]
+            self.endpoint_suffix = Gb.conf_tracking[CONF_ICLOUD_SERVER_ENDPOINT_SUFFIX]
             verify_password = False
 
         # If using same username/password as primary PyiCloud, use the primary
         if (Gb.PyiCloud
                 and Gb.PyiCloud.username == self.username
-                and Gb.PyiCloud.password == self.password):
+                and Gb.PyiCloud.password == self.password
+                and Gb.PyiCloud.endpoint_suffix == self.endpoint_suffix):
             self.PyiCloud = Gb.PyiCloud
             return
 
@@ -2137,7 +2147,8 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
         if (self.PyiCloud
                 and request_verification_code is False
                 and self.username == self.PyiCloud.username
-                and self.password == self.PyiCloud.password):
+                and self.password == self.PyiCloud.password
+                and self.endpoint_suffix == self.PyiCloud.endpoint_suffix):
             return
 
         if request_verification_code:
@@ -2153,15 +2164,23 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
                                         pyicloud_ic3_interface.create_PyiCloudService_secondary,
                                         self.username,
                                         self.password,
+                                        self.endpoint_suffix,
                                         'config_flow',
                                         verify_password,
                                         request_verification_code)
 
 
         except (PyiCloudFailedLoginException) as err:
-            _CF_LOGGER.error(f"Error logging into iCloud service: {err}")
             self.PyiCloud = None
-            self.errors = {'base': 'icloud_acct_login_error'}
+            self.endpoint_suffix = Gb.icloud_server_endpoint_suffix = \
+                    Gb.conf_tracking[CONF_ICLOUD_SERVER_ENDPOINT_SUFFIX]
+            if called_from_step_id == 'icloud_account':
+                error_msg = 'icloud_acct_login_error'
+            else:
+                error_msg = 'icloud_acct_not_available'
+            self.errors = {'base': error_msg}
+
+            _CF_LOGGER.error(f"Error logging into iCloud service: {err}")
 
             return self.async_show_form(step_id=called_from_step_id,
                                         data_schema=self.form_schema(called_from_step_id),
@@ -2176,6 +2195,7 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
             Gb.PyiCloud = Gb.PyiCloudInit = self.PyiCloud
             Gb.username = self.username
             Gb.password = self.password
+            Gb.icloud_server_endpoint_suffix = self.endpoint_suffix
 
         if self.PyiCloud.requires_2fa or request_verification_code:
             return
@@ -3852,16 +3872,25 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
             if self.username or self.password:
                 obscure_username = obscure_field(self.username) or 'None'
                 obscure_password = obscure_field(self.password) or 'None'
-                username_password = f"({obscure_username}/{obscure_password})"
+                username_password = f"{obscure_username}/{obscure_password}"
 
-                logged_into_msg = self.actions_list[LOG_IN_ICLOUD_ACCT_IDX].replace('Not Logged In', username_password)
-                self.actions_list[LOG_IN_ICLOUD_ACCT_IDX] = logged_into_msg
+                if self.PyiCloud or Gb.PyiCloud:
+                    status_msg = f"Logged Into > {username_password}"
+                elif self.username or self.password:
+                    status_msg  = ''
+                    if 'base' not in self.errors:
+                        self.errors = {'base': 'icloud_acct_not_logged_into'}
+
+                self.actions_list[LOG_IN_ICLOUD_ACCT_IDX] = \
+                    self.actions_list[LOG_IN_ICLOUD_ACCT_IDX].replace('StatusMsg', status_msg)
 
             data_source_icloud_list = []
             data_source_iosapp_list = []
             if instr(Gb.conf_tracking[CONF_DATA_SOURCE], FAMSHR): data_source_icloud_list.append(FAMSHR)
             if instr(Gb.conf_tracking[CONF_DATA_SOURCE], FMF):    data_source_icloud_list.append(FMF)
             if instr(Gb.conf_tracking[CONF_DATA_SOURCE], IOSAPP): data_source_iosapp_list.append(IOSAPP)
+
+            url_suffix_china = (Gb.icloud_server_endpoint_suffix == 'cn')
 
             return vol.Schema({
                 vol.Optional('data_source_icloud',
@@ -3873,14 +3902,13 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
                 vol.Optional(CONF_PASSWORD,
                             default=self.password):
                             selector.TextSelector(selector.TextSelectorConfig(type='password')),
+                vol.Optional('url_suffix_china',
+                            default=url_suffix_china):
+                            selector.BooleanSelector(),
                 vol.Optional('data_source_iosapp',
                             default=data_source_iosapp_list):
                             cv.multi_select(DATA_SOURCE_IOSAPP_ITEMS_KEY_TEXT),
-                # vol.Required(CONF_ICLOUD_SERVER_ENDPOINT_SUFFIX,
-                #             default=self._option_parm_to_text(CONF_ICLOUD_SERVER_ENDPOINT_SUFFIX, ICLOUD_SERVER_ENDPOINT_SUFFIX_ITEMS_KEY_TEXT)):
-                #             selector.SelectSelector(
-                #                 selector.SelectSelectorConfig(
-                #                         options=dict_value_to_list(ICLOUD_SERVER_ENDPOINT_SUFFIX_ITEMS_KEY_TEXT), mode='dropdown')),
+
                 vol.Required('action_items',
                             default=self.action_default_text('save')):
                             selector.SelectSelector(selector.SelectSelectorConfig(
@@ -3984,7 +4012,7 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
                 except:
                     famshr_list_text_by_fname[famshr_devicename] = f"{famshr_devicename} > {SERVICE_NOT_STARTED_YET}"
             elif 'base' not in self.errors:
-                self.errors['base'] = 'icloud_acct_login_error'
+                self.errors['base'] = 'icloud_acct_not_available'
 
             # If conf_fmf_email is not in available fmf emails list, add it
             fmf_email = self.conf_device_selected[CONF_FMF_EMAIL]
@@ -4001,7 +4029,7 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
                 except:
                     fmf_list_text_by_email[fmf_email] = f"{fmf_email} > {SERVICE_NOT_STARTED_YET}"
             elif 'base' not in self.errors:
-                self.errors['base'] = 'icloud_acct_login_error'
+                self.errors['base'] = 'icloud_acct_not_available'
 
             # If conf_iosapp_device is not in available iosapp devices list, add it
             iosapp_device = self.conf_device_selected[CONF_IOSAPP_DEVICE]
@@ -4376,7 +4404,6 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
 
             ptzh_default = [PASSTHRU_ZONE_HEADER] if pass_thru_zone_used else []
             szh_default  = [STAT_ZONE_HEADER] if stat_zone_used else []
-            # sbzh_default = [STAT_ZONE_BASE_HEADER] if stat_zone_used else []
             tfzh_default = [TRK_FROM_HOME_ZONE_HEADER] if track_from_zone_home else []
 
             return vol.Schema({
