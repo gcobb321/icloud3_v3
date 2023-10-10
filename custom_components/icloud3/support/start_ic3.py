@@ -337,7 +337,6 @@ def set_global_variables_from_conf_parameters(evlog_msg=True):
         config_event_msg += (   f"{CRLF_DOT}Set Default Tracking Method "
                                 f"({DATA_SOURCE_FNAME.get(Gb.primary_data_source, Gb.primary_data_source)})")
 
-        # log_level = 'debug' if Gb.conf_profile[CONF_VERSION] <= 0 else Gb.log_level
         set_log_level(Gb.log_level)
 
         config_event_msg += f"{CRLF_DOT}Initialize Debug Control ({Gb.log_level})"
@@ -1944,7 +1943,7 @@ def setup_trackable_devices():
             tracking_mode = ''
         else:
             Gb.reinitialize_icloud_devices_flag = (Gb.conf_famshr_device_cnt > 0)
-            tracking_mode = f"{CIRCLE_STAR} NOT "
+            tracking_mode = f"{RED_X} NOT "
 
         tracking_mode += 'Monitored' if Device.is_monitored else 'Tracked'
         event_msg =(f"{tracking_mode} Device > {devicename} ({Device.fname_devtype})")

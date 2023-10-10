@@ -26,7 +26,8 @@ from ..const                import (AIRPODS_FNAME, NONE_FNAME,
                                     FMF, FAMSHR, FMF_FNAME, FAMSHR_FNAME, NAME, ID,
                                     APPLE_SPECIAL_ICLOUD_SERVER_COUNTRY_CODE,
                                     ICLOUD_HORIZONTAL_ACCURACY,
-                                    LOCATION, TIMESTAMP, LOCATION_TIME, DATA_SOURCE,
+                                    LOCATION, TIMESTAMP, LOCATION_TIME, DATA_SOURCE, 
+                                    ICLOUD_BATTERY_LEVEL,
                                     ICLOUD_BATTERY_STATUS, BATTERY_STATUS_CODES, ICLOUD_DEVICE_STATUS,
                                     CONF_PASSWORD, CONF_MODEL_DISPLAY_NAME, CONF_RAW_MODEL,
                                     CONF_ICLOUD_SERVER_ENDPOINT_SUFFIX,
@@ -1427,10 +1428,14 @@ class PyiCloud_FamilySharing():
                             # {'raw': _RawData.device_data})
 
                 if requested_by_prefix == '': requested_by_prefix = CRLF_DOT
+                rawdata_battery_level = round(_RawData.device_data.get(ICLOUD_BATTERY_LEVEL, 0) * 100)
                 monitor_msg += (f"{requested_by_prefix}"
                                 f"{_Device.devicename}, "
                                 f"{last_loc_time_gps_msg}"
-                                f"{_RawData.loc_time_gps}")
+                                f"{_RawData.loc_time_gps} "
+                                f", {rawdata_battery_level}%")
+                if rawdata_battery_level != _Device.dev_data_battery_level:
+                    monitor_msg += f"/{_Device.dev_data_battery_level}%"
 
             post_monitor_msg(monitor_msg)
 

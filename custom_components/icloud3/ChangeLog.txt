@@ -1,7 +1,13 @@
-pr1.5
+rc6 - Release Candidate 6 (10/7/2023)
 ...............................
 1. Bug Fix - Fixed the error causing the "AttributeError: 'iCloud3_Device' object has no attribute 'interval_secs' message at line 680, in determine_interval_after_error" error.
-2. China Users - Added an option to the Configure Settings - iCloud Account & iOS App Data Sources screen to enable the '.cn. Apple Web Server URL address suffix
+2. China Users - Added an option to the Configure Settings - iCloud Account & iOS App Data Sources screen to enable the '.cn. Apple Web Server URL address suffix.
+3. Monitored Devices - The iOSApp state value is no longer displayed on the Event Log if it is different than the iCloud3 zone and it is earlier the last FamShr update time since it is old and is probably incorrect.
+4. iCloud3 Version - The version that is currently running is now displayed in the Configure Settings menu screen and more clearly on Event Log messages during startup.
+5. Battery - HA has changed the battery 'state class' internal value from 'battery' to 'measurement'.
+6. Prerelease Version number - This has changed to Release Candidate number to better conform to HA standards. Version pr1.5 was a developer test version and not released.
+7. Configure Setting - Made some minor menu text changes for consistency.
+
 
 
 pr1.4
