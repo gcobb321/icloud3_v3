@@ -894,6 +894,7 @@ def create_Zones_object():
 
     zone_entities = Gb.hass.states.entity_ids(ZONE)
     er_zones, zone_entity_data = entity_io.get_entity_registry_data(platform=ZONE)
+    yaml_zones = [zone for zone in zone_entities if zone.replace('zone.', '') not in er_zones]
 
     Gb.state_to_zone = STATE_TO_ZONE_BASE.copy()
     OldZones_by_zone = Gb.Zones_by_zone.copy()
@@ -920,7 +921,9 @@ def create_Zones_object():
 
     # Add HA zones that are saved in the HA Entity Registry. This does not include
     # current Stationary Zones
-    for zone in er_zones:
+    # for zone in er_zones:
+    for raw_zone in zone_entities:
+        zone = raw_zone.replace('zone.', '')
         zone_entity_name = f"zone.{zone}"
         zone_data = entity_io.get_attributes(zone_entity_name)
         if (zone_entity_name in zone_entity_data

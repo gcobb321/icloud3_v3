@@ -35,7 +35,7 @@ from homeassistant import config_entries
 
 from .global_variables  import GlobalVariables as Gb
 from .const             import (VERSION,
-                                HOME, NOT_HOME, NOT_SET, HIGH_INTEGER, RARROW, RARROW2, CRLF,
+                                HOME, NOT_HOME, NOT_SET, NOT_SET_FNAME, HIGH_INTEGER,
                                 STATIONARY, TOWARDS, AWAY_FROM, EVLOG_IC3_STAGE_HDR,
                                 ICLOUD, ICLOUD_FNAME, TRACKING_NORMAL,
                                 CMD_RESET_PYICLOUD_SESSION, NEAR_DEVICE_DISTANCE,
@@ -59,7 +59,7 @@ from .support           import service_handler
 from .support           import determine_interval as det_interval
 
 from .helpers.common    import (instr, is_zone, is_statzone, isnot_statzone, isnot_zone,
-                                zone_display_as, )
+                                list_to_str,)
 from .helpers.messaging import (broadcast_info_msg,
                                 post_event, post_error_msg, post_monitor_msg, post_internal_error,
                                 open_ic3_log_file, post_alert, clear_alert,
@@ -78,6 +78,7 @@ ZD_ZONE       = 1
 ZD_NAME       = 2
 ZD_RADIUS     = 3
 ZD_DISPLAY_AS = 4
+ZD_CNT        = 5
 
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 class iCloud3:
@@ -275,6 +276,15 @@ class iCloud3:
                 self._display_secs_to_next_update_info_msg(Device)
                 self._clear_loop_control_device()
 
+            # Remove all StatZones from HA flagged for removal in StatZone module
+            # Removing them after the devices have been updated lets HA process the
+            # statzone 'leave' automation trigger associated with a device before
+            # the zone is deleted.
+            if Gb.StatZones_to_delete:
+                for StatZone in Gb.StatZones_to_delete:
+                    StatZone.remove_ha_zone()
+                Gb.StatZones_to_delete = []
+
 
             #<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>
             #   UPDATE MONITORED DEVICES
@@ -327,14 +337,6 @@ class iCloud3:
                 Device.write_ha_sensors_state(SENSOR_LIST_DISTANCE)
 
             Gb.dist_to_other_devices_update_sensor_list = set()
-
-        # Remove all StatZones from HA flagged for removal in StatZone module
-        # Removing them after all devices have been updated lets HA process the statzone 'leave'
-        # automation trigger associated with a device before the zone is deleted.
-        if Gb.StatZones_to_delete:
-            for StatZone in Gb.StatZones_to_delete:
-                StatZone.remove_ha_zone()
-            Gb.StatZones_to_delete = []
 
         Gb.trace_prefix = ''
 
@@ -466,7 +468,7 @@ class iCloud3:
         if (Device.is_tracking_resumed
                 or icloud_data_handler.is_icloud_update_needed_timers(Device)
                 or icloud_data_handler.is_icloud_update_needed_general(Device)):
-            pass
+            Device.tracking_status = TRACKING_NORMAL
         else:
             return
 
@@ -502,7 +504,6 @@ class iCloud3:
         self._post_before_update_monitor_msg(Device)
         self.process_updated_location_data(Device, ICLOUD_FNAME)
 
-        Device.tracking_status = TRACKING_NORMAL
 
         # Refresh the EvLog if this is an initial locate
         if self.initial_locate_complete_flag == False:
@@ -529,15 +530,17 @@ class iCloud3:
         if Device.iosapp_monitor_flag and Gb.conf_data_source_IOSAPP:
             iosapp_data_handler.check_iosapp_state_trigger_change(Device)
 
-        if Device.is_next_update_time_reached is False:
+        if Device.is_tracking_resumed:
+            Device.tracking_status = TRACKING_NORMAL
+        elif Device.is_next_update_time_reached is False:
             Device.calculate_distance_moved()
             if Device.loc_data_dist_moved_km < .05:
                 return
-
-        if Device.loc_data_latitude == 0:
+        elif Device.loc_data_latitude == 0:
             return
 
         Device.update_sensors_flag  = True
+        Device.icloud_initial_locate_done = True
         Device.icloud_update_reason = 'Monitored Device Update'
 
         event_msg =(f"Trigger > Moved {format_dist_km(Device.loc_data_dist_moved_km)}") #{Gb.any_device_was_updated_reason}")
@@ -835,6 +838,7 @@ class iCloud3:
     def process_updated_location_data(self, Device, update_requested_by):
         try:
             devicename = Gb.devicename = Device.devicename
+            # Device.tracking_status = TRACKING_NORMAL
 
             # Makw sure the Device iosapp_state is set to the statzone if the device is in a statzone
             # and the Device iosapp state value is not_nome. The Device state value can be out of sync
@@ -1072,27 +1076,65 @@ class iCloud3:
         elif Device.is_in_statzone and isnot_statzone(zone_selected):
                 statzone.exit_statzone(Device)
 
+        zones_cnt_by_zone = self._zones_cnt_by_zone(zone_selected, Device.loc_data_zone)
+        zones_cnt_summary = [f"{Gb.zone_display_as[_zone]} ({cnt}), "
+                                        for _zone, cnt in zones_cnt_by_zone.items()]
+        zones_cnt_summary_msg = list_to_str(zones_cnt_summary).replace('──', 'NotSet')
+        # _trace(f"zonsel={zone_selected} devzon={Device.loc_data_zone} {zones_cnt_by_zone=}")
+        # _trace(f"{zones_cnt_summary_msg}")
+
         zones_distance_list.sort()
-        zones_distance_list = ', '.join([v.split('|')[1] for v in zones_distance_list])
+        zones_distance_msg = zones_cnt_msg = ''
+        for zone_distance_list in zones_distance_list:
+            zdl_items = zone_distance_list.split('|')
+            _zone      = zdl_items[1]
+            _zone_dist = zdl_items[2]
+
+            zones_distance_msg += f"{_zone_dist}, "
+            if zones_cnt_by_zone.get(_zone, 0) > 0:
+                zones_distance_msg += f" ({zones_cnt_by_zone[_zone]})"
+                zones_cnt_msg      +=(f"{_zone_dist.split('^')[0] }"
+                                      f" ({zones_cnt_by_zone[_zone]}), ")
+                del zones_cnt_by_zone[zone_selected]
+        zones_distance_msg = zones_distance_msg.replace('^', '-')
 
         if display_zone_msg:
             selected_zone_msg = other_zones_msg = gps_accuracy_msg = ''
+
+            # Format the Zone Selected Msg (ZoneName (#))
             if ZoneSelected.radius_m > 0:
                 selected_zone_msg = f"-{format_dist_m(zone_selected_dist_m)}"
+            if zone_selected in zones_cnt_by_zone:
+                selected_zone_msg += f" ({zones_cnt_by_zone[zone_selected]})"
+                del zones_cnt_by_zone[zone_selected]
+
+            # Format the Zone Not Selected Msg (ZoneName-#km (#))
             if (zone_selected == NOT_HOME
                     or (is_statzone(zone_selected) and isnot_statzone(Device.loc_data_zone))):
-                other_zones_msg = f" > {zones_distance_list}"
+                other_zones_msg = f"{zones_distance_msg}"
+            else:
+                other_zones_msg = zones_cnt_msg
+
+            # Format the Zones with devices when in a zone (ZoneName (#))
+            zones_cnt_summary = [f"{Gb.zone_display_as[_zone]} ({cnt}), "
+                                        for _zone, cnt in zones_cnt_by_zone.items()]
+            other_zones_msg += list_to_str(zones_cnt_summary).replace('──', 'NotSet')
+
+            if other_zones_msg: other_zones_msg = f" > {other_zones_msg}"
+
             if zone_selected_dist_m > ZoneSelected.radius_m:
                 gps_accuracy_msg = f", AccuracyAdjustment-{gps_accuracy_adj}m"
 
+            # _trace(f"{selected_zone_msg=} "
+            #             f"{other_zones_msg=} "
+            #             f"{zones_cnt_summary_msg=} ")
             zones_msg =(f"Zone > "
                         f"{ZoneSelected.display_as}"
                         f"{selected_zone_msg}"
                         f"{other_zones_msg}"
                         f"{gps_accuracy_msg}"
                         f", GPS-{Device.loc_data_fgps}")
-            if ZoneSelected in Gb.StatZones:
-                zones_msg += f", DevicesInStatZone-{statzone.devices_in_statzone_count(ZoneSelected)}"
+
             post_event(Device.devicename, zones_msg)
 
             if other_zones_msg == '':
@@ -1113,6 +1155,13 @@ class iCloud3:
             Device.loc_data_zone        = zone_selected
             Device.zone_change_datetime = datetime_now()
             Device.zone_change_secs     = time_now_secs()
+
+            if NOT_SET not in zones_cnt_by_zone:
+            # if 'xxx' not in zones_cnt_by_zone:
+                for _Device in Gb.Devices:
+                    if Device is not _Device:
+                        event_msg = f"Zone-Device Counts > {zones_cnt_summary_msg}"
+                        post_event(_Device.devicename, event_msg)
 
         return ZoneSelected, zone_selected
 
@@ -1137,7 +1186,7 @@ class iCloud3:
             gps_accuracy_adj = int(Device.loc_data_gps_accuracy / 2)
 
         # [distance from zone, Zone, zone_name, redius, display_as]
-        zone_data_selected = [HIGH_INTEGER, None, '', HIGH_INTEGER, '']
+        zone_data_selected = [HIGH_INTEGER, None, '', HIGH_INTEGER, '', 1]
 
         # Exit if no location data is available
         if Device.no_location_data:
@@ -1153,7 +1202,6 @@ class iCloud3:
                 and Device.StatZone.distance_m(latitude, longitude) > Device.StatZone.radius_m):
             statzone.exit_statzone(Device)
 
-        # Get a list of all the zones, their distance, size and display_as
         zones_data = [[Zone.distance_m(latitude, longitude), Zone, Zone.zone,
                         Zone.radius_m, Zone.display_as]
                                 for Zone in Gb.Zones
@@ -1184,21 +1232,54 @@ class iCloud3:
             Device.iosapp_zone_enter_time = Gb.this_update_time
             Device.iosapp_zone_enter_zone = zone_selected
 
-            # [f"{int(zone_data[ZD_DIST_M]):08}| {zone_data[ZD_DISPLAY_AS]}-{format_dist_m(zone_data[ZD_DIST_M])}"
+        zones_cnt_by_zone = self._zones_cnt_by_zone(zone_selected, Device.loc_data_zone)
+        # _trace(f"zonsel={zone_selected} devzon={Device.loc_data_zone} {zones_cnt_by_zone=}")
+
+        # Build an item for each zone (dist-from-zone|zone_name|display_name-##km)
         zones_distance_list = \
-            [f"{int(zone_data[ZD_DIST_M]):08}| {self._format_zone_info(zone_data)}"
+            [(f"{int(zone_data[ZD_DIST_M]):08}|"
+                f"{self._format_zone_info(zone_data)}")
                     for zone_data in zones_data if zone_data[ZD_NAME] != zone_selected]
 
         return ZoneSelected, zone_selected, zone_selected_dist_m, zones_distance_list
 
 #--------------------------------------------------------------------
     @staticmethod
-    def _format_zone_info(zone_data):
-        statzone_msg = ''
-        if zone_data[ZD_ZONE] in Gb.StatZones:
-            statzone_msg = f" ({statzone.devices_in_statzone_count(zone_data[ZD_ZONE])})"
-        return (f"{zone_data[ZD_DISPLAY_AS]}-{format_dist_m(zone_data[ZD_DIST_M])}"
-                f"{statzone_msg}")
+    def _zones_cnt_by_zone(zone_selected, device_zone):
+        # Get a list of all the zones, their distance, size and display_as
+        device_zones      = [_Device.loc_data_zone for _Device in Gb.Devices]
+        zones_cnt_by_zone = {zone:device_zones.count(zone) for zone in set(device_zones)}
+
+        # Adjust the zone counts based on the zone selected and the devices current
+        # zone since the device ha s not been updated yet
+        zone_selected = NOT_HOME if zone_selected == '' else zone_selected
+        if device_zone == zone_selected:
+            return zones_cnt_by_zone
+
+        if zone_selected in zones_cnt_by_zone:
+            zones_cnt_by_zone[zone_selected] += 1
+        else:
+            zones_cnt_by_zone[zone_selected] = 1
+        if device_zone != zone_selected:
+            zones_cnt_by_zone[device_zone] -= 1
+            if zones_cnt_by_zone[device_zone] == 0:
+                del zones_cnt_by_zone[device_zone]
+        else:
+            zones_cnt_by_zone[device_zone] = 1
+
+        return zones_cnt_by_zone
+
+#--------------------------------------------------------------------
+    def _format_zone_info(self, zone_data):
+        '''
+        Format each device's zone information (display_as, distancee). It is used
+        to build the info about the zone that was not selected.
+
+        '''
+
+        return (f"{zone_data[ZD_NAME]}|"
+                f"{zone_data[ZD_DISPLAY_AS]}^{format_dist_m(zone_data[ZD_DIST_M])}")
+
 
 #--------------------------------------------------------------------
     def _move_into_statzone_if_timer_reached(self, Device):

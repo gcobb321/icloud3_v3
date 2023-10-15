@@ -1,3 +1,14 @@
+rc7 - Release Candidate 6 (10/7/2023)
+...............................
+1. yaml Zones - Fixed a problem where zones configured using yaml were not being loaded when iCloud3 started.
+2. Zone-Devices Count - New feature - The number of the devices within a zone is displayed with the tracking results on the Event Log. The counts are the numbers (x) after the zone name. For Example:
+        _Zone > Away (2) >  Home-2.45km,  IndRivShores-6.53km,  School-8.47km (1),  Publix-10.3km,  ThePoint-11.0km, Quail-12.0km,  Warehouse-16.5km (1), GPS-(/±47m)_
+
+    An item is also posted to the Event Log when another device changes it's zone:
+        _Zone-Device Counts > Home (4), School (1), Warehouse (1)_
+
+3. Stationary Zones - Minor changes to the handling of deleting a stationary zone when all devices had exited from it.
+
 rc6 - Release Candidate 6 (10/7/2023)
 ...............................
 1. Bug Fix - Fixed the error causing the "AttributeError: 'iCloud3_Device' object has no attribute 'interval_secs' message at line 680, in determine_interval_after_error" error.

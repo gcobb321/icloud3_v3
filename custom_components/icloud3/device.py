@@ -1308,7 +1308,6 @@ class iCloud3_Device(TrackerEntity):
         self.loc_data_time_moved_from = self.sensors[LAST_LOCATED_DATETIME]
         self.loc_data_time_moved_to   = self.loc_data_datetime
 
-
 #--------------------------------------------------------------------
     def distance_m(self, to_latitude, to_longitude):
         to_gps = (to_latitude, to_longitude)
