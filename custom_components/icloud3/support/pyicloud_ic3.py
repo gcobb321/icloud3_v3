@@ -26,7 +26,7 @@ from ..const                import (AIRPODS_FNAME, NONE_FNAME,
                                     FMF, FAMSHR, FMF_FNAME, FAMSHR_FNAME, NAME, ID,
                                     APPLE_SPECIAL_ICLOUD_SERVER_COUNTRY_CODE,
                                     ICLOUD_HORIZONTAL_ACCURACY,
-                                    LOCATION, TIMESTAMP, LOCATION_TIME, DATA_SOURCE, 
+                                    LOCATION, TIMESTAMP, LOCATION_TIME, DATA_SOURCE,
                                     ICLOUD_BATTERY_LEVEL,
                                     ICLOUD_BATTERY_STATUS, BATTERY_STATUS_CODES, ICLOUD_DEVICE_STATUS,
                                     CONF_PASSWORD, CONF_MODEL_DISPLAY_NAME, CONF_RAW_MODEL,
@@ -1035,7 +1035,6 @@ class PyiCloudService():
             log_exception(err)
             return False
 
-        # _trace(f"{len(req)=} {req=}")
         try:
             data = req.json()
         except ValueError:

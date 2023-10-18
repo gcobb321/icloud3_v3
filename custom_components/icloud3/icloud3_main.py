@@ -427,7 +427,7 @@ class iCloud3:
                     and Device.StatZone
                     and Device.iosapp_zone_exit_dist_m < Device.StatZone.radius_m):
 
-                event_msg =(f"{EVLOG_ALERT}Trigger Changed > {xiosapp_data_change_reason}, "
+                event_msg =(f"{EVLOG_ALERT}Trigger Changed > {Device.iosapp_data_change_reason}, "
                             f"Distance less than zone size "
                             f"{Device.StatZone.display_as} {Device.iosapp_zone_exit_dist_m} < {Device.StatZone.radius_m}")
                 post_event(devicename, event_msg)
@@ -777,7 +777,12 @@ class iCloud3:
                     post_event(Device.devicename, offline_msg)
 
             # 'Verify Location' update reason overrides all other checks and forces an iCloud update
-            if Device.icloud_update_reason == 'Verify Location':
+            # if Device.icloud_update_reason == 'Verify Location':
+            #     pass
+
+            # Bypass all update needed checks and force an iCloud update
+            if Device.icloud_force_update_flag:
+                # Device.icloud_force_update_flag = False
                 pass
 
             elif Device.icloud_devdata_useable_flag is False or Device.icloud_acct_error_flag:
@@ -849,7 +854,7 @@ class iCloud3:
             # Location is good or just setup the StatZone. Determine next update time and update interval,
             # next_update_time values and sensors with the good data
             if Device.update_sensors_flag:
-                self._update_all_tracking_sensors(Device, update_requested_by)
+                self._get_tracking_results_and_update_sensors(Device, update_requested_by)
 
             else:
                 # Old location, poor gps etc. Determine the next update time to request new location info
@@ -859,6 +864,7 @@ class iCloud3:
                         and (Device.old_loc_poor_gps_cnt % 4) == 0):
                     iosapp_interface.request_location(Device)
 
+            Device.icloud_force_update_flag = False
             Device.write_ha_sensors_state()
             Device.write_ha_device_from_zone_sensors_state()
             Device.write_ha_device_tracker_state()
@@ -914,7 +920,7 @@ class iCloud3:
         return False
 
 #----------------------------------------------------------------------------
-    def _update_all_tracking_sensors(self, Device, update_requested_by):
+    def _get_tracking_results_and_update_sensors(self, Device, update_requested_by):
         '''
         All sensor update checked passed and an update is needed. Get the latest icloud
         data, verify it's usability, and update the location data, determine the next
@@ -1026,6 +1032,32 @@ class iCloud3:
 
         return True
 
+#------------------------------------------------------------------------------
+    def _request_update_devices_no_iosapp_same_zone_on_exit(self, Device):
+        '''
+        The Device is exiting a zone. Check all other Devices that were in the same
+        zone that do not have the iosapp installed and set the next update time to
+        5-seconds to see if that device also exited instead of waiting for the other
+        devices inZone interval time to be reached.
+
+        Check the next update time to make sure it has not already been updated when
+        the device without the iOS app is with several devices that left the zone.
+        '''
+        devices_to_update = [_Device
+                        for _Device in Gb.Devices_by_devicename_tracked.values()
+                        if (Device is not _Device
+                            and _Device.is_data_source_IOSAPP is False
+                            and _Device.loc_data_zone == Device.loc_data_zone
+                            and secs_to(_Device.FromZone_Home.next_update_secs) > 60)]
+
+        if devices_to_update == []:
+            return
+
+        for _Device in devices_to_update:
+            _Device.icloud_force_update_flag = True
+            det_interval.update_all_device_fm_zone_sensors_interval(_Device, 15)
+            event_msg = f"Trigger > Check Zone Exit, GeneratedBy-{Device.fname}"
+            post_event(_Device.devicename, event_msg)
 
 #------------------------------------------------------------------------------
 #
@@ -1051,8 +1083,6 @@ class iCloud3:
         calling hass on all polls
         '''
 
-        gps_accuracy_adj = int(Device.loc_data_gps_accuracy / 2)
-
         # Zone selected may have been done when determing if the device just entered a zone
         # during the passthru check. If so, use it and then reset it
         if Device.selected_zone_results == []:
@@ -1074,74 +1104,8 @@ class iCloud3:
         # In a zone but if not in a track from zone and was in a Stationary Zone,
         # reset the stationary zone
         elif Device.is_in_statzone and isnot_statzone(zone_selected):
-                statzone.exit_statzone(Device)
+            statzone.exit_statzone(Device)
 
-        zones_cnt_by_zone = self._zones_cnt_by_zone(zone_selected, Device.loc_data_zone)
-        zones_cnt_summary = [f"{Gb.zone_display_as[_zone]} ({cnt}), "
-                                        for _zone, cnt in zones_cnt_by_zone.items()]
-        zones_cnt_summary_msg = list_to_str(zones_cnt_summary).replace('──', 'NotSet')
-        # _trace(f"zonsel={zone_selected} devzon={Device.loc_data_zone} {zones_cnt_by_zone=}")
-        # _trace(f"{zones_cnt_summary_msg}")
-
-        zones_distance_list.sort()
-        zones_distance_msg = zones_cnt_msg = ''
-        for zone_distance_list in zones_distance_list:
-            zdl_items = zone_distance_list.split('|')
-            _zone      = zdl_items[1]
-            _zone_dist = zdl_items[2]
-
-            zones_distance_msg += f"{_zone_dist}, "
-            if zones_cnt_by_zone.get(_zone, 0) > 0:
-                zones_distance_msg += f" ({zones_cnt_by_zone[_zone]})"
-                zones_cnt_msg      +=(f"{_zone_dist.split('^')[0] }"
-                                      f" ({zones_cnt_by_zone[_zone]}), ")
-                del zones_cnt_by_zone[zone_selected]
-        zones_distance_msg = zones_distance_msg.replace('^', '-')
-
-        if display_zone_msg:
-            selected_zone_msg = other_zones_msg = gps_accuracy_msg = ''
-
-            # Format the Zone Selected Msg (ZoneName (#))
-            if ZoneSelected.radius_m > 0:
-                selected_zone_msg = f"-{format_dist_m(zone_selected_dist_m)}"
-            if zone_selected in zones_cnt_by_zone:
-                selected_zone_msg += f" ({zones_cnt_by_zone[zone_selected]})"
-                del zones_cnt_by_zone[zone_selected]
-
-            # Format the Zone Not Selected Msg (ZoneName-#km (#))
-            if (zone_selected == NOT_HOME
-                    or (is_statzone(zone_selected) and isnot_statzone(Device.loc_data_zone))):
-                other_zones_msg = f"{zones_distance_msg}"
-            else:
-                other_zones_msg = zones_cnt_msg
-
-            # Format the Zones with devices when in a zone (ZoneName (#))
-            zones_cnt_summary = [f"{Gb.zone_display_as[_zone]} ({cnt}), "
-                                        for _zone, cnt in zones_cnt_by_zone.items()]
-            other_zones_msg += list_to_str(zones_cnt_summary).replace('──', 'NotSet')
-
-            if other_zones_msg: other_zones_msg = f" > {other_zones_msg}"
-
-            if zone_selected_dist_m > ZoneSelected.radius_m:
-                gps_accuracy_msg = f", AccuracyAdjustment-{gps_accuracy_adj}m"
-
-            # _trace(f"{selected_zone_msg=} "
-            #             f"{other_zones_msg=} "
-            #             f"{zones_cnt_summary_msg=} ")
-            zones_msg =(f"Zone > "
-                        f"{ZoneSelected.display_as}"
-                        f"{selected_zone_msg}"
-                        f"{other_zones_msg}"
-                        f"{gps_accuracy_msg}"
-                        f", GPS-{Device.loc_data_fgps}")
-
-            post_event(Device.devicename, zones_msg)
-
-            if other_zones_msg == '':
-                zones_msg =(f"Zone > "
-                            f"{ZoneSelected.display_as} > "
-                            f"{zones_distance_list}")
-                post_monitor_msg(Device.devicename, zones_msg)
 
         # Get distance between zone selected and current zone to see if they overlap.
         # If so, keep the current zone
@@ -1152,16 +1116,21 @@ class iCloud3:
 
         # The zone changed
         elif Device.loc_data_zone != zone_selected:
+            # See if any device without the iosapp was in this zone. If so, request a
+            # location update since it was running on the inzone timer instead of
+            # exit triggers from the ios app
+            if (Gb.iosapp_monitor_any_devices_false_flag
+                    and zone_selected == NOT_HOME
+                    and Device.loc_data_zone != NOT_HOME):
+                self._request_update_devices_no_iosapp_same_zone_on_exit(Device)
+
             Device.loc_data_zone        = zone_selected
             Device.zone_change_datetime = datetime_now()
             Device.zone_change_secs     = time_now_secs()
 
-            if NOT_SET not in zones_cnt_by_zone:
-            # if 'xxx' not in zones_cnt_by_zone:
-                for _Device in Gb.Devices:
-                    if Device is not _Device:
-                        event_msg = f"Zone-Device Counts > {zones_cnt_summary_msg}"
-                        post_event(_Device.devicename, event_msg)
+        if display_zone_msg:
+            self._post_zone_selected_msg(Device, ZoneSelected, zone_selected,
+                                            zone_selected_dist_m, zones_distance_list)
 
         return ZoneSelected, zone_selected
 
@@ -1213,6 +1182,9 @@ class iCloud3:
         inzone_zones = [zone_data   for zone_data in zones_data
                                     if zone_data[ZD_DIST_M] <= zone_data[ZD_RADIUS] + gps_accuracy_adj]
 
+        # if Device.devicename == 'gary_iphone':
+        #     inzone_zones = []
+
         for zone_data in inzone_zones:
             if zone_data[ZD_RADIUS] <= zone_data_selected[ZD_RADIUS]:
                 zone_data_selected = zone_data
@@ -1232,54 +1204,85 @@ class iCloud3:
             Device.iosapp_zone_enter_time = Gb.this_update_time
             Device.iosapp_zone_enter_zone = zone_selected
 
-        zones_cnt_by_zone = self._zones_cnt_by_zone(zone_selected, Device.loc_data_zone)
-        # _trace(f"zonsel={zone_selected} devzon={Device.loc_data_zone} {zones_cnt_by_zone=}")
-
         # Build an item for each zone (dist-from-zone|zone_name|display_name-##km)
         zones_distance_list = \
-            [(f"{int(zone_data[ZD_DIST_M]):08}|"
-                f"{self._format_zone_info(zone_data)}")
+            [(f"{int(zone_data[ZD_DIST_M]):08}|{zone_data[ZD_NAME]}|{zone_data[ZD_DIST_M]}")
                     for zone_data in zones_data if zone_data[ZD_NAME] != zone_selected]
 
         return ZoneSelected, zone_selected, zone_selected_dist_m, zones_distance_list
 
 #--------------------------------------------------------------------
     @staticmethod
-    def _zones_cnt_by_zone(zone_selected, device_zone):
-        # Get a list of all the zones, their distance, size and display_as
+    def _post_zone_selected_msg(Device, ZoneSelected, zone_selected,
+                                    zone_selected_dist_m, zones_distance_list):
+
         device_zones      = [_Device.loc_data_zone for _Device in Gb.Devices]
         zones_cnt_by_zone = {zone:device_zones.count(zone) for zone in set(device_zones)}
 
-        # Adjust the zone counts based on the zone selected and the devices current
-        # zone since the device ha s not been updated yet
-        zone_selected = NOT_HOME if zone_selected == '' else zone_selected
-        if device_zone == zone_selected:
-            return zones_cnt_by_zone
+        zones_cnt_summary = [f"{Gb.zone_display_as[_zone]} ({cnt}), "
+                                        for _zone, cnt in zones_cnt_by_zone.items()]
+        zones_cnt_summary_msg = list_to_str(zones_cnt_summary).replace('──', 'NotSet')
 
+        zones_distance_msg = ''
+        zones_displayed = [zone_selected]
+        if (zone_selected == NOT_HOME
+                or (is_statzone(zone_selected)
+                        and isnot_statzone(Device.loc_data_zone))):
+            zones_distance_list.sort()
+            for zone_distance_list in zones_distance_list:
+                zdl_items  = zone_distance_list.split('|')
+                _zone      = zdl_items[1]
+                _zone_dist = float(zdl_items[2])
+
+                zones_displayed.append(_zone)
+                zones_distance_msg += f"{Gb.zone_display_as[_zone]}-{format_dist_m(_zone_dist)} "
+                if zones_cnt_by_zone.get(_zone, 0) > 0:
+                    zones_distance_msg += f" ({zones_cnt_by_zone[_zone]}), "
+                else:
+                    zones_distance_msg += ", "
+
+        zones_cnt_list = [f"{Gb.zone_display_as[_zone]} ({zones_cnt_by_zone[_zone]}), "
+                                        for _zone, cnt in zones_cnt_by_zone.items()
+                                        if _zone not in zones_displayed]
+        zones_cnt_msg = list_to_str(zones_cnt_list)
+        if zones_cnt_msg: zones_cnt_msg += ', '
+
+        # if display_zone_msg:
+        # Format the Zone Selected Msg (ZoneName (#))
+        zone_selected_msg = Gb.zone_display_as[zone_selected]
+
+        if ZoneSelected.radius_m > 0:
+            zone_selected_msg += f"-{format_dist_m(zone_selected_dist_m)}"
         if zone_selected in zones_cnt_by_zone:
-            zones_cnt_by_zone[zone_selected] += 1
-        else:
-            zones_cnt_by_zone[zone_selected] = 1
-        if device_zone != zone_selected:
-            zones_cnt_by_zone[device_zone] -= 1
-            if zones_cnt_by_zone[device_zone] == 0:
-                del zones_cnt_by_zone[device_zone]
-        else:
-            zones_cnt_by_zone[device_zone] = 1
+            zone_selected_msg += f" ({zones_cnt_by_zone[zone_selected]})"
 
-        return zones_cnt_by_zone
+        # Format the Zones with devices when in a zone (ZoneName (#))
+        zones_cnt_summary = [f"{Gb.zone_display_as[_zone]} ({cnt}), "
+                                    for _zone, cnt in zones_cnt_by_zone.items()]
 
-#--------------------------------------------------------------------
-    def _format_zone_info(self, zone_data):
-        '''
-        Format each device's zone information (display_as, distancee). It is used
-        to build the info about the zone that was not selected.
+        # if zones_distance_msg: zones_distance_msg = f" > {zones_distance_msg}"
+        if zones_cnt_msg: zones_cnt_msg = f"{zones_cnt_msg.replace('──', 'NotSet')}"
 
-        '''
+        gps_accuracy_msg = ''
+        if zone_selected_dist_m > ZoneSelected.radius_m:
+            gps_accuracy_msg = (f"AccuracyAdjustment-"
+                                f"{int(Device.loc_data_gps_accuracy / 2)}m, ")
 
-        return (f"{zone_data[ZD_NAME]}|"
-                f"{zone_data[ZD_DISPLAY_AS]}^{format_dist_m(zone_data[ZD_DIST_M])}")
+        zones_msg =(f"Zone > "
+                    f"{zone_selected_msg} > "
+                    f"{zones_distance_msg}"
+                    f"{zones_cnt_msg}"
+                    f"{gps_accuracy_msg}"
+                    f"GPS-{Device.loc_data_fgps}")
+        post_event(Device.devicename, zones_msg)
 
+        if Device.loc_data_zone != Device.sensors[ZONE]:
+            if NOT_SET not in zones_cnt_by_zone:
+            # if 'xxx' not in zones_cnt_by_zone:
+                for _Device in Gb.Devices:
+                    if Device is not _Device:
+                        event_msg = f"Zone-Device Counts > {zones_cnt_summary_msg}"
+                        post_event(_Device.devicename, event_msg)
 
 #--------------------------------------------------------------------
     def _move_into_statzone_if_timer_reached(self, Device):
@@ -1563,8 +1566,6 @@ class iCloud3:
                     Device.old_loc_poor_gps_msg = f"Poor GPS > {cnt_msg}, Accuracy-±{Device.loc_data_gps_accuracy:.0f}m"
                 else:
                     Device.old_loc_poor_gps_msg = f"Locaton > Unknown {cnt_msg}, {secs_to_age_str(Device.loc_data_secs)}"
-                # if Device.old_loc_poor_gps_cnt > 2:
-                #    Device.old_loc_poor_gps_msg += f", Threshold-{secs_to_time_str(Device.old_loc_threshold_secs)}"
 
         except Exception as err:
             log_exception(err)

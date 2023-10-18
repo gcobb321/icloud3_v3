@@ -85,9 +85,9 @@ class iCloud3_Device(TrackerEntity):
         self.StatZone              = None    # The StatZone this Device is in or None if not in a StatZone
         #self.stationary_zonename   = (f"{self.devicename}_{STATIONARY}")
 
-        self.FromZones_by_zone = {}      # DeviceFmZones objects for the track_from_zones parameter for this Device
-        self.FromZone_Home      = None    # DeviceFmZone object for the Home zone
-        self.from_zone_names  = []      # List of the from_zones in the FromZones_by_zone dictionary
+        self.FromZones_by_zone    = {}      # DeviceFmZones objects for the track_from_zones parameter for this Device
+        self.FromZone_Home        = None    # DeviceFmZone object for the Home zone
+        self.from_zone_names      = []      # List of the from_zones in the FromZones_by_zone dictionary
         self.only_track_from_home  = True    # Track from only Home  (True) or also track from other zones (False)
         self.FromZone_BeingUpdated = None # DeviceFmZone object being updated in determine_interval for EvLog TfZ info
         self.FromZone_NextToUpdate = None # Set to the DeviceFmZone when it's next_update_time is reached
@@ -247,7 +247,7 @@ class iCloud3_Device(TrackerEntity):
         self.last_iosapp_trigger           = ''
 
         # iCloud data update control variables
-        # self.icloud_update_needed_flag     = False
+        self.icloud_force_update_flag      = False      # Bypass all update needed checks and force an iCloud update
         self.icloud_devdata_useable_flag   = False
         self.icloud_acct_error_flag        = False      # An error occured from the iCloud account update request
         self.icloud_update_reason          = 'Trigger > Initial Locate'

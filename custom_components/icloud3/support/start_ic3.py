@@ -243,6 +243,7 @@ def initialize_global_variables():
     Gb.used_data_source_FMF         = False
     Gb.used_data_source_FAMSHR      = False
     Gb.used_data_source_IOSAPP      = False
+    Gb.any_data_source_IOSAPP_none  = False
 
     initialize_on_initial_load()
 
@@ -403,7 +404,7 @@ def initialize_icloud_data_source():
     Gb.primary_data_source_ICLOUD   = Gb.conf_data_source_ICLOUD
     Gb.primary_data_source          = ICLOUD if Gb.primary_data_source_ICLOUD else IOSAPP
     Gb.devices                      = Gb.conf_devices
-    Gb.force_icloud_update_flag     = False
+    Gb.icloud_force_update_flag     = False
 
     Gb.stage_4_no_devices_found_cnt = 0
 
@@ -419,19 +420,6 @@ def icloud_server_endpoint_suffix(endpoint_suffix):
         return Gb.country_code.lower()
 
     return ''
-
-    # endpoint_msg = ''
-    # if endpoint_suffix.startswith('-'):
-    #     endpoint_msg = f"Overridden, Not Used ({endpoint_suffix}) "
-    #     endpoint_suffix = ''
-    # elif endpoint_suffix != '':
-    #     endpoint_suffix = endpoint_msg = f".{endpoint_suffix}"
-    # if endpoint_msg != '':
-    #     post_event(f"iCloud Web Server Country Suffix > {endpoint_msg}")
-
-#------------------------------------------------------------------------------
-# def initialize_PyiCloud():
-#     Gb.PyiCloud = None
 
 #------------------------------------------------------------------------------
 def set_primary_data_source(data_source):
@@ -1963,6 +1951,9 @@ def setup_trackable_devices():
                 Gb.used_data_source_FMF = True
                 event_msg += f"{CRLF_DOT}FmF Device: {Device.conf_fmf_email}"
 
+        # Set a flag indicating there is a tracked device that does not use the ios app
+        if Device.iosapp_monitor_flag is False and Device.is_tracked:
+            Gb.iosapp_monitor_any_devices_false_flag = True
 
         # Initialize iosapp state & location fields
         if Device.iosapp_monitor_flag:

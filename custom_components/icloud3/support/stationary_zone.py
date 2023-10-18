@@ -241,12 +241,12 @@ def ha_statzones():
 def _trigger_monitored_device_update(StatZone, Device, action):
     '''
     When a StatZone is being created, see if any monitored devices are close enough to
-    the device creating it and, if so,  trigger a locate  update so they will move into
+    the device creating it and, if so, trigger a locate update so they will move into
     it.
 
     When the last device in a StatZone exited from it and there are monitored devices in
-    it, move  all monitored devices in that StatZone out of it. Then trigger an update
-    redcoat the monitored device as Away
+    it, move all monitored devices in that StatZone out of it. Then trigger an update
+    to reset the monitored device as Away
     '''
     for _Device in Gb.Devices_by_devicename_monitored.values():
         event_msg = ""
@@ -265,7 +265,9 @@ def _trigger_monitored_device_update(StatZone, Device, action):
             continue
 
         if event_msg:
-            Gb.force_icloud_update_flag = True
+            # v3.0.rc7.1 Change Global force_update to the actual device needing it
+            # Gb.icloud_force_update_flag = True
+            _Device.icloud_force_update_flag = True
             det_interval.update_all_device_fm_zone_sensors_interval(_Device, 5)
             _Device.icloud_update_reason = event_msg
             _Device.write_ha_sensors_state([NEXT_UPDATE, INTERVAL])

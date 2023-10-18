@@ -155,6 +155,12 @@
           "action_items": ""
         }
       },
+      "confirm_action": {
+        "title": "Confirm Selected Action",
+        "data": {
+          "action_items": ""
+        }
+      },
       "icloud_account": {
         "title": "iCloud Account & iOS App Data Sources",
         "description": "The data sources (iCloud Account Web Services and the iOS App) are selected on this screen. The Apple iCloud Account Username/Password must be specified here to access the iCloud Account. The HA Companion App (iOS App) must be installed on the iDevice to use is as a data source for that device. Each iDevice you are tracking is associated with the iCloud3 device on the Update Devices screen.",

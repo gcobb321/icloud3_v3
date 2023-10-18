@@ -1,4 +1,11 @@
-rc7 - Release Candidate 6 (10/7/2023)
+rc7.1 - Release Candidate 7.1 (10/15/2023)
+...............................
+1. Zone-Device Count bug fix - Fixed a bug where the device counts were not being displayed correctly.
+2. Exit Zone for Devices without the iOSApp (Watch) - When a Device exits a zone, all other devices that were in the same zone that do not have the iOS App installed will be updated immediately. They were being updated when their next update timer was reached. Hopefully, this will make Watch zone exit updates to be done when they happen.
+3. Apple account password - When iCloud3 starts, the password is checked to see if it is encoded in the configuration parameter file. If it is not and it should be, it will be encoded and the configuration file will be updated. Previously, there were times when the file was not being updated.
+4. iCloud Account username/password changes - When the username/password is changed, the Apple account is logged into. If you select 'Save' the configuration file is updated. If you select 'Return', the updated username/password is not saved and the menu is displayed. This can lead to login problems the next time iCloud3 starts if you really wanted to save them but didn't. An additional Confirmation Screen is now displayed that lets you save them or not save them.
+
+rc7 - Release Candidate 7 (10/15/2023)
 ...............................
 1. yaml Zones - Fixed a problem where zones configured using yaml were not being loaded when iCloud3 started.
 2. Zone-Devices Count - New feature - The number of the devices within a zone is displayed with the tracking results on the Event Log. The counts are the numbers (x) after the zone name. For Example:

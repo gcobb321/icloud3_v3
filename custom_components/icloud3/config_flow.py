@@ -197,6 +197,9 @@ ACTION_LIST_ITEMS_KEY_TEXT = {
         'exit':                     'EXIT ᐳ Exit the iCloud3 Configurator',
         'return':                   'RETURN ᐳ Return to the Main Menu',
 
+        'confirm_return':           'RETURN WITHOUT SAVING CONFIGURATION CHANGES ᐳ Return to the Main Menu without saving any changes',
+        'confirm_save':             'SAVE THE CONFIGURATION CHANGES ᐳ Save any changes, then return to the Main Menu',
+
         "divider1": "═══════════════════════════════════════",
         "divider2": "═══════════════════════════════════════",
         "divider3": "═══════════════════════════════════════"
@@ -1169,6 +1172,49 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
                             errors=self.errors)
 
 #-------------------------------------------------------------------------------------------
+    async def async_step_confirm_action(self, user_input=None, action_items=None,
+                                            called_from_step_id=None):
+        '''
+        Confirm an action - This will display a screen containing the action_items.
+
+        Parameters:
+            action_items - The action_item keys in the ACTION_LIST_ITEMS_KEY_TEXT dictionary.
+                            The last key is the default item on the confirm actions screen.
+            called_from_step_id - The name of the step to return to.
+
+        Notes:
+            Before calling this function, set the self.user_input_multi_form to the user_input.
+                    This will preserve all parameter changes in the calling screen. They are
+                    returned to the called from step on exit.
+            Action item - The action_item selected on this screen is added to the
+                    self.user_input_multi_form variable returned. It is resolved in the calling
+                    step in the self._action_text_to_item function in the calling step.
+            On Return - Set the function to return to for the called_from_step_id.
+        '''
+        self.step_id = 'confirm_action'
+        self.errors = {}
+        self.errors_user_input = {}
+        self.called_from_step_id_1 = called_from_step_id or self.called_from_step_id_1 or 'menu'
+
+        if action_items is not None:
+            actions_list = []
+            for action_item in action_items:
+                actions_list.append(ACTION_LIST_ITEMS_KEY_TEXT[action_item])
+
+            return self.async_show_form(step_id=self.step_id,
+                                        data_schema=self.form_schema(self.step_id,
+                                                                    actions_list=actions_list),
+                                                                    errors=self.errors)
+
+        user_input, action_item = self._action_text_to_item(user_input)
+        self.user_input_multi_form['action_item'] = action_item
+
+        if self.called_from_step_id_1 == 'icloud_account':
+            return await self.async_step_icloud_account(user_input=self.user_input_multi_form)
+
+        return await self.async_step_menu()
+
+#-------------------------------------------------------------------------------------------
     def _set_example_zone_name(self):
         '''
         'fname': 'HA Zone Friendly Name used by zone automation triggers (TheShores)',
@@ -1921,7 +1967,22 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
             if CONF_PASSWORD in log_user_input: log_user_input[CONF_PASSWORD] = obscure_field(log_user_input[CONF_PASSWORD])
             log_debug_msg(f"{self.step_id} ({action_item}) > UserInput-{log_user_input}, Errors-{errors}")
 
-            if action_item == 'cancel':
+            if action_item == 'confirm_save':
+                # user_input = self.user_input_multi_form
+                action_item = 'save'
+
+            elif action_item == 'confirm_return':
+                return await self.async_step_menu()
+
+            elif action_item == 'cancel':
+                if (Gb.username != user_input[CONF_USERNAME]
+                        or Gb.password != user_input[CONF_PASSWORD]
+                        or Gb.icloud_server_endpoint_suffix != user_input['url_suffix_china']):
+                    self.user_input_multi_form = user_input.copy()
+
+                    return await self.async_step_confirm_action(user_input,
+                                                                action_items = ['confirm_return','confirm_save'],
+                                                                called_from_step_id='icloud_account')
                 return await self.async_step_menu()
 
             # Data Source is iOS App only, iCloud was not selected
@@ -2069,7 +2130,7 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
                 post_event(f"{EVLOG_NOTICE}iCLOUD ALERT > Apple ID Verification complete")
 
                 Gb.EvLog.clear_alert()
-                Gb.force_icloud_update_flag = True
+                Gb.icloud_force_update_flag = True
                 PyiCloud.new_2fa_code_already_requested_flag = False
 
                 self.errors['base'] = self.header_msg = 'verification_code_accepted'
@@ -3467,7 +3528,11 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
             return None, None
 
         action_text = None
-        if 'action_items' in user_input:
+        if 'action_item' in user_input:
+            action_item = user_input['action_item']
+            user_input.pop('action_item')
+
+        elif 'action_items' in user_input:
             action_text = user_input['action_items']
             if action_text.startswith('NEXT PAGE ITEMS > '):
                 action_item = 'next_page_items'
@@ -3476,6 +3541,8 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
                 action_item = [k    for k, v in ACTION_LIST_ITEMS_KEY_TEXT.items()
                                     if v.startswith(action_text[:action_text_len])][0]
             user_input.pop('action_items')
+
+
         else:
             action_item = None
 
@@ -3777,12 +3844,12 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
 #
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-    def form_schema(self, step_id):
+    def form_schema(self, step_id, actions_list=None, actions_list_default=None):
         '''
         Return the step_id form schema for the data entry forms
         '''
         schema = {}
-        self.actions_list = ACTION_LIST_ITEMS_BASE.copy()
+        self.actions_list = actions_list or ACTION_LIST_ITEMS_BASE.copy()
 
         if step_id == 'menu':
             menu_action_items = MENU_ACTION_ITEMS.copy()
@@ -3814,8 +3881,18 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
             return schema
 
         #------------------------------------------------------------------------
-        elif step_id == 'restart_icloud3':
+        elif step_id.startswith('confirm_action'):
+            actions_list_default = actions_list_default or self.actions_list[-1]
 
+            return vol.Schema({
+                vol.Required('action_items',
+                            default=actions_list_default):
+                            selector.SelectSelector(selector.SelectSelectorConfig(
+                                options=self.actions_list, mode='list')),
+                })
+
+        #------------------------------------------------------------------------
+        elif step_id == 'restart_icloud3':
             self.actions_list = []
             restart_default='restart_ic3_now'
 
@@ -4431,17 +4508,6 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
                             default=Gb.conf_general[CONF_STAT_ZONE_INZONE_INTERVAL]):
                             selector.NumberSelector(selector.NumberSelectorConfig(
                                 min=5, max=60, unit_of_measurement='minutes')),
-
-                # vol.Optional('base_offset_header',
-                #             default=sbzh_default):
-                #             cv.multi_select([STAT_ZONE_BASE_HEADER]),
-                # vol.Required(CONF_STAT_ZONE_BASE_LATITUDE,
-                #             default=Gb.conf_general[CONF_STAT_ZONE_BASE_LATITUDE]):
-                #             selector.NumberSelector(selector.NumberSelectorConfig(min=-90, max=90)),
-                # vol.Required(CONF_STAT_ZONE_BASE_LONGITUDE,
-                #             default=Gb.conf_general[CONF_STAT_ZONE_BASE_LONGITUDE]):
-                #             selector.NumberSelector(selector.NumberSelectorConfig(min=-180, max=180)),
-
                 vol.Optional('track_from_zone_header',
                             default=tfzh_default):
                             cv.multi_select([TRK_FROM_HOME_ZONE_HEADER]),
