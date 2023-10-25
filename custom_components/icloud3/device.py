@@ -79,7 +79,7 @@ class iCloud3_Device(TrackerEntity):
     def __init__(self, devicename, conf_device):
         self.conf_device           = conf_device
         self.devicename            = devicename
-        self.dr_device_id          = ''      # ha device_registry device_id
+        self.ha_device_id          = ''      # ha device_registry device_id
         self.fname                 = devicename.title()
 
         self.StatZone              = None    # The StatZone this Device is in or None if not in a StatZone
@@ -149,6 +149,8 @@ class iCloud3_Device(TrackerEntity):
 
         # Trigger & Update variables
         self.trigger                      = 'iCloud3'
+        self.interval_secs                = 0
+        self.interval_str                 = ''
         self.next_update_secs             = 0
         self.seen_this_device_flag        = False
         self.iosapp_zone_enter_secs       = 0
@@ -430,8 +432,8 @@ class iCloud3_Device(TrackerEntity):
             self.DeviceTracker = Gb.DeviceTrackers_by_devicename[self.devicename]
             self.DeviceTracker.Device = self
             try:
-                self.DeviceTracker.device_id = Gb.dr_device_id_by_devicename[self.devicename]
-                self.DeviceTracker.area_id   = Gb.dr_area_id_by_devicename[self.devicename]
+                self.DeviceTracker.device_id = Gb.ha_device_id_by_devicename[self.devicename]
+                self.DeviceTracker.area_id   = Gb.ha_area_id_by_devicename[self.devicename]
             except:
                 pass
 

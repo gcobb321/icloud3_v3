@@ -371,7 +371,7 @@ class iCloud3:
             post_event(devicename, event_msg)
             return
 
-        # If the iOS App is the primary data source next_update time is reached, get the
+        # If the iOS App is the primary and data source next_update time is reached, get the
         # old location threshold. Send a location request to the iosapp device if the
         # data is older than the threshold, the next_update is newer than the iosapp data
         # and the next_update and data time is after the last request was sent.
@@ -407,7 +407,9 @@ class iCloud3:
             event_msg = f"Trigger > {Device.iosapp_data_change_reason}"
             post_event(devicename, event_msg)
 
-            # If entering a zone, check the passthru time, exit if it is now set
+            # If using the passthru zone delay:
+            #    If entering a zone, set it if it is not set
+            #    If exiting, reset it
             if Gb.is_passthru_zone_used:
                 if instr(Device.iosapp_data_change_reason, ENTER_ZONE):
                     if Device.set_passthru_zone_delay(IOSAPP,

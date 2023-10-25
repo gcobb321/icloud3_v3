@@ -147,8 +147,8 @@ class GlobalVariables(object):
     Sensors_by_devicename             = {}  # HA sensor.[devicename]_[sensor_name]_[from_zone] objects
     Sensors_by_devicename_from_zone   = {}  # HA sensor.[devicename]_[sensor_name]_[from_zone] objects
     Sensor_EventLog                   = None    # Event Log sensor object
-    dr_device_id_by_devicename        = {}  # HA device_registry device_id
-    dr_area_id_by_devicename          = {}  # HA device_registry area_id
+    ha_device_id_by_devicename        = {}  # HA device_registry device_id
+    ha_area_id_by_devicename          = {}  # HA device_registry area_id
 
     # Event Log operational fields
     evlog_card_directory              = ''
