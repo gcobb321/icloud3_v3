@@ -4,7 +4,7 @@
 
 ------
 
-### Release Candidate - v3.0.rc8 (10/25/2023)
+### Release Candidate - v3.0.rc9 (12/20/2023)
 
 ------
 
