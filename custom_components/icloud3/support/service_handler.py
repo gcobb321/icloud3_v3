@@ -473,7 +473,7 @@ def _handle_action_device_location_mobapp(Device):
     Request Mobile App location from the EvLog > Actions
     '''
     if Device.is_data_source_MOBAPP is False:
-       return _handle_action_device_locate(Device, 'mobapp')
+        return _handle_action_device_locate(Device, 'mobapp')
 
     Device.display_info_msg('Updating Location')
 

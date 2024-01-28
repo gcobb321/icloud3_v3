@@ -15,7 +15,7 @@ from ..support.waze_route_calc_ic3  import WazeRouteCalculator, WRCError
 from ..helpers.common       import (instr, format_gps, )
 from ..helpers.messaging    import (post_event, post_internal_error, log_info_msg, _trace, _traceha, )
 from ..helpers.time_util    import (time_now_secs, datetime_now, secs_since, secs_to_time_str, mins_to_time_str, )
-from ..helpers.dist_util    import (mi_to_km,  format_dist_km, )
+from ..helpers.dist_util    import (km_to_um, )
 
 import traceback
 import time
@@ -214,8 +214,10 @@ class Waze(object):
             if waze_source_msg == "":
                 # event_msg += (  f"TravTime-{self.waze_mins_to_time_str(route_time)}, "
                 event_msg += (  f"TravTime-{secs_to_time_str(route_time * 60)}, "
-                                f"Dist-{format_dist_km(route_dist_km)}, "
-                                f"Moved-{format_dist_km(dist_moved_km)}"
+                                f"Dist-{km_to_um(route_dist_km)}, "
+                                #f"Dist-{format_dist_km(route_dist_km)}, "
+                                f"Moved-{km_to_um(dist_moved_km)}"
+                                #f"Moved-{format_dist_km(dist_moved_km)}"
                                 #f"CalcMoved-{format_dist_km(Device.loc_data_dist_moved_km)}, "
                                 f"{wazehist_save_msg}")
             post_event(Device.devicename, event_msg)

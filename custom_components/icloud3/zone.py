@@ -28,7 +28,7 @@ from .helpers.messaging import (post_event, post_error_msg, post_monitor_msg,
                                 log_exception, log_rawdata,_trace, _traceha, )
 from .helpers.time_util import (time_now_secs, datetime_now, secs_to_time, secs_since,
                                 secs_to_datetime, format_time_age, )
-from .helpers.dist_util import (calc_distance_m, calc_distance_km, format_dist_km, format_dist_m, )
+from .helpers.dist_util import (calc_distance_m, calc_distance_km, )
 
 
 MDI_NAME_LETTERS = {'circle-outline': '', 'box-outline': '', 'circle': '', 'box': ''}

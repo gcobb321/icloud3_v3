@@ -16,18 +16,15 @@
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 from .global_variables  import GlobalVariables as Gb
-from .const             import (DOMAIN, VERSION, ICLOUD3,RARROW,
+from .const             import (DOMAIN, VERSION, ICLOUD3, RARROW,
                                 SENSOR_EVENT_LOG_NAME, SENSOR_WAZEHIST_TRACK_NAME,
                                 HOME, HOME_FNAME, NOT_SET, NOT_SET_FNAME, NONE_FNAME,
                                 DATETIME_ZERO, HHMMSS_ZERO,
                                 BLANK_SENSOR_FIELD, DOT, HDOT, HDOT2, UM_FNAME, NBSP,
                                 TRACK_DEVICE, MONITOR_DEVICE, INACTIVE_DEVICE,
-                                DISTANCE_TO_OTHER_DEVICES,
                                 NAME, FNAME, BADGE, FROM_ZONE,
-                                ZONE, ZONE_INFO, LAST_ZONE,
-                                ZONE_DISTANCE, ZONE_DISTANCE_M, ZONE_DISTANCE_M_EDGE,
-                                BATTERY, BATTERY_STATUS, BATTERY_SOURCE,
-                                DISTANCE_TO_OTHER_DEVICES_DATETIME,
+                                ZONE, ZONE_DISTANCE_M, ZONE_DISTANCE_M_EDGE,
+                                BATTERY, BATTERY_STATUS,
                                 CONF_TRACK_FROM_ZONES,
                                 CONF_IC3_DEVICENAME, CONF_MODEL, CONF_RAW_MODEL, CONF_FNAME,
                                 CONF_FAMSHR_DEVICENAME, CONF_MOBILE_APP_DEVICE,
@@ -35,13 +32,15 @@ from .const             import (DOMAIN, VERSION, ICLOUD3,RARROW,
                                 )
 from .const_sensor      import (SENSOR_DEFINITION, SENSOR_GROUPS,
                                 SENSOR_FNAME, SENSOR_TYPE, SENSOR_ICON,
-                                SENSOR_ATTRS, SENSOR_DEFAULT, SENSOR_LIST_DISTANCE, )
+                                SENSOR_ATTRS, SENSOR_DEFAULT, )
 
 from .helpers.common    import (instr,  round_to_zero, is_statzone, set_precision, )
 from .helpers.messaging import (log_info_msg, log_debug_msg, log_error_msg, log_exception,
                                 _trace, _traceha, )
-from .helpers.time_util import (time_to_12hrtime, time_remove_am_pm, secs_to_time_str, mins_to_time_str,
-                                time_now_secs, datetime_now, adjust_time_hour_value, adjust_time_hour_values)
+from .helpers.time_util import (time_to_12hrtime, time_remove_am_pm, secs_to_time_str,
+                                mins_to_time_str, time_now_secs, datetime_now,
+                                secs_to_datetime, adjust_time_hour_values,
+                                adjust_time_hour_value)
 from .helpers.dist_util import (km_to_mi, m_to_ft, )
 from .helpers.format    import (icon_circle, icon_box, )
 from collections        import OrderedDict
@@ -50,10 +49,8 @@ from .support           import start_ic3
 from .support           import recorder_prefilter
 
 from homeassistant.components.sensor    import SensorEntity
-from homeassistant.helpers.entityfilter import convert_include_exclude_filter
 from homeassistant.config_entries       import ConfigEntry
 from homeassistant.helpers.entity       import DeviceInfo
-from homeassistant.helpers.device_registry import DeviceEntryType
 
 from homeassistant.core                 import HomeAssistant
 from homeassistant.helpers.icon         import icon_for_battery_level
@@ -219,8 +216,6 @@ def _create_track_from_zone_sensors(devicename, conf_device, sensors_list):
         return []
 
     ha_zones, zone_entity_data   = entity_io.get_entity_registry_data(platform=ZONE)
-    # zone_entity_ids              = entity_io.ha_zone_entity_ids()
-    # ha_zones = [zone_entity_id.replace('zone.', '') for zone_entity_id in zone_entity_ids]
     devicename_from_zone_sensors = Gb.Sensors_by_devicename_from_zone.get(devicename, {})
     excluded_sensors_list        = _excluded_sensors_list()
 
@@ -1085,20 +1080,20 @@ class Sensor_Distance(SensorBase):
                                 for zone_da, dist_km in zone_dist_km.items()}
 
         # zone_dist_m  = {f" - {Zone.dname}.": set_precision(self.Device.Distance_m(Zone), 'm')
-        zone_dist_m  = {f" - {Zone.dname}²": set_precision(self.Device.Distance_m(Zone), 'm')
+        zone_dist_m  = {f" - {Zone.dname}*": set_precision(self.Device.Distance_m(Zone), 'm')
                                 for Zone in Gb.HAZones
                                 if self.Device.Distance_m(Zone) < 500}
         zone_dist_ft = {zone_da: self._set_precision(m_to_ft(dist_m), 'ft')
                                 for zone_da, dist_m in zone_dist_m.items()}
 
-        dist_attrs[f"zone_distance"] =  f"({Gb.um}) @{datetime_now()}"
+        dist_attrs[f"zone_distance"] = f"({Gb.um}) @{datetime_now()}"
         if Gb.um_KM:
             dist_attrs.update(zone_dist_km)
         else:
             dist_attrs.update(zone_dist_mi)
 
         if zone_dist_m or zone_dist_ft:
-            dist_attrs[f"zone_distance (< 500m)"] = f"({Gb.um_m_ft}) @{datetime_now()}"
+            dist_attrs[f"zone_distance* (< 500m)"] = f"({Gb.um_m_ft}) @{datetime_now()}"
             if Gb.um_KM:
                 dist_attrs.update(zone_dist_m)
             else:
@@ -1121,7 +1116,7 @@ class Sensor_Distance(SensorBase):
                                 for device_fn, dist_m in device_dist_m.items()}
 
         # device_dist_km  = {f" - {self._fname(devicename)}.": set_precision(dist_to_other_devices[0]/1000, 'km')
-        device_dist_km  = {f" - {self._fname(devicename)}²": set_precision(dist_to_other_devices[0]/1000, 'km')
+        device_dist_km  = {f" - {self._fname(devicename)}*": set_precision(dist_to_other_devices[0]/1000, 'km')
                                 # for devicename, dist_to_other_devices in self.Device.sensors[DISTANCE_TO_OTHER_DEVICES].items()
                                 for devicename, dist_to_other_devices in self.Device.dist_to_other_devices.items()
                                 if dist_to_other_devices[0] >= 500}
@@ -1129,14 +1124,16 @@ class Sensor_Distance(SensorBase):
                                 for device_fn, dist_km in device_dist_km.items()}
 
         if device_dist_m or device_dist_ft:
-            dist_attrs["device_distance (< 500m)"] = f"({Gb.um_m_ft}) @{self.Device.dist_to_other_devices_datetime}"
+            dist_attrs["device_distance (< 500m)"] = (f"({Gb.um_m_ft}) "
+                                f"@{secs_to_datetime(self.Device.dist_to_other_devices_secs)}")
             if Gb.um_KM:
                 dist_attrs.update(device_dist_m)
             else:
                 dist_attrs.update(device_dist_ft)
 
         if device_dist_km or device_dist_mi:
-            dist_attrs["device_distance"] = f"({Gb.um}) @{self.Device.dist_to_other_devices_datetime}"
+            dist_attrs["device_distance"] = (f"({Gb.um}) "
+                                f"@{secs_to_datetime(self.Device.dist_to_other_devices_secs)}")
             if Gb.um_KM:
                 dist_attrs.update(device_dist_km)
             else:

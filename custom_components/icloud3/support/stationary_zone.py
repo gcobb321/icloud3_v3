@@ -8,8 +8,10 @@
 #
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 from ..global_variables  import GlobalVariables as Gb
-from ..const             import (ZONE, LATITUDE, LONGITUDE, STATZONE_RADIUS_1M, HIGH_INTEGER,
-                                ENTER_ZONE, EXIT_ZONE, NEXT_UPDATE, INTERVAL, RARROW, )
+from ..const             import (ZONE, LATITUDE, LONGITUDE, GPS, 
+                                STATZONE_RADIUS_1M, HIGH_INTEGER,
+                                ENTER_ZONE, EXIT_ZONE, NEXT_UPDATE, INTERVAL, 
+                                NOT_SET, RARROW, )
 from ..zone              import iCloud3_StationaryZone
 from ..support           import determine_interval as det_interval
 from ..support           import mobapp_interface
@@ -17,9 +19,64 @@ from ..helpers.common    import (isbetween, is_statzone, format_gps,  zone_dname
 from ..helpers.messaging import (post_event, post_error_msg, post_monitor_msg,
                                 log_debug_msg, log_exception, log_rawdata, _trace, _traceha, )
 from ..helpers.time_util import (secs_to_time, datetime_now, format_time_age, secs_since, )
-from ..helpers.dist_util import (format_dist_m, )
+from ..helpers.dist_util import (format_dist_m, calc_distance_km, )
 from ..helpers           import entity_io
 
+
+#--------------------------------------------------------------------
+def create_StationaryZones_object():
+    '''
+    Create a new Stationary Zone
+    '''
+
+    statzone_id = str(len(Gb.StatZones) + 1)
+    StatZone = iCloud3_StationaryZone(statzone_id)
+    event_msg = (f"ADDED StatZone > {StatZone.fname} ({StatZone.zone})")
+    post_monitor_msg(event_msg)
+
+    Gb.StatZones.append(StatZone)
+    Gb.StatZones_by_zone[StatZone.zone] = StatZone
+
+    Gb.Zones.append(StatZone)
+    Gb.Zones_by_zone[StatZone.zone] = StatZone
+    Gb.HAZones.append(StatZone)
+    Gb.HAZones_by_zone[StatZone.zone] = StatZone
+    Gb.state_to_zone[StatZone.zone] = StatZone.zone
+
+    return StatZone
+
+#--------------------------------------------------------------------
+def move_into_statzone_if_timer_reached(Device):
+    '''
+    Check the Device's Stationary Zone expired timer and distance moved:
+        Update the Device's Stat Zone distance moved
+        Reset the timer if the Device has moved further than the distance limit
+        Move Device into the Stat Zone if it has not moved further than the limit
+    '''
+    if Gb.is_statzone_used is False:
+        return False
+
+    calc_dist_last_poll_moved_km = calc_distance_km(Device.sensors[GPS], Device.loc_data_gps)
+    Device.update_distance_moved(calc_dist_last_poll_moved_km)
+
+    # See if moved less than the stationary zone movement limit
+    # If updating via the Mobile App and the current state is stationary,
+    # make sure it is kept in the stationary zone
+    if Device.is_statzone_timer_reached is False or Device.is_location_old_or_gps_poor:
+        return False
+
+    if Device.is_statzone_move_limit_exceeded:
+        Device.statzone_reset_timer
+
+    # Monitored devices can move into a tracked zone but can not create on for itself
+    elif Device.is_monitored: #beta 4/13b16
+        pass
+
+    elif (Device.isnot_in_statzone
+            or (is_statzone(Device.mobapp_data_state) and Device.loc_data_zone == NOT_SET)):
+        move_device_into_statzone(Device)
+
+    return True
 
 #--------------------------------------------------------------------
 def move_device_into_statzone(Device):
@@ -93,28 +150,6 @@ def move_device_into_statzone(Device):
     _trigger_monitored_device_update(StatZone, Device, ENTER_ZONE)
 
     return True
-
-#--------------------------------------------------------------------
-def create_StationaryZones_object():
-    '''
-    Create a new Stationary Zone
-    '''
-
-    statzone_id = str(len(Gb.StatZones) + 1)
-    StatZone = iCloud3_StationaryZone(statzone_id)
-    event_msg = (f"ADDED StatZone > {StatZone.fname} ({StatZone.zone})")
-    post_monitor_msg(event_msg)
-
-    Gb.StatZones.append(StatZone)
-    Gb.StatZones_by_zone[StatZone.zone] = StatZone
-
-    Gb.Zones.append(StatZone)
-    Gb.Zones_by_zone[StatZone.zone] = StatZone
-    Gb.HAZones.append(StatZone)
-    Gb.HAZones_by_zone[StatZone.zone] = StatZone
-    Gb.state_to_zone[StatZone.zone] = StatZone.zone
-
-    return StatZone
 
 #--------------------------------------------------------------------
 def exit_all_statzones():

@@ -116,7 +116,7 @@ MENU_PAGE_TITLE = [
     'Menu > Configure Parameters Menu'
     ]
 MENU_KEY_TEXT = {
-        'icloud_account':       'iCLOUD ACCOUNT & Mobile App ᐳ •Set iCloud Account Username/Password, •Set Location Data Sources',
+        'icloud_account':       'iCLOUD ACCOUNT & MOBILE APP ᐳ •Set iCloud Account Username/Password, •Set Location Data Sources',
         'device_list':          'ICLOUD3 DEVICES  ᐳ •Add, Change and Delete tracked and monitored devices',
         'verification_code':    'ENTER/REQUEST AN APPLE ID VERIFICATION CODE ᐳ •Enter or Request the 6-digit Apple ID Verification Code',
         'away_time_zone':       'AWAY TIME ZONE ᐳ •Select the time zone used to display time based tracking events for a device when in another time zone',
@@ -134,7 +134,7 @@ MENU_KEY_TEXT = {
         'select':               'SELECT ᐳ Select the parameter update form',
         'next_page_0':          f'{MENU_PAGE_TITLE[0].upper()} ᐳ •iCloud Account & Mobile App, •iCloud3 Devices, •Enter & Request Verification Code, •Change Device Order, •Sensors, •Action Commands',
         'next_page_1':          f'{MENU_PAGE_TITLE[1].upper()} ᐳ •Format Parameters, •Display Text As, •Waze Route Distance, Time & History, •inZone Intervals, •Special Zones, • Other Parameters',
-        'exit':                f'EXIT AND RESTART ICLOUD3 {".. "*22}(Version: {Gb.version})'
+        'exit':                 f'EXIT AND RESTART ICLOUD3 v{Gb.version}'
 }
 
 MENU_KEY_TEXT_PAGE_0 = [
@@ -298,7 +298,7 @@ LOG_ZONES_KEY_TEXT = {
         'name-zone':        ' → [year]-[zone].csv',
         'name-device':      ' → [year]-[device].csv',
         'name-device-zone': ' → [year]-[device]-[zone].csv',
-        'name-zone-device': ' → [year]-[zone]-[device]-[zone].csv',
+        'name-zone-device': ' → [year]-[zone]-[device].csv',
         }
 TRACKING_MODE_ITEMS_KEY_TEXT = {
         'track':    'Track - Request Location and track the device',

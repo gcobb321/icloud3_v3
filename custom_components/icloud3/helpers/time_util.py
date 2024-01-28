@@ -143,8 +143,8 @@ def secs_to_hhmm(secs):
     """ secs --> hh:mm """
 
     try:
-        if instr(secs, ':'):
-            return secs
+        if secs == 0: return '00:00'
+        if instr(secs, ':'): return secs
 
         w_secs = float(secs) + 30
 
@@ -161,10 +161,12 @@ def secs_to_hhmm(secs):
 def secs_to_time_hhmm(secs):
     """ secs --> hh:mm or hh:mma or hh:mmp"""
     try:
-        if Gb.time_format_24_hour:
-            return secs_to_24hr_time(secs + 30)[:-3]
+        if secs == 0: return '00:00'
 
-        hhmmss = secs_to_time(secs + 30)
+        if Gb.time_format_24_hour:
+            return secs_to_24hr_time(secs)[:-3]
+
+        hhmmss = secs_to_time(secs)
         return hhmmss[:-4] + hhmmss[-1:]
 
     except:

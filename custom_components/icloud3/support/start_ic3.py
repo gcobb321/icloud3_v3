@@ -62,6 +62,7 @@ from ..helpers              import entity_io
 from ..support              import mobapp_interface
 from ..support              import mobapp_data_handler
 from ..support              import service_handler
+from ..support              import zone_handler
 from ..support              import stationary_zone as statzone
 from ..support.waze         import Waze
 from ..support.waze_history import WazeRouteHistory as WazeHist
@@ -700,7 +701,7 @@ def set_zone_display_as():
 
         if Zone.radius_m > 1:
             if Zone.passive:
-                crlf_dot_x = CRLF_STAR
+                crlf_dot_x = CRLF_X
                 passive_msg = ', Passive Zone'
             else:
                 crlf_dot_x = CRLF_DOT
@@ -713,7 +714,7 @@ def set_zone_display_as():
         # StatZone.initialize_updatable_items()
         # StatZone.write_ha_zone_state(StatZone.attrs)
 
-        crlf_dot_x = CRLF_STAR if StatZone.passive else CRLF_DOT
+        crlf_dot_x = CRLF_X if StatZone.passive else CRLF_DOT
         zone_msg +=(f"{crlf_dot_x}{StatZone.zone}, "
                     f"{StatZone.dname} (r{StatZone.radius_m}m)")
 
@@ -994,8 +995,8 @@ def create_Zones_object():
 
     try:
         if Gb.initial_icloud3_loading_flag:
-            event.async_track_state_added_domain(Gb.hass, 'zone', _async_add_zone_entity_id)
-            event.async_track_state_removed_domain(Gb.hass, 'zone', _async_remove_zone_entity_id)
+            event.async_track_state_added_domain(Gb.hass, 'zone', zone_handler.ha_added_zone_entity_id)
+            event.async_track_state_removed_domain(Gb.hass, 'zone', zone_handler.ha_removed_zone_entity_id)
         if Gb.initial_icloud3_loading_flag is False:
             Gb.hass.services.call(ZONE, "reload")
     except:
@@ -1047,7 +1048,7 @@ def create_Zones_object():
 
         if Zone.radius_m > 0:
             if Zone.passive:
-                crlf_dot_x = CRLF_STAR
+                crlf_dot_x = CRLF_X
                 passive_msg = ', Passive Zone'
             else:
                 crlf_dot_x = CRLF_DOT
@@ -1069,7 +1070,7 @@ def create_Zones_object():
         Gb.HAZones_by_zone[zone] = Zone
         Gb.zone_display_as[zone] = Zone.dname
 
-        crlf_dot_x = CRLF_STAR if Zone.passive else CRLF_DOT
+        crlf_dot_x = CRLF_X if Zone.passive else CRLF_DOT
         zone_msg +=(f"{crlf_dot_x}{Zone.zone}, "
                     f"{Zone.dname} (r{Zone.radius_m}m)")
 
@@ -1107,66 +1108,6 @@ def create_Zones_object():
                 Gb.TrackedZones_by_zone[from_zone] = Gb.Zones_by_zone[from_zone]
 
     Gb.debug_log['Gb.Zones'] = Gb.Zones
-
-#------------------------------------------------------------------------------
-@callback
-def _async_add_zone_entity_id(event: EventType[event.EventStateChangedData]) -> None:
-    """Add zone entity ID."""
-
-    zone_entity_id = event.data['entity_id']
-    zone           = zone_entity_id.replace('zone.', '')
-    ha_zone_attrs  = entity_io.ha_zone_attrs(zone_entity_id)
-
-    try:
-        if ha_zone_attrs and LATITUDE in ha_zone_attrs:
-            Zone = iCloud3_Zone(zone)
-
-            if isnot_statzone(zone):
-                post_event( f"HA Zone Added > Zone-{Zone.dname}/{Zone.zone} "
-                            f"(r{Zone.radius_m}m)")
-
-    except Exception as err:
-        log_exception(err)
-        pass
-
-#------------------------------------------------------------------------------
-@callback
-def _async_remove_zone_entity_id(event: EventType[event.EventStateChangedData]) -> None:
-    """Remove zone entity ID."""
-    try:
-        zone_entity_id = event.data['entity_id']
-        zone = zone_entity_id.replace('zone.', '')
-        if zone not in Gb.HAZones_by_zone:
-            return
-
-        Zone = Gb.HAZones_by_zone[zone]
-
-        Zone.status = -1
-        Gb.HAZones_by_zone_deleted[zone] = Zone
-        if isnot_statzone(zone):
-            if zone       in Gb.zone_display_as: del Gb.zone_display_as[zone]
-            if Zone.fname in Gb.zone_display_as: del Gb.zone_display_as[Zone.fname]
-            if Zone.name  in Gb.zone_display_as: del Gb.zone_display_as[Zone.name]
-            if Zone.title in Gb.zone_display_as: del Gb.zone_display_as[Zone.title]
-
-        Gb.Zones   = list_del(Gb.Zones, Zone)
-        if zone in Gb.Zones_by_zone:   del Gb.Zones_by_zone[zone]
-        Gb.HAZones = list_del(Gb.HAZones, Zone)
-        if zone in Gb.HAZones_by_zone: del Gb.HAZones_by_zone[zone]
-
-        for Device in Gb. Devices:
-            Device.remove_zone_from_settings(zone)
-
-        post_event( f"HA Zone Deleted > Zone-{Zone.dname}/{zone} ({Zone.radius_m}m")
-
-    except Exception as err:
-        log_exception(err)
-        Gb.restart_icloud3_request_flag = True
-        post_event( f"Zone Deleted Error > Zone-{Zone.dname},"
-                    f"An error was encountered deleting the zone, "
-                    f"iCloud3 will be restarted")
-        return
-
 
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 #
@@ -1471,9 +1412,9 @@ def _check_conf_famshr_devices_not_set_up(_FamShr):
 
     Gb.debug_log['_.devices_not_set_up'] = devices_not_set_up
 
-    devices_not_set_up_str = list_to_str(devices_not_set_up, CRLF_STAR)
+    devices_not_set_up_str = list_to_str(devices_not_set_up, CRLF_X)
     post_startup_alert( f"FamShr Device Config Error > "
-                        f"Device Not found{devices_not_set_up_str.replace(CRLF_STAR, CRLF_HDOT)}")
+                        f"Device Not found{devices_not_set_up_str.replace(CRLF_X, CRLF_HDOT)}")
     log_msg = ( f"{EVLOG_ALERT}FAMSHR DEVICES ERROR > Your Apple iCloud Account Family Sharing List did "
                 f"not return any information for some of configured devices. FamShr will not be used "
                 f"to track these devices."
@@ -1526,7 +1467,7 @@ def _display_devices_verification_status(PyiCloud, _FamShr):
 
             if instr(famshr_fname, '*') or instr(exception_msg, "INACTIVE"):
                 famshr_fname = famshr_fname.replace('*', '')
-                crlf_mark = CRLF_STAR
+                crlf_mark = CRLF_X
             else:
                 crlf_mark = CRLF_DOT
 
@@ -1582,10 +1523,10 @@ def _display_devices_verification_status(PyiCloud, _FamShr):
             elif (instr(exception_msg, "INACTIVE")
                     or instr(exception_msg, "TRACKING DISABLED")
                     or instr(exception_msg, "NO LOCATION")):
-                crlf_mark = CRLF_STAR
+                crlf_mark = CRLF_X
 
             else:
-                crlf_mark = CRLF_DOT
+                crlf_mark = CRLF_X
 
             event_msg += (  f"{crlf_mark}"
                             f"{famshr_fname}{RARROW}{devicename}, "
@@ -1737,8 +1678,7 @@ def _check_duplicate_device_names(PyiCloud, _FamShr):
                 conf_device[CONF_FAMSHR_DEVICE_ID]  = _FamShr.device_id_by_famshr_fname[famshr_fname_last_located]
                 update_conf_file_flag = True
                 Device = Gb.Devices_by_devicename[conf_device[CONF_IC3_DEVICENAME]]
-                if instr(Device.evlog_fname_alert_char, YELLOW_ALERT) is False:
-                    Device.evlog_fname_alert_char += YELLOW_ALERT
+                Device.set_fname_alert(YELLOW_ALERT)
 
         except Exception as err:
             event_msg =( f"Error resolving similar device names, "
@@ -1857,7 +1797,7 @@ def setup_tracked_devices_for_fmf(PyiCloud=None):
 
             elif device[CONF_TRACKING_MODE] == INACTIVE_DEVICE:
                 exception_msg = 'INACTIVE'
-                crlf_mark = CRLF_STAR
+                crlf_mark = CRLF_X
 
             if exception_msg:
                 exception_event_msg += (f"{crlf_mark}{fmf_email}{RARROW}{exception_msg}")
@@ -1892,7 +1832,7 @@ def setup_tracked_devices_for_fmf(PyiCloud=None):
                                 f"{DEVICE_TYPE_FNAME.get(device_type, device_type)}"
                                 f"{exception_msg}")
             else:
-                event_msg += (  f"{CRLF_STAR}"
+                event_msg += (  f"{CRLF_X}"
                                 f"{fmf_email}{RARROW}{devicename}, "
                                 f"{DEVICE_TYPE_FNAME.get(device_type, device_type)}"
                                 f"{exception_msg}")
@@ -2130,9 +2070,8 @@ def setup_tracked_devices_for_mobapp():
                                                             mobapp_id_by_mobapp_devicename,
                                                             conf_mobapp_device)
             if _mobapp_devicename is None:
-                if instr(Device.evlog_fname_alert_char, YELLOW_ALERT) is False:
-                    Device.evlog_fname_alert_char += YELLOW_ALERT
-                mobapp_error_search_msg += f"{CRLF_STAR}{conf_mobapp_device}_??? > Assigned to {Device.fname_devicename}"
+                Device.set_fname_alert(YELLOW_ALERT)
+                mobapp_error_search_msg += f"{CRLF_X}{conf_mobapp_device}_??? > Assigned to {Device.fname_devicename}"
                 continue
 
             mobapp_devicename = _mobapp_devicename
@@ -2141,15 +2080,13 @@ def setup_tracked_devices_for_mobapp():
                 mobapp_devicename = conf_mobapp_device
 
             else:
-                if instr(Device.evlog_fname_alert_char, YELLOW_ALERT) is False:
-                    Device.evlog_fname_alert_char += YELLOW_ALERT
-                mobapp_error_not_found_msg += f"{CRLF_STAR}{conf_mobapp_device} > Assigned to {Device.fname_devicename}"
+                Device.set_fname_alert(YELLOW_ALERT)
+                mobapp_error_not_found_msg += f"{CRLF_X}{conf_mobapp_device} > Assigned to {Device.fname_devicename}"
                 continue
 
         # device_tracker entity is disabled
         if instr(mobapp_id_by_mobapp_devicename[mobapp_devicename], 'DISABLED'):
-            if instr(Device.evlog_fname_alert_char, YELLOW_ALERT) is False:
-                Device.evlog_fname_alert_char += YELLOW_ALERT
+            Device.set_fname_alert(YELLOW_ALERT)
             mobapp_error_disabled_msg += f"{CRLF_DOT}{mobapp_devicename} > Assigned to-{Device.fname_devicename}"
             continue
 
@@ -2158,8 +2095,7 @@ def setup_tracked_devices_for_mobapp():
                 or instr(last_updt_trig_by_mobapp_devicename.get(mobapp_devicename, ''), 'DISABLED')
                 or battery_level_sensors_by_mobapp_devicename.get(mobapp_devicename, '') == ''
                 or instr(battery_level_sensors_by_mobapp_devicename.get(mobapp_devicename, ''), 'DISABLED')):
-            if instr(Device.evlog_fname_alert_char, YELLOW_ALERT) is False:
-                Device.evlog_fname_alert_char += YELLOW_ALERT
+            Device.set_fname_alert(YELLOW_ALERT)
             mobapp_error_mobile_app_msg += f"{CRLF_DOT}{mobapp_devicename} > Assigned to {Device.fname_devicename}"
 
         try:
@@ -2228,7 +2164,7 @@ def setup_tracked_devices_for_mobapp():
             mobapp_fname = f"{mobapp_devicename.replace('_', ' ').title()}(?)"
 
         if mobapp_id_by_mobapp_devicename[mobapp_devicename].startswith('DISABLED'):
-            tracked_msg += f"{CRLF_STAR}{mobapp_fname} ({mobapp_devicename}){RARROW}DISABLED"
+            tracked_msg += f"{CRLF_X}{mobapp_fname} ({mobapp_devicename}){RARROW}DISABLED"
             if mobapp_devicename in Gb.Devices_by_mobapp_devicename:
                 Device = Gb.Devices_by_mobapp_devicename[mobapp_devicename]
 
@@ -2236,10 +2172,10 @@ def setup_tracked_devices_for_mobapp():
             tracked_msg += f"{CRLF_INDENT}{device_info_by_mobapp_devicename[mobapp_devicename]}"
         else:
             if mobapp_fname in verified_mobapp_fnames:
-                crlf_symb = CRLF_STAR
+                crlf_symb = CRLF_X
                 duplicate_msg = ' (DUPLICATE NAME)'
             else:
-                crlf_symb = CRLF_DOT
+                crlf_symb = CRLF_X
                 duplicate_msg = ''
 
             tracked_msg += (f"{crlf_symb}{mobapp_fname} ({mobapp_devicename}){RARROW}Not Monitored, "
@@ -2251,16 +2187,6 @@ def setup_tracked_devices_for_mobapp():
                                 mobapp_error_disabled_msg,
                                 mobapp_error_not_found_msg)
 
-    # if (verify_mobile_app_integration_installed() is False
-    #         and Gb.conf_mobapp_device_cnt > 0):
-    #     Gb.conf_data_source_MOBAPP = False
-
-    #     post_startup_alert( f"Mobile App Integration is not installed. Mobile App Tracking "
-    #                         f"Method is not available")
-
-    #     post_event(f"{EVLOG_ALERT}Mobile App devices have been configured but the Mobile App "
-    #                 f"Integration has not been installed. The Mobile App will not be used as a "
-    #                 f"data source; location data and zone enter/exit triggers will not be monitored")
     return
 
 #--------------------------------------------------------------------
@@ -2293,7 +2219,7 @@ def _search_for_mobapp_device(devicename, Device, mobapp_id_by_mobapp_devicename
 
         alert_msg =(f"{EVLOG_ALERT}DUPLICATE MOBAPP DEVICES FOUND > More than one Device Tracker Entity "
                     f"was found during the scan of the HA Device Registry."
-                    f"{CRLF_STAR}AssignedTo-{Device.fname_devicename}"
+                    f"{CRLF_X}AssignedTo-{Device.fname_devicename}"
                     f"{CRLF}{more_info('mobapp_error_multiple_devices_on_scan')}"
                     f"{CRLF}{'-'*75}"
                     f"{CRLF}Count-{len(matched_mobapp_devices)}, "
@@ -2545,7 +2471,7 @@ def setup_trackable_devices():
         if 'none' not in Device.log_zones:
             log_zones_fname = [zone_dname(zone) for zone in Device.log_zones]
             log_zones = list_to_str(log_zones_fname)
-            log_zones = f"{log_zones.replace(', Name-', f'{RARROW}(')}.cvs)"
+            log_zones = f"{log_zones.replace(', Name-', f'{RARROW}(')}.csv)"
             event_msg += f"{CRLF_HDOT}Log Zone Activity: {log_zones}"
 
         if Device.track_from_base_zone != HOME:
@@ -2612,7 +2538,7 @@ def display_inactive_devices():
         return
 
     event_msg = f"Inactive/Untracked Devices > "
-    event_msg+= list_to_str(inactive_devices, separator=CRLF_STAR)
+    event_msg+= list_to_str(inactive_devices, separator=CRLF_X)
     post_event(event_msg)
 
     if len(inactive_devices) == len(Gb.conf_devices):

@@ -4,7 +4,7 @@
 #
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-VERSION                         = '3.0.rc10'
+VERSION                         = '3.0.rc10.1'
 #-----------------------------------------
 DOMAIN                          = 'icloud3'
 ICLOUD3                         = 'iCloud3'
@@ -250,7 +250,7 @@ lite_circled_letters = "Ⓐ Ⓑ Ⓒ Ⓓ Ⓔ Ⓕ Ⓖ Ⓗ Ⓘ Ⓙ Ⓚ Ⓛ Ⓜ Ⓝ 
 dark_circled_letters = "🅐 🅑 🅒 🅓 🅔 🅕 🅖 🅗 🅘 🅙 🅚 🅛 🅜 🅝 🅞 🅟 🅠 🅡 🅢 🅣 🅤 🅥 🅦 🅧 🅨 🅩 ✪"
 Symbols = ±▪•●▬⮾ ⊗ ⊘✓×ø¦ ▶◀ ►◄▲▼ ∙▪ »« oPhone=►▶→⟾➤➟➜➔➤🡆🡪🡺⟹🡆➔ᐅ◈🝱☒☢⛒⊘Ɵ⊗ⓧⓍ⛒🜔
 Important = ❗❌⚠️❓🛑⛔⚡⭐⭕
-  — –ᗒ ⁃ » ━▶ ━➤🡺 —> > > ❯↦ … 🡪ᗕ ᗒ ᐳ ─🡢 ──ᗒ 🡢 ─ᐅ ↣ ➙ →《》◆◈◉●▐‖  ▹▻▷◁◅◃▶➤➜➔❰❰❱❱ ⠤
+  — –ᗒ ⁃ » ━▶ ━➤🡺 —> > > ❯↦ … 🡪ᗕ ᗒ ᐳ ─🡢 ──ᗒ 🡢 ─ᐅ ↣ ➙ →《》◆◈◉●▐‖  ▹▻▷◁◅◃▶➤➜➔❰❰❱❱ ⠤ ²
  ⣇⠈⠉⠋⠛⠟⠿⡿⣿       https://www.fileformat.info/info/unicode/block/braille_patterns/utf8test.htm
 '''
 NBSP              = '⠈' #'&nbsp;'
@@ -750,12 +750,12 @@ DISTANCE           = 'distance'
 CONF_SENSORS_ZONE  = 'zone'
 ZONE_INFO          = 'zone_info'
 ZONE               = "zone"
-ZONE_DISPLAY_AS    = "zone_display_as"
+ZONE_DNAME         = "zone_dname"
 ZONE_FNAME         = "zone_fname"
 ZONE_NAME          = "zone_name"
 ZONE_DATETIME      = "zone_changed"
 LAST_ZONE          = "last_zone"
-LAST_ZONE_DISPLAY_AS= "last_zone_display_as"
+LAST_ZONE_DNAME    = "last_zone_dname"
 LAST_ZONE_FNAME    = "last_zone_fname"
 LAST_ZONE_NAME     = "last_zone_name"
 LAST_ZONE_DATETIME = "last_zone_changed"
