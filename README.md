@@ -55,16 +55,16 @@ Although Home Assistant has it's own official iCloud component, iCloud3 goes far
 
 The screens below are an example of how the many tracking sensors can be displayed. The screen on the left shows the current tracking formation for Gary while the Event Log on the right shows a history of important tracking events.
 
-![](../icloud3_v3_docs/docs/images/track-evlog-gary-tfz-lillian-home.png)
+![](https://gcobb321.github.io/icloud3_v3_docs/docs/images/track-evlog-gary-tfz-lillian-home.png)
 
 ### iCloud3 Documentation
 
 - Introduces the many features and components of iCloud3
 - Describes how to migration from v2.4.7 to v3.0
-- Provides step-by-step to install and configure iCloud3, it's components and it's supporting components (iCloud Account and the iOS App)
+- Provides step-by-step to install and configure iCloud3, it's components and it's supporting components (iCloud Account and the Mobile App)
 - Highlights the configuration screens and parameters
 - Provides example screens, automations and scripts
-- The [User Guide is here](https://gcobb321.github.io/icloud3_v3_docs/#/).
+- The User Guide is [here](https://gcobb321.github.io/icloud3_v3_docs/#/)
 
 ### Installing or Upgrading to iCloud3 v3
 
@@ -72,12 +72,11 @@ The screens below are an example of how the many tracking sensors can be display
 
 ### Important Links
 
-- **iCloud3 v3 User Guide** -The User Guide is quite extensive and can be found [here](https://gcobb321.github.io/icloud3_v3_docs/#/).
-- AND [HERE](../icloud3_v3_docs/#/).)
+- **iCloud3 v3 User Guide** -The User Guide is quite extensive and can be found [here](https://gcobb321.github.io/icloud3_v3_docs/#/)
 -- **iCloud3 v3 GitHub Repository (Prerelease Version)** - The primary GitHub Repository is [here](https://github.com/gcobb321/icloud3)
 - **iCloud3 v3 Development GitHub Repository** - The Development Repository is used for beta  version changes that have not been released yet. It is [here](https://github.com/gcobb321_v3)
-- **Installing as a New Installation** - iCloud3 v3 is available in HACS as a prerelease version.  Installation instructions are [here]{https://gcobb321.github.io/icloud3_v3_docs/#/chapters/3.2-installing-and-configuring)
-- **Migrating from v2.4.x** - This includes installing iCloud3 v3, migrating your current configuration and reviewing  it to insure it was migrated correctly.Instructions are [here](https://gcobb321.github.io/icloud3_v3_docs/#/chapters/3.1-migrating-v2-to-v3).
+- **Installing as a New Installation** - iCloud3 v3 is available in HACS as a prerelease version.  Installation instructions are [here](https://gcobb321.github.io/icloud3_v3_docs/#/chapters/3.2-installing-and-configuring)
+- **Migrating from v2.4.x** - This includes installing iCloud3 v3, migrating your current configuration and reviewing  it to insure it was migrated correctly.Instructions are [here](https://gcobb321.github.io/icloud3_v3_docs/#/chapters/3.1-migrating-v2-to-v3)
 
 
 
