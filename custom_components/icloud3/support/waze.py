@@ -152,7 +152,7 @@ class Waze(object):
                     if waze_status == WAZE_NO_DATA:
                         event_msg = (f"Waze Route Error > Problem connecting to Waze Servers. "
                                     f"Distance will be calculated, Travel Time not available")
-                        post_event(Device.devicename, event_msg)
+                        post_event(Device, event_msg)
 
                         return (WAZE_NO_DATA, 0, 0, 0)
 
@@ -220,7 +220,7 @@ class Waze(object):
                                 #f"Moved-{format_dist_km(dist_moved_km)}"
                                 #f"CalcMoved-{format_dist_km(Device.loc_data_dist_moved_km)}, "
                                 f"{wazehist_save_msg}")
-            post_event(Device.devicename, event_msg)
+            post_event(Device, event_msg)
 
             FromZone.waze_results = (WAZE_USED, route_time, route_dist_km, dist_moved_km)
 

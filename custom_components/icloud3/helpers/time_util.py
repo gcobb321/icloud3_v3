@@ -413,8 +413,6 @@ def datetime_to_secs(datetime, utc_local=False) -> int:
         secs_utc = secs = time.mktime(time.strptime(datetime, "%Y-%m-%d %H:%M:%S"))
         if secs > 0 and utc_local is True:
             secs += Gb.time_zone_offset_seconds
-        # elif secs == 0:
-        #     _trace(f"{datetime} {secs} {utc_local} {secs_to_time(secs_utc)}->{secs_to_time(secs)}")
 
     except:
         secs = 0

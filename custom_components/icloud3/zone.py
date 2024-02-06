@@ -20,7 +20,7 @@ from .const             import (HOME, NOT_HOME, STATIONARY, HIGH_INTEGER,
                                 ZONE, TITLE, FNAME, NAME, ID, FRIENDLY_NAME, ICON,
                                 LATITUDE, LONGITUDE, RADIUS, PASSIVE,
                                 STATZONE_RADIUS_1M, ZONE, NON_ZONE_ITEM_LIST, )
-from .support           import mobapp_interface
+# from .support           import mobapp_interface
 from .helpers           import entity_io
 from .helpers.common    import (instr, is_statzone, format_gps, zone_dname,
                                 list_add, list_del, )
@@ -178,7 +178,7 @@ class iCloud3_Zone(object):
             self.dname = self.fname = self.ha_fname
         elif zone_data:
             self.dname = self.fname = zone_data.get(FRIENDLY_NAME, self.zone.title())
-        elif self.zone in Gb.zone_display_as:
+        elif self.zone in Gb.zones_dname:
             self.dname = self.fname = zone_dname(self.zone)
         else:
             self.dname = self.fname = self.zone.title()
@@ -199,15 +199,15 @@ class iCloud3_Zone(object):
                 self.dname = self.title
             else:
                 self.dname = self.fname
-        elif self.zone in Gb.zone_display_as:
+        elif self.zone in Gb.zones_dname:
             return
 
         self.names = [self.zone, self.dname]
 
-        Gb.zone_display_as[self.zone]  = self.dname
-        Gb.zone_display_as[self.fname] = self.dname
-        Gb.zone_display_as[self.name]  = self.dname
-        Gb.zone_display_as[self.title] = self.dname
+        Gb.zones_dname[self.zone]  = self.dname
+        Gb.zones_dname[self.fname] = self.dname
+        Gb.zones_dname[self.name]  = self.dname
+        Gb.zones_dname[self.title] = self.dname
 
         self.sensor_prefix = '' if self.zone == HOME else self.dname
 
@@ -289,7 +289,7 @@ class iCloud3_StationaryZone(iCloud3_Zone):
         self.removed_from_ha_secs = HIGH_INTEGER
 
         self.fname = f"StatZon{self.statzone_id}"
-        self.fname_id = self.dname = Gb.zone_display_as[self.zone] = self.fname
+        self.fname_id = self.dname = Gb.zones_dname[self.zone] = self.fname
 
         self.initialize_statzone_name()
         self.initialize_zone_attrs()
@@ -310,7 +310,7 @@ class iCloud3_StationaryZone(iCloud3_Zone):
     def initialize_statzone_name(self):
         if Gb.statzone_fname == '': Gb.statzone_fname = 'StatZon#'
         self.fname = Gb.statzone_fname.replace('#', self.statzone_id)
-        self.fname_id = self.dname = Gb.zone_display_as[self.zone] = self.fname
+        self.fname_id = self.dname = Gb.zones_dname[self.zone] = self.fname
 
         if instr(Gb.statzone_fname, '#') is False:
             self.fname_id = f"{self.fname} (..._{self.statzone_id})"

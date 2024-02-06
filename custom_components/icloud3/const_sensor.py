@@ -16,7 +16,7 @@ from .const     import (DISTANCE_TO_DEVICES,
                         DISTANCE, ZONE_DISTANCE, ZONE_DISTANCE_M, ZONE_DISTANCE_M_EDGE, HOME_DISTANCE,
                         MAX_DISTANCE,CALC_DISTANCE, WAZE_DISTANCE, WAZE_METHOD,
                         TRAVEL_TIME, TRAVEL_TIME_MIN, TRAVEL_TIME_HHMM, ARRIVAL_TIME, DIR_OF_TRAVEL,
-                        MOVED_DISTANCE, MOVED_TIME_FROM, MOVED_TIME_TO,
+                        MOVED_DISTANCE, MOVED_TIME_FROM, MOVED_TIME_TO, WENT_3KM,
                         DEVICE_STATUS,
                         LAST_UPDATE, LAST_UPDATE_DATETIME,
                         NEXT_UPDATE, NEXT_UPDATE_DATETIME,
@@ -59,6 +59,7 @@ SENSOR_LIST_ZONE_NAME =[ZONE, ZONE_DNAME, ZONE_FNAME, ZONE_NAME, ZONE_NAME, ZONE
                         ]
 SENSOR_LIST_DISTANCE =  [DISTANCE, ZONE_DISTANCE, ZONE_DISTANCE_M, ZONE_DISTANCE_M_EDGE, HOME_DISTANCE,
                         ]
+
 SENSOR_GROUPS = {
         'battery':      [BATTERY, BATTERY_STATUS],
         'md_badge':     [BADGE],
@@ -151,11 +152,11 @@ SENSOR_DEFINITION = {
                 'Badge',
                 'badge',
                 'mdi:shield-account',
-                [NAME, BATTERY, ZONE, ZONE_FNAME, ZONE_NAME,
-                        HOME_DISTANCE, DISTANCE_TO_DEVICES,
+                [NAME, BATTERY, ZONE, ZONE_FNAME,
+                        HOME_DISTANCE,
                         MAX_DISTANCE, TRAVEL_TIME, DIR_OF_TRAVEL, INTERVAL,
-                        ZONE_DATETIME,
-                        LAST_LOCATED_DATETIME, LAST_UPDATE_DATETIME,
+                        DISTANCE_TO_DEVICES,
+                        ZONE_DATETIME, LAST_LOCATED_DATETIME, LAST_UPDATE_DATETIME,
                         DEVICE_STATUS, ],
                 BLANK_SENSOR_FIELD],
         BATTERY: [

@@ -20,6 +20,7 @@ from homeassistant.core     import callback
 from ..global_variables  import GlobalVariables as Gb
 from ..const             import (HOME, NOT_HOME, NOT_SET, HIGH_INTEGER, RARROW,
                                 GPS, HOME_DISTANCE, ENTER_ZONE, EXIT_ZONE, ZONE, LATITUDE, )
+
 from ..zone               import iCloud3_Zone
 from ..support           import stationary_zone as statzone
 from ..support           import determine_interval as det_interval
@@ -88,7 +89,7 @@ def update_current_zone(Device, display_zone_msg=True):
 
     # In a zone but if not in a track from zone and was in a Stationary Zone,
     # reset the stationary zone
-    elif Device.is_in_statzone and isnot_statzone(zone_selected):
+    elif Device.isin_statzone and isnot_statzone(zone_selected):
         statzone.exit_statzone(Device)
 
 
@@ -162,11 +163,11 @@ def select_zone(Device, latitude=None, longitude=None):
         zone_selected        = 'unknown'
         zone_selected_dist_m = 0
         zones_msg            = f"Zone > Unknown, GPS-{Device.loc_data_fgps}"
-        post_event(Device.devicename, zones_msg)
+        post_event(Device, zones_msg)
         return ZoneSelected, zone_selected, 0, []
 
     # Verify that the statzone was not left without an exit trigger. If so, move this device out of it.
-    if (Device.is_in_statzone
+    if (Device.isin_statzone
             and Device.StatZone.distance_m(latitude, longitude) > Device.StatZone.radius_m):
         statzone.exit_statzone(Device)
 
@@ -176,7 +177,7 @@ def select_zone(Device, latitude=None, longitude=None):
                             if (Zone.passive is False)]
 
     # Do not select a new zone for the Device if it just left a zone. Set to Away and next_update will be soon
-    # if Device.was_inzone is False or secs_since(Device.mobapp_zone_exit_secs) >= Gb.exit_zone_interval_secs/2:
+    # if Device.wasin_zone is False or secs_since(Device.mobapp_zone_exit_secs) >= Gb.exit_zone_interval_secs/2:
     # Select all the zones the device is in
     inzone_zones = [zone_data   for zone_data in zones_data
                                 if zone_data[ZD_DIST_M] <= zone_data[ZD_RADIUS] + gps_accuracy_adj]
@@ -269,7 +270,7 @@ def post_zone_selected_msg(Device, ZoneSelected, zone_selected,
     if zone_selected == Device.log_zone:
         zones_msg += ' (Logged)'
 
-    post_event(Device.devicename, zones_msg)
+    post_event(Device, zones_msg)
 
     if (zones_cnt_msg
         and Device.loc_data_zone != Device.sensors[ZONE]
@@ -278,6 +279,28 @@ def post_zone_selected_msg(Device, ZoneSelected, zone_selected,
                 if Device is not _Device:
                     event_msg = f"Zone-Device Counts > {zones_cnt_msg}"
                     post_event(_Device.devicename, event_msg)
+
+#--------------------------------------------------------------------
+def closest_zone(latitude, longitude):
+    '''
+    Get the  closest zone to this location
+
+    Return:
+        - Zone, Zone entity, Zone display name, distance (m)
+    '''
+    try:
+        zones_data = [[Zone.distance_m(latitude, longitude), Zone.zone]
+                            for Zone in Gb.HAZones
+                            if Zone.radius_m > 1]
+        zones_data.sort()
+        zone_dist_m, zone = zones_data[0]
+        Zone = Gb.Zones_by_zone.get(zone)
+
+        return Zone, zone, Zone.dname, zone_dist_m
+
+    except Exception as err:
+        log_exception(err)
+        return None, 'unknown', 'Unknown', 0
 
 #--------------------------------------------------------------------
 def is_overlapping_zone(zone1, zone2):
@@ -303,7 +326,7 @@ def is_overlapping_zone(zone1, zone2):
 def is_outside_zone_no_exit(Device, zone, trigger, latitude, longitude):
     '''
     If the device is outside of the zone and less than the zone radius + gps_acuracy_threshold
-    and no Geographic Zone Exit trigger was received, it has probably wandered due to
+    and no Exit Trigger was received, it has probably wandered due to
     GPS errors. If so, discard the poll and try again later
 
     Updates:    Set the Device.outside_no_exit_trigger_flag
@@ -377,7 +400,7 @@ def log_zone_enter_exit_activity(Device):
         Device.log_zone = Device.loc_data_zone
         Device.log_zone_enter_secs = Gb.this_update_secs
         event_msg = f"Log Zone Activity > Logging Started-{zone_dname(Device.log_zone)}"
-        post_event(Device.devicename, event_msg)
+        post_event(Device, event_msg)
         return
 
     # Must be in the zone for at least 4-minutes
@@ -404,7 +427,7 @@ def log_zone_enter_exit_activity(Device):
                 "\n")
         f.write(recd)
         event_msg = f"Log Zone Activity > Logging Ended-{zone_dname(Device.log_zone)}"
-        post_event(Device.devicename, event_msg)
+        post_event(Device, event_msg)
 
     if Device.loc_data_zone in Device.log_zones:
         Device.log_zone = Device.loc_data_zone
@@ -484,16 +507,16 @@ def ha_removed_zone_entity_id(event: EventType[event.EventStateChangedData]) -> 
 
         Zone.status = -1
         Gb.HAZones_by_zone_deleted[zone] = Zone
-        if isnot_statzone(zone):
-            if zone       in Gb.zone_display_as: del Gb.zone_display_as[zone]
-            if Zone.fname in Gb.zone_display_as: del Gb.zone_display_as[Zone.fname]
-            if Zone.name  in Gb.zone_display_as: del Gb.zone_display_as[Zone.name]
-            if Zone.title in Gb.zone_display_as: del Gb.zone_display_as[Zone.title]
-
         Gb.Zones   = list_del(Gb.Zones, Zone)
-        if zone in Gb.Zones_by_zone:   del Gb.Zones_by_zone[zone]
         Gb.HAZones = list_del(Gb.HAZones, Zone)
+        if zone in Gb.Zones_by_zone:   del Gb.Zones_by_zone[zone]
         if zone in Gb.HAZones_by_zone: del Gb.HAZones_by_zone[zone]
+
+        # if isnot_statzone(zone):
+        #     if zone       in Gb.zones_dname: del Gb.zones_dname[zone]
+        #     if Zone.fname in Gb.zones_dname: del Gb.zones_dname[Zone.fname]
+        #     if Zone.name  in Gb.zones_dname: del Gb.zones_dname[Zone.name]
+        #     if Zone.title in Gb.zones_dname: del Gb.zones_dname[Zone.title]
 
         for Device in Gb. Devices:
             Device.remove_zone_from_settings(zone)

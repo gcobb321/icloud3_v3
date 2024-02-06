@@ -392,7 +392,7 @@ class iCloud3:
 
         # The Device is in a StatZone but the mobapp is not home. Send a location request to try to
         # sync them. Do this every 10-mins if the time since the last request is older than 10-min ago
-        elif (Device.is_in_statzone
+        elif (Device.isin_statzone
                 and Device.mobapp_data_state == NOT_HOME
                 and (secs_since(Device.mobapp_request_loc_sent_secs) > 36000
                     or Device.mobapp_request_loc_sent_secs == 0)
@@ -695,7 +695,7 @@ class iCloud3:
                     and Device.is_next_update_time_reached
                     and Device.FromZone_NextToUpdate.zone_dist < 1
                     and Device.FromZone_NextToUpdate.dir_of_travel == TOWARDS
-                    and Device.isnot_inzone):
+                    and Device.isnotin_zone):
 
                 mobapp_interface.request_location(Device)
 
@@ -776,7 +776,7 @@ class iCloud3:
                                 f"{Device.device_status_msg}")
                 if instr(Device.update_sensors_error_msg, 'Offline') is False:
                     log_info_msg(Device.devicename, offline_msg)
-                    post_event(Device.devicename, offline_msg)
+                    post_event(Device, offline_msg)
 
             # 'Verify Location' update reason overrides all other checks and forces an iCloud update
             # if Device.icloud_update_reason == 'Verify Location':
@@ -794,7 +794,7 @@ class iCloud3:
             # let normal next time update check process
             elif (Device.is_gps_poor
                     and Gb.discard_poor_gps_inzone_flag
-                    and Device.is_inzone
+                    and Device.isin_zone
                     and Device.outside_no_exit_trigger_flag is False):
 
                 Device.old_loc_cnt -= 1
@@ -825,7 +825,7 @@ class iCloud3:
                     event_msg = (f"Location Old > Using Anyway, "
                                 f"{Device.last_update_loc_time}{RARROW}"
                                 f"{Device.loc_data_time}")
-                    post_event(Device.devicename, event_msg)
+                    post_event(Device, event_msg)
                     Device.old_loc_cnt = 0
                     Device.old_loc_msg = ''
                     Device.last_update_loc_secs = Device.loc_data_secs
@@ -1207,10 +1207,9 @@ class iCloud3:
                 start_ic3.set_log_level('info')
                 start_ic3.update_conf_file_log_level('info')
 
-        for devicename, Device in Gb.Devices_by_devicename.items():
-            Gb.pyicloud_authentication_cnt  = 0
-            Gb.pyicloud_location_update_cnt = 0
-            Gb.pyicloud_calls_time          = 0.0
+        Gb.pyicloud_authentication_cnt  = 0
+        Gb.pyicloud_location_update_cnt = 0
+        Gb.pyicloud_calls_time          = 0.0
 
         if Gb.WazeHist:
             Gb.WazeHist.wazehist_delete_invalid_records()

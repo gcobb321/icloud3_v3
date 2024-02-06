@@ -7,7 +7,7 @@ from .global_variables  import GlobalVariables as Gb
 from .const             import (DEVICE_TRACKER, DEVICE_TRACKER_DOT, CIRCLE_STAR2, LTE, GTE,
                                 NOTIFY, DISTANCE_TO_DEVICES, NEAR_DEVICE_DISTANCE,
                                 DISTANCE_TO_OTHER_DEVICES, DISTANCE_TO_OTHER_DEVICES_DATETIME,
-                                HOME, HOME_FNAME, NOT_HOME, NOT_SET, UNKNOWN,
+                                HOME, HOME_FNAME, NOT_HOME, NOT_SET, UNKNOWN, NOT_HOME_ZONES,
                                 DOT, RED_X, RARROW, INFO_SEPARATOR, YELLOW_ALERT, CRLF_DOT, CRLF_HDOT,
                                 TOWARDS, AWAY, AWAY_FROM, INZONE, STATIONARY, STATIONARY_FNAME,
                                 TOWARDS_HOME, AWAY_FROM_HOME, INZONE_HOME, INZONE_STATIONARY,
@@ -21,7 +21,7 @@ from .const             import (DEVICE_TRACKER, DEVICE_TRACKER_DOT, CIRCLE_STAR2
                                 ICLOUD, FMF, FAMSHR, FMF_FNAME, FAMSHR_FNAME,
                                 MOBAPP, MOBAPP_FNAME,
                                 DATA_SOURCE_FNAME,
-                                TRACK_DEVICE, MONITOR_DEVICE, INACTIVE_DEVICE,
+                                TRACK_DEVICE, MONITOR_DEVICE, INACTIVE_DEVICE, TRACKING_MODE_FNAME,
                                 NAME, DEVICE_TYPE_FNAME,
                                 ICLOUD_HORIZONTAL_ACCURACY, ICLOUD_VERTICAL_ACCURACY, ICLOUD_BATTERY_STATUS,
                                 ICLOUD_BATTERY_LEVEL, ICLOUD_DEVICE_CLASS, ICLOUD_DEVICE_STATUS, ICLOUD_LOW_POWER_MODE, ID,
@@ -37,7 +37,7 @@ from .const             import (DEVICE_TRACKER, DEVICE_TRACKER_DOT, CIRCLE_STAR2
                                 ZONE_DISTANCE, ZONE_DISTANCE_M, ZONE_DISTANCE_M_EDGE, HOME_DISTANCE, MAX_DISTANCE,
                                 CALC_DISTANCE, WAZE_DISTANCE, WAZE_METHOD,
                                 TRAVEL_TIME, TRAVEL_TIME_MIN, TRAVEL_TIME_HHMM, ARRIVAL_TIME, DIR_OF_TRAVEL,
-                                MOVED_DISTANCE, MOVED_TIME_FROM, MOVED_TIME_TO,
+                                MOVED_DISTANCE, MOVED_TIME_FROM, MOVED_TIME_TO, WENT_3KM,
                                 DEVICE_STATUS, LOW_POWER_MODE, RAW_MODEL, MODEL, MODEL_DISPLAY_NAME,
                                 LAST_UPDATE, LAST_UPDATE_TIME, LAST_UPDATE_DATETIME,
                                 NEXT_UPDATE, NEXT_UPDATE_TIME, NEXT_UPDATE_DATETIME,
@@ -226,8 +226,9 @@ class iCloud3_Device(TrackerEntity):
         self.dist_to_other_devices_secs = 0
         self.dist_to_other_devices   = {}       # A dict of other devices distances
                                                 # {devicename: [distance_m, gps_accuracy_factor, location_old_flag]}
-        self.loc_time_updates_famshr = [HHMMSS_ZERO]       # Histoty of update times from one results to the next
-        self.loc_time_updates_mobapp = [HHMMSS_ZERO]       # Histoty of update times from one results to the next
+        self.loc_time_updates_famshr = [HHMMSS_ZERO]       # History of update times from one results to the next
+        self.loc_time_updates_mobapp = [HHMMSS_ZERO]       # History of update times from one results to the next
+        self.loc_msg_famshr_mobapp_time = ''    # Time string the locate msg was displayed to prevent dup msgs (icl_data_handlr)
         self.dev_data_useable_chk_secs = 0      # The device data is checked several times during an update
         self.dev_data_useable_chk_results = []  # If this check is the same as the last one, return the previous results
 
@@ -428,6 +429,7 @@ class iCloud3_Device(TrackerEntity):
         self.sensors[ZONE_DISTANCE_M_EDGE]  = 0
         self.sensors[HOME_DISTANCE]         = 0
         self.sensors[MAX_DISTANCE]          = 0
+        self.sensors[WENT_3KM]              = False
         self.sensors[WAZE_DISTANCE]         = 0
         self.sensors[WAZE_METHOD]           = 0
         self.sensors[CALC_DISTANCE]         = 0
@@ -488,7 +490,7 @@ class iCloud3_Device(TrackerEntity):
         # a monitored device only monitors the iCloud data aand iOS Data may be available
         self.tracking_mode        = conf_device.get(CONF_TRACKING_MODE, 'track')
         self.fname                = conf_device.get(CONF_FNAME, self.devicename.title())
-        self.sensors[NAME]        = self.fname
+        self.sensors[NAME]        = self.fname_devicename
         self.sensors['dev_id']    = self.devicename
         self.sensors['host_name'] = self.fname
         self.evlog_fname_alert_char = ''          # Character added to the fmame in the EvLog (❗❌⚠️)
@@ -812,6 +814,13 @@ class iCloud3_Device(TrackerEntity):
         if self.device_id_fmf:
             return f"#{self.device_id_fmf[:8]}"
         return 'None'
+
+    @property
+    def tracking_mode_fname(self, track_fname=False):
+        if self.tracking_mode == TRACK_DEVICE and track_fname is False:
+            return ''
+        else:
+            return f"({TRACKING_MODE_FNAME[self.tracking_mode]})"
 
     def is_statzone_name(self, zone_name):
         return zone_name in Gb.StatZones_by_zone
@@ -1144,32 +1153,33 @@ class iCloud3_Device(TrackerEntity):
         return (self.sensors[ZONE] == NOT_SET)
 
     @property
-    def is_inzone(self):
-        return (self.loc_data_zone not in [NOT_HOME, NOT_SET])
+    def isin_zone(self):
+        return (self.loc_data_zone not in NOT_HOME_ZONES)
+        #return (self.loc_data_zone not in [NOT_HOME, NOT_SET])
 
     @property
-    def isnot_inzone(self):
-        return (self.loc_data_zone in [NOT_HOME, NOT_SET])
+    def isnotin_zone(self):
+        return (self.loc_data_zone in NOT_HOME_ZONES)
 
     @property
-    def is_inzone_mobapp_state(self):
-        return (self.mobapp_data_state not in [NOT_HOME, NOT_SET])
+    def isin_zone_mobapp_state(self):
+        return (self.mobapp_data_state not in NOT_HOME_ZONES)
 
     @property
-    def isnot_inzone_mobapp_state(self):
-        return (self.mobapp_data_state in [NOT_HOME, NOT_SET])
+    def isnotin_zone_mobapp_state(self):
+        return (self.mobapp_data_state in NOT_HOME_ZONES)
 
     @property
     def is_tracking_from_another_zone(self):
-        return self.sensors[FROM_ZONE] and self.sensors[FROM_ZONE] not in [NOT_SET, HOME]
+        return (self.sensors[FROM_ZONE] and self.sensors[FROM_ZONE] not in [NOT_SET, HOME])
 
     @property
-    def was_inzone(self):
-        return (self.sensors[ZONE] not in [NOT_HOME, AWAY, AWAY_FROM, NOT_SET])
+    def wasin_zone(self):
+        return (self.sensors[ZONE] not in NOT_HOME_ZONES)
 
     @property
-    def wasnot_inzone(self):
-        return (self.sensors[ZONE] in [NOT_HOME, AWAY, AWAY_FROM])
+    def wasnotin_zone(self):
+        return (self.sensors[ZONE] in NOT_HOME_ZONES)
 
     @property
     def is_statzone_trigger_reached(self):
@@ -1177,19 +1187,23 @@ class iCloud3_Device(TrackerEntity):
 
 #--------------------------------------------------------------------
     @property
-    def is_in_statzone(self):
+    def isin_nonstatzone(self):
+        return (self.isin_zone and self.isnotin_statzone)
+
+    @property
+    def isin_statzone(self):
         return self.StatZone is not None
 
     @property
-    def isnot_in_statzone(self):
+    def isnotin_statzone(self):
         return self.StatZone is None
 
     @property
-    def was_in_statzone(self):
+    def wasin_statzone(self):
         return (is_statzone(self.sensors[ZONE]))
 
     @property
-    def wasnot_in_statzone(self):
+    def wasnotin_statzone(self):
         return (is_statzone(self.sensors[ZONE]) is False)
 
     @property
@@ -1618,7 +1632,8 @@ class iCloud3_Device(TrackerEntity):
                 sensor_value = PAUSED_CAPS
 
             # Display zone name if in a zone
-            elif self.loc_data_zone != NOT_HOME and self.isnot_in_statzone:
+            # elif self.loc_data_zone != NOT_HOME and self.isnotin_statzone:
+            elif self.isin_zone and self.isnotin_statzone:
                 sensor_value = self.loc_data_zone_fname
 
             # Display the distance to Home
@@ -1687,7 +1702,7 @@ class iCloud3_Device(TrackerEntity):
                     interval_secs = FromZone.interval_secs
 
             threshold_secs = 60
-            if self.is_inzone:
+            if self.isin_zone:
                 threshold_secs = interval_secs * .025        # 2.5% of interval_secs time
                 if threshold_secs < 120: threshold_secs = 120
 
@@ -1781,7 +1796,7 @@ class iCloud3_Device(TrackerEntity):
             min_gps_accuracy = (min(self.loc_data_gps_accuracy, _Device.loc_data_gps_accuracy))
             gps_msg          = f"±{min_gps_accuracy}" if min_gps_accuracy > Gb.gps_accuracy_threshold else ''
             loc_data_time    = secs_to_time_hhmm(_Device.loc_data_secs)
-            time_msg         = '' if update_at_time == loc_data_time else f" ({loc_data_time})"
+            #time_msg         = '' if update_at_time == loc_data_time else f" ({loc_data_time})"
             time_msg         = f" ({loc_data_time})"
             display_text     = f"{m_to_um(dist_apart_m)}{gps_msg}{time_msg}"
 
@@ -2020,7 +2035,7 @@ class iCloud3_Device(TrackerEntity):
         if self.loc_data_time_gps == self.last_loc_data_time_gps:
             return
 
-        if self.isnot_inzone or self.loc_data_dist_moved_km > .015:
+        if self.isnotin_zone or self.loc_data_dist_moved_km > .015:
             event_msg =(f"Updated > "
                         f"{self.last_loc_data_time_gps}"
                         f"{RARROW}{self.dev_data_source}-{self.loc_data_time_gps}")
@@ -2100,6 +2115,7 @@ class iCloud3_Device(TrackerEntity):
             self.sensors[ZONE_DISTANCE_M]      = self.FromZone_TrackFrom.sensors[ZONE_DISTANCE_M]
             self.sensors[ZONE_DISTANCE_M_EDGE] = self.FromZone_TrackFrom.sensors[ZONE_DISTANCE_M_EDGE]
             self.sensors[MAX_DISTANCE]         = self.FromZone_TrackFrom.sensors[MAX_DISTANCE]
+            self.sensors[WENT_3KM]             = 'true' if self.went_3km else 'false'
             self.sensors[WAZE_DISTANCE]        = self.FromZone_TrackFrom.sensors[WAZE_DISTANCE]
             self.sensors[WAZE_METHOD]          = self.FromZone_TrackFrom.sensors[WAZE_METHOD]
             self.sensors[CALC_DISTANCE]        = self.FromZone_TrackFrom.sensors[CALC_DISTANCE]
@@ -2114,9 +2130,9 @@ class iCloud3_Device(TrackerEntity):
 
             # Update the last zone info if the device was in a zone and now not in a zone or went immediatelly from
             # one zone to another (it was in a zone and still is in a zone and the old zone is differenent than the new zone)
-            if (self.wasnot_in_statzone
-                    and (self.was_inzone and self.isnot_inzone)
-                    or  (self.was_inzone and self.is_inzone and self.sensors[ZONE] != self.loc_data_zone)):
+            if (self.wasnotin_statzone
+                    and (self.wasin_zone and self.isnotin_zone)
+                    or  (self.wasin_zone and self.isin_zone and self.sensors[ZONE] != self.loc_data_zone)):
                 self.last_zone                   = self.sensors[ZONE]
                 if self.last_zone in self.from_zone_names:
                     self.last_tracked_from_zone = self.last_zone
@@ -2180,7 +2196,7 @@ class iCloud3_Device(TrackerEntity):
                 self.sensors_icon[DIR_OF_TRAVEL] = self.sensors_icon[ARRIVAL_TIME]  = \
                     SENSOR_ICONS[INZONE_HOME]    #['arrival_time_in_home']
 
-            elif self.is_in_statzone:
+            elif self.isin_statzone:
                 self.sensors_icon[DIR_OF_TRAVEL] = SENSOR_ICONS[INZONE_STATIONARY]
 
             else:
@@ -2197,7 +2213,7 @@ class iCloud3_Device(TrackerEntity):
                     SENSOR_ICONS[TOWARDS]
 
             icon = INZONE
-            if self.is_inzone:# else TOWARDS
+            if self.isin_zone:# else TOWARDS
                 self.sensors_icon[ARRIVAL_TIME] = SENSOR_ICONS[icon]
             else:
                 self.sensors_icon[ARRIVAL_TIME] = icon_box(self.sensors[FROM_ZONE])
@@ -2263,7 +2279,7 @@ class iCloud3_Device(TrackerEntity):
                 info_msg += (f"IntoStatZone-{secs_to_time(self.statzone_timer)}, ")
 
             elif self.zone_change_secs > 0:
-                if self.is_inzone:
+                if self.isin_zone:
                     info_msg +=( f"@{zone_dname(self.loc_data_zone)}-"
                                 f"{secs_to_time_age_str(self.zone_change_secs)}, ")
                 elif self.mobapp_zone_exit_zone != '':
