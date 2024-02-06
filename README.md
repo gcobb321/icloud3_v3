@@ -68,15 +68,17 @@ The screens below are an example of how the many tracking sensors can be display
 
 ### Installing or Upgrading to iCloud3 v3
 
-- iCloud3 v3 is now available on the iCloud3 HACS base as a prerelease version.  Instructions are in the [*iCloud3 User Guide > Migrating iCloud3 from v2.4.x to v3* here](https://gcobb321.github.io/icloud3_v3_docs/#/chapters/3.1-migrating-v2-to-v3). There are also instructions on doing a manual download. It's about one screen down after the Introduction.
+- iCloud3 v3 is now available on the iCloud3 HACS base as a prerelease version. 
 
 ### Important Links
 
-- **iCloud3 GitHub Repository (Prerelease Version)** - The  [GitHub Repository is here.](https://github.com/gcobb321/icloud3/releases)
-- **Install using HACS ** - iCloud3 v3 is now available on the HACS base as a prerelease version.  Instructions are in the [*iCloud3 User Guide > Migrating iCloud3 from v2.4.x to v3* here](https://gcobb321.github.io/icloud3_v3_docs/#/chapters/chapters/3.2-installing-and-configuring).
-- **Download and Install Manually** - This is also described in the iCloud3 User Guide. Select the above link.
-- **Migrating from v2.4.x** - The User Guide describes the [v2 to v3 Migration Process here](https://gcobb321.github.io/icloud3_v3_docs/#/chapters/3.1-migrating-v2-to-v3).
 - **iCloud3 v3 User Guide** -The User Guide is quite extensive and can be found [here](https://gcobb321.github.io/icloud3_v3_docs/#/).
+- AND [HERE](../icloud3_v3_docs/#/).)
+-- **iCloud3 v3 GitHub Repository (Prerelease Version)** - The primary GitHub Repository is [here](https://github.com/gcobb321/icloud3)
+- **iCloud3 v3 Development GitHub Repository** - The Development Repository is used for beta  version changes that have not been released yet. It is [here](https://github.com/gcobb321_v3)
+- **Installing as a New Installation** - iCloud3 v3 is available in HACS as a prerelease version.  Installation instructions are [here]{https://gcobb321.github.io/icloud3_v3_docs/#/chapters/3.2-installing-and-configuring)
+- **Migrating from v2.4.x** - This includes installing iCloud3 v3, migrating your current configuration and reviewing  it to insure it was migrated correctly.Instructions are [here](https://gcobb321.github.io/icloud3_v3_docs/#/chapters/3.1-migrating-v2-to-v3).
+
 
 
 
