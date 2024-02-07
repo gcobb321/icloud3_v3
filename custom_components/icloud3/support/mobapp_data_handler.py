@@ -468,8 +468,8 @@ def get_mobapp_device_trkr_entity_attrs(Device):
             Device.mobapp_data_invalid_error_cnt += 1
             if Device.mobapp_data_invalid_error_cnt == 4:
                 alert_msg =(f"{EVLOG_ALERT}The Mobile App has not reported the gps "
-                            f"location after 4 requests. It may be asleepp, offline "
-                            f"or not available and hould be reviewed."
+                            f"location after 4 requests. It may be asleep, offline "
+                            f"or not available and should be reviewed."
                             f"{CRLF_DOT}{Device.fname_devicename}{RARROW}{entity_id}"
                             f"{more_info('mobapp_device_no_location')}")
                 post_event(alert_msg)
