@@ -60,18 +60,17 @@ from .support           import config_file
 from .helpers           import entity_io
 
 from .helpers.common    import (instr, is_zone, isnot_zone, is_statzone, list_add, list_del,
-                                circle_letter, format_gps, zone_dname,
-                                round_to_zero, set_precision, )
+                                circle_letter, format_gps, zone_dname, )
 from .helpers.messaging import (post_event, post_error_msg, post_monitor_msg,
                                 log_exception, log_debug_msg, log_error_msg,
                                 post_startup_alert,
                                 post_internal_error, _trace, _traceha, )
-from .helpers.time_util import ( time_now_secs, secs_to_time, secs_to_time_str,
+from .helpers.time_util import ( time_now_secs, secs_to_time, datetime_now,
                                 secs_since, mins_since, secs_to, mins_to, secs_to_time_hhmm,
-                                time_to_12hrtime, secs_since_to_time_str,
-                                datetime_to_secs, secs_to_datetime, datetime_now,
-                                secs_to_age_str,  secs_to_time_age_str, format_age_hrs, )
-from .helpers.dist_util import (calc_distance_m, calc_distance_km,
+                                secs_to_time_str, secs_since_to_time_str, time_to_12hrtime,
+                                datetime_to_secs, secs_to_datetime, secs_to_day_date_time,
+                                secs_to_age_str, secs_to_time_age_str, format_age_hrs, )
+from .helpers.dist_util import (gps_distance_m, gps_distance_km,
                                 km_to_um, m_to_um, m_to_um_ft, )
 from .helpers.format    import (icon_circle, icon_box, )
 
@@ -436,7 +435,7 @@ class iCloud3_Device(TrackerEntity):
         self.sensors[MAX_DISTANCE]          = 0.0
         self.sensors[WENT_3KM]              = False
         self.sensors[WAZE_DISTANCE]         = 0.0
-        self.sensors[WAZE_METHOD]           = 0.0
+        self.sensors[WAZE_METHOD]           = ''
         self.sensors[CALC_DISTANCE]         = 0.0
         self.sensors[DIR_OF_TRAVEL]         = NOT_SET
         self.sensors[MOVED_DISTANCE]        = 0.0
@@ -1527,20 +1526,20 @@ class iCloud3_Device(TrackerEntity):
         if self.sensor_zone == NOT_SET:
             self.loc_data_dist_moved_km < 0.0001
         else:
-            self.loc_data_dist_moved_km = calc_distance_km(self.sensors[GPS], self.loc_data_gps)
+            self.loc_data_dist_moved_km = gps_distance_km(self.sensors[GPS], self.loc_data_gps)
         self.loc_data_time_moved_from = self.sensors[LAST_LOCATED_DATETIME]
         self.loc_data_time_moved_to   = self.loc_data_datetime
 
 #--------------------------------------------------------------------
     def distance_m(self, to_latitude, to_longitude):
         to_gps = (to_latitude, to_longitude)
-        distance = calc_distance_m(self.loc_data_gps, to_gps)
+        distance = gps_distance_m(self.loc_data_gps, to_gps)
         distance = 0.0 if distance < .002 else distance
         return distance
 
     def distance_km(self, to_latitude, to_longitude):
         to_gps = (to_latitude, to_longitude)
-        distance = calc_distance_km(self.loc_data_gps, to_gps)
+        distance = gps_distance_km(self.loc_data_gps, to_gps)
         distance = 0.0 if distance < .00002 else distance
         return distance
 
@@ -1788,6 +1787,10 @@ class iCloud3_Device(TrackerEntity):
 #   UPDATE DISTANCE TO OTHER DEVICES
 #
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+    def other_device_distance(self, other_devicename):
+        return self.dist_to_other_devices[other_devicename][0]
+
     def update_distance_to_other_devices(self):
         '''
         Cycle through all devices and update this device's and the other device's
@@ -1798,7 +1801,9 @@ class iCloud3_Device(TrackerEntity):
         update_at_time = secs_to_time_hhmm(self.loc_data_secs)
         self.dist_to_other_devices_secs = self.loc_data_secs
 
-        for _devicename, _Device in Gb.Devices_by_devicename_tracked.items():
+        # for _devicename, _Device in Gb.Devices_by_devicename_tracked.items():
+
+        for _devicename, _Device in Gb.Devices_by_devicename.items():
             if _Device is self:
                 continue
 

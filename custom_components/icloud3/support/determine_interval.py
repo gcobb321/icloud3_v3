@@ -235,7 +235,7 @@ def determine_interval(Device, FromZone):
     #inzone & poor gps & check gps accuracy when inzone
     elif (Device.is_gps_poor
             and isin_zone
-            and Gb.discard_poor_gps_isin_zone is False):
+            and Gb.discard_poor_gps_inzone_flag is False):
         interval_method = '3.PoorGPSinZone'
         interval_secs   = _get_interval_for_error_retry_cnt(Device, OLD_LOCATION_CNT)
 

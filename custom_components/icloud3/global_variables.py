@@ -222,6 +222,7 @@ class GlobalVariables(object):
     um_time_strfmt         = '%I:%M:%S'
     um_time_strfmt_ampm    = '%I:%M:%S%P'
     um_date_time_strfmt    = '%Y-%m-%d %H:%M:%S'
+    um_day_date_time_strfmt = '%a, %b %-d, %l:%M:%S %p'   #Tue, Feb 20, 3:23:45 AM
 
     # Time conversion variables used in global_utilities
     time_zone_offset_seconds    = 0

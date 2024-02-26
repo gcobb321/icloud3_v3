@@ -134,6 +134,8 @@ def authenticate_icloud_account(PyiCloud, called_from='unknown', initial_setup=F
             or Gb.password == ''):
         return
 
+    this_fct_error_flag = True
+
     try:
         Gb.pyicloud_auth_started_secs = time_secs()
         if PyiCloud and 'Complete' in Gb.PyiCloudInit.init_step_complete:
@@ -165,11 +167,11 @@ def authenticate_icloud_account(PyiCloud, called_from='unknown', initial_setup=F
 
     except PyiCloudFailedLoginException as err:
         event_msg =(f"{EVLOG_ALERT}iCloud3 Error > An error occurred logging into the iCloud Account. "
-                    f"Authentication Process/Error-{Gb.PyiCloud.authenticate_method[2:]})")
+                    f"Authentication Process, Error-({Gb.PyiCloud.authenticate_method[2:]})")
         post_error_msg(event_msg)
-        post_startup_alert('Username/Password error logging into the iCloud Account')
+        post_startup_alert('iCloud Account Loggin Error')
 
-        if instr(Gb.PyiCloud.authenticate_method, 'Invalid username/password'):
+        if Gb.PyiCloud.authenticate_method in ['', 'Invalid username/password']:
             Gb.PyiCloud = PyiCloud = None
             Gb.username = Gb.password = ''
             return False
@@ -177,11 +179,15 @@ def authenticate_icloud_account(PyiCloud, called_from='unknown', initial_setup=F
         check_all_devices_online_status()
         return False
 
-    except (PyiCloud2FARequiredException) as err:
+    except PyiCloud2FARequiredException as err:
         is_authentication_2fa_code_needed(PyiCloud, initial_setup=True)
         return False
 
     except Exception as err:
+        if this_fct_error_flag is False:
+                log_exception(error)
+                return
+
         event_msg =(f"{EVLOG_ALERT}iCloud3 Error > An error occurred logging into the iCloud Account. "
                     f"Error-{err}")
         post_error_msg(event_msg)

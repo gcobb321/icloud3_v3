@@ -113,7 +113,7 @@ CONF_SENSORS_OTHER_LIST             = ['gps_accuracy', 'vertical_accuracy', 'alt
 from ..helpers.common       import (instr, )
 from ..helpers.messaging    import (_traceha, log_info_msg, log_warning_msg, log_exception,
                                     open_ic3_log_file, write_ic3_log_recd, )
-from ..helpers.time_util    import (time_str_to_secs, datetime_now, )
+from ..helpers.time_util    import (time_str_to_secs, datetime_now, datetime_for_filename, )
 from .                      import config_file
 
 import os
@@ -158,7 +158,7 @@ class iCloud3_v2v3ConfigMigration(object):
         self.conf_parm_sensors  = Gb.conf_sensors.copy()
 
         try:
-            self.log_filename_name  = Gb.hass.config.path("icloud3-migration.log")
+            self.log_filename_name  = Gb.hass.config.path(f"icloud3-migration_{datetime_for_filename()}.log")
             self.migration_log_file = open(self.log_filename_name, 'w', encoding='utf8')
         except Exception as err:
             log_exception(err)

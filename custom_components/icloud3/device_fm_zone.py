@@ -29,7 +29,7 @@ from .const             import (HOME, NOT_SET,
                                 LAST_UPDATE, LAST_UPDATE_TIME, LAST_UPDATE_DATETIME,
                                 NEXT_UPDATE, NEXT_UPDATE_TIME, NEXT_UPDATE_DATETIME,
                                 )
-from .helpers.dist_util import (calc_distance_km, km_to_um,)
+from .helpers.dist_util import (gps_distance_km, km_to_um,)
 from .helpers.time_util import (datetime_to_12hrtime, )
 from .helpers.messaging import (log_exception, post_internal_error, _trace, _traceha, )
 
@@ -79,7 +79,7 @@ class iCloud3_DeviceFmZone():
             self.zone_dist_m             = 0
             self.zone_center_dist        = 0
             self.waze_results            = None
-            self.home_dist               = calc_distance_km(Gb.HomeZone.gps, self.FromZone.gps)
+            self.home_dist               = gps_distance_km(Gb.HomeZone.gps, self.FromZone.gps)
             self.max_dist_km             = 0
 
             self.sensor_prefix       = (f"sensor.{self.devicename}_") \
@@ -137,11 +137,11 @@ class iCloud3_DeviceFmZone():
 
     @property
     def distance_km(self):
-        return calc_distance_km(self.Device.loc_data_gps, self.FromZone.gps)
+        return gps_distance_km(self.Device.loc_data_gps, self.FromZone.gps)
 
     @property
     def distance_km_mobapp(self):
-        return calc_distance_km(self.Device.mobapp_data_gps, self.FromZone.gps)
+        return gps_distance_km(self.Device.mobapp_data_gps, self.FromZone.gps)
 
     @property
     def is_going_towards(self):

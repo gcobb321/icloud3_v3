@@ -28,7 +28,7 @@ from ..const                import (HOME, HOME_FNAME, TOWARDS,
 from ..helpers.common       import instr, circle_letter, str_to_list, list_to_str
 from ..helpers.messaging    import (log_exception, log_info_msg, log_warning_msg, _traceha, _trace,
                                     write_ic3_log_recd)
-from ..helpers.time_util    import (time_to_12hrtime, datetime_now, time_now_secs,
+from ..helpers.time_util    import (time_to_12hrtime, datetime_now, time_now_secs, datetime_for_filename,
                                     adjust_time_hour_value, adjust_time_hour_values, )
 
 
@@ -833,8 +833,7 @@ class EventLog(object):
 
 
             #--------------------------------
-            datetime = datetime_now().replace('-', '.').replace(':', '.').replace(' ', '-')
-            export_filename = (f"icloud3-event-log_{datetime}.log")
+            export_filename = (f"icloud3-event-log_{datetime_for_filename()}.log")
             export_directory = (f"{Gb.ha_config_directory}/{export_filename}")
             export_directory = export_directory.replace("//", "/")
 
@@ -842,7 +841,7 @@ class EventLog(object):
             export_file.write(export_recd)
             export_file.close()
 
-            self.post_event(f"iCloud3 Event Log Exported > {export_directory}")
+            self.post_event(f"iCloud3 Event Log Exported File > {CRLF_DOT}{export_directory}")
 
         except Exception as err:
             log_exception(err)
@@ -902,7 +901,7 @@ class EventLog(object):
         EVLOG_HIGHLIGHT,EVLOG_IC3_STARTING, EVLOG_IC3_STAGE_HDR,
         '''
 
-        text = self._replace_space_chars(text)
+        text = self._special_char_filter_log_file(text)
 
         # if (text.startswith(EVLOG_IC3_STAGE_HDR)
         #         or text.startswith(EVLOG_IC3_STARTING)):
@@ -921,7 +920,7 @@ class EventLog(object):
         EVLOG_HIGHLIGHT,EVLOG_IC3_STARTING, EVLOG_IC3_STAGE_HDR,
         '''
 
-        text = self._replace_space_chars(text)
+        text = self._special_char_filter_log_file(text)
 
         if text.startswith('^'): text = text[3:]
 
@@ -959,7 +958,7 @@ class EventLog(object):
                     f"TravTime-{item[3]}, "
                     f"Dist-{item[4]}")
 
-        text = self._replace_space_chars(text)
+        text = self._special_char_filter_log_file(text)
 
         text = text.replace(EVLOG_UPDATE_START, f"{'-'*50}")
         if text.startswith(EVLOG_UPDATE_END):
@@ -986,10 +985,12 @@ class EventLog(object):
 
 #--------------------------------------------------------------------
     @staticmethod
-    def _replace_space_chars(text):
+    def _special_char_filter_log_file(text):
         text = text.replace("'", "")
         text = text.replace('&nbsp;', ' ')
         text = text.replace('<br>', ', ')
+        text = text.replace('&lt;', '<')
+        text = text.replace('»', '>')
         text = text.replace(",  ", ",")
         text = text.replace('  ', ' ')
 
@@ -1002,7 +1003,6 @@ class EventLog(object):
         text = text.replace(NBSP4, '\t\t\t\t ')
         text = text.replace(NBSP5, '\t\t\t\t ')
         text = text.replace(NBSP6, '\t\t\t\t ')
-        text = text.replace('»', '>')
 
         return text
 #--------------------------------------------------------------------

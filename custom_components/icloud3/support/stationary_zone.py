@@ -19,7 +19,7 @@ from ..helpers.common    import (isbetween, is_statzone, format_gps,  zone_dname
 from ..helpers.messaging import (post_event, post_error_msg, post_monitor_msg,
                                 log_debug_msg, log_exception, log_rawdata, _trace, _traceha, )
 from ..helpers.time_util import (secs_to_time, datetime_now, format_time_age, secs_since, )
-from ..helpers.dist_util import (format_dist_m, calc_distance_km, )
+from ..helpers.dist_util import (format_dist_m, gps_distance_km, )
 # from ..helpers           import entity_io
 
 
@@ -56,7 +56,7 @@ def move_into_statzone_if_timer_reached(Device):
     if Gb.is_statzone_used is False:
         return False
 
-    calc_dist_last_poll_moved_km = calc_distance_km(Device.sensors[GPS], Device.loc_data_gps)
+    calc_dist_last_poll_moved_km = gps_distance_km(Device.sensors[GPS], Device.loc_data_gps)
     Device.update_distance_moved(calc_dist_last_poll_moved_km)
 
     # See if moved less than the stationary zone movement limit

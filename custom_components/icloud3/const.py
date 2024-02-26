@@ -4,7 +4,7 @@
 #
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-VERSION                         = '3.0.rc10.4'
+VERSION                         = '3.0'
 #-----------------------------------------
 DOMAIN                          = 'icloud3'
 ICLOUD3                         = 'iCloud3'
@@ -249,7 +249,7 @@ CIRCLE_LETTERS_LITE =  {'a':'Ⓐ', 'b':'Ⓑ', 'c':'Ⓒ', 'd':'Ⓓ', 'e':'Ⓔ', '
 lite_circled_letters = "Ⓐ Ⓑ Ⓒ Ⓓ Ⓔ Ⓕ Ⓖ Ⓗ Ⓘ Ⓙ Ⓚ Ⓛ Ⓜ Ⓝ Ⓞ Ⓟ Ⓠ Ⓡ Ⓢ Ⓣ Ⓤ Ⓥ Ⓦ Ⓧ Ⓨ Ⓩ"
 dark_circled_letters = "🅐 🅑 🅒 🅓 🅔 🅕 🅖 🅗 🅘 🅙 🅚 🅛 🅜 🅝 🅞 🅟 🅠 🅡 🅢 🅣 🅤 🅥 🅦 🅧 🅨 🅩 ✪"
 Symbols = ±▪•●▬⮾ ⊗ ⊘✓×ø¦ ▶◀ ►◄▲▼ ∙▪ »« oPhone=►▶→⟾➤➟➜➔➤🡆🡪🡺⟹🡆➔ᐅ◈🝱☒☢⛒⊘Ɵ⊗ⓧⓍ⛒🜔
-Important = ❗❌⚠️❓🛑⛔⚡⭐⭕
+Important = ❗❌⚠️❓🛑⛔⚡⭐⭕• ⍰ ‶″“”‘’‶″
   — –ᗒ ⁃ » ━▶ ━➤🡺 —> > > ❯↦ … 🡪ᗕ ᗒ ᐳ ─🡢 ──ᗒ 🡢 ─ᐅ ↣ ➙ →《》◆◈◉●▐‖  ▹▻▷◁◅◃▶➤➜➔❰❰❱❱ ⠤ ²
  ⣇⠈⠉⠋⠛⠟⠿⡿⣿       https://www.fileformat.info/info/unicode/block/braille_patterns/utf8test.htm
 '''
@@ -346,11 +346,10 @@ RADIUS            = 'radius'
 NON_ZONE_ITEM_LIST = {
         'not_home': 'Away',
         'Not_Home': 'Away',
-        'not_set': '──',
-        'Not_Set': '──',
+        'not_set': 'NotSet',   #'──',
+        'Not_Set': 'NotSet',   #'──',
         '──': 'NotSet',
-        # 'stationary': 'Stationary',
-        # 'Stationary': 'Stationary',
+        'NotSet': 'NotSet',   #'──',
         STATIONARY: STATIONARY_FNAME,
         STATIONARY_FNAME: STATIONARY_FNAME,
         'unknown': 'Unknown'}
@@ -752,8 +751,8 @@ TFZ_DIR_OF_TRAVEL             = 'tfz_dir_of_travel'
 
 CONF_SENSORS_TRACKING_OTHER   = 'tracking_other'
 TRIGGER                       = "trigger"
-WAZE_DISTANCE                 = "waze_distance"
-CALC_DISTANCE                 = "calc_distance"
+WAZE_DISTANCE                 = "waze_route_distance"
+CALC_DISTANCE                 = "calculated_distance"
 
 CONF_EXCLUDED_SENSORS         = "excluded_sensors"
 

@@ -4,13 +4,9 @@
 
 ------
 
-### Release Candidate - v3.0.rc10.4 (2/18/2024)
-
-------
-
 [![CurrentVersion](https://img.shields.io/badge/Current_Version-v3.0-blue.svg)](https://github.com/gcobb321/icloud3_v3)  [![Type](https://img.shields.io/badge/Type-Custom_Component-orange.svg)](https://github.com/gcobb321/icloud3_v3)  [![HACS](https://img.shields.io/badge/HACS-Custom_Repository-orange.svg)](https://github.com/gcobb321/icloud3_v3)
 
-[![ProjectStage](https://img.shields.io/badge/Project_Stage-Release_Candidate_10-forestgreen.svg)](https://github/gcobb321/icloud3_v3)  [![Released](https://img.shields.io/badge/Released-February,_2024-forestgreen.svg)](https://github.com/gcobb321/icloud3_v3)
+[![ProjectStage](https://img.shields.io/badge/Project_Stage-General Availability-forestgreen.svg)](https://github/gcobb321/icloud3_v3)  [![Released](https://img.shields.io/badge/Released-February,_2024-forestgreen.svg)](https://github.com/gcobb321/icloud3_v3)
 
 
 
@@ -25,7 +21,7 @@ Although Home Assistant has it's own official iCloud component, iCloud3 goes far
 - **HA Integration** - iCloud3 is a Home Assistant custom integration that is set up and configured from the *HA Settings > Devices & Services > Integrations* screen.
 - **Configuration Settings** - Configuration parameters are updated online using various screens and take effect immediately without restarting HA.
 - **Track iPhones, iPads and Apple Watches** - Track or monitor your iDevices. 
-- **Location data sources** - Location data comes from the iCloud Account and the HA Companion App (Mobile App).
+- **Location data sources** - Location data comes from the iCloud Account and the HA Mobile App
 - **Actively track a device** - The device will request it's location on a regular interval based on its distance from Home or another zone. 
 - **Passively monitor a device** - The device does not request it's location. It is updated when another tracked device requests theirs.
 - **Waze Route Service** - The travel time and distance to Home or another tracked zone is provided by Waze.

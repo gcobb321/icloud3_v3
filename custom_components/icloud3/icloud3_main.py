@@ -406,7 +406,7 @@ class iCloud3:
 
             if instr(Device.mobapp_data_change_reason, ' ') is False:
                 Device.mobapp_data_change_reason = Device.mobapp_data_change_reason.title()
-            event_msg = f"Trigger > {Device.mobapp_data_change_reason}"
+            event_msg = f"MobApp Trigger > {Device.mobapp_data_change_reason}"
             post_event(devicename, event_msg)
 
             if Gb.is_passthru_zone_used:
@@ -428,7 +428,7 @@ class iCloud3:
                     and Device.StatZone
                     and Device.mobapp_zone_exit_dist_m < Device.StatZone.radius_m):
 
-                event_msg =(f"{EVLOG_ALERT}Trigger Changed > {Device.mobapp_data_change_reason}, "
+                event_msg =(f"{EVLOG_ALERT}MobApp Trigger Changed > {Device.mobapp_data_change_reason}, "
                             f"Distance less than zone size "
                             f"{Device.StatZone.dname} {Device.mobapp_zone_exit_dist_m} < {Device.StatZone.radius_m}")
                 post_event(devicename, event_msg)
@@ -820,7 +820,7 @@ class iCloud3:
                 if (Device.old_loc_cnt > 4
                         and Device.FromZone_Home.interval_secs >= 300
                         and Device.loc_data_secs > Device.last_update_loc_secs):
-                    event_msg = (f"Location Old > Using Anyway, "
+                    event_msg = (f"Location > Old, Using Anyway, "
                                 f"{Device.last_update_loc_time}{RARROW}"
                                 f"{Device.loc_data_time}")
                     post_event(Device, event_msg)
@@ -1058,7 +1058,7 @@ class iCloud3:
             if Device.old_loc_cnt > 8:
                 error_interval_secs, error_cnt, max_error_cnt = det_interval.get_error_retry_interval(Device)
                 if error_interval_secs > Device.interval_secs:
-                    event_msg =(f"Location Old #{Device.old_loc_cnt} > Old Loc Counter Reset, "
+                    event_msg =(f"Location > Old #{Device.old_loc_cnt}, Old Loc Counter Reset, "
                                 f"NextUpdate-{secs_to_age_str(Device.interval_sec)}, "
                                 f"OldLocRetryUpdate-{secs_to_age_str(error_interval_secs)}")
                     Device.old_loc_cnt = 0
@@ -1266,11 +1266,11 @@ class iCloud3:
 
                 cnt_msg = f"#{Device.old_loc_cnt}"
                 if Device.no_location_data:
-                    Device.old_loc_msg = f"No Location Data {cnt_msg}"
+                    Device.old_loc_msg = f"Location > No Data {cnt_msg}"
                 elif Device.is_offline:
                     Device.old_loc_msg = f"Device Offline/201 {cnt_msg}"
                 elif Device.is_location_old:
-                    Device.old_loc_msg = f"Location Old {cnt_msg} > {secs_to_age_str(Device.loc_data_secs)}"
+                    Device.old_loc_msg = f"Location > Old {cnt_msg}, {secs_to_age_str(Device.loc_data_secs)}"
                 elif Device.is_gps_poor:
                     Device.old_loc_msg = f"Poor GPS > {cnt_msg}, Accuracy-±{Device.loc_data_gps_accuracy:.0f}m"
                 else:

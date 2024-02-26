@@ -182,7 +182,7 @@ def check_mobapp_state_trigger_change(Device):
         # ---------------------------------------------
         if mobapp_data_state_not_set_flag:
             Device.mobapp_data_change_reason = \
-                Device.mobapp_data_trigger = f"Initial MobApp Locate@{mobapp_data_time}"
+                Device.mobapp_data_trigger = f"Initial Locate@{mobapp_data_time}"
 
         # Reject State and trigger changes older than the current data
         elif (Device.mobapp_data_secs <= Device.last_update_loc_secs):

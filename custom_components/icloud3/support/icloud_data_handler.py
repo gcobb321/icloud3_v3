@@ -208,10 +208,6 @@ def update_PyiCloud_RawData_data(Device, results_msg_flag=True):
 
         pyicloud_start_call_time = time_now_secs()
 
-        # Do not refresh data for monitored device, will update it after refresh of another device
-        #if Device.is_monitored:
-        #    pass
-
         # Refresh FamShr Data
         if Device.is_data_source_FAMSHR:
             if ((secs_since(Gb.pyicloud_refresh_time[FAMSHR]) >= 5
@@ -379,12 +375,12 @@ def update_device_with_latest_raw_data(Device, all_devices=False):
 
             # This fct may be run a second time to recheck loc times for different data
             # sources. Don't redisplay it it's nothing changed.
-            if Device.loc_msg_famshr_mobapp_time == \
+            if _Device.loc_msg_famshr_mobapp_time == \
                         (f"{_Device.dev_data_source}-"
                         f"{_Device.loc_data_time_gps}-"
                         f"{_Device.mobapp_data_time_gps}"):
                 continue
-            Device.loc_msg_famshr_mobapp_time = \
+            _Device.loc_msg_famshr_mobapp_time = \
                 (f"{_Device.dev_data_source}-"
                 f"{_Device.loc_data_time_gps}-"
                 f"{_Device.mobapp_data_time_gps}")
@@ -401,28 +397,24 @@ def update_device_with_latest_raw_data(Device, all_devices=False):
                 if other_times != "": other_times += ", "
                 other_times += f"MobApp-{_Device.mobapp_data_time_gps}"
 
-            # Display appropriate message for the Device being updated or a monitor msg for all other Devices
-            # rc9 Check if new data is old. Can not use is_location_old since that checks
-            # icloud_devdata_useable_flag is True from the data update results
+            # Display location times for the selected device and all other data sources
+            # (famshr or mobapp). Display in Event log if the requesting device or a monitor
+            # msg if another device. Don't redisplay this msg if the data was just updated
+            # within the last 5-secs but running through this routine again.
             if secs_since(_Device.loc_data_secs) <= _Device.old_loc_threshold_secs + 5:
-                event_msg =(f"LocTimes > "
+                event_msg =(f"Located > "
                             f"{_Device.dev_data_source}-"
                             f"{_Device.loc_data_time_gps} "
                             f"({secs_to_age_str(_Device.loc_data_secs)}), "
                             f"{other_times}")
-            else:
-                event_msg =(f"Location Old #1 > "
-                            f"{secs_to_age_str(_Device.loc_data_secs)}, "
-                            f"{_Device.dev_data_source}-"
-                            f"{_Device.loc_data_time_gps}")
 
-            if _Device.is_offline:
-                event_msg += f", DeviceStatus-{_Device.device_status}"
+                if _Device.is_offline:
+                    event_msg += f", DeviceStatus-{_Device.device_status}"
 
-            if requesting_device_flag:
-                post_event(_Device.devicename, event_msg)
-            else:
-                post_monitor_msg(_Device.devicename, event_msg)
+                if requesting_device_flag:
+                    post_event(_Device, event_msg)
+                else:
+                    post_monitor_msg(_Device, event_msg)
 
         pyicloud_ic3_interface.display_authentication_msg(Gb.PyiCloud)
         Gb.trace_prefix = save_trace_prefix
@@ -572,10 +564,8 @@ def get_famshr_fmf_PyiCloud_RawData_to_use(_Device):
         _RawData - The PyiCloud_RawData (_famshr or _fmf) data object
     '''
     try:
-        # _RawData_famshr = _Device.PyiCloud_RawData_famshr
-        # _RawData_fmf    = _Device.PyiCloud_RawData_fmf
-        _RawData_famshr = Gb.PyiCloud.RawData_by_device_id.get(_Device.device_id_famshr) #_Device.PyiCloud_RawData_famshr
-        _RawData_fmf    = Gb.PyiCloud.RawData_by_device_id.get(_Device.device_id_fmf)   #_Device.PyiCloud_RawData_fmf
+        _RawData_famshr = Gb.PyiCloud.RawData_by_device_id.get(_Device.device_id_famshr)
+        _RawData_fmf    = Gb.PyiCloud.RawData_by_device_id.get(_Device.device_id_fmf)
 
         if _RawData_famshr and _RawData_fmf is None:
             _RawData = _RawData_famshr
@@ -611,7 +601,6 @@ def get_famshr_fmf_PyiCloud_RawData_to_use(_Device):
         else:
             _RawData = None
             _Device.data_source = MOBAPP
-            # start_ic3.set_primary_data_source(MOBAPP)
 
             error_msg = (f"{EVLOG_ALERT}Data Exception > {_Device.devicename} > No iCloud FamShr  "
                         f"or FmF Device Id was assigned to this device. This can be caused by "

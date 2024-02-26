@@ -39,7 +39,8 @@ def time_msecs():
 #--------------------------------------------------------------------
 def datetime_now():
     ''' Return now in MM/DD/YYYY hh:mm:ss format'''
-    return (dt_util.now().strftime(DATETIME_FORMAT)[0:19])
+    return secs_to_day_date_time(int(time.time()))
+    # return (dt_util.now().strftime(DATETIME_FORMAT)[0:19])
 
 #--------------------------------------------------------------------
 def msecs_to_time(secs):
@@ -387,10 +388,35 @@ def secs_to_datetime(secs):
     Convert seconds to timestamp
     Return timestamp (2020-05-19 09:12:30)
     """
+    return secs_to_day_date_time(secs)
+
+#--------------------------------------------------------------------
+def datetime_for_filename():
+    """
+    Convert seconds to timestamp
+    Return timestamp (05-19 09:12:30)
+    """
+    try:
+        time_struct = time.localtime(int(time.time()))
+        timestamp   = time.strftime("%Y.%m%d-%H.%M", time_struct)
+
+    except Exception as err:
+        timestamp = DATETIME_ZERO
+
+    return timestamp
+#--------------------------------------------------------------------
+def secs_to_day_date_time(secs):
+    """
+    Convert seconds to timestamp
+    Return timestamp (Tue, Feb 20, 2:34:56p)
+    """
 
     try:
         time_struct = time.localtime(secs)
-        timestamp   = time.strftime("%Y-%m-%d %H:%M:%S", time_struct)
+        timestamp   = time.strftime(Gb.um_day_date_time_srtfmt, time_struct)
+        if Gb.time_format_12_hour:
+            timestamp = timestamp.replace(' 0', '')
+            timestamp = timestamp.replace(' AM', 'a').replace(' PM', 'p')
 
     except Exception as err:
         timestamp = DATETIME_ZERO

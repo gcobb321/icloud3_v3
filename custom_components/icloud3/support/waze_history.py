@@ -8,7 +8,7 @@ from ..helpers.messaging    import (broadcast_info_msg, format_filename,
                                     post_alert, refresh_event_log, log_info_msg, log_error_msg, log_exception,
                                     _trace, _traceha, )
 from ..helpers.time_util    import (datetime_now, secs_to_time_str, mins_to_time_str, )
-from ..helpers.dist_util    import (mi_to_km, calc_distance_km, format_dist_km,)
+from ..helpers.dist_util    import (mi_to_km, gps_distance_km, format_dist_km,)
 from ..support.waze_route_calc_ic3 import WRCError
 
 import homeassistant.util.dt as dt_util
@@ -556,7 +556,7 @@ class WazeRouteHistory(object):
                 # If the zone location was changed by more than 100m, all waze distances/times
                 # need to be updated to the new location during the midnight maintenance check
                 zone_recd_gps = (zone_recd[ZON_LAT], zone_recd[ZON_LONG])
-                zone_distance_check = calc_distance_km(Zone.gps, zone_recd_gps)
+                zone_distance_check = gps_distance_km(Zone.gps, zone_recd_gps)
                 if zone_distance_check > .100:
                     Gb.wazehist_zone_id[from_zone] = zone_recd[ZON_ID] * -1
                     evlog_alert_msg = f"Waze History > {Zone.dname} Zone has moved and will not be used"
@@ -857,7 +857,7 @@ class WazeRouteHistory(object):
                 zone_recd = self._get_record('zones', criteria)
                 Zone = Gb.Zones_by_zone[zone_name]
                 zone_recd_gps = (zone_recd[ZON_LAT], zone_recd[ZON_LONG])
-                zone_distance_check = calc_distance_km(Zone.gps, zone_recd_gps)
+                zone_distance_check = gps_distance_km(Zone.gps, zone_recd_gps)
                 Gb.wazehist_zone_id[zone_name] = zone_id if zone_distance_check <= 5 else HIGH_INTEGER
 
             except Exception as err:

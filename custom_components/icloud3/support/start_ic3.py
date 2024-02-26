@@ -609,10 +609,12 @@ def set_um_formats():
         Gb.um_time_strfmt       = '%I:%M:%S'
         Gb.um_time_strfmt_ampm  = '%I:%M:%S%P'
         Gb.um_date_time_strfmt  = '%Y-%m-%d %I:%M:%S'
+        Gb.um_day_date_time_srtfmt = '%a, %b %-d, %-I:%M:%S %p'
     else:
         Gb.um_time_strfmt       = '%H:%M:%S'
         Gb.um_time_strfmt_ampm  = '%H:%M:%S'
         Gb.um_date_time_strfmt  = '%Y-%m-%d %H:%M:%S'
+        Gb.um_day_date_time_srtfmt = '%a, %b %-d, %H:%M:%S'
 
 #------------------------------------------------------------------------------
 def set_event_recds_max_cnt():
@@ -1622,18 +1624,22 @@ def _check_duplicate_device_names(PyiCloud, _FamShr):
 
     # rc9 Reworked duplicate device message and will now display all dup devices
     # Make a list of all device fnames without the (##) suffix that was added on
-    famshr_fnames_base  = [_fname_base(famshr_fname)
+    try:
+        famshr_fnames_base  = [_fname_base(famshr_fname)
                                     for famshr_fname in _FamShr.device_id_by_famshr_fname.keys()]
 
-    # Count each one, then drop the ones with a count = 1 to keep the duplicates
-    famshr_fnames_count = {famshr_fname:famshr_fnames_base.count(famshr_fname)
+        # Count each one, then drop the ones with a count = 1 to keep the duplicates
+        famshr_fnames_count = {famshr_fname:famshr_fnames_base.count(famshr_fname)
                                     for famshr_fname in famshr_fnames_base}
 
-    famshr_fnames_dupes = [famshr_fname_base
+        famshr_fnames_dupes = [famshr_fname_base
                                     for famshr_fname_base, famshr_fname_count in famshr_fnames_count.items()
                                     if famshr_fname_count > 1]
+    except Exception as err:
+        # log_exception(err)
+        return
 
-    Gb.debug_log['_.famshr_fnames_base'] = famshr_fnames_base
+    Gb.debug_log['_.famshr_fnames_base']  = famshr_fnames_base
     Gb.debug_log['_.famshr_fnames_count'] = famshr_fnames_count
     Gb.debug_log['_.famshr_fnames_dupes'] = famshr_fnames_dupes
 

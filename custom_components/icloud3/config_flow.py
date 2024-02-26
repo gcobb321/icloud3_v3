@@ -4827,14 +4827,6 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
                 tfzh_default = [TRK_FROM_HOME_ZONE_HEADER] if track_from_base_zone_used else []
 
                 return vol.Schema({
-                    vol.Optional('passthru_zone_header',
-                                default=ptzh_default):
-                                cv.multi_select([PASSTHRU_ZONE_HEADER]),
-                    vol.Required(CONF_PASSTHRU_ZONE_TIME,
-                                default=Gb.conf_general[CONF_PASSTHRU_ZONE_TIME]):
-                                selector.NumberSelector(selector.NumberSelectorConfig(
-                                    min=0, max=5, step=.5, unit_of_measurement='minutes')),
-
                     vol.Required('stat_zone_header',
                                 default=szh_default):
                                 cv.multi_select([STAT_ZONE_HEADER]),
@@ -4849,6 +4841,14 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
                                 default=Gb.conf_general[CONF_STAT_ZONE_INZONE_INTERVAL]):
                                 selector.NumberSelector(selector.NumberSelectorConfig(
                                     min=5, max=60, step=5, unit_of_measurement='minutes')),
+
+                    vol.Optional('passthru_zone_header',
+                                default=ptzh_default):
+                                cv.multi_select([PASSTHRU_ZONE_HEADER]),
+                    vol.Required(CONF_PASSTHRU_ZONE_TIME,
+                                default=Gb.conf_general[CONF_PASSTHRU_ZONE_TIME]):
+                                selector.NumberSelector(selector.NumberSelectorConfig(
+                                    min=0, max=5, step=.5, unit_of_measurement='minutes')),
 
                     vol.Optional(CONF_TRACK_FROM_BASE_ZONE_USED,
                                 default=tfzh_default):

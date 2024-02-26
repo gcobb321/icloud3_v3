@@ -340,7 +340,7 @@ def write_ic3_log_recd(recd, force_write=False):
                                 EVLOG_UPDATE_START, EVLOG_UPDATE_END])):
         recd = _recd_box(recd)
 
-    recd = _debug_recd_filter(recd)
+    recd = _special_char_filter_log_file(recd)
 
     try:
         Gb.iC3_LogFile.write(f"{date_time_now} {_called_from()} {Gb.trace_prefix}{recd}\n")
@@ -429,13 +429,13 @@ def write_config_file_to_ic3_log():
     write_ic3_log_recd("")
 
 #--------------------------------------------------------------------
-def _debug_recd_filter(recd):
+def _special_char_filter_log_file(recd):
     '''
     Filter out EVLOG_XXX control fields
     '''
 
     if recd.startswith('^'): recd = recd[3:]
-    extra_tabs = '\t\t\t   ' #if recd.startswith('STAGE') else ''
+    extra_tabs = '\t\t\t   '
     recd = recd.replace(EVLOG_MONITOR, '')
     recd = recd.replace(NBSP, ' ')
     recd = recd.replace(NBSP2, ' ')
@@ -446,6 +446,7 @@ def _debug_recd_filter(recd):
     recd = recd.strip()
     recd = recd.replace(CRLF, f"\n{IC3_LOG_LINE_TABS}{extra_tabs}")
     recd = recd.replace('* >', '')
+    recd = recd.replace('&lt;', '<')
 
     if recd.find('^') == -1: return recd.strip()
 
@@ -479,7 +480,7 @@ def log_filter(log_msg):
                 log_msg = log_msg[:p] + log_msg[p+3:]
 
             log_msg = log_msg.replace('* > ', '')
-            log_msg = _debug_recd_filter(log_msg)
+            log_msg = _special_char_filter_log_file(log_msg)
     except:
         pass
 
