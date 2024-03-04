@@ -318,7 +318,7 @@ def close_reopen_ic3_log_file(closed_by=None):
     '''
     Close and reopen the Log file to commit the newly written records
     '''
-    if Gb.ic3_log_file_update_flag is False:
+    if Gb.ic3_log_file_update_flag is False and closed_by is None:
         return
 
     if closed_by:

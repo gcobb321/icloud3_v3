@@ -25,6 +25,7 @@ from ..const            import (ICLOUD3,
                                 CONF_ENCODE_PASSWORD,
                                 CONF_VERSION,  CONF_VERSION_INSTALL_DATE,
                                 CONF_EVLOG_CARD_DIRECTORY, CONF_EVLOG_CARD_PROGRAM, CONF_EVLOG_BTNCONFIG_URL,
+                                PICTURE_WWW_STANDARD_DIRS, CONF_PICTURE_WWW_DIRS,
                                 CONF_USERNAME, CONF_PASSWORD,
                                 CONF_DATA_SOURCE, CONF_ICLOUD_SERVER_ENDPOINT_SUFFIX,
                                 CONF_DEVICE_TYPE, CONF_RAW_MODEL, CONF_MODEL, CONF_MODEL_DISPLAY_NAME,
@@ -316,6 +317,7 @@ def set_global_variables_from_conf_parameters(evlog_msg=True):
         Gb.www_evlog_js_filename        = Gb.conf_profile[CONF_EVLOG_CARD_PROGRAM]
         Gb.evlog_btnconfig_url          = Gb.conf_profile[CONF_EVLOG_BTNCONFIG_URL].strip()
         Gb.evlog_version                = Gb.conf_profile['event_log_version']
+        Gb.picture_www_dirs             = Gb.conf_profile[CONF_PICTURE_WWW_DIRS]
         Gb.um                           = Gb.conf_general[CONF_UNIT_OF_MEASUREMENT]
         Gb.time_format_12_hour          = Gb.conf_general[CONF_TIME_FORMAT].startswith('12')
         Gb.time_format_24_hour          = not Gb.time_format_12_hour
@@ -1448,9 +1450,9 @@ def _display_devices_verification_status(PyiCloud, _FamShr):
     try:
         # Cycle thru the devices from those found in the iCloud data. We are not cycling
         # through the PyiCloud_RawData so we get devices without location info
-        event_msg =(f"Family Sharing Devices > "
+        event_msg =(f"iCloud Acct Family Sharing Devices > "
                     f"{Gb.conf_famshr_device_cnt} of "
-                    f"{len(_FamShr.device_id_by_famshr_fname)} FamShr Devices Configured")
+                    f"{len(_FamShr.device_id_by_famshr_fname)} used by iCloud3")
 
         Gb.famshr_device_verified_cnt   = 0
         Gb.devicenames_x_famshr_devices = {}
@@ -2081,7 +2083,7 @@ def setup_tracked_devices_for_mobapp():
     unmatched_mobapp_devices = mobapp_id_by_mobapp_devicename.copy()
     verified_mobapp_fnames = []
 
-    tracked_msg = f"Mobile App Devices > {Gb.conf_mobapp_device_cnt} of {len(Gb.conf_devices)} iCloud3 Devices Configured"
+    tracked_msg = f"Mobile App Devices > {Gb.conf_mobapp_device_cnt} of {len(Gb.conf_devices)} used by iCloud3"
 
     Gb.devicenames_x_mobapp_devicenames = {}
     for devicename, Device in Gb.Devices_by_devicename.items():

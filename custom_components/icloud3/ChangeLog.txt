@@ -1,0 +1,5 @@
+v3.0 - 3/4/2024
+.......................
+1. WAZE & CALC DISTANCE SENSORS - Fixed problem where they were not being created.
+2. UPDATE DEVICES CONFIGURE SCREEN - The Picture parameter was listing every image file in the all of the www/ sub-directories. A filter was added to limit the search to specific directories. The filter is defined on the Tracking and Other Parameters screen. Only the first 25 image files in a directory will be displayed to prevent overloading the HA dropdown list handler.
+FIXED INTERVAL - The lowest interval was reduced from 5-minutes to 3-minutes.

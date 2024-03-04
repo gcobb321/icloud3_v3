@@ -26,7 +26,8 @@ from .const             import (DOMAIN, VERSION, ICLOUD3, RARROW,
                                 ZONE_DISTANCE, ZONE_DISTANCE_M, ZONE_DISTANCE_M_EDGE,
                                 HOME_DISTANCE,
                                 BATTERY, BATTERY_STATUS,
-                                WAZE_DISTANCE, WAZE_METHOD, WAZE_USED,
+                                WAZE_DISTANCE, WAZE_DISTANCE_ATTR, WAZE_METHOD, WAZE_USED,
+                                CALC_DISTANCE, CALC_DISTANCE_ATTR,
                                 CONF_TRACK_FROM_ZONES,
                                 CONF_IC3_DEVICENAME, CONF_MODEL, CONF_RAW_MODEL, CONF_FNAME,
                                 CONF_FAMSHR_DEVICENAME, CONF_MOBILE_APP_DEVICE,
@@ -507,8 +508,11 @@ class SensorBase(SensorEntity):
                 pass
 
             if _sensor_attr_name == WAZE_DISTANCE:
+                _sensor_attr_name = WAZE_DISTANCE_ATTR
                 if self._get_sensor_value(WAZE_METHOD) != WAZE_USED:
                     _sensor_value = self._get_sensor_value(WAZE_METHOD)
+            elif _sensor_attr_name == CALC_DISTANCE:
+                _sensor_attr_name = CALC_DISTANCE_ATTR
 
             if _sensor_attr_name == ZONE_DISTANCE_M_EDGE:
                 extra_attrs[_sensor_attr_name] = _sensor_value

@@ -18,15 +18,13 @@ import voluptuous as vol
 
 from .global_variables  import GlobalVariables as Gb
 from .const             import (DOMAIN, ICLOUD3, DATETIME_FORMAT,
-                                RARROW, RARROW2, CRLF_DOT, DOT, HDOT, CIRCLE_STAR, YELLOW_ALERT,
-                                EVLOG_NOTICE, EVLOG_ALERT,
+                                RARROW, RARROW2, CRLF_DOT, CIRCLE_STAR, EVLOG_NOTICE, EVLOG_ALERT,
                                 IPHONE_FNAME, IPHONE, IPAD, WATCH, AIRPODS, ICLOUD, FAMSHR, FMF, OTHER, HOME,
                                 DEVICE_TYPES, DEVICE_TYPE_FNAME, DEVICE_TRACKER_DOT,
                                 MOBAPP, NO_MOBAPP, APPLE_SPECIAL_ICLOUD_SERVER_COUNTRY_CODE,
                                 TRACK_DEVICE, MONITOR_DEVICE, INACTIVE_DEVICE,
                                 NAME,  FRIENDLY_NAME, FNAME, TITLE, BATTERY,
                                 ZONE, HOME_DISTANCE, WAZE_SERVERS_FNAME,
-                                PICTURE_WWW_STANDARD_DIRS, CONF_PICTURE_WWW_DIRS,
                                 CONF_VERSION, CONF_EVLOG_CARD_DIRECTORY,
                                 CONF_EVLOG_BTNCONFIG_URL,
                                 CONF_USERNAME, CONF_PASSWORD, CONF_DEVICES, CONF_SETUP_ICLOUD_SESSION_EARLY,
@@ -67,10 +65,10 @@ from .const             import (DOMAIN, ICLOUD3, DATETIME_FORMAT,
                                 )
 from .const_sensor      import (SENSOR_GROUPS )
 from .helpers.common    import (instr, isnumber, obscure_field, list_to_str, str_to_list,
-                                is_statzone, zone_dname, isbetween, list_del, list_add, )
+                                is_statzone, zone_dname, isbetween, )
 from .helpers.messaging import (log_exception, log_debug_msg, _traceha, _trace,
                                 post_event, post_monitor_msg,
-                                open_ic3_log_file, close_reopen_ic3_log_file, write_ic3_log_recd, )
+                                open_ic3_log_file, close_reopen_ic3_log_file, )
 from .helpers           import entity_io
 from .                  import sensor as ic3_sensor
 from .                  import device_tracker as ic3_device_tracker
@@ -83,8 +81,21 @@ from .support.pyicloud_ic3  import (PyiCloudService, PyiCloudException, PyiCloud
                                     PyiCloudServiceNotActivatedException, PyiCloudNoDevicesException, )
 import logging
 _CF_LOGGER = logging.getLogger("icloud3-cf")
-DATA_ENTRY_ALERT_CHAR = '⛔'
-DATA_ENTRY_ALERT      = f"      {DATA_ENTRY_ALERT_CHAR} "
+
+#-----------------------------------------------------------------------------------------
+def option_text_list(opt_key_text, ensure_six_items=False):
+    """ Make a drop down list from a list of 5-items or less """
+
+    if type(opt_key_text) is dict:
+        opt_text_list = [t for t in opt_key_text.values()]
+    else:
+        opt_text_list = opt_key_text
+
+    if ensure_six_items:
+        for i in range(6 - len(opt_text_list)):
+            opt_text_list.append('.')
+
+    return opt_text_list
 
 #-----------------------------------------------------------------------------------------
 def dict_value_to_list(key_value_dict):
@@ -96,23 +107,6 @@ def dict_value_to_list(key_value_dict):
         value_list = list(key_value_dict)
 
     return value_list
-
-#-----------------------------------------------------------------------------------------
-def ensure_six_item_list(list_item):
-    for i in range(6 - len(list_item)):
-        list_item.append('.')
-
-    return list_item
-
-#-----------------------------------------------------------------------------------------
-def ensure_six_item_dict(dict_item):
-    dummy_key = ''
-    for i in range(6 - len(dict_item)):
-        dummy_key += '.'
-        dict_item[dummy_key] = '.'
-
-    return dict_item
-
 #-----------------------------------------------------------------------------------------
 MENU_PAGE_0_INITIAL_ITEM = 1
 MENU_PAGE_TITLE = [
@@ -133,7 +127,7 @@ MENU_KEY_TEXT = {
         'waze':                 'WAZE ROUTE DISTANCE, TIME & HISTORY ᐳ •Set Route Server Location, Min/Max Intervals, etc. •Set Waze History Database Parameters and Controls',
         'inzone_intervals':     'INZONE DEFAULT INTERVALS ᐳ •Default inZone intervals for different device types and the Mobile App, •Other inZone Controls ',
         'special_zones':        'SPECIAL ZONES ᐳ •Enter Zone Delay, •Stationary Zone, •Primary Track-from-Home Zone Override',
-        'tracking_parameters':  'TRACKING & OTHER PARAMETERS ᐳ •Set Nearby Device Info, Accuracy Thresholds & Other Location Request Intervals, •Picture Image Directories, •Event Log Custom Card Directory, etc.',
+        'tracking_parameters':  'TRACKING & OTHER PARAMETERS ᐳ •Set Nearby Device Info, Accuracy Thresholds & Other Location Request Intervals, •Set Event Log Custom Card Directory, etc.',
 
         'select':               'SELECT ᐳ Select the parameter update form',
         'next_page_0':          f'{MENU_PAGE_TITLE[0].upper()} ᐳ •iCloud Account & Mobile App, •iCloud3 Devices, •Enter & Request Verification Code, •Change Device Order, •Sensors, •Action Commands',
@@ -174,7 +168,7 @@ ACTION_LIST_ITEMS_KEY_TEXT = {
         'login_icloud_account':     'LOG INTO ANOTHER ICLOUD ACCOUNT ᐳ Log into an iCloud Account with a different username/password. Currently logged into > ^msg',
         'verification_code':        'ENTER/REQUEST AN APPLE ID VERIFICATION CODE ᐳ Enter (or Request) the 6-digit Apple ID Verification Code',
 
-        'send_verification_code':   'SEND THE VERIFICATION CODE TO APPLE ᐳ Send the 6-digit Apple ID Verification Code back to Apple to approve access to iCloud account',
+        'send_verification_code':   'SEND THE VERIFICATION CODE TO APPLE ᐳ Send the 6-digit Apple ID Verification Code back to Apple to approve access to iCloud account ^msg',
         "request_verification_code":'REQUEST A NEW APPLE ID VERIFICATION CODE ᐳ Reset iCloud Interface and request a new Apple ID Verification Code',
         'cancel_verification_entry':'CANCEL ᐳ Cancel the Verification Code Entry and Close this screen',
 
@@ -227,8 +221,9 @@ ACTION_LIST_ITEMS_BASE = [
         ACTION_LIST_ITEMS_KEY_TEXT['cancel']
         ]
 
-NONE_DICT_KEY_TEXT          = {'None': 'None'}
-UNKNOWN_DEVICE_TEXT         = ' >  ⛔ UNKNOWN/NOT FOUND > NEEDS REVIEW'
+OPT_LIST_KEY_TEXT_NONE      = {'None': 'None'}
+OPT_PICTURE_TEXT            = ['None']
+UNKNOWN_DEVICE_TEXT         = ' > ✪✪ UNKNOWN/NOT FOUND > NEEDS REVIEW ✪✪'
 SERVICE_NOT_AVAILABLE       = ' > This Data Source/Web Location Service is not available'
 SERVICE_NOT_STARTED_YET     = ' > This Data Source/Web Location Svc has not finished starting. Exit and Retry.'
 LOGGED_INTO_MSG_ACTION_LIST_IDX = 0     # Index number of the Action list item containing the username/password
@@ -498,12 +493,6 @@ class iCloud3_ConfigFlow(config_entries.ConfigFlow, FlowHandler, domain=DOMAIN):
         self.errors  = {}           # Errors en.json error key
         self.OptFlow = None
 
-    def form_msg(self):
-        return f"Form-{self.step_id}, Errors-{self.errors}"
-
-    def _traceui(self, user_input):
-        _traceha(f"{user_input=} {self.errors=} ")
-
 #----------------------------------------------------------------------
     @staticmethod
     @callback
@@ -627,7 +616,6 @@ class iCloud3_ConfigFlow(config_entries.ConfigFlow, FlowHandler, domain=DOMAIN):
         action_item = ''
 
         if user_input is None:
-            close_reopen_ic3_log_file(closed_by=f"Show {self.step_id} Form, Errors-{self.errors}")
             return self.async_show_form(step_id=self.step_id,
                                         data_schema=self.form_schema(self.step_id),
                                         errors=self.errors)
@@ -674,7 +662,6 @@ class iCloud3_ConfigFlow(config_entries.ConfigFlow, FlowHandler, domain=DOMAIN):
                             f"({user_input[CONF_VERIFICATION_CODE]})")
                 self.errors[CONF_VERIFICATION_CODE] = 'verification_code_invalid'
 
-        close_reopen_ic3_log_file(closed_by=f"Show {self.step_id} Form, Errors-{self.errors}")
         return self.async_show_form(step_id=self.step_id,
                                     data_schema=self.form_schema(self.step_id),
                                     errors=self.errors)
@@ -833,13 +820,13 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
 
         # Option selection lists on the Update devices screen
         self.famshr_list_text_by_fname      = {}
-        self.famshr_list_text_by_fname_base = NONE_DICT_KEY_TEXT.copy()
+        self.famshr_list_text_by_fname_base = OPT_LIST_KEY_TEXT_NONE.copy()
         self.fmf_list_text_by_email         = {}
-        self.fmf_list_text_by_email_base    = NONE_DICT_KEY_TEXT.copy()
+        self.fmf_list_text_by_email_base    = OPT_LIST_KEY_TEXT_NONE.copy()
         self.mobapp_list_text_by_entity_id  = {}         # mobile_app device_tracker info used in devices form for mobapp selection
         self.mobapp_list_text_by_entity_id  = MOBAPP_DEVICE_NONE_ITEMS_KEY_TEXT.copy()
         self.picture_by_filename       = {}
-        self.picture_by_filename_base  = NONE_DICT_KEY_TEXT.copy()
+        self.picture_by_filename_base  = OPT_LIST_KEY_TEXT_NONE.copy()
         self.zone_name_key_text        = {}
 
         self.opt_picture_file_name_list    = []
@@ -866,7 +853,7 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
         self.away_time_zone_devices_key_text = {}
 
         # Variables used for the system_settings s update
-        self.www_directory_list = []
+        self.opt_www_directory_list = []
 
         # List of all sensors created by ic3 during startup by sensor.py that is used
         # in the exclude_sensors screen
@@ -940,7 +927,6 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
         Gb.config_flow_flag = True
         if self.PyiCloud is None and Gb.PyiCloud is not None:
             self.PyiCloud = Gb.PyiCloud
-        close_reopen_ic3_log_file()
 
         self.step_id = f"menu_{self.menu_page_no}"
         self.called_from_step_id_1 = self.called_from_step_id_2 =''
@@ -1336,11 +1322,10 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
 
         self.away_time_zone_devices_key_text.update(devices)
 
-        self.away_time_zone_devices_key_text = ensure_six_item_dict(self.away_time_zone_devices_key_text)
-        # dummy_key = ''
-        # for i in range(6 - len(self.away_time_zone_devices_key_text)):
-        #     dummy_key += '.'
-        #     self.away_time_zone_devices_key_text[dummy_key] = '.'
+        dummy_key = ''
+        for i in range(6 - len(self.away_time_zone_devices_key_text)):
+            dummy_key += '.'
+            self.away_time_zone_devices_key_text[dummy_key] = '.'
 
 #-------------------------------------------------------------------------------------------
     async def async_step_confirm_action(self, user_input=None, action_items=None,
@@ -1425,7 +1410,7 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
         self.step_id = 'tracking_parameters'
         user_input, action_item = self._action_text_to_item(user_input)
 
-        if self.www_directory_list == []:
+        if self.opt_www_directory_list == []:
             dir_filters      = ['/.', 'deleted', '/x-']
             path_config_base = f"{Gb.ha_config_directory}/"
             back_slash       = '\\'
@@ -1436,12 +1421,9 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
                 if in_filter_cnt > 0 or www_sub_directory.count('/') > 4 or www_sub_directory.count(back_slash) > 4:
                     continue
 
-                self.www_directory_list.append(www_sub_directory)
+                self.opt_www_directory_list.append(www_sub_directory)
 
         if self.common_form_handler(user_input, action_item, errors):
-            if action_item == 'save':
-                Gb.picture_www_dirs = Gb.conf_profile[CONF_PICTURE_WWW_DIRS].copy()
-                self.picture_by_filename = {}
             return await self.async_step_menu()
 
 
@@ -1853,6 +1835,9 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
 #
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
+    def _traceui(self, user_input):
+        _traceha(f"{user_input=} {self.errors=} ")
+
     def _update_configuration_file(self, user_input):
         '''
         Update the configuration parameters and write to the icloud3.configuration file
@@ -2079,8 +2064,8 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
 
         pvalue = user_input[pname]
         try:
-            if instr(pvalue, DATA_ENTRY_ALERT_CHAR):
-                pvalue = pvalue.split(DATA_ENTRY_ALERT_CHAR)[0]
+            if instr(pvalue, '⛔'):
+                pvalue = pvalue.split('⛔')[0]
             elif instr(pvalue, '(Example:'):
                 pvalue = pvalue.split('(Example:')[0]
             # elif instr(pvalue, '>'):
@@ -2325,7 +2310,6 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
                                         errors=self.errors)
 
         user_input, action_item = self._action_text_to_item(user_input)
-        user_input = self._strip_spaces(user_input, [CONF_VERIFICATION_CODE])
         log_debug_msg(f"{self.step_id} ({action_item}) > UserInput-{user_input}, Errors-{errors}")
 
         if Gb.PyiCloud and self.username == Gb.PyiCloud.username and self.password == Gb.PyiCloud.password:
@@ -2854,31 +2838,40 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
         self.errors_user_input = {}
 
         if user_input is None:
+            close_reopen_ic3_log_file(closed_by=f"GOING TO HA SHOW INITIAL FORM {self.step_id} {self.errors=}")
             return self.async_show_form(step_id=self.step_id,
                                         data_schema=self.form_schema(self.step_id),
                                         errors=self.errors)
 
-        user_input, action_item = self._action_text_to_item(user_input)
-        user_input = self._option_text_to_parm(user_input, CONF_FAMSHR_DEVICENAME, self.famshr_list_text_by_fname)
-        # user_input = self._option_text_to_parm(user_input, CONF_FMF_EMAIL, self.fmf_list_text_by_email)
-        user_input[CONF_FMF_EMAIL] = 'None'
-        user_input = self._option_text_to_parm(user_input, CONF_MOBILE_APP_DEVICE, self.mobapp_list_text_by_entity_id)
-        user_input = self._option_text_to_parm(user_input, CONF_PICTURE, self.picture_by_filename)
-        user_input = self._option_text_to_parm(user_input, CONF_DEVICE_TYPE, DEVICE_TYPE_FNAME)
-        user_input = self._option_text_to_parm(user_input, CONF_TRACK_FROM_BASE_ZONE, self.zone_name_key_text)
+        try:
+            user_input, action_item = self._action_text_to_item(user_input)
+            user_input = self._option_text_to_parm(user_input, CONF_FAMSHR_DEVICENAME, self.famshr_list_text_by_fname)
+            # user_input = self._option_text_to_parm(user_input, CONF_FMF_EMAIL, self.fmf_list_text_by_email)
+            user_input[CONF_FMF_EMAIL] = 'None'
+            user_input = self._option_text_to_parm(user_input, CONF_MOBILE_APP_DEVICE, self.mobapp_list_text_by_entity_id)
+            user_input = self._option_text_to_parm(user_input, CONF_PICTURE, self.picture_by_filename)
+            user_input = self._option_text_to_parm(user_input, CONF_DEVICE_TYPE, DEVICE_TYPE_FNAME)
+            user_input = self._option_text_to_parm(user_input, CONF_TRACK_FROM_BASE_ZONE, self.zone_name_key_text)
 
-        user_input = self._strip_special_text_from_user_input(user_input, CONF_IC3_DEVICENAME)
-        user_input = self._strip_special_text_from_user_input(user_input, CONF_FAMSHR_DEVICENAME)
+            user_input = self._strip_special_text_from_user_input(user_input, CONF_IC3_DEVICENAME)
+            user_input = self._strip_special_text_from_user_input(user_input, CONF_FAMSHR_DEVICENAME)
+        except Exception as err:
+            log_exception(err)
+
         # user_input = self._strip_special_text_from_user_input(user_input, CONF_FMF_EMAIL)
         log_debug_msg(f"{self.step_id} ({action_item}) > UserInput-{user_input}, Errors-{errors}")
 
         if action_item == 'cancel':
+            close_reopen_ic3_log_file(closed_by=f"GOING TO HA SHOW FORM device_list")
             return await self.async_step_device_list()
 
-        user_input['old_devicename'] = self.conf_device_selected[CONF_IC3_DEVICENAME]
-        user_input  = self._validate_devicename(user_input)
-        user_input  = self._validate_update_device(user_input)
-        change_flag = self._was_device_data_changed(user_input)
+        try:
+            user_input['old_devicename'] = self.conf_device_selected[CONF_IC3_DEVICENAME]
+            user_input  = self._validate_devicename(user_input)
+            user_input  = self._validate_update_device(user_input)
+            change_flag = self._was_device_data_changed(user_input)
+        except Exception as err:
+            log_exception(err)
 
         if not self.errors:
             if change_flag:
@@ -2888,22 +2881,30 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
 
                 # Update the configuration file
                 if 'add_device' in self.sensor_entity_attrs_changed:
-                    Gb.conf_devices.append(self.conf_device_selected)
-                    self.conf_device_selected_idx = len(Gb.conf_devices) - 1
+                    try:
+                        Gb.conf_devices.append(self.conf_device_selected)
+                        _traceha(f"{Gb.conf_devices=} {(len(Gb.conf_devices) - 1)=}")
+                        self.conf_device_selected_idx = len(Gb.conf_devices) - 1
 
-                    # Add the new device to the device_list form and and set it's position index
-                    self.form_devices_list_all.append(self._format_device_list_item(self.conf_device_selected))
-                    self.form_devices_list_devicename.append(ui_devicename)
+                        # Add the new device to the device_list form and and set it's position index
+                        self.form_devices_list_all.append(self._format_device_list_item(self.conf_device_selected))
+                        self.form_devices_list_devicename.append(ui_devicename)
+                        _traceha(f"{self.form_devices_list_all=}")
+                        _traceha(f"{self.form_devices_list_devicename=}")
+                        close_reopen_ic3_log_file(closed_by="In update-device")
+                        if self.device_list_page_no < int(self.conf_device_selected_idx/5):
+                            self.device_list_page_no += 1
+                        self.device_list_page_selected_idx[self.device_list_page_no] = \
+                            self.conf_device_selected_idx
 
-                    if self.device_list_page_no < int(self.conf_device_selected_idx/5):
-                        self.device_list_page_no += 1
-                    self.device_list_page_selected_idx[self.device_list_page_no] = \
-                        self.conf_device_selected_idx
+                        event_msg = (f"Configuration Changed > AddDevice-{ui_devicename}, "
+                                        f"{self.conf_device_selected[CONF_FNAME]}/"
+                                        f"{DEVICE_TYPE_FNAME[self.conf_device_selected[CONF_DEVICE_TYPE]]}")
+                        post_event(event_msg)
+                    except Exception as err:
+                        log_exception(err)
+                    close_reopen_ic3_log_file(closed_by="In update-device")
 
-                    event_msg = (f"Configuration Changed > AddDevice-{ui_devicename}, "
-                                    f"{self.conf_device_selected[CONF_FNAME]}/"
-                                    f"{DEVICE_TYPE_FNAME[self.conf_device_selected[CONF_DEVICE_TYPE]]}")
-                    post_event(event_msg)
                 else:
                     event_msg = (f"Configuration Changed > ChangeDevice-{ui_devicename}, "
                                     f"{self.conf_device_selected[CONF_FNAME]}/"
@@ -2916,21 +2917,30 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
 
                 # Update the device_tracker & sensor entities now that the configuration has been updated
                 if 'add_device' in self.sensor_entity_attrs_changed:
+                    _traceha(f"setup device_tracker platform vya HA call {Gb.async_add_entities_device_tracker=}")
                     if Gb.async_add_entities_device_tracker is None:
                         await Gb.hass.config_entries.async_forward_entry_setups(Gb.config_entry, ['device_tracker'])
+                    _traceha(f"bef _create_device_tracker_and_sensor_entities")
+                    _traceha(f"{ui_devicename=} {self.conf_device_selected=}")
+                    close_reopen_ic3_log_file(closed_by="In update-device Form")
                     self._create_device_tracker_and_sensor_entities(ui_devicename, self.conf_device_selected)
+                    _traceha(f"aft _create_device_tracker_and_sensor_entities")
+                    close_reopen_ic3_log_file(closed_by="In update-device Form")
 
                 else:
                     self._update_changed_sensor_entities()
 
+                close_reopen_ic3_log_file(closed_by="In update-device Form")
                 self.header_msg = 'conf_updated'
                 self.config_flow_updated_parms.update(['tracking', 'restart'])
 
+            close_reopen_ic3_log_file(closed_by=f"GOING TO HA SHOW FORM device_list")
             return await self.async_step_device_list()
 
         if self._any_errors():
             self.errors['action_items'] = 'update_aborted'
 
+        close_reopen_ic3_log_file(closed_by=f"GOING TO HA SHOW FORM {self.step_id}")
         return self.async_show_form(step_id=self.step_id,
                         data_schema=self.form_schema(self.step_id),
                         errors=self.errors,
@@ -2961,18 +2971,18 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
             current_ic3_devicename = Gb.conf_devices[self.conf_device_selected_idx][CONF_IC3_DEVICENAME]
             if self.add_device_flag is False and current_ic3_devicename in other_ic3_devicename_list:
                 other_ic3_devicename_list.remove(current_ic3_devicename)
-
+        _traceha(f"{ui_devicename=} {ui_fname=} {self.errors_user_input=} {user_input=}")
         # Already used if the new ic3_devicename is in the devicename list
         if ui_devicename in other_ic3_devicename_list:
             self.errors[CONF_IC3_DEVICENAME] = 'duplicate_ic3_devicename'
             self.errors_user_input[CONF_IC3_DEVICENAME] = ui_devicename
-            self.errors_user_input[CONF_IC3_DEVICENAME] = f"{ui_devicename}{DATA_ENTRY_ALERT}Assigned to another iCloud3 device"
+            self.errors_user_input[CONF_IC3_DEVICENAME] = f"{ui_devicename}      ⛔ Assigned to another iCloud3 device"
 
         # Already used if the new ic3_devicename is in the ha device_tracker entity list
         if (ui_devicename in self.device_trkr_by_entity_id_all
                 and self.device_trkr_by_entity_id_all[ui_devicename] != DOMAIN):
             self.errors[CONF_IC3_DEVICENAME] = 'duplicate_other_devicename'
-            self.errors_user_input[CONF_IC3_DEVICENAME] = ( f"{ui_devicename}{DATA_ENTRY_ALERT}Used by Integration > "
+            self.errors_user_input[CONF_IC3_DEVICENAME] = ( f"{ui_devicename}      ⛔ Used by Integration > "
                                                             f"{self.device_trkr_by_entity_id_all[ui_devicename]}")
 
         for conf_device in Gb.conf_devices:
@@ -2980,10 +2990,11 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
                 continue
             if ui_fname == conf_device[CONF_FNAME]:
                 self.errors[CONF_FNAME] = 'duplicate_ic3_devicename'
-                self.errors_user_input[CONF_FNAME] = (  f"{ui_fname}{DATA_ENTRY_ALERT}Used by iCloud3 device > "
+                self.errors_user_input[CONF_FNAME] = (  f"{ui_fname}      ⛔ Used by iCloud3 device > "
                                                         f"{conf_device[CONF_IC3_DEVICENAME]}")
                 break
 
+        _traceha(f"{ui_devicename=} {ui_fname=} {self.errors_user_input=} {user_input=}")
         return user_input
 
 #-------------------------------------------------------------------------------------------
@@ -3072,8 +3083,8 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
         track_from_zones.append(self.conf_device_selected[CONF_TRACK_FROM_BASE_ZONE])
         user_input[CONF_TRACK_FROM_ZONES] = track_from_zones
 
-        if isbetween(user_input[CONF_FIXED_INTERVAL], 0, 3):
-            user_input[CONF_FIXED_INTERVAL] = 3
+        if isbetween(user_input[CONF_FIXED_INTERVAL], 0, 5):
+            user_input[CONF_FIXED_INTERVAL] = 5
             self.errors[CONF_FIXED_INTERVAL] = 'fixed_interval_invalid_range'
 
         return user_input
@@ -3193,7 +3204,7 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
         """ Cycle through famshr data and get devices that can be tracked for the
             icloud device selection list
         """
-        self.famshr_list_text_by_fname_base = NONE_DICT_KEY_TEXT.copy()
+        self.famshr_list_text_by_fname_base = OPT_LIST_KEY_TEXT_NONE.copy()
 
         if self.PyiCloud is None or self.PyiCloud.FamilySharing is None:
             return
@@ -3262,7 +3273,7 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
         devices that can be tracked for the icloud device selection list
         '''
 
-        self.fmf_list_text_by_email_base = NONE_DICT_KEY_TEXT.copy()
+        self.fmf_list_text_by_email_base = OPT_LIST_KEY_TEXT_NONE.copy()
 
         if self.PyiCloud is None:
             return
@@ -3282,35 +3293,62 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
         items are only assigned to one devicename.
         '''
         self.devicename_by_famshr_fmf = {}
-        for conf_device in Gb.conf_devices:
-            if conf_device[CONF_FAMSHR_DEVICENAME] != 'None':
-                self.devicename_by_famshr_fmf[conf_device[CONF_FAMSHR_DEVICENAME]] = \
-                        conf_device[CONF_IC3_DEVICENAME]
-            if conf_device[CONF_FMF_EMAIL] != 'None':
-                self.devicename_by_famshr_fmf[conf_device[CONF_FMF_EMAIL]] = \
-                        conf_device[CONF_IC3_DEVICENAME]
+        _traceha(f"-------------------------------------")
+        _traceha(f"_build_devicename_by_famshr_fmf - START")
+        _traceha(f"{current_devicename=} {Gb.conf_devices=}")
+        close_reopen_ic3_log_file(closed_by="_build before CONF_DEV")
+        try:
+            for conf_device in Gb.conf_devices:
+                _traceha(f"bef {conf_device=}")
+                _traceha(f"bef {self.devicename_by_famshr_fmf=}")
+                if conf_device[CONF_FAMSHR_DEVICENAME] != 'None':
+                    self.devicename_by_famshr_fmf[conf_device[CONF_FAMSHR_DEVICENAME]] = \
+                            conf_device[CONF_IC3_DEVICENAME]
+                if conf_device[CONF_FMF_EMAIL] != 'None':
+                    self.devicename_by_famshr_fmf[conf_device[CONF_FMF_EMAIL]] = \
+                            conf_device[CONF_IC3_DEVICENAME]
+                _traceha(f"aft {self.devicename_by_famshr_fmf=}")
+        except Exception as err:
+            log_exception(err)
+            pass
+        _traceha(f"don {self.devicename_by_famshr_fmf=}")
 
+        close_reopen_ic3_log_file(closed_by="_build FAMSHR LIST")
         self.famshr_list_text_by_fname = self.famshr_list_text_by_fname_base.copy()
-        for famshr_devicename, famshr_text in self.famshr_list_text_by_fname_base.items():
-            devicename_msg = ''
-            try:
-                if current_devicename != self.devicename_by_famshr_fmf[famshr_devicename]:
-                    devicename_msg = (  f"{RARROW}ASSIGNED TO-"
-                                        f"{self.devicename_by_famshr_fmf[famshr_devicename]}")
-            except:
-                pass
-            self.famshr_list_text_by_fname[famshr_devicename] = f"{famshr_text}{devicename_msg}"
+        _traceha(f"bef {self.famshr_list_text_by_fname=}")
+        try:
+            for famshr_devicename, famshr_text in self.famshr_list_text_by_fname_base.items():
+                if famshr_devicename not in self.devicename_by_famshr_fmf:
+                    continue
+                devicename_msg = ''
+                _traceha(f"bef {famshr_devicename=} {famshr_text=}")
+                if assigned_devicename := self.devicename_by_famshr_fmf.get(famshr_devicename):
+                    if current_devicename != assigned_devicename:
+                        devicename_msg = f"{RARROW}ASSIGNED TO-{assigned_devicename}"
+                self.famshr_list_text_by_fname[famshr_devicename] = f"{famshr_text}{devicename_msg}"
+                _traceha(f"aft {self.famshr_list_text_by_fname=}")
+        except Exception as err:
+            log_exception(err)
+            pass
 
+        close_reopen_ic3_log_file(closed_by="_build FMF LIST")
         self.fmf_list_text_by_email = self.fmf_list_text_by_email_base.copy()
-        for fmf_email, fmf_text in self.fmf_list_text_by_email_base.items():
-            devicename_msg = ''
-            try:
-                if current_devicename != self.devicename_by_famshr_fmf[fmf_email]:
-                    devicename_msg = (  f"{RARROW}ASSIGNED TO-"
-                                        f"{self.devicename_by_famshr_fmf[fmf_email]}")
-            except:
-                pass
-            self.fmf_list_text_by_email[fmf_email] = f"{fmf_text}{devicename_msg}"
+        _traceha(f"bef {self.fmf_list_text_by_email=}")
+        try:
+            for fmf_email, fmf_text in self.fmf_list_text_by_email_base.items():
+                devicename_msg = ''
+                _traceha(f"bef {fmf_email=} {fmf_text=}")
+                if assigned_devicename := self.devicename_by_famshr_fmf.get(fmf_email):
+                    if current_devicename != assigned_devicename:
+                        devicename_msg = f"{RARROW}ASSIGNED TO-{assigned_devicename}"
+                self.fmf_list_text_by_email[fmf_email] = f"{fmf_text}{devicename_msg}"
+                _traceha(f"aft {self.fmf_list_text_by_email=}")
+        except Exception as err:
+            log_exception(err)
+            pass
+        _traceha(f"_build_devicename_by_famshr_fmf - END")
+        _traceha(f"-------------------------------------")
+        close_reopen_ic3_log_file(closed_by="_build END")
 
 #----------------------------------------------------------------------
     def _build_mobapp_entity_list(self):
@@ -3431,11 +3469,11 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
             if self.picture_by_filename != {}:
                 return
 
+            image_extensions = ['png', 'jpg', 'jpeg']
             dir_filters      = ['/.', 'deleted', '/x-']
             image_filenames  = []
             path_config_base = f"{Gb.ha_config_directory}/"
             back_slash       = '\\'
-            www_dir_25_items = {}
 
             for path, dirs, files in os.walk(f"{path_config_base}www"):
                 www_sub_directory = path.replace(path_config_base, '')
@@ -3443,47 +3481,20 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
                 if in_filter_cnt > 0 or www_sub_directory.count('/') > 4 or www_sub_directory.count(back_slash):
                     continue
 
-                # Filter unwanted directories - std dirs are www/icloud3, www/cummunity, www/images
-                if Gb.picture_www_dirs:
-                    valid_dir = [dir for dir in Gb.picture_www_dirs if www_sub_directory.startswith(dir)]
-                    if valid_dir == []:
-                        continue
-
-                dir_image_filenames = [f"{www_sub_directory}/{file}"
-                                    for file in files
-                                    if file.rsplit('.', 1)[-1] in ['png', 'jpg', 'jpeg']]
-
-                image_filenames.extend(dir_image_filenames[:25])
-                if len(dir_image_filenames) > 25:
-                    www_dir_25_items[f"www_dirs-{www_sub_directory}"] = \
-                                (f" ⛔ {www_sub_directory} > The first 25 files out of "
-                                f"{len(dir_image_filenames)} are listed")
+                for file in files:
+                    if instr(file, '.png') or instr(file, '.jpg') or instr(file, '.jpeg'):
+                        www_sub_directory_file = f"{www_sub_directory}/{file}"
+                        image_filenames.append(www_sub_directory_file)
 
             sorted_image_filenames = []
             for image_filename in image_filenames:
                 sorted_image_filenames.append(f"{image_filename.rsplit('/', 1)[1]}:{image_filename}")
             sorted_image_filenames.sort()
 
-            self.picture_by_filename = {}
-            self.picture_by_filename['www_dirs'] = "Source Directories:"
-            if Gb.picture_www_dirs:
-                www_dir_idx = 0
-                while www_dir_idx < len(Gb.picture_www_dirs):
-                    self.picture_by_filename[f"www_dirs{www_dir_idx}"] = \
-                                f"{DOT}{list_to_str(Gb.picture_www_dirs[www_dir_idx:www_dir_idx+3])}"
-                    www_dir_idx += 3
-            else:
-                self.picture_by_filename["www_dirs0"] = f"{DOT}All `www/*` directories are searched"
-
-            self.picture_by_filename.update(www_dir_25_items)
-            self.picture_by_filename['www_dirs998'] = "Set filter on `Tracking and Other Parameters` screen"
-            self.picture_by_filename['www_dirs999'] = f"{'-'*85}"
-            self.picture_by_filename.update(self.picture_by_filename_base)
-
+            self.picture_by_filename = self.picture_by_filename_base.copy()
             for sorted_image_filename in sorted_image_filenames:
                 image_filename, image_filename_path = sorted_image_filename.split(':')
-                self.picture_by_filename[image_filename_path] = \
-                            f"{image_filename}{RARROW}{image_filename_path.replace(image_filename, '')}"
+                self.picture_by_filename[image_filename_path] = f"{image_filename}{RARROW}{image_filename_path.replace(image_filename, '')}"
 
         except Exception as err:
             log_exception(err)
@@ -3510,7 +3521,6 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
             fname, zone = fname_zone.split('|')
             self.zone_name_key_text[zone] = fname
 
-        self.zone_name_key_text = ensure_six_item_dict(self.zone_name_key_text)
         dummy_key = ''
         for i in range(6 - len(self.zone_name_key_text)):
             dummy_key += '.'
@@ -3951,10 +3961,12 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
                                 or self.user_input_multi_form.get(pname) \
                                 or self.conf_device_selected.get(pname) \
                                 or suggested_value
-
+            _traceha(f"1 {pname=} {suggested_value=} {parm_displayed=}")
             if pname == 'device_type':
                 parm_displayed = DEVICE_TYPE_FNAME.get(parm_displayed, IPHONE_FNAME)
             parm_displayed = ' ' if parm_displayed == '' else parm_displayed
+            _traceha(f"2 {pname=} {suggested_value=} {parm_displayed=}")
+            close_reopen_ic3_log_file(closed_by=f"_parm_or_device")
 
         except Exception as err:
             log_exception(err)
@@ -4003,11 +4015,17 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
                 pvalue_key = Gb.conf_general[pname]
 
             if type(pvalue_key) in [float, int, str]:
+                opt_parm_to_text = option_list_key_text[pvalue_key]
+                close_reopen_ic3_log_file(closed_by=f"{pname=} {pvalue_key=} {opt_parm_to_text=}")
                 return option_list_key_text[pvalue_key]
 
             elif type(pvalue_key) is list:
+                opt_parm_to_text = [option_list_key_text[pvalue_key_item] for pvalue_key_item in pvalue_key]
+                close_reopen_ic3_log_file(closed_by=f"{pname=} {pvalue_key=} {opt_parm_to_text=}")
                 return [option_list_key_text[pvalue_key_item] for pvalue_key_item in pvalue_key]
 
+            opt_parm_to_text = option_list_key_text.values()[0]
+            close_reopen_ic3_log_file(closed_by=f"{pname=} {pvalue_key=} {opt_parm_to_text=}")
             return option_list_key_text.values()[0]
 
 
@@ -4019,7 +4037,7 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
                 else:
                     self.errors[pname] = 'unknown_value'
 
-            return f"{pvalue_key} {DATA_ENTRY_ALERT}Unknown Selection"
+            return f"{pvalue_key}       ⛔ Unknown Selection"
 
 #-------------------------------------------------------------------------------------------
     def key_text_to_text_list(self, key_text):
@@ -4180,9 +4198,9 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
         return (fname, device_type)
 
 #--------------------------------------------------------------------
-    def action_default_text(self, action_item, action_items_key_text=None):
-        if action_items_key_text:
-            return action_items_key_text.get(action_item, 'UNKNOWN ACTION > Unknown Action')
+    def action_default_text(self, action_item, action_itemss_key_text=None):
+        if action_itemss_key_text:
+            return action_itemss_key_text.get(action_item, 'UNKNOWN ACTION > Unknown Action')
         else:
             return ACTION_LIST_ITEMS_KEY_TEXT.get(action_item, 'UNKNOWN ACTION - Unknown Action')
 
@@ -4207,8 +4225,8 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
         '''
         Return the step_id form schema for the data entry forms
         '''
-        log_debug_msg(f"Show Form-{step_id}, Errors-{self.errors}")
-        close_reopen_ic3_log_file()
+        close_reopen_ic3_log_file(closed_by=f"Show {step_id} Form")
+
         schema = {}
         self.actions_list = actions_list or ACTION_LIST_ITEMS_BASE.copy()
 
@@ -4347,9 +4365,10 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
         #------------------------------------------------------------------------
         elif step_id == 'reauth':
             self.actions_list = REAUTH_ACTIONS.copy()
-            # self._set_action_list_item_username_password()
+            self._set_action_list_item_username_password()
+
             return vol.Schema({
-                vol.Optional(CONF_VERIFICATION_CODE, default=' '):
+                vol.Optional(CONF_VERIFICATION_CODE):
                             selector.TextSelector(),
                 vol.Required('action_items',
                             default=self.action_default_text('send_verification_code')):
@@ -4422,129 +4441,177 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
 
         #------------------------------------------------------------------------
         elif step_id == 'update_device':
-            self._build_picture_filename_list()
+            _traceha(f"Setting up update_device {self.conf_device_selected[CONF_IC3_DEVICENAME]}")
             self._build_devicename_by_famshr_fmf(self.conf_device_selected[CONF_IC3_DEVICENAME])
+            _traceha(f"Setting up update_device {self.conf_device_selected[CONF_IC3_DEVICENAME]}")
+            close_reopen_ic3_log_file(closed_by=f"IN {step_id} Form")
             error_key = ''
             self.errors = self.errors or {}
 
             # If conf_famshr_devicename is not in available famshr values list, add it
-            famshr_devicename = self.conf_device_selected[CONF_FAMSHR_DEVICENAME]
-            famshr_list_text_by_fname = self.famshr_list_text_by_fname.copy()
-            if famshr_devicename not in self.famshr_list_text_by_fname:
-                error_key = '_famshr'
-                self.errors[CONF_FAMSHR_DEVICENAME] = 'unknown_famshr'
-                famshr_list_text_by_fname[famshr_devicename] = f"{famshr_devicename}{UNKNOWN_DEVICE_TEXT}"
+            try:
+                famshr_devicename = self.conf_device_selected[CONF_FAMSHR_DEVICENAME]
+                famshr_list_text_by_fname = self.famshr_list_text_by_fname.copy()
+                if famshr_devicename not in self.famshr_list_text_by_fname:
+                    error_key = '_famshr'
+                    self.errors[CONF_FAMSHR_DEVICENAME] = 'unknown_famshr'
+                    famshr_list_text_by_fname[famshr_devicename] = f"{famshr_devicename}{UNKNOWN_DEVICE_TEXT}"
 
-            if self.PyiCloud:
-                try:
-                    if self.PyiCloud.FamilySharing.is_service_not_available:
-                        famshr_list_text_by_fname[famshr_devicename] = f"{famshr_devicename}{DATA_ENTRY_ALERT}{SERVICE_NOT_AVAILABLE}"
-                except:
-                    famshr_list_text_by_fname[famshr_devicename] = f"{famshr_devicename}{DATA_ENTRY_ALERT}{SERVICE_NOT_STARTED_YET}"
-            elif 'base' not in self.errors:
-                self.errors['base'] = 'icloud_acct_not_available'
+                _traceha(f"STEP_UPDATE_DEVICE {self.PyiCloud=}")
+                if self.PyiCloud:
+                    try:
+                        _traceha(f"STEP_UPDATE_DEVICE {self.PyiCloud.FamilySharing.is_service_not_available=}")
+                        if self.PyiCloud.FamilySharing.is_service_not_available:
+                            famshr_list_text_by_fname[famshr_devicename] = f"{famshr_devicename}       ⛔ {SERVICE_NOT_AVAILABLE}"
+                            _traceha(f"STEP_UPDATE_DEVICE {famshr_list_text_by_fname=}")
+                    except Exception as err:
+                        log_exception(err)
+                        famshr_list_text_by_fname[famshr_devicename] = f"{famshr_devicename}       ⛔ {SERVICE_NOT_STARTED_YET}"
+                        _traceha(f"STEP_UPDATE_DEVICE {famshr_list_text_by_fname=}")
+                elif 'base' not in self.errors:
+                    self.errors['base'] = 'icloud_acct_not_available'
+            except Exception as err:
+                log_exception(err)
+            close_reopen_ic3_log_file(closed_by=f"IN {step_id} Form")
 
             # If conf_fmf_email is not in available fmf emails list, add it
-            fmf_email = self.conf_device_selected[CONF_FMF_EMAIL]
-            fmf_list_text_by_email = self.fmf_list_text_by_email.copy()
-            if fmf_email not in self.fmf_list_text_by_email:
-                error_key = f"{error_key}_fmf"
-                self.errors[CONF_FMF_EMAIL] = 'unknown_fmf'
-                fmf_list_text_by_email[fmf_email] = f"{fmf_email}{UNKNOWN_DEVICE_TEXT}"
+            # fmf_email = self.conf_device_selected[CONF_FMF_EMAIL]
+            # fmf_list_text_by_email = self.fmf_list_text_by_email.copy()
+            # if fmf_email not in self.fmf_list_text_by_email:
+            #     error_key = f"{error_key}_fmf"
+            #     self.errors[CONF_FMF_EMAIL] = 'unknown_fmf'
+            #     fmf_list_text_by_email[fmf_email] = f"{fmf_email}{UNKNOWN_DEVICE_TEXT}"
 
-            if self.PyiCloud:
-                try:
-                    if self.PyiCloud.FindMyFriends.is_service_not_available:
-                        fmf_list_text_by_email[fmf_email] = f"{fmf_email}{DATA_ENTRY_ALERT}{SERVICE_NOT_AVAILABLE}"
-                except:
-                    fmf_list_text_by_email[fmf_email] = f"{fmf_email}{DATA_ENTRY_ALERT}{SERVICE_NOT_STARTED_YET}"
-            elif 'base' not in self.errors:
-                self.errors['base'] = 'icloud_acct_not_available'
+            # if self.PyiCloud:
+            #     try:
+            #         if self.PyiCloud.FindMyFriends.is_service_not_available:
+            #             fmf_list_text_by_email[fmf_email] = f"{fmf_email}       ⛔ {SERVICE_NOT_AVAILABLE}"
+            #     except:
+            #         fmf_list_text_by_email[fmf_email] = f"{fmf_email}       ⛔ {SERVICE_NOT_STARTED_YET}"
+            # elif 'base' not in self.errors:
+            #     self.errors['base'] = 'icloud_acct_not_available'
 
             # If conf_mobapp_device is not in available mobapp devices list, add it
-            mobapp_device = self.conf_device_selected[CONF_MOBILE_APP_DEVICE]
-            mobapp_list_text_by_entity_id = self.mobapp_list_text_by_entity_id.copy()
-            if mobapp_device not in mobapp_list_text_by_entity_id:
-                error_key = f"{error_key}_mobapp"
-                self.errors[CONF_MOBILE_APP_DEVICE] = 'unknown_mobapp'
-                mobapp_list_text_by_entity_id[mobapp_device] = f"{mobapp_device}{UNKNOWN_DEVICE_TEXT}"
+            try:
+                mobapp_device = self.conf_device_selected[CONF_MOBILE_APP_DEVICE]
+                _traceha(f"STEP_UPDATE_DEVICE {mobapp_device=}")
+                mobapp_list_text_by_entity_id = self.mobapp_list_text_by_entity_id.copy()
+                if mobapp_device not in mobapp_list_text_by_entity_id:
+                    error_key = f"{error_key}_mobapp"
+                    self.errors[CONF_MOBILE_APP_DEVICE] = 'unknown_mobapp'
+                    mobapp_list_text_by_entity_id[mobapp_device] = f"{mobapp_device}{UNKNOWN_DEVICE_TEXT}"
+            except Exception as err:
+                    log_exception(err)
+            close_reopen_ic3_log_file(closed_by=f"{mobapp_list_text_by_entity_id=}")
 
-            picture_filename = self.conf_device_selected[CONF_PICTURE]
-            picture_by_filename = self.picture_by_filename.copy()
+            try:
+                picture_filename = self.conf_device_selected[CONF_PICTURE]
+                picture_by_filename = self.picture_by_filename.copy()
 
-            if picture_filename not in picture_by_filename:
-                error_key = f"{error_key}_picture"
-                self.errors[CONF_PICTURE] = 'unknown_picture'
-                picture_by_filename[picture_filename] = f"{picture_filename}{UNKNOWN_DEVICE_TEXT}"
-            if error_key and 'base' not in self.errors:
-                self.errors['base'] = f'unknown{error_key}'
+                if picture_filename not in picture_by_filename:
+                    error_key = f"{error_key}_picture"
+                    self.errors[CONF_PICTURE] = 'unknown_picture'
+                    picture_by_filename[picture_filename] = f"{picture_filename}{UNKNOWN_DEVICE_TEXT}"
+                if error_key and 'base' not in self.errors:
+                    self.errors['base'] = f'unknown{error_key}'
+            except Exception as err:
+                    log_exception(err)
+            close_reopen_ic3_log_file(closed_by=f"{picture_by_filename=}")
 
-            if self.conf_device_selected[CONF_TRACKING_MODE] == INACTIVE_DEVICE:
-                self.errors[CONF_TRACKING_MODE] = 'inactive_device'
+            try:
+                if self.conf_device_selected[CONF_TRACKING_MODE] == INACTIVE_DEVICE:
+                    self.errors[CONF_TRACKING_MODE] = 'inactive_device'
+            except Exception as err:
+                    log_exception(err)
 
             log_zones_key_text = {'none': 'None'}
             log_zones_key_text.update(self.zone_name_key_text)
             log_zones_key_text.update(LOG_ZONES_KEY_TEXT)
 
-            return vol.Schema({
-                vol.Required(CONF_IC3_DEVICENAME,
-                            default=self._parm_or_device(CONF_IC3_DEVICENAME)):
-                            selector.TextSelector(),
-                vol.Required(CONF_FNAME,
-                            default=self._parm_or_device(CONF_FNAME)):
-                            selector.TextSelector(),
-                vol.Required(CONF_DEVICE_TYPE,
-                            default=self._option_parm_to_text(CONF_DEVICE_TYPE, DEVICE_TYPE_FNAME)):
-                            selector.SelectSelector(selector.SelectSelectorConfig(
-                                options=dict_value_to_list(DEVICE_TYPE_FNAME), mode='dropdown')),
-                vol.Required(CONF_TRACKING_MODE,
-                            default=self._option_parm_to_text(CONF_TRACKING_MODE, TRACKING_MODE_ITEMS_KEY_TEXT)):
-                            selector.SelectSelector(selector.SelectSelectorConfig(
-                                options=dict_value_to_list(TRACKING_MODE_ITEMS_KEY_TEXT), mode='dropdown')),
-                vol.Required(CONF_FAMSHR_DEVICENAME,
-                            default=self._option_parm_to_text(CONF_FAMSHR_DEVICENAME, famshr_list_text_by_fname)):
-                            selector.SelectSelector(selector.SelectSelectorConfig(
-                                options=dict_value_to_list(famshr_list_text_by_fname), mode='dropdown')),
-                # vol.Required(CONF_FMF_EMAIL,
-                #             default=self._option_parm_to_text(CONF_FMF_EMAIL, fmf_list_text_by_email)):
-                #             selector.SelectSelector(selector.SelectSelectorConfig(
-                #                 options=dict_value_to_list(fmf_list_text_by_email), mode='dropdown')),
-                vol.Required(CONF_MOBILE_APP_DEVICE,
-                            default=self._option_parm_to_text(CONF_MOBILE_APP_DEVICE, mobapp_list_text_by_entity_id)):
-                            selector.SelectSelector(selector.SelectSelectorConfig(
-                                options=dict_value_to_list(mobapp_list_text_by_entity_id), mode='dropdown')),
-                vol.Required(CONF_PICTURE,
-                            default=self._option_parm_to_text(CONF_PICTURE, picture_by_filename)):
-                            selector.SelectSelector(selector.SelectSelectorConfig(
-                                options=dict_value_to_list(picture_by_filename), mode='dropdown')),
+            try:
+                # return vol.Schema({
+                schema = vol.Schema({
+                    vol.Required(CONF_IC3_DEVICENAME,
+                                default=self._parm_or_device(CONF_IC3_DEVICENAME)):
+                                selector.TextSelector(),
+                    vol.Required(CONF_FNAME,
+                                default=self._parm_or_device(CONF_FNAME)):
+                                selector.TextSelector(),
+                    vol.Required(CONF_DEVICE_TYPE,
+                                default=self._option_parm_to_text(CONF_DEVICE_TYPE, DEVICE_TYPE_FNAME)):
+                                selector.SelectSelector(selector.SelectSelectorConfig(
+                                    options=dict_value_to_list(DEVICE_TYPE_FNAME), mode='dropdown')),
+                    vol.Required(CONF_TRACKING_MODE,
+                                default=self._option_parm_to_text(CONF_TRACKING_MODE, TRACKING_MODE_ITEMS_KEY_TEXT)):
+                                selector.SelectSelector(selector.SelectSelectorConfig(
+                                    options=dict_value_to_list(TRACKING_MODE_ITEMS_KEY_TEXT), mode='dropdown')),
+                    vol.Required(CONF_FAMSHR_DEVICENAME,
+                                default=self._option_parm_to_text(CONF_FAMSHR_DEVICENAME, famshr_list_text_by_fname)):
+                                selector.SelectSelector(selector.SelectSelectorConfig(
+                                    options=dict_value_to_list(famshr_list_text_by_fname), mode='dropdown')),
+                    # vol.Required(CONF_FMF_EMAIL,
+                    #             default=self._option_parm_to_text(CONF_FMF_EMAIL, fmf_list_text_by_email)):
+                    #             selector.SelectSelector(selector.SelectSelectorConfig(
+                    #                 options=dict_value_to_list(fmf_list_text_by_email), mode='dropdown')),
+                    vol.Required(CONF_MOBILE_APP_DEVICE,
+                                default=self._option_parm_to_text(CONF_MOBILE_APP_DEVICE, mobapp_list_text_by_entity_id)):
+                                selector.SelectSelector(selector.SelectSelectorConfig(
+                                    options=dict_value_to_list(mobapp_list_text_by_entity_id), mode='dropdown')),
+                    vol.Required(CONF_PICTURE,
+                                default=self._option_parm_to_text(CONF_PICTURE, picture_by_filename)):
+                                selector.SelectSelector(selector.SelectSelectorConfig(
+                                    options=dict_value_to_list(picture_by_filename), mode='dropdown')),
 
-                vol.Optional(CONF_LOG_ZONES,
-                            default=self._parm_or_device(CONF_LOG_ZONES)):
-                            cv.multi_select(log_zones_key_text),
-                vol.Required(CONF_TRACK_FROM_ZONES,
-                            default=self._parm_or_device(CONF_TRACK_FROM_ZONES)):
-                            cv.multi_select(self.zone_name_key_text),
+                    vol.Optional(CONF_LOG_ZONES,
+                                default=self._parm_or_device(CONF_LOG_ZONES)):
+                                cv.multi_select(log_zones_key_text),
+                    vol.Required(CONF_TRACK_FROM_ZONES,
+                                default=self._parm_or_device(CONF_TRACK_FROM_ZONES)):
+                                cv.multi_select(self.zone_name_key_text),
 
-                vol.Required(CONF_INZONE_INTERVAL,
-                            default=self.conf_device_selected[CONF_INZONE_INTERVAL]):
-                            # default=self._parm_or_device(CONF_INZONE_INTERVAL)):
-                            selector.NumberSelector(selector.NumberSelectorConfig(
-                                min=5, max=480, step=5, unit_of_measurement='minutes')),
-                vol.Required(CONF_FIXED_INTERVAL,
-                            default=self.conf_device_selected[CONF_FIXED_INTERVAL]):
-                            selector.NumberSelector(selector.NumberSelectorConfig(
-                                min=0, max=480, step=5, unit_of_measurement='minutes')),
-                vol.Required(CONF_TRACK_FROM_BASE_ZONE,
-                            default=self._option_parm_to_text(CONF_TRACK_FROM_BASE_ZONE, self.zone_name_key_text, conf_device=True)):
-                            selector.SelectSelector(selector.SelectSelectorConfig(
-                                options=dict_value_to_list(self.zone_name_key_text), mode='dropdown')),
+                    vol.Required(CONF_INZONE_INTERVAL,
+                                default=self.conf_device_selected[CONF_INZONE_INTERVAL]):
+                                # default=self._parm_or_device(CONF_INZONE_INTERVAL)):
+                                selector.NumberSelector(selector.NumberSelectorConfig(
+                                    min=5, max=480, step=5, unit_of_measurement='minutes')),
+                    vol.Required(CONF_FIXED_INTERVAL,
+                                default=self.conf_device_selected[CONF_FIXED_INTERVAL]):
+                                selector.NumberSelector(selector.NumberSelectorConfig(
+                                    min=0, max=480, step=5, unit_of_measurement='minutes')),
+                    vol.Required(CONF_TRACK_FROM_BASE_ZONE,
+                                default=self._option_parm_to_text(CONF_TRACK_FROM_BASE_ZONE, self.zone_name_key_text, conf_device=True)):
+                                selector.SelectSelector(selector.SelectSelectorConfig(
+                                    options=dict_value_to_list(self.zone_name_key_text), mode='dropdown')),
 
-                vol.Required('action_items',
-                            default=self.action_default_text('save')):
-                            selector.SelectSelector(selector.SelectSelectorConfig(
-                                options=self.actions_list, mode='list')),
-                })
+                    vol.Required('action_items',
+                                default=self.action_default_text('save')):
+                                selector.SelectSelector(selector.SelectSelectorConfig(
+                                    options=self.actions_list, mode='list')),
+                    })
+                _traceha(f"{schema=}")
+                close_reopen_ic3_log_file(closed_by=f"DONE UPDATE SCHEMA --------")
+                return schema
+            except Exception as err:
+                log_exception(err)
 
+                schema = vol.Schema({
+                    vol.Required(CONF_IC3_DEVICENAME,
+                                default=self._parm_or_device(CONF_IC3_DEVICENAME)):
+                                selector.TextSelector(),
+                    vol.Required(CONF_FNAME,
+                                default=self._parm_or_device(CONF_FNAME)):
+                                selector.TextSelector(),
+                    vol.Required(CONF_DEVICE_TYPE,
+                                default=self._option_parm_to_text(CONF_DEVICE_TYPE, DEVICE_TYPE_FNAME)):
+                                selector.SelectSelector(selector.SelectSelectorConfig(
+                                    options=dict_value_to_list(DEVICE_TYPE_FNAME), mode='dropdown')),
+                    vol.Required(CONF_TRACKING_MODE,
+                                default=self._option_parm_to_text(CONF_TRACKING_MODE, TRACKING_MODE_ITEMS_KEY_TEXT)):
+                                selector.SelectSelector(selector.SelectSelectorConfig(
+                                    options=dict_value_to_list(TRACKING_MODE_ITEMS_KEY_TEXT), mode='dropdown')),
+                 })
+            close_reopen_ic3_log_file(closed_by=f"{str(schema)=}")
+            return schema
         #------------------------------------------------------------------------
         elif step_id == 'delete_device':
             self.actions_list = DELETE_DEVICE_ACTIONS.copy()
@@ -4733,11 +4800,6 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
         #------------------------------------------------------------------------
         elif step_id == 'tracking_parameters':
             self.actions_list = ACTION_LIST_ITEMS_BASE.copy()
-
-            self.picture_by_filename = {}
-            if PICTURE_WWW_STANDARD_DIRS in Gb.conf_profile[CONF_PICTURE_WWW_DIRS]:
-                Gb.conf_profile[CONF_PICTURE_WWW_DIRS] = []
-
             return vol.Schema({
                 vol.Required(CONF_DISTANCE_BETWEEN_DEVICES,
                             default=Gb.conf_general[CONF_DISTANCE_BETWEEN_DEVICES]):
@@ -4781,13 +4843,10 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
                             default=self._option_parm_to_text(CONF_TRAVEL_TIME_FACTOR, TRAVEL_TIME_INTERVAL_MULTIPLIER_KEY_TEXT)):
                             selector.SelectSelector(selector.SelectSelectorConfig(
                                 options=dict_value_to_list(TRAVEL_TIME_INTERVAL_MULTIPLIER_KEY_TEXT), mode='dropdown')),
-                vol.Required(CONF_PICTURE_WWW_DIRS,
-                            default=Gb.conf_profile[CONF_PICTURE_WWW_DIRS] or self.www_directory_list):
-                            cv.multi_select(self.www_directory_list),
                 vol.Required(CONF_EVLOG_CARD_DIRECTORY,
                             default=self._parm_or_error_msg(CONF_EVLOG_CARD_DIRECTORY, conf_group=CF_PROFILE)):
                             selector.SelectSelector(selector.SelectSelectorConfig(
-                                options=dict_value_to_list(self.www_directory_list), mode='dropdown')),
+                                options=dict_value_to_list(self.opt_www_directory_list), mode='dropdown')),
                 vol.Optional(CONF_EVLOG_BTNCONFIG_URL,
                             default=f"{self._parm_or_error_msg(CONF_EVLOG_BTNCONFIG_URL, conf_group=CF_PROFILE)} "):
                             selector.TextSelector(),

@@ -198,18 +198,22 @@ class iCloud3:
             Gb.restart_icloud3_request_flag = False
 
         # Exit 5-sec loop if no devices, updating a device now, or restarting iCloud3
-        if (self.loop_ctrl_master_update_in_process_flag
-                or Gb.conf_devices == []
-                or Gb.start_icloud3_inprocess_flag):
-
+        info_msg = ''
+        if self.loop_ctrl_master_update_in_process_flag or Gb.start_icloud3_inprocess_flag:
+            info_msg = "iCloud3 is Starting"
+        elif Gb.conf_devices == []:
+            info_msg = "No devices have been set up"
+        if info_msg:
             # Authentication may take a long time, Display a status message before exiting loop
-            if (Gb.pyicloud_auth_started_secs > 0):
-                info_msg = ("Waiting for iCloud Account Authentication, Requested at "
-                            f"{secs_to_time_age_str(Gb.pyicloud_auth_started_secs)} ")
-                for Device in Gb.Devices_by_devicename.values():
-                    Device.display_info_msg(info_msg)
-                if Gb.this_update_time[-2:] in ['00', '15', '30', '45']:
-                    log_info_msg(info_msg)
+            # if (Gb.pyicloud_auth_started_secs > 0):
+                # info_msg = ("Waiting for iCloud Account Authentication, Requested at "
+                            # f"{secs_to_time_age_str(Gb.pyicloud_auth_started_secs)} ")
+
+            for Device in Gb.Devices_by_devicename.values():
+                Device.display_info_msg(info_msg)
+            # if Gb.this_update_time[-2:] in ['00', '15', '30', '45']:
+            if Gb.this_update_time[-3:] in ['0:00', '5:00']:
+                log_info_msg(info_msg)
             return
 
         # Make sure this master flag does not stay set which causes all tracking to stop

@@ -30,6 +30,7 @@ from ..const                import (
                                     WAZE_SERVERS_BY_COUNTRY_CODE, WAZE_SERVERS_FNAME,
                                     CONF_EXCLUDED_SENSORS, CONF_OLD_LOCATION_ADJUSTMENT, CONF_DISTANCE_BETWEEN_DEVICES,
                                     CONF_EVLOG_BTNCONFIG_URL,
+                                    CONF_PICTURE_WWW_DIRS, PICTURE_WWW_STANDARD_DIRS,
                                     RANGE_DEVICE_CONF, RANGE_GENERAL_CONF, MIN, MAX, STEP, RANGE_UM,
                                     )
 
@@ -328,6 +329,10 @@ def config_file_add_new_parameters():
     update_config_file_flag = (_add_config_file_parameter(Gb.conf_profile, 'event_log_version', '')
             or update_config_file_flag)
 
+    # Add profile.CONF_PICTURE_WWW_DIRS that is used by Configure Sreen > Update Devices for dir image scan (3.0)
+    update_config_file_flag = (_add_config_file_parameter(Gb.conf_profile, CONF_PICTURE_WWW_DIRS, [])
+            or update_config_file_flag)
+
     # Add track from base zone used control on the Special Zones screen (rc9)
     update_config_file_flag = (_add_config_file_parameter(Gb.conf_general, CONF_TRACK_FROM_BASE_ZONE_USED, False)
             or update_config_file_flag)
@@ -436,8 +441,8 @@ def config_file_check_devices():
         if conf_device[CONF_TRACK_FROM_ZONES] == []:
             conf_device[CONF_TRACK_FROM_ZONES] = [HOME]
             update_configuration_flag = True
-        if isbetween(conf_device[CONF_FIXED_INTERVAL], 0, 5):
-            conf_device[CONF_FIXED_INTERVAL] = 5.0
+        if isbetween(conf_device[CONF_FIXED_INTERVAL], 0, 3):
+            conf_device[CONF_FIXED_INTERVAL] = 3.0
             update_configuration_flag = True
 
         if update_configuration_flag:

@@ -29,6 +29,7 @@ WAZE_LOCATION_HISTORY_DATABASE  = 'icloud3.waze_location_history.db'
 SENSOR_WAZEHIST_TRACK_NAME      = 'icloud3_wazehist_track'
 IC3LOGGER_FILENAME              = 'icloud3-0.log'
 IC3_LOG_FILENAME                = 'icloud3-0.log'
+PICTURE_WWW_STANDARD_DIRS       = 'www/icloud3, www/community, www/images, www/custom_cards'
 
 DEVICE_TRACKER                  = 'device_tracker'
 DEVICE_TRACKER_DOT              = 'device_tracker.'
@@ -249,8 +250,9 @@ CIRCLE_LETTERS_LITE =  {'a':'Ⓐ', 'b':'Ⓑ', 'c':'Ⓒ', 'd':'Ⓓ', 'e':'Ⓔ', '
 lite_circled_letters = "Ⓐ Ⓑ Ⓒ Ⓓ Ⓔ Ⓕ Ⓖ Ⓗ Ⓘ Ⓙ Ⓚ Ⓛ Ⓜ Ⓝ Ⓞ Ⓟ Ⓠ Ⓡ Ⓢ Ⓣ Ⓤ Ⓥ Ⓦ Ⓧ Ⓨ Ⓩ"
 dark_circled_letters = "🅐 🅑 🅒 🅓 🅔 🅕 🅖 🅗 🅘 🅙 🅚 🅛 🅜 🅝 🅞 🅟 🅠 🅡 🅢 🅣 🅤 🅥 🅦 🅧 🅨 🅩 ✪"
 Symbols = ±▪•●▬⮾ ⊗ ⊘✓×ø¦ ▶◀ ►◄▲▼ ∙▪ »« oPhone=►▶→⟾➤➟➜➔➤🡆🡪🡺⟹🡆➔ᐅ◈🝱☒☢⛒⊘Ɵ⊗ⓧⓍ⛒🜔
-Important = ❗❌⚠️❓🛑⛔⚡⭐⭕• ⍰ ‶″“”‘’‶″
-  — –ᗒ ⁃ » ━▶ ━➤🡺 —> > > ❯↦ … 🡪ᗕ ᗒ ᐳ ─🡢 ──ᗒ 🡢 ─ᐅ ↣ ➙ →《》◆◈◉●▐‖  ▹▻▷◁◅◃▶➤➜➔❰❰❱❱ ⠤ ²
+Important = ❗❌⚠️❓🛑⛔⚡⭐⭕ⓘ• ⍰ ‶″“”‘’‶″
+  — –ᗒ ⁃ » ━▶ ━➤🡺 —> > > ❯↦ … 🡪ᗕ ᗒ ᐳ ─🡢 ──ᗒ 🡢 ─ᐅ ↣ ➙ →《》◆◈◉●
+  ▐‖  ▹▻▷◁◅◃‖╠ᐅ🡆▶▐🡆▐▶‖➤▐➤➜➔❰❰❱❱ ⠤ ²
  ⣇⠈⠉⠋⠛⠟⠿⡿⣿       https://www.fileformat.info/info/unicode/block/braille_patterns/utf8test.htm
 '''
 NBSP              = '⠈' #'&nbsp;'
@@ -307,6 +309,8 @@ DASH_20           = '━'*20
 DASH_50           = '━'*50
 DASH_DOTTED_50    = '- '*25
 TAB_11            = '\t'*11
+DATA_ENTRY_ALERT_CHAR = '⛔'
+DATA_ENTRY_ALERT      = f"      {DATA_ENTRY_ALERT_CHAR} "
 
 OPT_NONE          = 0
 
@@ -590,6 +594,7 @@ CONF_EVLOG_BTNCONFIG_URL        = 'event_log_btnconfig_url'
 CONF_EVLOG_CARD_DIRECTORY       = 'event_log_card_directory'
 CONF_EVLOG_CARD_PROGRAM         = 'event_log_card_program'
 CONF_EVLOG_VERSION_RUNNING      = 'event_log_version_running'
+CONF_PICTURE_WWW_DIRS           = 'picture_www_dirs'
 
 # Account, Devices, Tracking Parameters
 CONF_USERNAME                   = 'username'
@@ -751,8 +756,10 @@ TFZ_DIR_OF_TRAVEL             = 'tfz_dir_of_travel'
 
 CONF_SENSORS_TRACKING_OTHER   = 'tracking_other'
 TRIGGER                       = "trigger"
-WAZE_DISTANCE                 = "waze_route_distance"
-CALC_DISTANCE                 = "calculated_distance"
+WAZE_DISTANCE_ATTR            = "waze_route_distance"
+CALC_DISTANCE_ATTR            = "calculated_distance"
+WAZE_DISTANCE                 = "waze_distance"
+CALC_DISTANCE                 = "calc_distance"
 
 CONF_EXCLUDED_SENSORS         = "excluded_sensors"
 
@@ -792,7 +799,8 @@ DEFAULT_PROFILE_CONF = {
         CONF_EVLOG_CARD_DIRECTORY: EVLOG_CARD_WWW_DIRECTORY,
         CONF_EVLOG_CARD_PROGRAM: EVLOG_CARD_WWW_JS_PROG,
         CONF_EVLOG_BTNCONFIG_URL: '',
-        CONF_EVLOG_VERSION_RUNNING: ''
+        CONF_EVLOG_VERSION_RUNNING: '',
+        CONF_PICTURE_WWW_DIRS: []
 }
 
 DEFAULT_TRACKING_CONF = {

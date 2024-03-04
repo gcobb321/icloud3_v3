@@ -105,17 +105,18 @@ class GlobalVariables(object):
     add_entities = None
 
     # iCloud3 Directory & File Names
-    ha_config_directory       = ''      # '/config', '/home/homeassistant/.homeassistant'
-    ha_storage_directory      = ''      # 'config/.storage' directory
-    ha_storage_icloud3        = ''      # 'config/.storage/icloud3'
-    icloud3_config_filename   = ''      # 'config/.storage/icloud3.configuration' - iC3 Configuration File
+    ha_config_directory         = ''      # '/config', '/home/homeassistant/.homeassistant'
+    ha_storage_directory        = ''      # 'config/.storage' directory
+    ha_storage_icloud3          = ''      # 'config/.storage/icloud3'
+    icloud3_config_filename     = ''      # 'config/.storage/icloud3.configuration' - iC3 Configuration File
     icloud3_restore_state_filename = '' # 'config/.storage/icloud3.restore_state'
-    config_ic3_yaml_filename  = ''      # 'config/config_ic3.yaml' (v2 config file name)
-    icloud3_directory         = ''
-    ha_config_www_directory   = ''
-    www_evlog_js_directory    = ''
-    www_evlog_js_filename     = ''
-    wazehist_database_filename= ''      # Waze Location History sql database (.storage/icloud3.waze_route_history.db)
+    config_ic3_yaml_filename    = ''      # 'config/config_ic3.yaml' (v2 config file name)
+    icloud3_directory           = ''
+    ha_config_www_directory     = ''
+    www_evlog_js_directory      = ''
+    www_evlog_js_filename       = ''
+    wazehist_database_filename  = ''      # Waze Location History sql database (.storage/icloud3.waze_route_history.db)
+    picture_www_dirs            = []
 
     # Platform and iCloud account parameters
     username                     = ''
