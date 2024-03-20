@@ -69,8 +69,7 @@ from .const_sensor      import (SENSOR_GROUPS )
 from .helpers.common    import (instr, isnumber, obscure_field, list_to_str, str_to_list,
                                 is_statzone, zone_dname, isbetween, list_del, list_add, )
 from .helpers.messaging import (log_exception, log_debug_msg, _traceha, _trace,
-                                post_event, post_monitor_msg,
-                                open_ic3_log_file, close_reopen_ic3_log_file, write_ic3_log_recd, )
+                                post_event, post_monitor_msg, )
 from .helpers           import entity_io
 from .                  import sensor as ic3_sensor
 from .                  import device_tracker as ic3_device_tracker
@@ -194,7 +193,7 @@ ACTION_LIST_ITEMS_KEY_TEXT = {
         'restart_ha':               'RESTART HOME ASSISTANT ᐳ Restart HA and reload iCloud3',
         'restart_ic3_now':          'RESTART NOW ᐳ Restart iCloud3 now to load the updated configuration',
         'restart_ic3_later':        'RESTART LATER ᐳ The configuration changes have been saved. Load the updated configuration the next time iCloud3 is started',
-        'reload_icloud3':           'RELOAD ICLOUD3 ᐳ Reload & Restart iCloud3 (EXPERIMENTAL: THIS MAY NOT WORK)',
+        'reload_icloud3':           'RELOAD ICLOUD3 ᐳ Reload & Restart iCloud3 (This does not load a new version)',
         'review_inactive_devices':  'REVIEW INACTIVE DEVICES ᐳ Some Devices are `Inactive` and will not be located or tracked',
 
         'select_text_as':           'SELECT ᐳ Update selected `Display Text As‘ field',
@@ -319,7 +318,7 @@ UNIT_OF_MEASUREMENT_ITEMS_KEY_TEXT = {
         }
 TIME_FORMAT_ITEMS_KEY_TEXT = {
         '12-hour':  '12-hour Time Format (9:05:30a, 4:40:15p)',
-        '24-hour':  '24-hour Time Format (9:05:30, 16:40:15)'
+        '24-hour':  '24-hour Time Format (09:05:30, 16:40:15)'
         }
 TRAVEL_TIME_INTERVAL_MULTIPLIER_KEY_TEXT = {
         .25:  'Shortest Interval Time - 1/4 TravelTime (¼ × 8 mins = Next Locate in 2m)',
@@ -343,6 +342,7 @@ DEVICE_TRACKER_STATE_SOURCE_ITEMS_KEY_TEXT = {
 LOG_LEVEL_ITEMS_KEY_TEXT = {
         'info':     'Info - Log General Information and Event Log messages',
         'debug':    'Debug - Info + Other Internal Tracking Monitors',
+        'debug-ha': 'Debug (HALog) - Also add log records to the `home-assistant.log` file',
         'debug-auto-reset': 'Debug (AutoReset) - Debug logging that resets to Info at midnight',
         'rawdata':  'Rawdata - Debug + Raw Data (filtered) received from iCloud Location Servers',
         'rawdata-auto-reset':  'Rawdata (AutoReset) - RawData logging that resets to Info at midnight',
@@ -552,8 +552,6 @@ class iCloud3_ConfigFlow(config_entries.ConfigFlow, FlowHandler, domain=DOMAIN):
             return self.async_abort(reason="disabled")
 
         if self.hass.data.get(DOMAIN):
-            close_reopen_ic3_log_file()
-
             _CF_LOGGER.info(f"Aborting iCloud3 Integration, Already set up")
             return self.async_abort(reason="already_configured")
 
@@ -627,7 +625,6 @@ class iCloud3_ConfigFlow(config_entries.ConfigFlow, FlowHandler, domain=DOMAIN):
         action_item = ''
 
         if user_input is None:
-            close_reopen_ic3_log_file(closed_by=f"Show {self.step_id} Form, Errors-{self.errors}")
             return self.async_show_form(step_id=self.step_id,
                                         data_schema=self.form_schema(self.step_id),
                                         errors=self.errors)
@@ -666,7 +663,6 @@ class iCloud3_ConfigFlow(config_entries.ConfigFlow, FlowHandler, domain=DOMAIN):
                 Gb.PyiCloud.new_2fa_code_already_requested_flag = False
 
                 Gb.authenticated_time = time.time()
-                close_reopen_ic3_log_file()
                 return self.async_abort(reason="verification_code_accepted")
 
             else:
@@ -674,7 +670,6 @@ class iCloud3_ConfigFlow(config_entries.ConfigFlow, FlowHandler, domain=DOMAIN):
                             f"({user_input[CONF_VERIFICATION_CODE]})")
                 self.errors[CONF_VERIFICATION_CODE] = 'verification_code_invalid'
 
-        close_reopen_ic3_log_file(closed_by=f"Show {self.step_id} Form, Errors-{self.errors}")
         return self.async_show_form(step_id=self.step_id,
                                     data_schema=self.form_schema(self.step_id),
                                     errors=self.errors)
@@ -726,7 +721,6 @@ class iCloud3_ConfigFlow(config_entries.ConfigFlow, FlowHandler, domain=DOMAIN):
         v2v3_config_migration.remove_ic3_devices_from_known_devices_yaml_file()
 
         config_file.load_storage_icloud3_configuration_file()
-        open_ic3_log_file()
         Gb.v2v3_config_migrated = True
 
         if Gb.restart_ha_flag:
@@ -782,6 +776,7 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
             Gb.hass.async_create_task(self.async_step_menu())
 
     def initialize_options(self):
+        Gb.trace_prefix = 'CONFIG'
         self._set_initial_icloud3_device_tracker_area_id()
         self.initialize_options_required_flag = False
         self.v2v3_migrated_flag               = False  # Set to True when the conf_profile[VERSION] = -1 when first loaded
@@ -936,11 +931,10 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
 
     async def async_step_menu(self, user_input=None, errors=None):
         '''Main Menu displays different screens for parameter entry'''
-        Gb.trace_prefix = 'CONFIG > '
+        Gb.trace_prefix = 'CONFIG'
         Gb.config_flow_flag = True
         if self.PyiCloud is None and Gb.PyiCloud is not None:
             self.PyiCloud = Gb.PyiCloud
-        close_reopen_ic3_log_file()
 
         self.step_id = f"menu_{self.menu_page_no}"
         self.called_from_step_id_1 = self.called_from_step_id_2 =''
@@ -1077,7 +1071,6 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
 
 
             self.config_flow_updated_parms = {''}
-            close_reopen_ic3_log_file()
             data = {}
             data = {'added': dt_util.now().strftime(DATETIME_FORMAT)[0:19]}
             log_debug_msg(f"Exit Configure Settings, UpdateParms-{Gb.config_flow_updated_parms}")
@@ -1768,9 +1761,6 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
         elif action_item.startswith('rawdata'):
             service_handler.handle_action_log_level('rawdata', change_conf_log_level=False)
 
-        elif action_item == 'commit':
-            close_reopen_ic3_log_file(closed_by='Configurator')
-
         elif action_item == 'restart_ha':
             return await self.async_step_restart_ha_ic3()
 
@@ -1797,10 +1787,6 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
 
         elif action_item.startswith('rawdata'):
             service_handler.handle_action_log_level('rawdata', change_conf_log_level=False)
-
-
-        elif action_item == 'commit':
-            close_reopen_ic3_log_file(closed_by='Configurator')
 
         if self.header_msg is None:
             self.header_msg = 'action_completed'
@@ -4208,7 +4194,6 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
         Return the step_id form schema for the data entry forms
         '''
         log_debug_msg(f"Show Form-{step_id}, Errors-{self.errors}")
-        close_reopen_ic3_log_file()
         schema = {}
         self.actions_list = actions_list or ACTION_LIST_ITEMS_BASE.copy()
 

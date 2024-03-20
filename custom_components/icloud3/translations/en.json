@@ -51,8 +51,8 @@
       "config_update_complete": "iCloud3 configuration updated successfully",
       "already_configured": "iCloud3 is already installed and can not be installed again. Select CONFIGURE in the iCloud3 Integration entry to configure iCloud3",
       "disabled": "iCloud3 is DISABLED and can not be installed again. Enable iCloud, then select CONFIGURE in the iCloud3 Integration entry to configure iCloud3",
-      "ha_restarting": "Home Assistant is Restarting",
-      "ic3_reloading": "Reloading iCloud3 (Do a screen refresh)",
+      "ha_restarting": "Home Assistant is Restarting\n\nTHE ICLOUD3 SCREEN MUST BE REFRESHED AFTER RESTARTING",
+      "ic3_reloading": "Reloading iCloud3\n\nTHE ICLOUD3 SCREEN MUST BE REFRESHED AFTER RESTARTING",
       "reauth_successful": "The reauthentication has been successfully completed"
     },
     "error": {
@@ -160,27 +160,27 @@
         "title": "Confirm Restarting iCloud3",
         "description": "Note: Changes to tracked devices require restarting iCloud3",
         "data": {
-          "action_items": ""
+          "action_items": "═════════════════════════════════════════════════════"
         }
       },
       "restart_ha_ic3": {
         "title": "Restart Home Assistant or iCloud3",
-        "description": "Restart Home Assistant or reload and reinitialize the iCloud3 Integration",
+        "description": "Restart Home Assistant or reload and reinitialize the iCloud3 Integration\n\nTHE ICLOUD3 DASHBOARD SCREEN MUST BE REFRESHED AFTER RESTARTING",
         "data": {
-          "action_items": ""
+          "action_items": "═════════════════════════════════════════════════════"
         }
       },
       "restart_ha_ic3_load_error": {
         "title": "iCloud3 Load Error",
         "description": "iCloud3 did not load and initialize when HA started. Reload iCloud3 again or restart HA",
         "data": {
-          "action_items": ""
+          "action_items": "═════════════════════════════════════════════════════"
         }
       },
       "confirm_action": {
         "title": "Confirm Selected Action",
         "data": {
-          "action_items": ""
+          "action_items": "═════════════════════════════════════════════════════"
         }
       },
       "icloud_account": {

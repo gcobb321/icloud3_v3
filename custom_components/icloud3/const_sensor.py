@@ -24,7 +24,7 @@ from .const     import (DISTANCE_TO_DEVICES,
                         INFO, GPS, GPS_ACCURACY, ALTITUDE, VERTICAL_ACCURACY,
                         TFZ_ZONE_INFO, TFZ_DISTANCE, TFZ_ZONE_DISTANCE,  TFZ_DIR_OF_TRAVEL,
                         TFZ_TRAVEL_TIME,TFZ_TRAVEL_TIME_MIN, TFZ_TRAVEL_TIME_HHMM, TFZ_ARRIVAL_TIME,
-                        TOWARDS, AWAY_FROM, TOWARDS_HOME, AWAY_FROM_HOME, INZONE, INZONE_HOME, INZONE_STATIONARY,
+                        TOWARDS, AWAY_FROM, TOWARDS_HOME, AWAY_FROM_HOME, INZONE, INZONE_HOME, INZONE_STATZONE,
                         SENSOR_EVENT_LOG_NAME, SENSOR_WAZEHIST_TRACK_NAME,
                         )
 
@@ -82,13 +82,13 @@ SENSOR_ICONS = {
         AWAY_FROM: 'mdi:location-exit',
         INZONE: 'mdi:crosshairs-gps',
         INZONE_HOME: 'mdi:home-circle-outline',
-        INZONE_STATIONARY: 'mdi:target-account',
+        INZONE_STATZONE: 'mdi:target-account',
         'arrival_time_to_home': 'mdi:home-clock-outline',
         'arrival_time_in_home': 'mdi:home-clock',
         'arrival_time_to_tfz': 'mdi:map-clock-outline',
         'arrival_time_in_tfz': 'mdi:map-clock',
         'other': 'mdi:compass-outline',
-        # INZONE_STATIONARY: 'mdi:account-reactivate-outline',
+        # INZONE_STATZONE: 'mdi:account-reactivate-outline',
 }
 '''
 The Sensor Definition dictionary defines all sensors created by iCloud3.
@@ -212,28 +212,28 @@ SENSOR_DEFINITION = {
                 'timer, min',
                 'mdi:clock-outline',
                 [FROM_ZONE, TRAVEL_TIME, TRAVEL_TIME_MIN, TRAVEL_TIME_HHMM,
-                        ARRIVAL_TIME, NEAR_DEVICE_USED],
+                        DIR_OF_TRAVEL, ARRIVAL_TIME, NEAR_DEVICE_USED],
                 0],
         TRAVEL_TIME_MIN: [
                 'TravelTime (min)',
                 'timer',
                 'mdi:clock-outline',
                 [FROM_ZONE, TRAVEL_TIME, TRAVEL_TIME_MIN, TRAVEL_TIME_HHMM,
-                        ARRIVAL_TIME, NEAR_DEVICE_USED],
+                        DIR_OF_TRAVEL, ARRIVAL_TIME, NEAR_DEVICE_USED],
                 0],
         TRAVEL_TIME_HHMM: [
                 'TravelTime (hh:mm)',
                 'text',
                 'mdi:clock-outline',
                 [FROM_ZONE, TRAVEL_TIME, TRAVEL_TIME_MIN, TRAVEL_TIME_HHMM,
-                        ARRIVAL_TIME, NEAR_DEVICE_USED],
+                        DIR_OF_TRAVEL, ARRIVAL_TIME, NEAR_DEVICE_USED],
                 BLANK_SENSOR_FIELD],
         ARRIVAL_TIME: [
                 'ArrivalTime',
                 'text',
                 SENSOR_ICONS[TOWARDS_HOME],     #'mdi:home-clock-outline',
                 [FROM_ZONE, TRAVEL_TIME, TRAVEL_TIME_MIN, TRAVEL_TIME_HHMM,
-                        ARRIVAL_TIME, NEAR_DEVICE_USED],
+                        DIR_OF_TRAVEL, ARRIVAL_TIME, NEAR_DEVICE_USED],
                 BLANK_SENSOR_FIELD],
 
         # CONF_SENSORS_TRACKING_DISTANCE
@@ -262,13 +262,14 @@ SENSOR_DEFINITION = {
                 'Direction',
                 'text, title',
                 'mdi:compass-outline',
-                [FROM_ZONE, TRAVEL_TIME, TRAVEL_TIME_MIN, TRAVEL_TIME_HHMM, ARRIVAL_TIME],
+                [FROM_ZONE, TRAVEL_TIME, TRAVEL_TIME_MIN, TRAVEL_TIME_HHMM,
+                        ARRIVAL_TIME],
                 BLANK_SENSOR_FIELD],
         MOVED_DISTANCE: [
                 'MovedDistance',
                 'distance, km-mi, m-ft',
                 'mdi:map-marker-distance',
-                [MOVED_TIME_FROM, MOVED_TIME_TO, GPS, 'last_gps'],
+                [MOVED_TIME_FROM, MOVED_TIME_TO, DIR_OF_TRAVEL, GPS, 'last_gps'],
                 0],
         ZONE_INFO: [
                 'ZoneInfo',
@@ -292,28 +293,28 @@ SENSOR_DEFINITION = {
                 'timer, mins',
                 'mdi:clock-outline',
                 [FROM_ZONE, TRAVEL_TIME, TRAVEL_TIME_MIN, TRAVEL_TIME_HHMM,
-                        ARRIVAL_TIME, NEAR_DEVICE_USED],
+                        DIR_OF_TRAVEL, ARRIVAL_TIME, NEAR_DEVICE_USED],
                 0],
         TFZ_TRAVEL_TIME_MIN: [
                 'TravelTimeMin',
                 'timer',
                 'mdi:clock-outline',
                 [FROM_ZONE, TRAVEL_TIME, TRAVEL_TIME_MIN, TRAVEL_TIME_HHMM,
-                        ARRIVAL_TIME, NEAR_DEVICE_USED],
+                        DIR_OF_TRAVEL, ARRIVAL_TIME, NEAR_DEVICE_USED],
                 0],
         TFZ_TRAVEL_TIME_HHMM: [
                 'TravelTime (hh:mm)',
                 'text',
                 'mdi:clock-outline',
                 [FROM_ZONE, TRAVEL_TIME, TRAVEL_TIME_MIN, TRAVEL_TIME_HHMM,
-                        ARRIVAL_TIME, NEAR_DEVICE_USED],
+                        DIR_OF_TRAVEL, ARRIVAL_TIME, NEAR_DEVICE_USED],
                 BLANK_SENSOR_FIELD],
         TFZ_ARRIVAL_TIME: [
                 'ArrivalTime',
                 'text',
                 SENSOR_ICONS[TOWARDS],     #'mdi:clock-outline',
                 [FROM_ZONE, TRAVEL_TIME, TRAVEL_TIME_MIN, TRAVEL_TIME_HHMM,
-                        ARRIVAL_TIME, NEAR_DEVICE_USED],
+                        DIR_OF_TRAVEL, ARRIVAL_TIME, NEAR_DEVICE_USED],
                 BLANK_SENSOR_FIELD],
         TFZ_DISTANCE: [
                 'ZoneDistance',
@@ -333,8 +334,8 @@ SENSOR_DEFINITION = {
                 'Direction',
                 'text, title',
                 'mdi:compass-outline',
-                [FROM_ZONE, TRAVEL_TIME, TRAVEL_TIME_MIN, TRAVEL_TIME_HHMM, ARRIVAL_TIME,
-                        DISTANCE, MAX_DISTANCE],
+                [FROM_ZONE, TRAVEL_TIME, TRAVEL_TIME_MIN, TRAVEL_TIME_HHMM,
+                        ARRIVAL_TIME, DISTANCE, MAX_DISTANCE],
                 BLANK_SENSOR_FIELD],
 
         # CONF_SENSORS_TRACKING_OTHER

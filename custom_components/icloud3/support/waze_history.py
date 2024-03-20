@@ -7,7 +7,7 @@ from ..helpers.messaging    import (broadcast_info_msg, format_filename,
                                     post_event, post_internal_error, post_monitor_msg, post_startup_alert,
                                     post_alert, refresh_event_log, log_info_msg, log_error_msg, log_exception,
                                     _trace, _traceha, )
-from ..helpers.time_util    import (datetime_now, secs_to_time_str, mins_to_time_str, )
+from ..helpers.time_util    import (datetime_now, format_timer, )
 from ..helpers.dist_util    import (mi_to_km, gps_distance_km, format_dist_km,)
 from ..support.waze_route_calc_ic3 import WRCError
 
@@ -664,7 +664,7 @@ class WazeRouteHistory(object):
         self.compress_wazehist_database()
 
         running_time = time.perf_counter() - start_time
-        event_msg = (f"Waze History Completed > Total Time-{secs_to_time_str(running_time)}")
+        event_msg = (f"Waze History Completed > Total Time-{format_timer(running_time)}")
         post_event(event_msg)
 
         self.wazehist_recalculate_time_dist_running_flag = False
@@ -741,7 +741,7 @@ class WazeRouteHistory(object):
                                 f"Zone-{zone_dname}, "
                                 f"Recd-{recd_cnt} of {self.total_recd_cnt}, "
                                 f"Updated-{update_cnt}, "
-                                f"ElapsedTime-{secs_to_time_str(running_time)}")
+                                f"ElapsedTime-{format_timer(running_time)}")
                     post_event(log_msg)
 
                 if (recd_cnt % 10) == 0:
@@ -750,7 +750,7 @@ class WazeRouteHistory(object):
                                 # f"Recd-{recd_cnt}/{self.total_recd_cnt}, "
                                 f"Checked-{(recd_cnt/self.total_recd_cnt*100):.0f}% "
                                 f"Updated-{update_cnt} "
-                                f"({secs_to_time_str(running_time)})"   #.replace('mins', 'm').replace(' hrs', 'h')})"
+                                f"({format_timer(running_time)})"   #.replace('mins', 'm').replace(' hrs', 'h')})"
                                 f"{CRLF}Select Action > WazeHist Recalculate... again to cancel")
                     post_alert(alert_message)
                     refresh_event_log()
@@ -773,7 +773,7 @@ class WazeRouteHistory(object):
                     f"Zone-{zone_dname}, "
                     f"Checked-{recd_cnt} of {self.total_recd_cnt}, "
                     f"Updated-{update_cnt}, "
-                    f"Time-{secs_to_time_str(running_time)}")
+                    f"Time-{format_timer(running_time)}")
         post_event(log_msg)
         post_alert('')
         refresh_event_log()

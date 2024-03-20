@@ -9,7 +9,7 @@ from ..const            import (ICLOUD3,
                                 EVLOG_ALERT, EVLOG_IC3_STARTING, EVLOG_NOTICE, EVLOG_IC3_STAGE_HDR,
                                 EVENT_RECDS_MAX_CNT_BASE, EVENT_RECDS_MAX_CNT_ZONE,
                                 CRLF, CRLF_DOT, CRLF_CHK, CRLF_SP3_DOT, CRLF_SP5_DOT, CRLF_HDOT,
-                                CRLF_SP3_STAR, CRLF_INDENT, CRLF_X, CRLF_TAB, DOT, CRLF_SP8_DOT,
+                                CRLF_SP3_STAR, CRLF_INDENT, CRLF_X, CRLF_TAB, DOT, CRLF_SP8_HDOT, CRLF_SP8_DOT,
                                 CRLF_RED_X, RED_X, CRLF_STAR, YELLOW_ALERT, UNKNOWN,
                                 RARROW, NBSP4, NBSP6, CIRCLE_STAR, INFO_SEPARATOR, DASH_20, CHECK_MARK,
                                 ICLOUD, FMF, FAMSHR, APPLE_SPECIAL_ICLOUD_SERVER_COUNTRY_CODE,
@@ -73,12 +73,11 @@ from ..helpers.messaging    import (broadcast_info_msg,
                                     post_event, post_error_msg, post_monitor_msg, post_startup_alert,
                                     post_internal_error,
                                     log_info_msg, log_debug_msg, log_error_msg, log_warning_msg,
-                                    log_rawdata, log_exception,
-                                    open_ic3_log_file, close_ic3_log_file, format_filename,
+                                    log_rawdata, log_exception, format_filename,
                                     internal_error_msg2,
                                     _trace, _traceha, more_info, )
 from ..helpers.dist_util    import (format_dist_km, m_to_um, )
-from ..helpers.time_util    import (time_now_secs, secs_to_time_str, secs_to_time_age_str, secs_to_age_str, )
+from ..helpers.time_util    import (time_now_secs, format_timer, format_time_age, format_age, )
 
 import os
 import json
@@ -424,7 +423,6 @@ def ha_startup_completed(dummy_parameter):
 
 def ha_stopping(dummy_parameter):
     post_event("HA Shutting Down")
-    close_ic3_log_file()
 
 def ha_restart(dummp_parameter):
     Gb.hass.services.call("homeassistant", "restart")
@@ -659,6 +657,9 @@ def set_log_level(log_level):
     Gb.log_rawdata_flag = Gb.log_rawdata_flag or Gb.log_rawdata_flag_unfiltered
     Gb.log_debug_flag   = Gb.log_debug_flag or Gb.log_rawdata_flag
     Gb.evlog_trk_monitors_flag = Gb.evlog_trk_monitors_flag or instr(log_level, 'eventlog')
+
+    if Gb.iC3Logger:
+        Gb.iC3Logger.propagate = (Gb.conf_general[CONF_LOG_LEVEL] == 'debug-ha')
 
 #------------------------------------------------------------------------------
 def update_conf_file_log_level(log_level):
@@ -1103,7 +1104,7 @@ def create_Zones_object():
 
     event_msg = "Special Zone Setup >"
     if Gb.is_passthru_zone_used:
-        event_msg += f"{CRLF_DOT}Enter Zone Delay > DelayTime-{secs_to_time_str(Gb.passthru_zone_interval_secs)}"
+        event_msg += f"{CRLF_DOT}Enter Zone Delay > DelayTime-{format_timer(Gb.passthru_zone_interval_secs)}"
     else:
         event_msg += f"{CRLF_DOT}ENTER ZONE DELAY IS NOT USED"
 
@@ -1497,7 +1498,7 @@ def _display_devices_verification_status(PyiCloud, _FamShr):
             if exception_msg:
                 event_msg += (  f"{CRLF_X}"
                                 f"{famshr_fname}, {model_display_name} ({raw_model}) >"
-                                f"{CRLF_SP8_DOT}{exception_msg}")
+                                f"{CRLF_SP8_HDOT}{exception_msg}")
                 continue
 
             # If no location info in pyiCloud data but tracked device is matched, refresh the
@@ -1525,7 +1526,7 @@ def _display_devices_verification_status(PyiCloud, _FamShr):
             if Device is None:
                 if exception_msg == '': exception_msg = ', Unknown Device or Other Device setup error'
                 event_msg += (  f"{CRLF_X}{famshr_fname}, {model_display_name} ({raw_model}) >"
-                                f"{CRLF_SP8_DOT}{devicename}"
+                                f"{CRLF_SP8_HDOT}{devicename}"
                                 f"{exception_msg}")
                 continue
 
@@ -1551,7 +1552,7 @@ def _display_devices_verification_status(PyiCloud, _FamShr):
 
             event_msg += (  f"{CRLF_CHK}"
                             f"{famshr_fname}, {model_display_name} ({raw_model}) >"
-                            f"{CRLF_SP8_DOT}{devicename}, {Device.fname} "
+                            f"{CRLF_SP8_HDOT}{devicename}, {Device.fname} "
                             f"{Device.tracking_mode_fname}"
                             f"{exception_msg}")
 
@@ -1667,7 +1668,7 @@ def _check_duplicate_device_names(PyiCloud, _FamShr):
                     famshr_fname_last_located_by_base_fname[famshr_fname_base] = famshr_fname
 
                 dup_devices_msg += (f"{CRLF_HDOT}{famshr_fname} > "
-                                    f"Located-{secs_to_age_str(_RawData.location_secs)} "
+                                    f"Located-{format_age(_RawData.location_secs)} "
                                     f"({_RawData.device_data['rawDeviceModel']})")
 
             if famshr_fname_base in famshr_fname_last_located_by_base_fname:
@@ -2189,7 +2190,7 @@ def setup_tracked_devices_for_mobapp():
                                         f"sensor.{battery_state_sensors_by_mobapp_devicename.get(mobapp_devicename, '')}"
 
         tracked_msg += (f"{CRLF_CHK}{mobapp_fname}, {mobapp_devicename} ({Device.raw_model}) >"
-                        f"{CRLF_SP8_DOT}{devicename}, {Device.fname} "
+                        f"{CRLF_SP8_HDOT}{devicename}, {Device.fname} "
                         f"{Device.tracking_mode_fname}")
 
         # Remove the mobapp device from the list since we know it is tracked
@@ -2229,8 +2230,8 @@ def setup_tracked_devices_for_mobapp():
         tracked_msg += (f"{crlf_sym}{mobapp_fname}, {mobapp_devicename} {mobapp_dev_type} >")
         if Device:
             Device.set_fname_alert(YELLOW_ALERT)
-            tracked_msg += (f"{CRLF_SP8_DOT}{Device.devicename}, {Device.fname}")
-        tracked_msg += f"{CRLF_SP8_DOT}{device_msg}{duplicate_msg}"
+            tracked_msg += (f"{CRLF_SP8_HDOT}{Device.devicename}, {Device.fname}")
+        tracked_msg += f"{CRLF_SP8_HDOT}{device_msg}{duplicate_msg}"
     post_event(tracked_msg)
 
     _display_any_mobapp_errors( mobapp_error_mobile_app_msg,
@@ -2492,22 +2493,6 @@ def setup_trackable_devices():
             pass
 
     for devicename, Device in Gb.Devices_by_devicename.items():
-        # Device.verified_flag = (Device.verified_FAMSHR
-        #                     or  Device.verified_FMF
-        #                     or  Device.verified_MOBAPP)
-
-        # # rc9 If the data source is FamShr and the device is not verified, set the
-        # # data source to MobApp but leave it unverified. Otherwise, the data source
-        # # is the Mobile App and it is verified
-        # if (Device.verified_flag
-        #         and Device.is_data_source_FAMSHR_FMF
-        #         and Device.verified_FAMSHR is False
-        #         and Device.verified_FMF is False
-        #         and Device.verified_MOBAPP):
-        #     Device.primary_data_source = MOBAPP
-        # #elif Device.verified_MOBAPP:
-        # #    Device.data_source = MOBAPP
-
         Device.display_info_msg(f"Set Trackable Devices > {devicename}")
         if Device.verified_flag:
             tracking_mode = ''
@@ -2551,9 +2536,9 @@ def setup_trackable_devices():
                             f"{CRLF_HDOT}Notifications...: {notify_entity}")
 
         event_msg += f"{CRLF_DOT}Other Parameters:"
-        event_msg += f"{CRLF_HDOT}inZone Interval: {secs_to_time_str(Device.inzone_interval_secs)}"
+        event_msg += f"{CRLF_HDOT}inZone Interval: {format_timer(Device.inzone_interval_secs)}"
         if Device.fixed_interval_secs > 0:
-            event_msg += f"{CRLF_HDOT}Fixed Interval: {secs_to_time_str(Device.fixed_interval_secs)}"
+            event_msg += f"{CRLF_HDOT}Fixed Interval: {format_timer(Device.fixed_interval_secs)}"
         if 'none' not in Device.log_zones:
             log_zones_fname = [zone_dname(zone) for zone in Device.log_zones]
             log_zones = list_to_str(log_zones_fname)
@@ -2574,7 +2559,7 @@ def setup_trackable_devices():
             timestamp     = Device.PyiCloud_RawData_famshr.device_data[LOCATION][TIMESTAMP]
             if device_status == '201':
                 event_msg += (f"{CRLF_RED_X}DEVICE IS OFFLINE > "
-                            f"Since-{secs_to_time_age_str(timestamp)}")
+                            f"Since-{format_time_age(timestamp)}")
                 Device.offline_secs = timestamp
         except Exception as err:
             # log_exception(err)

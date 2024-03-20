@@ -14,8 +14,8 @@ from ..support.pyicloud_ic3 import (PyiCloudService, PyiCloudFailedLoginExceptio
 from ..helpers.common       import (instr, list_to_str, delete_file, )
 from ..helpers.messaging    import (post_event, post_error_msg, post_monitor_msg, post_startup_alert, log_debug_msg,
                                     log_info_msg, log_exception, log_error_msg, internal_error_msg2, _trace, _traceha, )
-from ..helpers.time_util    import (time_secs, secs_to_time, secs_to_datetime, secs_to_time_str, format_age,
-                                    secs_to_time_age_str, )
+from ..helpers.time_util    import (time_secs, secs_to_time, format_age,
+                                    format_time_age, )
 
 import os
 import time
@@ -209,9 +209,10 @@ def display_authentication_msg(PyiCloud):
     if authentication_method == '':
         return
 
-    last_authenticated_time = last_authenticated_age = Gb.authenticated_time
-    if last_authenticated_time > 0:
-        last_authenticated_age = time_secs() - last_authenticated_time
+    last_authenticated_time =  Gb.authenticated_time
+    # last_authenticated_time = last_authenticated_age = Gb.authenticated_time
+    # if last_authenticated_time > 0:
+    #     last_authenticated_age = time_secs() - last_authenticated_time
 
     Gb.authenticated_time = time_secs()
     Gb.pyicloud_authentication_cnt += 1
@@ -220,7 +221,7 @@ def display_authentication_msg(PyiCloud):
                 f"#{Gb.pyicloud_authentication_cnt} > {authentication_method}, "
                 f"Last-{secs_to_time(last_authenticated_time)}")
     if instr(authentication_method, 'Password') is False:
-        event_msg += f" ({format_age(last_authenticated_age)})"
+        event_msg += f" ({format_age(last_authenticated_time)})"
 
 
     if instr(authentication_method, 'Password'):
@@ -268,14 +269,14 @@ def check_all_devices_online_status():
             if Device.offline_secs == 0:
                 Device.offline_secs = Gb.this_update_secs
             event_msg = (   f"Device Offline and not available > "
-                            f"OfflineSince-{secs_to_time_age_str(Device.offline_secs)}")
+                            f"OfflineSince-{format_time_age(Device.offline_secs)}")
             post_event(Device, event_msg)
 
         elif Device.is_pending:
             if Device.pending_secs == 0:
                 Device.pending_secs = Gb.this_update_secs
             event_msg = (   f"Device status is Pending/Unknown > "
-                            f"PendingSince-{secs_to_time_age_str(Device.pending_secs)}")
+                            f"PendingSince-{format_time_age(Device.pending_secs)}")
             post_event(Device, event_msg)
 
     if any_device_online_flag == False:

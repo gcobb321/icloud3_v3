@@ -1,5 +1,9 @@
-v3.0 - 3/4/2024
+v3.0.1 - 3/15/2024
 .......................
-1. WAZE & CALC DISTANCE SENSORS - Fixed problem where they were not being created.
-2. UPDATE DEVICES CONFIGURE SCREEN - The Picture parameter was listing every image file in the all of the www/ sub-directories. A filter was added to limit the search to specific directories. The filter is defined on the Tracking and Other Parameters screen. Only the first 25 image files in a directory will be displayed to prevent overloading the HA dropdown list handler.
-FIXED INTERVAL - The lowest interval was reduced from 5-minutes to 3-minutes.
+1. UPDATE SENSOR & DEVICE TRACKER ENTITIES (Improvement) - Changed the method of updating these items at the request of @balloob (Paulus Schousten, HA Founder) to prevent a potential Home Assistant lockup when doing an update.
+2. LOG FILE (Improvement) - Changed the method of updating the iCloud3 log files. Also changed some of the record formatting to improve readability.
+2. WAZE & CALC DISTANCE SENSORS (Fixed) - They were not being created.
+3. UPDATE DEVICES CONFIGURE SCREEN (Fixed) - The Picture parameter was listing every image file in the all of the www/ sub-directories. A filter was added to limit the search to specific directories. The filter is defined on the Tracking and Other Parameters screen. Only the first 25 image files in a directory will be displayed to prevent overloading the HA dropdown list handler.
+4. FIXED INTERVAL (Improvement) - The lowest interval was reduced from 5-minutes to 3-minutes.
+5. DIRECTION OF TRAVEL (Improvement) - Changed the way this is being updated. If the distance from Home is more than 400m/250mi, it will be set to FarAway.
+6. STATIONARY ZONE (Fixed) - The second device to enter an existing Stationary Zone was not saving the Stationary Zone info correctly.

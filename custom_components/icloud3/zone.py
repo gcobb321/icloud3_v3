@@ -26,8 +26,7 @@ from .helpers.common    import (instr, is_statzone, format_gps, zone_dname,
                                 list_add, list_del, )
 from .helpers.messaging import (post_event, post_error_msg, post_monitor_msg,
                                 log_exception, log_rawdata,_trace, _traceha, )
-from .helpers.time_util import (time_now_secs, datetime_now, secs_to_time, secs_since,
-                                secs_to_datetime, format_time_age, )
+from .helpers.time_util import (time_now_secs, )
 from .helpers.dist_util import (gps_distance_m, gps_distance_km, )
 
 

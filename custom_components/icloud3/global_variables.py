@@ -51,8 +51,8 @@ from .const          import (DEVICENAME_MOBAPP, VERSION, NOT_SET, HOME_FNAME, HO
                             )
 
 
-import logging
-_LOGGER = logging.getLogger("icloud3_cf")
+#import logging
+#_LOGGER = logging.getLogger("icloud3_cf")
 
 #<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 class GlobalVariables(object):
@@ -89,7 +89,10 @@ class GlobalVariables(object):
     EvLog           = None
     EvLogSensor     = None
     HALogger        = None
-    iC3_LogFile     = None
+    iC3Logger       = None
+    iC3Logger_last_check_exist_secs = 0
+    # iC3Logger_last_recd = None
+    #iC3_LogFile     = None
     Sensors         = None
     iC3EntityPlatform = None    # iCloud3 Entity Platform (homeassistant.helpers.entity_component)
     PyiCloud        = None      # iCloud Account service
@@ -181,7 +184,7 @@ class GlobalVariables(object):
     debug_log                       = {}  # Log variable and dictionsry field/values to icloud3-0.log file
 
     stage_4_no_devices_found_cnt    = 0         # Retry count to connect to iCloud and retrieve FamShr devices
-    reinitialize_icloud_devices_flag= False         # Set when no devices are tracked and iC3 needs to automatically restart
+    reinitialize_icloud_devices_flag= False     # Set when no devices are tracked and iC3 needs to automatically restart
     reinitialize_icloud_devices_cnt = 0
     initial_icloud3_loading_flag    = False
 
@@ -192,12 +195,10 @@ class GlobalVariables(object):
     log_debug_flag_restart       = None
     log_rawdata_flag_restart     = None
     evlog_trk_monitors_flag      = False
-    ic3_log_file_update_flag     = False
-    ic3_log_file_create_secs     = 0
-    ic3_log_file_last_write_secs = 0
     info_notification            = ''
     ha_notification              = {}
     trace_prefix                 = ''
+    trace_group                  = False
     trace_text_change_1          = ''
     trace_text_change_2          = ''
     debug_flag                   = False
@@ -226,8 +227,9 @@ class GlobalVariables(object):
     um_day_date_time_strfmt = '%a, %b %-d, %l:%M:%S %p'   #Tue, Feb 20, 3:23:45 AM
 
     # Time conversion variables used in global_utilities
-    time_zone_offset_seconds    = 0
-    timestamp_local_offset_secs = 0
+    time_zone_offset_secs = 0
+    time_zone_offset_str  = '+00:00'
+    # timestamp_local_offset_secs = 0
 
     # Away time zone offset used for displaying a devices time tracking sensors in the local time zone
     away_time_zone_1_offset         = 0

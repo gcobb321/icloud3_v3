@@ -36,7 +36,7 @@ from ..const                import (AIRPODS_FNAME, NONE_FNAME,
                                     )
 from ..helpers.common       import (instr, obscure_field, list_to_str, delete_file, )
 from ..helpers.time_util    import (time_now_secs, secs_to_time, timestamp_to_time_utcsecs,
-                                    secs_since, secs_to_age_str )
+                                    secs_since, format_age )
 from ..helpers.messaging    import (post_event, post_monitor_msg, post_startup_alert, post_internal_error,
                                     _trace, _traceha, more_info,
                                     log_info_msg, log_error_msg, log_debug_msg, log_warning_msg, log_rawdata, log_exception)
@@ -860,7 +860,7 @@ class PyiCloudService():
 
         self.password_filter = PyiCloudPasswordFilter(password)
         LOGGER.addFilter(self.password_filter)
-        Gb.HALogger.addFilter(self.password_filter)
+        Gb.iC3Logger.addFilter(self.password_filter)
 
 #----------------------------------------------------------------------------
     def _setup_cookie_files(self, cookie_directory):
@@ -1488,7 +1488,7 @@ class PyiCloud_FamilySharing():
                                     f"{_RawData.location_time}, ")
 
                 if secs_since(_RawData.location_secs) > _Device.old_loc_threshold_secs + 5:
-                    event_msg += f", Old, {secs_to_age_str(_RawData.location_secs)}"
+                    event_msg += f", Old, {format_age(_RawData.location_secs)}"
                 elif rawdata_battery_level > 0:
                     if rawdata_battery_level != _Device.dev_data_battery_level:
                         event_msg += f"{_Device.dev_data_battery_level}%{RARROW}"
@@ -2314,6 +2314,7 @@ class PyiCloud_RawData():
 
             # This will create old location for testing
             # if self.name=='Gary-iPhone':
+            #     raise PyiCloudAPIResponseException('test error', 404)
             #     self.device_data[LOCATION][TIMESTAMP]     = int(self.device_data[LOCATION][self.timestamp_field] / 1000) - 600
             #     _trace('gary_iphone', f"Reduce loc time to {secs_to_time(self.device_data[LOCATION][TIMESTAMP])}")
 
