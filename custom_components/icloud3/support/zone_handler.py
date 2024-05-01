@@ -468,8 +468,7 @@ def request_update_devices_no_mobapp_same_zone_on_exit(Device):
 
 #------------------------------------------------------------------------------
 @callback
-#def _async_add_zone_entity_id(event: EventType[event.EventStateChangedData]) -> None:
-def ha_added_zone_entity_id(event: EventType[event.EventStateChangedData]) -> None:
+def ha_added_zone_entity_id(event): #EventType[event.EventStateChangedData]) -> None:
     """Add zone entity ID."""
 
     zone_entity_id = event.data['entity_id']
@@ -490,8 +489,7 @@ def ha_added_zone_entity_id(event: EventType[event.EventStateChangedData]) -> No
 
 #------------------------------------------------------------------------------
 @callback
-#def _async_remove_zone_entity_id(event: EventType[event.EventStateChangedData]) -> None:
-def ha_removed_zone_entity_id(event: EventType[event.EventStateChangedData]) -> None:
+def ha_removed_zone_entity_id(event): #EventType[event.EventStateChangedData]) -> None:
     """Remove zone entity ID."""
     try:
         zone_entity_id = event.data['entity_id']
@@ -499,8 +497,7 @@ def ha_removed_zone_entity_id(event: EventType[event.EventStateChangedData]) -> 
 
         if (zone == HOME
                 or zone not in Gb.HAZones_by_zone
-                or Gb.start_icloud3_inprocess_flag
-                or Gb.restart_icloud3_request_flag):
+                or Gb.start_icloud3_inprocess_flag):
             return
 
         Zone = Gb.HAZones_by_zone[zone]

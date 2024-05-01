@@ -68,6 +68,7 @@ LD_CALC_DIST   = 4
 LD_WAZE_TIME   = 5
 LD_MOVED       = 6
 LD_DIRECTION   = 7
+LD_AWAYFROM_OVERRIDE = 8
 
 #waze_from_zone fields
 WAZ_STATUS   = 0
@@ -124,7 +125,8 @@ def determine_interval(Device, FromZone):
         Device.display_info_msg(Device.format_info_msg, new_base_msg=True)
 
     #--------------------------------------------------------------------------------
-    Device.write_ha_sensor_state(LAST_LOCATED, Device.loc_data_time)
+    #Device.write_ha_sensor_state(LAST_LOCATED, Device.loc_data_time)
+    Device.write_ha_sensors_state([LAST_LOCATED, NEXT_UPDATE, LAST_UPDATE])
 
     if used_near_device_results(Device, FromZone):
         return FromZone.sensors
@@ -146,11 +148,16 @@ def determine_interval(Device, FromZone):
     waze_time_from_zone     = location_data[LD_WAZE_TIME]
     dist_moved_km           = location_data[LD_MOVED]
     dir_of_travel           = location_data[LD_DIRECTION]
+    dir_of_travel_awayfrom_override = location_data[LD_AWAYFROM_OVERRIDE]
 
-    log_msg = ( f"DistFmZome-{dist_from_zone_km}, Moved-{dist_moved_km}, "
-                f"Waze-{waze_dist_from_zone_km}, Calc-{calc_dist_from_zone_km}, "
-                f"TravTime-{waze_time_from_zone}, Dir-{dir_of_travel}, "
-                f"DirHist-{FromZone.dir_of_travel_history}")
+    awayfrom_override_star = '*' if dir_of_travel_awayfrom_override else ''
+    log_msg = ( f"DistFmZome-{dist_from_zone_km}, "
+                f"Moved-{dist_moved_km}, "
+                f"Waze-{waze_dist_from_zone_km}, "
+                f"Calc-{calc_dist_from_zone_km}, "
+                f"TravTime-{waze_time_from_zone}, "
+                f"Dir-{dir_of_travel}{awayfrom_override_star}, "
+                f"DirHist-{FromZone.dir_of_travel_history[-40:]}")
     log_debug_msg(devicename, log_msg)
 
 
@@ -425,8 +432,10 @@ def determine_interval(Device, FromZone):
         FromZone.interval_method  = interval_method
 
         FromZone.dir_of_travel    = dir_of_travel
+        FromZone.dir_of_travel_awayfrom_override = dir_of_travel_awayfrom_override
         FromZone.update_dir_of_travel_history(dir_of_travel)
-        monitor_msg = (f"DirHist-{FromZone.dir_of_travel_history}")
+
+        monitor_msg = f"DirHist-{FromZone.dir_of_travel_history[-40:]}"
         post_monitor_msg(devicename, monitor_msg)
 
     except Exception as err:
@@ -543,9 +552,10 @@ def post_results_message_to_event_log(Device, FromZone):
 
     event_msg += f"NextUpdate-{FromZone.next_update_time}, "
 
-    if Device.loc_data_dist_moved_km > 0:
+    if Device.isnotin_zone:
+        awayfrom_override_star = '*' if FromZone.dir_of_travel_awayfrom_override else ''
         event_msg += (f"Moved-{km_to_um(Device.loc_data_dist_moved_km)} "
-                        f"({FromZone.dir_of_travel}), ")
+                        f"({FromZone.dir_of_travel}{awayfrom_override_star}), ")
 
     if Device.is_statzone_timer_set and Device.is_tracked and Gb.is_statzone_used:
         event_msg += f"IntoStatZone-{secs_to_time(Device.statzone_timer)}, "
@@ -565,22 +575,7 @@ def post_results_message_to_event_log(Device, FromZone):
             and secs_since(Device.mobapp_data_secs) > 3600):
         event_msg += f"MobAppLocated-{format_age(Device.mobapp_data_secs)}, "
 
-    # if FromZone.zone_dist > 0:
-    #     event_msg += (  f"TravTime-{FromZone.last_travel_time}, "
-    #                     f"Distance-{km_to_um(FromZone.zone_dist)}, ")
-    # if FromZone.dir_of_travel == STATIONARY_FNAME:
-    #     event_msg +=    STATIONARY_FNAME + ", "
-    # if FromZone.dir_of_travel not in [INZONE, '_', '___', ' ', '']:
-    #     event_msg +=    f"Direction-{FromZone.dir_of_travel}, "
-
-    # if Device.statzone_dist_moved_km > 0:
-    #     event_msg +=    f"Moved-{km_to_um(Device.statzone_dist_moved_km)}, "
-
-    #if Device.is_monitored:
-    #    event_msg +=     f"Source-{Device.dev_data_source}, "
-
     post_event(Device, event_msg[:-2])
-
 
     log_msg = ( f"RESULTS: From-{FromZone.from_zone_dname} > "
                 f"MobAppZone-{Device.mobapp_data_state}, "
@@ -959,7 +954,8 @@ def _get_distance_data(Device, FromZone):
                         calc_dist_from_zone_km,     # calc_dist_from_zone_km,
                         0,                          # waze_time_from_zone,
                         dist_moved_km,              # dist moved
-                        dir_of_travel]                     # direction
+                        dir_of_travel,              # direction
+                        False]                      # direction away_from override
 
         return distance_data
 
@@ -1026,10 +1022,15 @@ def _get_distance_data(Device, FromZone):
         post_event(Device, event_msg)
 
     #--------------------------------------------------------------------------------
-    dir_of_travel = '___'
+    # Get direction of travel
+
+    dir_of_travel = UNKNOWN
     time_change_secs = 0    if waze_time_from_zone == 0 \
                             else int(waze_time_from_zone * 60) - int(FromZone.waze_time * 60)
     dist_from_zone_moved_m = int(dist_from_zone_m - FromZone.zone_dist_m)
+    dist_from_zone_moved_m = round_to_zero(dist_from_zone_moved_m)
+    if abs(dist_from_zone_moved_m) < FromZone.zone_dist_m * .1:
+        dist_from_zone_moved_m = 0
 
     if Device.isin_zone:
         dir_of_travel = INZONE_HOME if Device.loc_data_zone == HOME else \
@@ -1044,7 +1045,7 @@ def _get_distance_data(Device, FromZone):
         dir_of_travel = Device.sensors[DIR_OF_TRAVEL]
 
     # Far Away if dist > 400km/250mi
-    elif (calc_dist_from_zone_km > 400):
+    elif (calc_dist_from_zone_km > 90):
         dir_of_travel = FAR_AWAY
 
     # Towards if the last zone distance > than this zone distance
@@ -1057,6 +1058,19 @@ def _get_distance_data(Device, FromZone):
     else:
         #didn't move far enough to tell current direction
         dir_of_travel = Device.sensors[DIR_OF_TRAVEL]
+
+    # Override AWAY_FROM if last 3 directions were TOWARDS and close to the zone
+    if (dir_of_travel == AWAY_FROM
+            and Device.went_3km
+            and dist_from_zone_km < 2
+            and FromZone.dir_of_travel_history[-3:] in \
+                    ['TTT', 'TTt', 'TtT', 'tTT', 'Ttt', 'ttT']):
+        dir_of_travel = TOWARDS
+        dir_of_travel_awayfrom_override = True
+        _traceha(f"{dir_of_travel_awayfrom_override=}")
+    else:
+        dir_of_travel_awayfrom_override = False
+
 
     if Device.loc_data_zone == NOT_HOME:
         if Gb.is_statzone_used is False:
@@ -1085,7 +1099,8 @@ def _get_distance_data(Device, FromZone):
                     calc_dist_from_zone_km,
                     waze_time_from_zone,
                     dist_moved_km,
-                    dir_of_travel]
+                    dir_of_travel,
+                    dir_of_travel_awayfrom_override]
 
     return  distance_data
 
@@ -1174,12 +1189,12 @@ def copy_near_device_results(Device, FromZone):
     The Device is near the NearDevice for the FromZone zone results. Copy the NearDevice
     variables to Device since everything is the same.
     '''
-    NearDevice       = Device.NearDevice
-    from_zone        = FromZone.from_zone
+    NearDevice   = Device.NearDevice
+    from_zone    = FromZone.from_zone
     NearFromZone = Device.NearDevice.FromZones_by_zone[from_zone]
 
-    Device.loc_data_zone           = NearDevice.loc_data_zone
-    Device.zone_change_secs        = NearDevice.zone_change_secs
+    Device.loc_data_zone       = NearDevice.loc_data_zone
+    Device.zone_change_secs    = NearDevice.zone_change_secs
 
     FromZone.zone_dist         = NearFromZone.zone_dist
     FromZone.waze_dist         = NearFromZone.waze_dist
@@ -1192,9 +1207,11 @@ def copy_near_device_results(Device, FromZone):
     FromZone.last_distance_km  = NearFromZone.last_distance_km
     FromZone.last_distance_str = NearFromZone.last_distance_str
 
-    FromZone.dir_of_travel     = dir_of_travel = NearFromZone.dir_of_travel
+    FromZone.dir_of_travel     = NearFromZone.dir_of_travel
+    FromZone.dir_of_travel_awayfrom_override = \
+            NearFromZone.dir_of_travel_awayfrom_override
     FromZone.update_dir_of_travel_history(NearFromZone.dir_of_travel)
-    monitor_msg = (f"DirHist-{FromZone.dir_of_travel_history}")
+    monitor_msg = (f"DirHist-{FromZone.dir_of_travel_history[-40:]}")
     post_monitor_msg(Device.devicename, monitor_msg)
 
     FromZone.sensors.update(NearFromZone.sensors)

@@ -2,7 +2,16 @@
 - iCloud3 Documentation is [here](https://gcobb321.github.io/icloud3_v3_docs/#/chapters/0.1-introduction)
 - The *Installing iCloud3* chapter describes migrating from iCloud3 v2 and installing iCloud3 for the first time
 
-### Change Log
+### Change Log - v3.0.3 (4/14/2024)
+1. ALERTS (New) - An alert message is displayed on the Event Log and in the _alert_ attribute on the device's device_tracker and badge entities until it has been resolved. Exaqmples of alerts are a startup error, no gps data, the device is offline, the battery below 20%, and tracking is paused. The alert attribute can be used in an automation to trigger sending a message to the device. See the Event Log chapter in the iCloud3 docs for more information and example automations.
+2. BATTERY (Improvement) - The battery information attribute has been added to the device's device_tracker and badge entity. It shows the battery level, charging state, when the information was updated and the source of the data. The charging status text has been changed to 'Charged', 'Charging', 'NotCharging', 'Low' and 'Unknown'.
+3. UPDATE SENSOR (Fixed) - An 'AttributeError' message has been fixed. It was caused by trying to update the sensor before the sensor had been set up.
+4. CONFIGURE SETTINGS > ICLOUD ACCOUNT AND MOBILE APP screen (Fixed) - Changing iCloud account information (Username or password), logging into and saving the new account information was not being saved correctly so restarting iCloud3 would still use the old account information. Also added a LogOut option to log out of the iCloud Account.
+5. DIRECTION OF TRAVEL (Improvement) - When Driving towards Home, the calculated straight line distance is used to determine the travel direction ('Towards'). The direction would momentairily change to 'AwayFrom' if the distance from Home increased due to a curve in the road or you were stopped at an intersection. It would then back to 'Towards' on the next update. In this case, the direction will now remain 'Towards'.
+6. Other minor code changes, tuning and code cleanup.
+
+
+
 v3.0.2 - 3/30/2023
 .......................
 1. ICLOUD SERVER ERROR MESSAGE (Fixed) - When the iCloud servers did not respond with location information, the 'no response from iCloud servers' error was displayed correctly. This was followed by another unrelated error which should have not been displayed.

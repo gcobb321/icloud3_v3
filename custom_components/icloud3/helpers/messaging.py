@@ -4,7 +4,7 @@ from ..global_variables import GlobalVariables as Gb
 from ..const            import (DOT, ICLOUD3_ERROR_MSG, EVLOG_DEBUG, EVLOG_ERROR, EVLOG_INIT_HDR, EVLOG_MONITOR,
                                 EVLOG_TIME_RECD, EVLOG_UPDATE_HDR, EVLOG_UPDATE_START, EVLOG_UPDATE_END,
                                 EVLOG_ALERT, EVLOG_WARNING, EVLOG_HIGHLIGHT, EVLOG_IC3_STARTING,EVLOG_IC3_STAGE_HDR,
-                                IC3LOG_FILENAME, EVLOG_TIME_RECD,
+                                IC3LOG_FILENAME, EVLOG_TIME_RECD, EVLOG_TRACE,
                                 CRLF, CRLF_DOT, NBSP, NBSP2, NBSP3, NBSP4, NBSP5, NBSP6, CRLF_INDENT,
                                 DASH_50, DASH_DOTTED_50, TAB_11, RED_ALERT, RED_STOP, RED_CIRCLE, YELLOW_ALERT,
                                 DATETIME_FORMAT, DATETIME_ZERO,
@@ -53,7 +53,8 @@ FILTER_FIELDS = [
         LAST_LOCATED_TIME, LAST_LOCATED_DATETIME,
         INFO, GPS_ACCURACY, GPS, POLL_COUNT, VERT_ACCURACY, ALTITUDE, ICLOUD_LOST_MODE_CAPABLE,
         'ResponseCode', 'reason',
-        'id', 'firstName', 'lastName', 'name', 'fullName', 'appleId', 'emails', 'phones',
+        'id', 'firstName', 'lastName', 'name', 'fullName', CONF_IC3_DEVICENAME,
+        'appleId', 'emails', 'phones',
         'deviceStatus', 'batteryStatus', 'batteryLevel', 'membersInfo',
         'deviceModel', 'rawDeviceModel', 'deviceDisplayName', 'modelDisplayName', 'deviceClass',
         'isOld', 'isInaccurate', 'timeStamp', 'altitude', 'location', 'latitude', 'longitude',
@@ -75,7 +76,9 @@ SP = {
     5: SP50[1:5],
     6: SP50[1:6],
     8: SP50[1:8],
+    9: SP50[1:9],
     10: SP50[1:10],
+    11: SP50[1:11],
     12: SP50[1:12],
     16: SP50[1:16],
     22: SP50[1:22],
@@ -85,21 +88,6 @@ SP = {
     48: SP50[1:48],
     50: SP50,
 }
-# SP = {
-#     4: ' '*4,
-#     5: ' '*5,
-#     6: ' '*6,
-#     8: ' '*8,
-#     10: ' '*10,
-#     12: ' '*12,
-#     16: ' '*16,
-#     22: ' '*22,
-#     28: ' '*28,
-#     26: ' '*26,
-#     44: ' '*44,
-#     48: ' '*48,
-#     50: ' '*50,
-# }
 
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 #
@@ -112,7 +100,6 @@ def broadcast_info_msg(info_msg):
     '''
     if INFO not in Gb.conf_sensors['device']:
         return
-
 
     Gb.broadcast_info_msg = f"{info_msg}"
 
@@ -289,8 +276,6 @@ def more_info(key):
 #   ICLOUD3-DEBUG.LOG FILE ROUTINES
 #
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-
-
 def open_ic3log_file_init():
     '''
     Entry point for async_add_executor_job in __init__.py
@@ -364,7 +349,6 @@ def check_ic3log_file_exists(ic3logger_file):
         log_exception_HA(err)
 
     return False
-
 
 #--------------------------------------------------------------------
 def archive_ic3log_file():
@@ -487,6 +471,7 @@ def log_exception(err):
 #--------------------------------------------------------------------
 def log_debug_msg(devicename_or_Device, log_msg='+', msg_prefix=None):
 
+    if Gb.log_debug_flag is False: return
     if devicename_or_Device and log_msg == '': return
 
     devicename, log_msg = _resolve_devicename_log_msg(devicename_or_Device, log_msg)
@@ -495,9 +480,7 @@ def log_debug_msg(devicename_or_Device, log_msg='+', msg_prefix=None):
     log_msg = f"{dn_str}{str(log_msg).replace(CRLF, ', ')}"
     log_msg = format_msg_line(log_msg)
 
-    if Gb.log_debug_flag:
-        write_ic3log_recd(log_msg)
-
+    write_ic3log_recd(log_msg)
 
     log_msg = log_msg.replace(' > +', f" > ...\n{SP[22]}+")
     Gb.HALogger.debug(log_msg)
@@ -555,8 +538,6 @@ def format_msg_line(log_msg, area=None):
         msg_prefix= ' ' if log_msg.startswith('⡇') else \
                     ' ⡇ ' if Gb.trace_group else \
                     '   '
-                    # ' ▹ '
-                    # ' > '
 
         log_msg = filter_special_chars(log_msg)
         log_msg = f"{source}{msg_prefix}{log_msg}"
@@ -640,14 +621,11 @@ def format_header_box(recd, start_finish=None, evlog_export=False):
         Gb.trace_group = True
     elif start_finish == 'finish':
         top_char = f"{'⠂'*37}"
-        # top_char = f"{'⠐'*37}"
         Gb.trace_group = False
 
-    # return (f"⡇{top_char}\n"
     return (f"⡇{top_char}\n"
             f"▹⡇{SP[4]}{recd[start_pos:].upper()}\n"
             f"▹⡇{bot_char}")
-            # f"▹⡇{bot_char}")
 
 #--------------------------------------------------------------------
 def format_header_box_indent(log_msg, indent):
@@ -681,6 +659,34 @@ def _resolve_module_name_log_msg(module_name, log_msg):
 #   RAWDATA LOGGING ROUTINES
 #
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+def log_rawdata_unfiltered(title, rawdata):
+    try:
+        rawdata_copy = rawdata['raw'].copy() if 'raw' in rawdata else rawdata.copy()
+
+    except:
+        log_info_msg(f"{'─'*8} {title.upper()} {'─'*8}\n{rawdata}")
+        return
+
+    devices_data = {}
+
+    if 'content' in rawdata_copy:
+        for device_data in rawdata_copy['content']:
+            devices_data[device_data['name']] = device_data
+
+        rawdata_copy['content'] = 'DeviceData...'
+
+    log_info_msg(f"{'─'*8} {title.upper()} {'─'*8}\n{rawdata_copy}")
+
+    for device_data in devices_data:
+        log_msg = ( f"FamShr PyiCloud Data (unfiltered -- "
+                    f"{device_data['name'], }"
+                    f"{device_data['deviceDisplayName']} "
+                    f"({device_data['rawDeviceModel']})"
+                    f"\n"
+                    f"{device_data}")
+        log_info_msg(log_msg)
+
+#--------------------------------------------------------------------
 def log_rawdata(title, rawdata, log_rawdata_flag=False):
     '''
     Add raw data records to the HA log file for debugging purposes.
@@ -697,6 +703,9 @@ def log_rawdata(title, rawdata, log_rawdata_flag=False):
 
     if Gb.log_rawdata_flag is False or rawdata is None:
         return
+    if Gb.log_rawdata_flag_unfiltered:
+        log_rawdata_unfiltered(title, rawdata)
+        return
 
     filtered_dicts = {}
     filtered_lists = {}
@@ -704,19 +713,37 @@ def log_rawdata(title, rawdata, log_rawdata_flag=False):
     rawdata_data = {}
 
     try:
+        if type(rawdata) is not dict:
+            log_info_msg(f"{'─'*8} {title.upper()} {'─'*8}\n{rawdata}")
+            return
+        elif 'all' in Gb.log_level_devices:
+            pass
+        else:
+            rawdata_ic3_devicename = \
+                    rawdata.get(CONF_IC3_DEVICENAME) or rawdata['filter'].get(CONF_IC3_DEVICENAME)
+            if rawdata_ic3_devicename not in Gb.log_level_devices:
+                log_info_msg(f"RawData for {rawdata_ic3_devicename} not logged")
+                return
+
         if 'raw' in rawdata or log_rawdata_flag:
             log_info_msg(f"{'─'*8} {title.upper()} {'─'*8}\n{rawdata}")
             return
 
-        rawdata_items = {k: v for k, v in rawdata['filter'].items()
-                                        if type(v) not in [dict, list]}
-        rawdata_data['filter'] = {k: v for k, v in rawdata['filter'].items()
-                                        if k in FILTER_FIELDS}
+        rawdata_items = {k: v   for k, v in rawdata['filter'].items()
+                                if type(v) not in [dict, list]}
+        if Gb.log_rawdata_flag_unfiltered:
+            rawdata_data['filter'] = rawdata['filter']
+        else:
+            rawdata_data['filter'] = {k: v  for k, v in rawdata['filter'].items()
+                                            if k in FILTER_FIELDS}
     except:
-        rawdata_items = {k: v for k, v in rawdata.items()
-                                        if type(v) not in [dict, list]}
-        rawdata_data['filter'] = {k: v for k, v in rawdata.items()
-                                        if k in FILTER_FIELDS}
+        rawdata_items = {k: v   for k, v in rawdata.items()
+                                if type(v) not in [dict, list]}
+        if Gb.log_rawdata_flag_unfiltered:
+            rawdata_data['filter'] = rawdata
+        else:
+            rawdata_data['filter'] = {k: v  for k, v in rawdata.items()
+                                            if k in FILTER_FIELDS}
 
     rawdata_data['filter']['items'] = rawdata_items
     if rawdata_data['filter']:
@@ -906,7 +933,6 @@ def post_internal_error(err_text, traceback_format_exec_obj='+'):
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 def dummy_trace():
     _trace(None, None)
-    _traceha(None, None)
 
 #--------------------------------------------------------------------
 def _trace(devicename_or_Device, items='+'):
@@ -922,7 +948,7 @@ def _trace(devicename_or_Device, items='+'):
 
     #rc9 Reworked post_event and write_config_file to call modules directly
     if Gb.EvLog:
-        Gb.EvLog.post_event(devicename, f"^3^{called_from} {items}")
+        Gb.EvLog.post_event(devicename, f"{EVLOG_TRACE}{called_from} {items}")
     write_ic3log_recd(f"{called_from}⛔.⛔ . . . {devicename} > {items}")
 
 #--------------------------------------------------------------------
