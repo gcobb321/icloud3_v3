@@ -9,6 +9,7 @@ from ..const            import (DOT, ICLOUD3_ERROR_MSG, EVLOG_DEBUG, EVLOG_ERROR
                                 DASH_50, DASH_DOTTED_50, TAB_11, RED_ALERT, RED_STOP, RED_CIRCLE, YELLOW_ALERT,
                                 DATETIME_FORMAT, DATETIME_ZERO,
                                 NEXT_UPDATE_TIME, INTERVAL,
+                                FAMSHR_FNAME, MOBAPP_FNAME,
                                 CONF_IC3_DEVICENAME, CONF_FNAME, CONF_LOG_LEVEL, CONF_PASSWORD, CONF_USERNAME,
                                 CONF_DEVICES,
                                 LATITUDE,  LONGITUDE, LOCATION_SOURCE, TRACKING_METHOD,
@@ -67,27 +68,31 @@ FILTER_FIELDS = [
         'items', 'userInfo', 'prsId', 'dsid', 'dsInfo', 'webservices', 'locations',
         'devices', 'content', 'followers', 'following', 'contactDetails', ]
 
-# TABS_BOX_DEBUG = "\t\t\t\t\t\t\t\t\t\t  "
-# TABS_BOX_INFO  = "\t\t\t\t\t  "
-# TABS_BOX_EVLOG_EXPORT = "\t\t\t"
-SP50 = ' '*50
-SP = {
-    4: SP50[1:4],
-    5: SP50[1:5],
-    6: SP50[1:6],
-    8: SP50[1:8],
-    9: SP50[1:9],
-    10: SP50[1:10],
-    11: SP50[1:11],
-    12: SP50[1:12],
-    16: SP50[1:16],
-    22: SP50[1:22],
-    28: SP50[1:28],
-    26: SP50[1:26],
-    44: SP50[1:44],
-    48: SP50[1:48],
-    50: SP50,
+
+SP_str = ' '*50
+SP_dict = {
+    4: SP_str[1:4],
+    5: SP_str[1:5],
+    6: SP_str[1:6],
+    8: SP_str[1:8],
+    9: SP_str[1:9],
+    10: SP_str[1:10],
+    11: SP_str[1:11],
+    12: SP_str[1:12],
+    13: SP_str[1:13],
+    14: SP_str[1:14],
+    16: SP_str[1:16],
+    22: SP_str[1:22],
+    28: SP_str[1:28],
+    26: SP_str[1:26],
+    44: SP_str[1:44],
+    48: SP_str[1:48],
+    50: SP_str,
 }
+def SP(space_cnt):
+    if space_cnt in SP_dict:     return SP_dict[space_cnt]
+    if space_cnt < len(SP_str): return SP_str[1:space_cnt]
+    return ' '*space_cnt
 
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 #
@@ -337,8 +342,8 @@ def check_ic3log_file_exists(ic3logger_file):
             open_ic3log_file(new_log_file=True)
 
             log_msg = f"{EVLOG_IC3_STARTING}Recreated iCloud3 Log File: {ic3logger_file}"
-            log_msg = f"{format_startup_header_box(log_msg)}"
-            log_msg = f"{format_header_box_indent(log_msg, 4).replace('⡇', '⛔')}"
+            log_msg = f"{format_startup_header_box(log_msg, 20)}"
+            log_msg = log_msg.replace('⡇', '⛔')
             Gb.iC3Logger.info(log_msg)
 
         return True
@@ -386,7 +391,7 @@ def write_config_file_to_ic3log():
     conf_tracking_recd[CONF_DEVICES]  = f"{len(Gb.conf_devices)}"
 
     Gb.trace_prefix = '_INIT_'
-    indent = SP[44] if Gb.log_debug_flag else SP[26]
+    indent = SP(44) if Gb.log_debug_flag else SP(26)
     log_msg = ( f"iCloud3 v{Gb.version}, "
                 f"{dt_util.now().strftime('%A')}, "
                 f"{dt_util.now().strftime(DATETIME_FORMAT)[:19]}")
@@ -439,7 +444,7 @@ def log_info_msg(module_name, log_msg='+'):
     log_msg = format_msg_line(log_msg)
     write_ic3log_recd(log_msg)
 
-    log_msg = log_msg.replace(' > +', f" > ...\n{SP[22]}+")
+    log_msg = log_msg.replace(' > +', f" > ...\n{SP(22)}+")
     Gb.HALogger.debug(log_msg)
 
 #--------------------------------------------------------------------
@@ -482,7 +487,7 @@ def log_debug_msg(devicename_or_Device, log_msg='+', msg_prefix=None):
 
     write_ic3log_recd(log_msg)
 
-    log_msg = log_msg.replace(' > +', f" > ...\n{SP[22]}+")
+    log_msg = log_msg.replace(' > +', f" > ...\n{SP(22)}+")
     Gb.HALogger.debug(log_msg)
 
 #--------------------------------------------------------------------
@@ -496,7 +501,7 @@ def log_start_finish_update_banner(start_finish, devicename,
     Device = Gb.Devices_by_devicename[devicename]
     text  = (f"{devicename}, {method}, "
             f"CurrZone-{Device.sensor_zone}, {update_reason} ")
-    log_msg = format_header_box(text, start_finish)
+    log_msg = format_header_box(text, indent=43, start_finish=start_finish)
 
     log_info_msg(log_msg)
 
@@ -534,7 +539,6 @@ def format_msg_line(log_msg, area=None):
                         Gb.trace_prefix
         source = f"{_called_from()}{program_area}"
         log_msg = format_startup_header_box(log_msg)
-        log_msg = format_header_box_indent(log_msg, len(source))
         msg_prefix= ' ' if log_msg.startswith('⡇') else \
                     ' ⡇ ' if Gb.trace_group else \
                     '   '
@@ -553,9 +557,9 @@ def filter_special_chars(recd, evlog_export=False):
     Filter out EVLOG_XXX control fields
     '''
 
-    indent =SP[16] if evlog_export else \
-            SP[48] if Gb.log_debug_flag else \
-            SP[28]
+    indent =SP(16) if evlog_export else \
+            SP(48) if Gb.log_debug_flag else \
+            SP(28)
     if recd.startswith('^'): recd = recd[3:]
 
     recd = recd.replace(EVLOG_MONITOR, '')
@@ -608,12 +612,15 @@ def format_startup_header_box(log_msg):
     return log_msg
 
 #--------------------------------------------------------------------
-def format_header_box(recd, start_finish=None, evlog_export=False):
+def format_header_box(recd, indent=None, start_finish=None, evlog_export=False):
     '''
     Format a box around this item
     '''
     start_pos = recd.find('^')
     if start_pos == -1: start_pos = 0
+
+    # Default indent for icloud3-0.log file is 43
+    if indent is None: indent = 43
 
     top_char = bot_char = DASH_50
     if start_finish == 'start':
@@ -624,15 +631,8 @@ def format_header_box(recd, start_finish=None, evlog_export=False):
         Gb.trace_group = False
 
     return (f"⡇{top_char}\n"
-            f"▹⡇{SP[4]}{recd[start_pos:].upper()}\n"
-            f"▹⡇{bot_char}")
-
-#--------------------------------------------------------------------
-def format_header_box_indent(log_msg, indent):
-    if instr(log_msg, '▹⡇') is False:
-        return log_msg
-
-    return  log_msg.replace('▹', f"{' '*(16+indent)}")
+            f"{SP(indent)}⡇{SP(4)}{recd[start_pos:].upper()}\n"
+            f"{SP(indent)}⡇{bot_char}")
 
 #-------------------------------------------------------------------------------------------
 def _resolve_devicename_log_msg(devicename_or_Device, event_msg):
@@ -703,27 +703,38 @@ def log_rawdata(title, rawdata, log_rawdata_flag=False):
 
     if Gb.log_rawdata_flag is False or rawdata is None:
         return
-    if Gb.log_rawdata_flag_unfiltered:
-        log_rawdata_unfiltered(title, rawdata)
-        return
+    # log_info_msg(f"RAWDATA 706 {title=} {Gb.log_level_devices}")
+    # if Gb.log_rawdata_flag_unfiltered:
+    #     log_rawdata_unfiltered(title, rawdata)
+    #     return
+
+    if (Gb.start_icloud3_inprocess_flag
+            or 'all' in Gb.log_level_devices
+            or Gb.log_level_devices == []):
+        pass
+    elif (Gb.log_level_devices
+            and (instr(title, FAMSHR_FNAME)
+                or instr(title, MOBAPP_FNAME)
+                or instr(title, 'iCloud')
+                or instr(title, 'Mobile'))):
+
+        log_level_devices = [devicename for devicename in Gb.log_level_devices if instr(title, devicename)]
+        if log_level_devices == []:
+            return
 
     filtered_dicts = {}
     filtered_lists = {}
-    filtered_data = {}
-    rawdata_data = {}
+    filtered_data  = {}
+    rawdata_data   = {}
 
     try:
         if type(rawdata) is not dict:
             log_info_msg(f"{'─'*8} {title.upper()} {'─'*8}\n{rawdata}")
             return
-        elif 'all' in Gb.log_level_devices:
-            pass
-        else:
-            rawdata_ic3_devicename = \
-                    rawdata.get(CONF_IC3_DEVICENAME) or rawdata['filter'].get(CONF_IC3_DEVICENAME)
-            if rawdata_ic3_devicename not in Gb.log_level_devices:
-                log_info_msg(f"RawData for {rawdata_ic3_devicename} not logged")
-                return
+
+        if Gb.log_rawdata_flag_unfiltered:
+            log_rawdata_unfiltered(title, rawdata)
+            return
 
         if 'raw' in rawdata or log_rawdata_flag:
             log_info_msg(f"{'─'*8} {title.upper()} {'─'*8}\n{rawdata}")

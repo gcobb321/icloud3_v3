@@ -383,7 +383,7 @@ def trace_device_attributes(Device, description, fct_name, attrs):
         log_msg = (f"{description} Attrs-{trace_attrs}{trace_attrs_in_attrs}")
         log_debug_msg(Device.devicename, log_msg)
 
-        log_rawdata(f"iCloud Rawdata - {Device.devicename}--{description}", attrs)
+        log_rawdata(f"FamShr iCloud Rawdata - <{Device.devicename}> {description}", attrs)
 
     except Exception as err:
         pass

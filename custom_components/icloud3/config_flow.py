@@ -2989,10 +2989,16 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
         Restart iCloud3 if a tracked field was updated
         '''
 
-        for pname, pvalue in user_input.items():
-            if (Gb.conf_devices[self.conf_device_selected_idx][pname] != pvalue
-                    and pname not in DEVICE_NON_TRACKING_FIELDS):
+        try:
+            if Gb.conf_devices == []:
                 return False
+
+            for pname, pvalue in user_input.items():
+                if (Gb.conf_devices[self.conf_device_selected_idx][pname] != pvalue
+                        and pname not in DEVICE_NON_TRACKING_FIELDS):
+                    return False
+        except:
+            return False
 
         return True
 
@@ -3705,7 +3711,7 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
         if remove_tfz_zones_list == []:
             return
 
-        device_tfz_sensors = Gb.Sensors_by_devicename_from_zone.get(devicename)
+        device_tfz_sensors = Gb.Sensors_by_devicename_from_zone.get(devicename).copy()
 
         if device_tfz_sensors is None:
             return

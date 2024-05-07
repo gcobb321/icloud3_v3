@@ -12,7 +12,6 @@
 
 import os
 import homeassistant.util.dt as dt_util
-from homeassistant.helpers.typing import EventType
 from homeassistant.helpers  import event
 from homeassistant.core     import callback
 
@@ -205,6 +204,7 @@ def select_zone(Device, latitude=None, longitude=None):
     zones_distance_list = \
         [(f"{int(zone_data[ZD_DIST_M]):08}|{zone_data[ZD_NAME]}|{zone_data[ZD_DIST_M]}")
                 for zone_data in zones_data if zone_data[ZD_NAME] != zone_selected]
+    zones_distance_list.sort()
 
     return ZoneSelected, zone_selected, zone_selected_dist_m, zones_distance_list
 
@@ -225,7 +225,6 @@ def post_zone_selected_msg(Device, ZoneSelected, zone_selected,
     # Format distance msg
     zones_dist_msg = ''
     zones_displayed = [zone_selected]
-    zones_distance_list.sort()
     for zone_distance_list in zones_distance_list:
         zdl_items  = zone_distance_list.split('|')
         _zone      = zdl_items[1]
@@ -233,7 +232,6 @@ def post_zone_selected_msg(Device, ZoneSelected, zone_selected,
 
         zones_dist_msg += ( f"{zone_dname(_zone)}"
                             f"-{m_to_um(_zone_dist)}")
-        # zones_dist_msg += f"-r{int(Gb.Zones_by_zone[_zone].radius_m)}m"
         zones_dist_msg += ", "
 
     gps_accuracy_msg = ''
@@ -468,7 +466,7 @@ def request_update_devices_no_mobapp_same_zone_on_exit(Device):
 
 #------------------------------------------------------------------------------
 @callback
-def ha_added_zone_entity_id(event): #EventType[event.EventStateChangedData]) -> None:
+def ha_added_zone_entity_id(event):
     """Add zone entity ID."""
 
     zone_entity_id = event.data['entity_id']
@@ -489,7 +487,7 @@ def ha_added_zone_entity_id(event): #EventType[event.EventStateChangedData]) -> 
 
 #------------------------------------------------------------------------------
 @callback
-def ha_removed_zone_entity_id(event): #EventType[event.EventStateChangedData]) -> None:
+def ha_removed_zone_entity_id(event):
     """Remove zone entity ID."""
     try:
         zone_entity_id = event.data['entity_id']

@@ -395,7 +395,9 @@ def stage_7_initial_locate():
         else:
             continue
 
-        post_event(Device, 'Trigger > Initial Locate')
+        event_msg =(f"{Device.dev_data_source} Trigger > Initial Locate@"
+                    f"{Device.loc_data_time_gps}")
+        post_event(Device, event_msg)
 
         if Device.no_location_data:
             event_msg = f"{EVLOG_ALERT}NO GPS DATA RETURNED FROM ICLOUD LOCATION SERVICE"

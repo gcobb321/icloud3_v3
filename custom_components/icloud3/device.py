@@ -1082,9 +1082,9 @@ class iCloud3_Device(TrackerEntity):
             if (secs_to(self.next_update_secs) <= 15
                     and secs_since(self.loc_data_secs > 15)
                     and self.FromZone_TrackFrom.is_going_towards
-                    and self.FromZone_TrackFrom.zone_dist < 1
                     and self.went_3km):
                 return True
+                    # and self.FromZone_TrackFrom.zone_dist < 1
         return False
 
     @property
@@ -1438,16 +1438,20 @@ class iCloud3_Device(TrackerEntity):
             False - Zone was reset and should proceed with an update
         '''
         # Passthru zone is not used or already set up
+        passthru_not_used_reason = ''
         if (zone_entered == self.passthru_zone
                 or zone_entered == self.loc_data_zone):
             return True
 
         # Entering a zone not subject to a delay
-        if (zone_entered in self.FromZones_by_zone
-                or is_statzone(zone_entered)
-                or zone_entered is None
-                or (data_source == ICLOUD and self.is_location_old_or_gps_poor)):
-            return False
+        if zone_entered in self.FromZones_by_zone:
+            passthru_not_used_reason = 'TrackedFrom Zone'
+        elif is_statzone(zone_entered):
+            passthru_not_used_reason = 'Stat Zone'
+        elif zone_entered is None:
+            passthru_not_used_reason = 'Unknown Zone'
+        elif (data_source == ICLOUD and self.is_location_old_or_gps_poor):
+            passthru_not_used_reason = 'Old Location'
 
         # Not set and next update not reached, set it below
         elif (self.is_passthru_timer_set is False
@@ -1457,14 +1461,17 @@ class iCloud3_Device(TrackerEntity):
         # Time for an update, reset it
         elif self.is_next_update_time_reached:
             self.reset_passthru_zone_delay()
-
-            return False
+            passthru_not_used_reason = 'Next Update Time Reached'
 
         # Passthru expire is set, if before enter zone time or this update time, reset it
         elif (self.is_passthru_timer_set
                 and (zone_entered_secs > self.passthru_zone_timer
                         or Gb.this_update_secs >= self.passthru_zone_timer)):
             self.reset_passthru_zone_delay()
+            passthru_not_used_reason = 'Timer Expired'
+
+        if passthru_not_used_reason:
+            post_event(self.devicename, f"Zone Enter Not Delayed > {passthru_not_used_reason}")
             return False
 
         # Activate Passthru zone
@@ -1902,9 +1909,9 @@ class iCloud3_Device(TrackerEntity):
             return False
 
         battery_level  = int(battery_level_attrs[STATE])
-        if (mins_since(battery_update_secs) > 45
-                or battery_level_attrs[LAST_UPDATED_SECS] != battery_level_attrs[LAST_CHANGED_SECS]):
-            log_rawdata(f"Mobile App Battery Level - {self.devicename}", battery_level_attrs)
+        if (Gb.this_update_time.endswith('00:00')
+                or battery_update_secs != self.mobapp_data_battery_update_secs):
+            log_rawdata(f"MobApp Battery Level - <{self.devicename}>", battery_level_attrs)
 
         if battery_level > 99:
             battery_status = 'Charged'
@@ -2096,11 +2103,12 @@ class iCloud3_Device(TrackerEntity):
 #-------------------------------------------------------------------
     def display_update_location_msg(self):
 
+        return
         if self.loc_data_time_gps == self.last_loc_data_time_gps:
             return
 
         if self.isnotin_zone or self.loc_data_dist_moved_km > .015:
-            event_msg =(f"SinceLast > "
+            event_msg =(f"Selected > "
                         f"{self.last_loc_data_time_gps}"
                         f"{RARROW}{self.dev_data_source}-{self.loc_data_time_gps}")
             post_event(self.devicename,event_msg)
@@ -2154,6 +2162,7 @@ class iCloud3_Device(TrackerEntity):
             self.sensors[MOVED_TIME_TO]        = self.loc_data_time_moved_to
             self.sensors[ZONE_DATETIME]        = secs_to_datetime(self.zone_change_secs)
 
+            if self.FromZone_NextToUpdate is None: self.FromZone_NextToUpdate = self.FromZone_Home
             self.interval_secs                 = self.FromZone_NextToUpdate.interval_secs
             self.interval_str                  = self.FromZone_NextToUpdate.interval_str
             self.next_update_secs              = self.FromZone_NextToUpdate.next_update_secs
@@ -2162,6 +2171,7 @@ class iCloud3_Device(TrackerEntity):
             self.sensors[NEXT_UPDATE_TIME]     = self.FromZone_NextToUpdate.sensors[NEXT_UPDATE_TIME]
             self.sensors[NEXT_UPDATE]          = self.FromZone_NextToUpdate.sensors[NEXT_UPDATE]
 
+            if self.FromZone_TrackFrom is None: self.FromZone_TrackFrom = self.FromZone_Home
             self.sensors[FROM_ZONE]            = self.FromZone_TrackFrom.from_zone
             self.sensors[LAST_UPDATE_DATETIME] = self.FromZone_TrackFrom.sensors[LAST_UPDATE_DATETIME]
             self.sensors[LAST_UPDATE_TIME]     = self.FromZone_TrackFrom.sensors[LAST_UPDATE_TIME]
@@ -2178,14 +2188,11 @@ class iCloud3_Device(TrackerEntity):
             self.sensors[WAZE_DISTANCE]        = self.FromZone_TrackFrom.sensors[WAZE_DISTANCE]
             self.sensors[WAZE_METHOD]          = self.FromZone_TrackFrom.sensors[WAZE_METHOD]
             self.sensors[CALC_DISTANCE]        = self.FromZone_TrackFrom.sensors[CALC_DISTANCE]
+
             self.sensors[HOME_DISTANCE]        = self.FromZone_Home.sensors[ZONE_DISTANCE]
             self.FromZone_TrackFrom.dir_of_travel = dir_of_travel = \
                     self.FromZone_TrackFrom.sensors[DIR_OF_TRAVEL]
 
-            # if dir_of_travel == INZONE:
-            #     self.sensors[DIR_OF_TRAVEL] = f"@{zone_dname(self.loc_data_zone)[:8]}"
-            # else:
-            #     self.sensors[DIR_OF_TRAVEL] = dir_of_travel
             self.sensors[DIR_OF_TRAVEL] = dir_of_travel
 
             # Update the last zone info if the device was in a zone and now not in a zone or went immediatelly from
@@ -2418,10 +2425,6 @@ class iCloud3_Device(TrackerEntity):
         # PassThru zone msg has priority over all other messages
         if self.is_passthru_zone_delay_active and instr(info_msg, 'PassThru') is False:
             return
-        # if new_base_msg is False:
-        #     return
-
-        #info_msg = info_msg if new_base_msg else f"《{info_msg}》{self.info_msg}"
 
         try:
             self.write_ha_sensor_state(INFO, info_msg)

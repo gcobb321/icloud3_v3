@@ -2121,7 +2121,7 @@ class PyiCloud_RawData():
         self.evlog_alert_char= ''
 
         self.Device          = Gb.Devices_by_icloud_device_id.get(device_id)
-        self.ic3_devicename  = ''
+        self.ic3_devicename  = self.Device.devicename if self.Device else ''
         self.update_secs     = time_now_secs()
         self.location_secs   = 0
         self.location_time   = HHMMSS_ZERO
@@ -2139,7 +2139,7 @@ class PyiCloud_RawData():
 
         self.set_located_time_battery_info()
         self.device_data[DATA_SOURCE] = self.data_source
-        self.device_data[CONF_IC3_DEVICENAME]  = self.ic3_devicename
+        self.device_data[CONF_IC3_DEVICENAME] = self.ic3_devicename
 
 
 #----------------------------------------------------------------------
@@ -2326,7 +2326,8 @@ class PyiCloud_RawData():
     def set_located_time_battery_info(self):
 
         try:
-            self.device_data[CONF_IC3_DEVICENAME] = self.devicename
+            self.device_data[CONF_IC3_DEVICENAME] = self.ic3_devicename
+
             if self.is_location_data_available:
                 self.device_data[LOCATION][TIMESTAMP] = int(self.device_data[LOCATION][self.timestamp_field] / 1000)
                 self.device_data[LOCATION][LOCATION_TIME] = secs_to_time(self.device_data[LOCATION][TIMESTAMP])

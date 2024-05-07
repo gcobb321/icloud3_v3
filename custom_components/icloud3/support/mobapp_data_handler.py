@@ -484,7 +484,7 @@ def update_mobapp_data_from_entity_attrs(Device, device_trkr_attrs):
     if Device.mobapp_data_secs >= mobapp_data_secs or gps_accuracy > Gb.gps_accuracy_threshold:
         return
 
-    log_rawdata(f"Mobile App - {Device.devicename}", device_trkr_attrs)
+    log_rawdata(f"MobApp Attrs - <{Device.devicename}>", device_trkr_attrs)
 
     Device.mobapp_data_state             = device_trkr_attrs.get(DEVICE_TRACKER, NOT_SET)
     Device.mobapp_data_state_secs        = device_trkr_attrs.get(f"state_{TIMESTAMP_SECS}", 0)

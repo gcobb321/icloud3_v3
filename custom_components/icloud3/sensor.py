@@ -70,6 +70,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
     # Save the hass `add_entities` call object for use in config_flow for adding new sensors
     Gb.hass = hass
     Gb.async_add_entities_sensor = async_add_entities
+    Gb.sensors_created_cnt = 0
 
     try:
         if Gb.conf_file_data == {}:
@@ -128,7 +129,6 @@ def create_tracked_device_sensors(devicename, conf_device, new_sensors_list=None
     '''
     try:
         NewSensors = []
-        Gb.sensors_created_cnt = 0
 
         if new_sensors_list is None:
             new_sensors_list = []

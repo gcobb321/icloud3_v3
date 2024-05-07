@@ -85,7 +85,6 @@ import shutil
 import traceback
 from datetime               import timedelta, date, datetime
 from collections            import OrderedDict
-from homeassistant.helpers.typing import ConfigType, EventType
 from homeassistant.helpers  import event
 from homeassistant.core     import Event, HomeAssistant, ServiceCall, State, callback
 from homeassistant.util     import slugify
@@ -140,7 +139,6 @@ def process_config_flow_parameter_updates():
     Gb.config_flow_updated_parms = {''}
 
     event_msg =(f"Configuration Loading > "
-                f"Type-{config_flow_updated_parms}, "
                 f"Type-{list_to_str(config_flow_updated_parms).title()}")
     post_event(event_msg)
 
@@ -163,8 +161,8 @@ def process_config_flow_parameter_updates():
         check_ic3_event_log_file_version()
         Gb.EvLog.setup_event_log_trackable_device_info()
 
-    stage_title = f'Configuration Changes Loaded'
-    post_event(f"{EVLOG_IC3_STAGE_HDR}{stage_title}")
+    # stage_title = f'Configuration Changes Loaded'
+    # post_event(f"{EVLOG_IC3_STAGE_HDR}{stage_title}")
 
     if 'reauth' in config_flow_updated_parms:
         Gb.evlog_action_request = CMD_RESET_PYICLOUD_SESSION

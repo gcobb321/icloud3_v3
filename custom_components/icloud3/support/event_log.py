@@ -28,7 +28,7 @@ from ..const                import (HOME, HOME_FNAME, TOWARDS,
 
 from ..helpers.common       import instr, circle_letter, str_to_list, list_to_str, isbetween
 from ..helpers.messaging    import (SP, log_exception, log_info_msg, log_warning_msg, _traceha, _trace,
-                                    filter_special_chars, format_header_box, format_header_box_indent, )
+                                    filter_special_chars, format_header_box, )
 from ..helpers.time_util    import (time_to_12hrtime, datetime_now, time_now_secs, datetime_for_filename,
                                     adjust_time_hour_value, adjust_time_hour_values, )
 
@@ -845,17 +845,17 @@ class EventLog(object):
         try:
             log_update_time =   (f"{dt_util.now().strftime('%a, %m/%d')}, "
                                 f"{dt_util.now().strftime(Gb.um_time_strfmt)}")
-            hdr_recd    = f"Time{SP[8]}Event\n{'-'*120}\n"
+            hdr_recd    = f"Time{SP(8)}Event\n{'-'*120}\n"
             export_recd = (f"iCloud3 Event Log v{Gb.version}\n\n"
                             f"Log Update Time: {log_update_time}\n"
                             f"Tracked Devices:\n")
 
             export_recd += f"\nGeneral Configuration:\n"
-            export_recd += f"{SP[4]}{Gb.conf_general}\n"
+            export_recd += f"{SP(4)}{Gb.conf_general}\n"
 
             for devicename, Device in Gb.Devices_by_devicename.items():
-                export_recd += (f"{SP[4]}{DOT}{Device.fname_devicename} >\n"
-                                f"{SP[4]}{Device.conf_device}\n")
+                export_recd += (f"{SP(4)}{DOT}{Device.fname_devicename} >\n"
+                                f"{SP(4)}{Device.conf_device}\n")
 
             #--------------------------------
             # # Prepare Global '*' records. Reverse the list elements using [::-1] and make a string of the results
@@ -914,25 +914,42 @@ class EventLog(object):
             record_str = ''
             startup_recds_flag = False
             el_recds.reverse()
+            last_tfz_zone = ''
             for record in el_recds:
                 devicename = record[ELR_DEVICENAME]
-                time       = record[ELR_TIME] if record[ELR_TIME] not in ['Debug', 'Rawdata'] else SP[4]
+                time       = record[ELR_TIME] if record[ELR_TIME] not in ['Debug', 'Rawdata'] else SP(4)
                 text       = record[ELR_TEXT]
 
+                # iCloud3 Startup Records
                 if log_section == 'startup':
                     if text[0:3] in [EVLOG_IC3_STARTING, EVLOG_IC3_STAGE_HDR]:
-                        text = f"{SP[9]}{format_header_box(text[3:], evlog_export=True)}"
-                        text = format_header_box_indent(text, -5)
+                        text = f"{SP(9)}{format_header_box(text[3:], indent=12, evlog_export=True)}"
                     elif text.startswith('^'):
-                        text = f"{SP[4]}{filter_special_chars(text[3:], evlog_export=True)}"
+                        text = f"{SP(4)}{filter_special_chars(text[3:], evlog_export=True)}"
                     else:
-                        text = f"{SP[4]}{filter_special_chars(text, evlog_export=True)}"
+                        text = f"{SP(4)}{filter_special_chars(text, evlog_export=True)}"
 
+                # Non-device related Records
                 elif log_section == 'other':
-                    text = f"  {filter_special_chars(text, evlog_export=True)}"
+                    text = f"{filter_special_chars(text, evlog_export=True)}"
 
+                # Device Records
                 else:
+                    time = (time + SP(8))[:8]
                     text = self._reformat_device_recd(log_section, time, text)
+
+                    if time.startswith('»Home'):
+                        pass
+
+                    # Start of tfz group header
+                    elif time.startswith('»') and time != last_tfz_zone:
+                        text = f"{SP(4)}⡇{' ~ '*18}\n{time}{text}"
+                        last_tfz_zone = time
+
+                    # End of tfz group trailer
+                    elif last_tfz_zone.startswith('»') and time != last_tfz_zone:
+                        text = f"{last_tfz_zone}{SP(4)}⡇{' ~ '*18}\n{time}{text}"
+                        time = last_tfz_zone = ''
 
                 if text != '':
                     record_str += f"{time}{text}\n"
@@ -949,41 +966,36 @@ class EventLog(object):
 
         # Time-record = {mobapp_state},{ic3_zone},{interval},{travel_time},{distance)
 
-        line_prefix = SP[4]
+
         if text.startswith(EVLOG_UPDATE_START):
             text = f"Tracking Update ({log_section})" if text[3:] == '' else text[3:]
-            text = f"{SP[11]}{format_header_box(text, start_finish='start', evlog_export=True)}"
-            text = f"{format_header_box_indent(text, -5)}"
+            text = f"{SP(5)}{format_header_box(text, indent=12, start_finish='start', evlog_export=True)}"
             return text
 
         elif text.startswith(EVLOG_UPDATE_END):
-            text = f"{SP[9]}{format_header_box(text[3:], start_finish='finish', evlog_export=True)}"
-            text = f"{format_header_box_indent(text, -5)}"
-            line_prefix = ''
+            text = f"{SP(4)}{format_header_box(text[3:], indent=12, start_finish='finish', evlog_export=True)}"
             return text
 
         elif text.startswith(EVLOG_TIME_RECD):
+            tfz_adj = '  ' if (time.startswith('»') and time.startswith('»Home')) is False else ''
             text = text[3:]
             item = text.split(',')
-            text = (f"{' '*(11-len(time))}⡇ MobApp-{item[0]}, "
+            text = (f"{' '*(11-len(time))}{tfz_adj}⡇ "
+                    f"MobApp-{item[0]}, "
                     f"iCloud3-{item[1]}, "
                     f"Interval-{item[2]}, "
                     f"TravTime-{item[3]}, "
                     f"Dist-{item[4]}")
             return text
 
-        if time.startswith('»'): line_prefix = SP[5]
-
+        tfz_adj = '  ' if time.startswith('»') else ''
         group_char= '' if text.startswith('⡇') else \
                     '⡇ ' if Gb.trace_group else \
                     ''
 
-        text = filter_special_chars(text)
+        text = filter_special_chars(text, evlog_export=True)
 
-        if instr(text, 'Results:') and instr(text, 'From-Home') is False:
-            text = f"{text}\n{SP[12]}⡇ {' ~ '*18}"
-
-        return f"{line_prefix}{group_char}{text}"
+        return f"{SP(4)}{tfz_adj}{group_char}{text}"
 
 #--------------------------------------------------------------------
     @staticmethod
