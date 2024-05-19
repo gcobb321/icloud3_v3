@@ -719,13 +719,11 @@ class PyiCloudService():
             headers["X-Apple-ID-Session-Id"] = self.session_data.get("session_id")
 
         try:
-            _trace('724')
             response = self.Session.post(
                         f"{self.AUTH_ENDPOINT}/signin",
                         params={"isRememberMeEnabled": "true"},
                         data=json.dumps(data),
                         headers=headers,)
-            _trace('730')
             data = response.json
             log_debug_msg( f"Authenticate.authenticate_with_password > Successful")
             return True
@@ -760,12 +758,10 @@ class PyiCloudService():
         try:
             log_debug_msg(f"Authenticating Service with Password, Service-{service}")
 
-            _trace('765')
             self.Session.post(f"{self.SETUP_ENDPOINT}/accountLogin"
                         f"?clientBuildNumber=2021Project52&clientMasteringNumber=2021B29"
                         f"&clientId={self.client_id[5:]}",
                         data=json.dumps(data))
-            _trace('770')
 
             log_debug_msg( f"Authenticate.authenticate_with_password_service > Successful")
             return self._validate_token()
@@ -796,7 +792,6 @@ class PyiCloudService():
         log_debug_msg("Checking session token validity")
 
         try:
-            _trace('801')
             response = self.Session.post("%s/validate" % self.SETUP_ENDPOINT, data="null")
             self.data = response.json
 
