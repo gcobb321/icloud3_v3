@@ -3,8 +3,14 @@
 #   Define the iCloud3 General Constants
 #
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+#
+#       Translations:
+#               en      - @gcobb321 (Gary Cobb, iCloud3 author)
+#               zh-Hans - @MagicStarTrace (Magic)
+#
+#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-VERSION                         = '3.0.5'
+VERSION                         = '3.0.5.1'
 VERSION_BETA                    = ''
 #-----------------------------------------
 DOMAIN                          = 'icloud3'
