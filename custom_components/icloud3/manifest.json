@@ -9,6 +9,6 @@
   "iot_class": "cloud_polling",
   "issue_tracker": "https://github.com/gcobb321/icloud3_v3/issues",
   "loggers": ["icloud3"],
-  "requirements": [],
-  "version": "3.0.5.8"
+  "requirements": ["srp"],
+  "version": "3.1"
 }
