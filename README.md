@@ -4,7 +4,7 @@
 
 ------
 
-[![CurrentVersion](https://img.shields.io/badge/Current_Version-v3.1-blue.svg)](https://github.com/gcobb321/icloud3_v3)  [![Type](https://img.shields.io/badge/Type-Custom_Component-orange.svg)](https://github.com/gcobb321/icloud3_v3)  [![HACS](https://img.shields.io/badge/HACS-Custom_Repository-orange.svg)](https://github.com/gcobb321/icloud3_v3)
+[![CurrentVersion](https://img.shields.io/badge/Current_Version-v3.1.1-blue.svg)](https://github.com/gcobb321/icloud3_v3)  [![Type](https://img.shields.io/badge/Type-Custom_Component-orange.svg)](https://github.com/gcobb321/icloud3_v3)  [![HACS](https://img.shields.io/badge/HACS-Custom_Repository-orange.svg)](https://github.com/gcobb321/icloud3_v3)
 
 [![ProjectStage](https://img.shields.io/badge/Project_Stage-Development_Version-forestgreen.svg)](https://github/gcobb321/icloud3_v3)  [![Released](https://img.shields.io/badge/Released-November,_2024-forestgreen.svg)](https://github.com/gcobb321/icloud3_v3)
 

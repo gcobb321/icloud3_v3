@@ -39,7 +39,7 @@ import logging
 
 DO_NOT_SHRINK     = ['url', 'accountName', ]
 FILTER_DATA_DICTS = ['items', 'userInfo', 'dsid', 'dsInfo', 'webservices', 'locations','location',
-                    'params', 'headers', 'kwargs', 'clientContext', ]
+                    'params', 'headers', 'kwargs', ]
 FILTER_DATA_LISTS = ['devices', 'content', 'followers', 'following', 'contactDetails',]
 FILTER_FIELDS = [
         ICLOUD3_VERSION, AUTHENTICATED,
@@ -71,15 +71,7 @@ FILTER_FIELDS = [
         'dsWebAuthToken', 'accountCountryCode', 'extended_login', 'trustToken',
         'data', 'json', 'headers', 'params', 'url', 'retry_cnt', 'retried', 'retry', '#',
         'code', 'ok', 'method', 'securityCode',
-        'fmly', 'shouldLocate', 'selectedDevice',
         'accountName', 'salt', 'a', 'b', 'c', 'm1', 'm2', 'protocols', 'iteration', 'Authorization', ]
-FILTER_OUT = [
-    'features', 'BTR', 'LLC', 'CLK', 'TEU', 'SND', 'ALS', 'CLT', 'PRM', 'SVP', 'SPN', 'XRM', 'NWF', 'CWP',
-    'MSG', 'LOC', 'LME', 'LMG', 'LYU', 'LKL', 'LST', 'LKM', 'WMG', 'SCA', 'PSS', 'EAL', 'LAE', 'PIN',
-    'LCK', 'REM', 'MCS', 'REP', 'KEY', 'KPD', 'WIP', 'scd',
-    'rm2State', 'pendingRemoveUntilTS', 'repairReadyExpireTS', 'repairReady', 'lostModeCapable', 'wipedTimestamp',
-    'encodedDeviceId', 'scdPh', 'locationCapable', 'trackingInfo', 'nwd', 'remoteWipe', 'canWipeAfterLock', 'baUUID',
-    'snd', 'continueButtonTitle', 'alertText', 'cancelButtonTitle', 'createTimestamp',  'alertTitle', ]
 
 
 SP_str = ' '*50
@@ -771,35 +763,55 @@ def log_rawdata(title, rawdata, log_rawdata_flag=False, data_source=None, filter
                                         for k, v in rawdata.items()
                                         if (k in FILTER_FIELDS or Gb.log_rawdata_flag_unfiltered)}
 
+
+    filter_dict, filter_list, filter_data_items, filter_data_dict = filter_raw_data(rawdata_items)
+    if filter_dict:
+        log_msg += f"\n❗   {data_dict}={filter_dict}"
+    if filter_list:
+        log_msg += f"\n❗   {data_list}={filter_list}"
+    if rawdata_data_items:
+        log_msg += f"\n❗   data.items={rawdata_data_items}"
+    if log_msg:
+        log_info_msg(f"{title.upper()}{log_msg}")
+
+    return
+
+
+def filter_rawdata_data(rawdata_items):
+    rawdata_data = {}
     rawdata_data['filter']['items'] = rawdata_items
+    filter_dict = {}
+    log_msg = ''
+
     if rawdata_data['filter']:
         for data_dict in FILTER_DATA_DICTS:
-            filter_results = filter_data_dict(rawdata_data['filter'], data_dict)
-            if filter_results:
-                log_msg += f"\n❗   {data_dict}={filter_results}"
+            filter_dict_items = filter_data_dict(rawdata_data['filter'], data_dict)
+            if filter_dict_items:
+                filter_dict[data_dict] = filter_dict_items
+                log_msg += f"\n❗   {data_dict}={filter_dict}"
 
         for data_list in FILTER_DATA_LISTS:
             if data_list in rawdata_data['filter']:
-                filter_results = _filter_data_list(rawdata_data['filter'][data_list])
-                if filter_results:
-                    log_msg += f"\n❗   {data_list}={filter_results}"
+                filter_list_items = _filter_data_list(rawdata_data['filter'][data_list])
+                if filter_list_items:
+                    log_msg += f"\n❗   {data_list}={filter_list}"
 
 
         if 'data' in rawdata_data['filter']:
             try:
-                rawdata_data_items = {k: _shrink_value(k, v)
+                filter_data_items = {k: _shrink_value(k, v)
                                             for k, v in rawdata_data['filter']['data'].items()
                                             if k in FILTER_FIELDS and type(v) not in [dict, list]}
-                if rawdata_data_items:
-                    log_msg += f"\n❗   data.items={rawdata_data_items}"
+                if filter_data_items:
+                    log_msg += f"\n❗   data.items={filter_data_items}"
             except:
                 pass
 
             for data_dict in FILTER_DATA_DICTS:
-                filter_results = filter_data_dict(rawdata_data['filter']['data'], data_dict)
-                if filter_results:
-                    log_msg += f"\n❗   data.{data_dict}={filter_results}"
-
+                filter_data_dict = filter_data_dict(rawdata_data['filter']['data'], data_dict)
+                if filter_data_dict:
+                    log_msg += f"\n❗   data.{data_dict}={filter_data_dict}"
+    return filter_dict, filter_list, filter_data_items, filter_data_dict
 
     if log_msg:
         log_info_msg(f"{title.upper()}{log_msg}")
