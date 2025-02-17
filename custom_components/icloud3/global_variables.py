@@ -25,6 +25,7 @@
 
 from .const          import (DEVICENAME_MOBAPP, VERSION, VERSION_BETA,
                             NOT_SET, HOME_FNAME, HOME, STORAGE_DIR, WAZE_USED,
+                            ICLOUD_SERVER_ENDPOINT,
                             DEFAULT_GENERAL_CONF,
                             CONF_UNIT_OF_MEASUREMENT,
                             CONF_DISPLAY_ZONE_FORMAT, CONF_DEVICE_TRACKER_STATE_SOURCE,
@@ -137,11 +138,17 @@ class GlobalVariables(object):
     username                     = ''
     username_base                = ''
     password                     = ''
-    icloud_server_endpoint_suffix = ''
     encode_password_flag         = True
     all_find_devices             = True
     entity_registry_file         = ''
     devices                      = ''
+
+    # icloud.com url suffix for china HOME_ENDPOINT & SETUP_ENDPOINT .com --> .com.cn for China
+    icloud_server_suffix         = ''
+    HOME_ENDPOINT                = ICLOUD_SERVER_ENDPOINT['home']
+    SETUP_ENDPOINT               = ICLOUD_SERVER_ENDPOINT['setup']
+    AUTH_ENDPOINT                = ICLOUD_SERVER_ENDPOINT['auth']
+
 
     # Global Object Dictionaries
     Devices                           = []  # Devices objects list
@@ -304,6 +311,9 @@ class GlobalVariables(object):
     # Time conversion variables used in global_utilities
     time_zone_offset_secs = 0
     time_zone_offset_str  = '+00:00'
+    time_zone_offset_secs_PST = -8 * 60 * 60
+    time_zone_offset_secs_apple_server = 0
+
     # timestamp_local_offset_secs = 0
 
     # Away time zone offset used for displaying a devices time tracking sensors in the local time zone

@@ -14,7 +14,8 @@ from ..const            import (VERSION, VERSION_BETA, ICLOUD3, ICLOUD3_VERSION,
                                 CRLF_RED_X, RED_X, CRLF_RED_ALERT, RED_ALERT, CRLF_RED_MARK, CRLF_STAR,
                                 CRLF_RED_ALERT, RED_ALERT, YELLOW_ALERT, UNKNOWN,
                                 RARROW, NBSP2, NBSP4, NBSP6, CIRCLE_STAR, INFO_SEPARATOR, DASH_20, CHECK_MARK,
-                                ICLOUD, FAMSHR, APPLE_SPECIAL_ICLOUD_SERVER_COUNTRY_CODE,
+                                ICLOUD, FAMSHR,
+                                ICLOUD_SERVER_COUNTRY_CODE, ICLOUD_SERVER_ENDPOINT,
                                 DEVICE_TYPE_FNAME, DEVICE_TYPE_FNAMES,
                                 IPHONE, IPAD, IPOD, WATCH, AIRPODS,
                                 MOBAPP, NO_MOBAPP, ICLOUD_DEVICE_STATUS, TIMESTAMP,
@@ -517,9 +518,14 @@ def initialize_data_source_variables():
     Gb.username_base                = Gb.username.split('@')[0]
     Gb.password                     = conf_password
     Gb.encode_password_flag         = Gb.conf_tracking[CONF_ENCODE_PASSWORD]
-    Gb.icloud_server_endpoint_suffix= \
-        icloud_server_endpoint_suffix(Gb.conf_tracking[CONF_ICLOUD_SERVER_ENDPOINT_SUFFIX])
-    Gb.PyiCloud_logging_in_usernames = []
+    Gb.icloud_server_suffix         = Gb.conf_tracking[CONF_ICLOUD_SERVER_ENDPOINT_SUFFIX]
+    if Gb.icloud_server_suffix == 'None':
+        Gb.icloud_server_suffix = ''
+        Gb.conf_tracking[CONF_ICLOUD_SERVER_ENDPOINT_SUFFIX] = ''
+
+    setup_icloud_server_url(Gb.icloud_server_suffix)
+
+    Gb.PyiCloud_logging_in_usernames= []
 
     Gb.username_pyicloud_503_connection_error = []
     Gb.internet_connection_error_secs = 0
@@ -544,18 +550,14 @@ def initialize_data_source_variables():
     Gb.startup_alerts             = []
 
 #------------------------------------------------------------------------------
-def icloud_server_endpoint_suffix(endpoint_suffix):
+def setup_icloud_server_url(server_suffix):
     '''
-    Determine the suffix to be used based on the country_code and the value of the
-    configuration field.
+    Set up the icloud.com server endpoint urls for China (icloud.com.cn)
     '''
-    if endpoint_suffix != '':
-        return endpoint_suffix.replace('.', '')
-
-    if Gb.country_code in APPLE_SPECIAL_ICLOUD_SERVER_COUNTRY_CODE:
-        return Gb.country_code.lower()
-
-    return ''
+    icloud_server_suffix = 'icloud.com' if server_suffix == '' else f"icloud.com.{server_suffix}"
+    Gb.HOME_ENDPOINT  = ICLOUD_SERVER_ENDPOINT['home'].replace('icloud.com', icloud_server_suffix)
+    Gb.SETUP_ENDPOINT = ICLOUD_SERVER_ENDPOINT['setup'].replace('icloud.com', icloud_server_suffix)
+    Gb.AUTH_ENDPOINT  = ICLOUD_SERVER_ENDPOINT['auth']
 
 #------------------------------------------------------------------------------
 def set_primary_data_source(data_source):
@@ -2091,7 +2093,7 @@ def setup_tracked_devices_for_mobapp():
             continue
 
         # Check if the specified mobapp device tracker is valid and in the entity registry
-        if conf_mobapp_dname.startswith('Search: ') is False:
+        if conf_mobapp_dname.startswith('ScanFor: ') is False:
             if conf_mobapp_dname in Gb.mobapp_id_by_mobapp_dname:
                 mobapp_dname = conf_mobapp_dname
                 Gb.devicenames_x_mobapp_dnames[devicename]   = mobapp_dname
@@ -2102,9 +2104,7 @@ def setup_tracked_devices_for_mobapp():
                 mobapp_error_not_found_msg += ( f"{CRLF_X}{conf_mobapp_dname} > "
                                                 f"Assigned to {Device.fname_devicename}")
         else:
-            mobapp_dname = _scan_for_for_mobapp_device( devicename, Device,
-                                                            Gb.mobapp_id_by_mobapp_dname,
-                                                            conf_mobapp_dname)
+            mobapp_dname = _scan_for_for_mobapp_device( devicename, Device, conf_mobapp_dname)
             if mobapp_dname:
                 Gb.devicenames_x_mobapp_dnames[devicename]   = mobapp_dname
                 Gb.devicenames_x_mobapp_dnames[mobapp_dname] = devicename
@@ -2356,7 +2356,7 @@ def _display_any_mobapp_errors( mobapp_error_mobile_app_msg,
 
         log_error_msg(f"iCloud3 Error > Mobile App Device Tracker Entity was not found "
                     f"in the HA Devices List."
-                    f"{mobapp_error_not_found_msg}"
+                    f"{mobapp_error_not_found_msg}. "
                     f"See iCloud3 Event Log > Startup Stage 4 for more info.")
 
     if mobapp_error_disabled_msg:
@@ -2571,7 +2571,7 @@ def _display_all_devices_config_info(selected_devicenames=None):
                                 f"{CRLF_HDOT}Not used as a location data source")
 
         else:
-            evlog_msg += CRLF_DOT if Device.mobapp_monitor_flag else CRLF_RED_MARK
+            evlog_msg += CRLF_DOT if Device.mobapp_monitor_flag else CRLF_RED_ALERT
             evlog_msg += f"Mobile App Configuration:"
 
             trigger_entity = Device.mobapp[TRIGGER][7:] or 'UNKNOWN'
@@ -2607,7 +2607,7 @@ def _display_all_devices_config_info(selected_devicenames=None):
             device_status = Device.PyiCloud_RawData_icloud.device_data[ICLOUD_DEVICE_STATUS]
             timestamp     = Device.PyiCloud_RawData_icloud.device_data[LOCATION][TIMESTAMP]
             if device_status == '201' and mins_since(timestamp) > 5:
-                evlog_msg += (f"{CRLF_RED_MARK}DEVICE IS OFFLINE > "
+                evlog_msg += (f"{CRLF_RED_ALERT}DEVICE IS OFFLINE > "
                             f"Since-{format_time_age(timestamp)}")
                 Device.offline_secs = timestamp
 

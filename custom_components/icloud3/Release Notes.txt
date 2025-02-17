@@ -7,7 +7,20 @@ v3.1.5b1 Removed, Replaced with v3.1.5b2 [here](https://github.com/gcobb321/iclo
 
 
 
-### Release Notes - v3.1.5 (2/11/2025)
+### Release Notes - v3.1.5.2
+#### 🎉 Improvements and New Features
+1. When the password is used to authenticate the Apple Account, Apple sends an email to the account owner that a login/authentication was done. An entry has been added to the Event Log when iCloud3 doe this. The authentication date/time (PST) in the Event Log message is, hopefully, the same as on the email.
+
+#### 🐛 Bug Fixes
+1. When iCloud3 started and was setting up the tracked devices, if the Mobile App device parameter was set to 'ScanFor' a device and that device was not found in the list of Mobile App devices, an error was aborting the setup process. This resulted in no Apple account or Mobile App devices being set up correctly. This has been fixed.
+2. Fixed several problems handling the Mobile App device when 'ScanFor:' was selected for a device on the _Update iCloud3 Device_ screen.
+3. Fixed issues dealing with authenticating Apple Accounts in China where the '.cn' url suffix was not being set properly in all cases.
+
+
+
+
+
+### Release Notes - v3.1.5.1 (2/11/2025)
 #### 🎉 Improvements and New Features
 - Improved - Internet connections errors are now detected and monitored. iCloud3 will pause all tracking until the Internet is back up. A status message is displayed in the Event log and a message will be sent to an iCloud3 device using the Mobile App that Home Assistant is Offline.
 - Improved - Renamed and reorganized the _Configure > Tracking Parameters_ screen and _Field Formats & Event Log Parmaeters_ screens.

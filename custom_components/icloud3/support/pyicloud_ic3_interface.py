@@ -213,7 +213,8 @@ def log_into_apple_account(username, password, locate_all_devices=None):
         else:
             try:
                 PyiCloud = None
-                PyiCloud = PyiCloudService( username, password,
+                PyiCloud = PyiCloudService( username,
+                                            password,
                                             locate_all_devices=locate_all_devices,
                                             cookie_directory=Gb.icloud_cookie_directory,
                                             session_directory=Gb.icloud_session_directory)

@@ -12,8 +12,8 @@
 
 # from homeassistant.const import (Platform)
 
-VERSION                         = '3.1.5.1'
-VERSION_BETA                    = ''
+VERSION                         = '3.1.5.2'
+VERSION_BETA                    = 'b2'
 #-----------------------------------------
 DOMAIN                          = 'icloud3'
 PLATFORMS                       = ['sensor', 'device_tracker']
@@ -126,7 +126,13 @@ NO_IOSAPP         = 'no_iosapp'
 
 # Apple is using a country specific iCloud server based on the country code in pyicloud_ic3.
 # Add to the HOME_ENDPOINT & SETUP_ENDPOINT urls if the HA country code is one of these values.
-APPLE_SPECIAL_ICLOUD_SERVER_COUNTRY_CODE = ['cn', 'CN']
+ICLOUD_SERVER_COUNTRY_CODE = ['cn', 'CN']
+ICLOUD_SERVER_ENDPOINT = {
+        'home':     'https://www.icloud.com',
+        'setup':    'https://setup.icloud.com/setup/ws/1',
+        'auth':     'https://idmsa.apple.com/appleauth/auth',
+        'auth_url': 'https://setup.icloud.com/setup/authenticate'
+}
 
 DEVICE_TYPES = [
         IPHONE, IPAD, WATCH, AIRPODS, MAC, IPOD, ICLOUD,

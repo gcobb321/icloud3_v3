@@ -531,9 +531,8 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
         if instr(Gb.conf_tracking[CONF_DATA_SOURCE], 'mobapp'):
             Gb.conf_tracking[CONF_DATA_SOURCE] = Gb.conf_tracking[CONF_DATA_SOURCE].replace('mobapp', MOBAPP)
 
-        self.data_source     = Gb.conf_tracking[CONF_DATA_SOURCE]
-        self.endpoint_suffix = Gb.conf_tracking[CONF_ICLOUD_SERVER_ENDPOINT_SUFFIX] or \
-                                        Gb.icloud_server_endpoint_suffix
+        self.data_source = Gb.conf_tracking[CONF_DATA_SOURCE]
+        self.icloud_server_suffix = Gb.icloud_server_suffix
 
 #-------------------------------------------------------------------------------------------
     def _set_initial_icloud3_device_tracker_area_id(self):
@@ -2074,7 +2073,7 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
     def _update_data_source(self, user_input):
 
         self.data_source = list_to_str(user_input[CONF_DATA_SOURCE], ',')
-        user_input[CONF_ICLOUD_SERVER_ENDPOINT_SUFFIX] = self.endpoint_suffix
+        user_input[CONF_ICLOUD_SERVER_ENDPOINT_SUFFIX] = self.icloud_server_suffix
         user_input[CONF_DATA_SOURCE] = self.data_source
         self._update_config_file_tracking(user_input)
 
@@ -2121,8 +2120,6 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
                         errors=self.errors)
 
         user_input = self._option_text_to_parm(user_input, 'account_selected', self.apple_acct_items_by_username)
-        user_input[CONF_ICLOUD_SERVER_ENDPOINT_SUFFIX] = 'cn' \
-                    if user_input.get('url_suffix_china') is True else 'None'
         user_input = self._strip_spaces(user_input, [CONF_USERNAME, CONF_PASSWORD, CONF_TOTP_KEY])
 
         if (user_input[CONF_LOCATE_ALL] is False
@@ -2133,6 +2130,9 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
             return await self.async_step_update_apple_acct(
                                     user_input=user_input,
                                     errors=self.errors)
+
+        user_input[CONF_ICLOUD_SERVER_ENDPOINT_SUFFIX] = 'cn' \
+                    if user_input.get('url_suffix_china') is True else ''
 
         user_input[CONF_USERNAME] = user_input[CONF_USERNAME].lower()
         user_input[CONF_TOTP_KEY] = ''      #user_input[CONF_TOTP_KEY].upper()
@@ -2188,7 +2188,7 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
         # Saving an existing account with same password, no change, nothing to do
         if (action_item == 'save_log_into_apple_acct'
                 and ui_apple_acct == self.conf_apple_acct
-                and user_input[CONF_ICLOUD_SERVER_ENDPOINT_SUFFIX] ==\
+                and user_input[CONF_ICLOUD_SERVER_ENDPOINT_SUFFIX] == \
                                         Gb.conf_tracking[CONF_ICLOUD_SERVER_ENDPOINT_SUFFIX]
                 and user_input[CONF_LOCATE_ALL] != conf_locate_all
                 and Gb.PyiCloud_by_username.get(ui_username) is not None):
@@ -2217,8 +2217,8 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
             # Apple acct login info changed, validate it without logging in
             if (conf_username != user_input[CONF_USERNAME]
                     or conf_password != user_input[CONF_PASSWORD]
-                    or user_input[CONF_ICLOUD_SERVER_ENDPOINT_SUFFIX] \
-                            != Gb.conf_tracking[CONF_ICLOUD_SERVER_ENDPOINT_SUFFIX]
+                    or user_input[CONF_ICLOUD_SERVER_ENDPOINT_SUFFIX] != \
+                            Gb.conf_tracking[CONF_ICLOUD_SERVER_ENDPOINT_SUFFIX]
                     or ui_username not in Gb.PyiCloud_by_username
                     or Gb.PyiCloud_by_username.get(ui_username) is None):
                 aa_login_info_changed = True
@@ -2254,7 +2254,7 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
                 or ui_username not in Gb.PyiCloud_by_username
                 or Gb.PyiCloud_by_username.get(ui_username) is None):
 
-            successful_login = await self.log_into_icloud_account(
+            successful_login = await self.log_into_apple_account(
                                                 user_input,
                                                 called_from_step_id='update_apple_acct')
 
@@ -2603,7 +2603,7 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
 
             if action_item == 'log_into_apple_acct':
                 if username and password:
-                    await self.log_into_icloud_account(user_input, called_from_step_id='reauth')
+                    await self.log_into_apple_account(user_input, called_from_step_id='reauth')
 
             elif (action_item == 'send_verification_code'
                     and user_input.get(CONF_VERIFICATION_CODE, '') == ''):
@@ -2672,7 +2672,7 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
             # iCloud setup screen. If it was changed, another account is being logged into
             # and it will be restarted when exiting the configurator.
             if valid_code:
-                post_event( f"{EVLOG_NOTICE}Apple Acct > {caller_self.PyiCloud.account_owner}, "
+                post_event( f"{EVLOG_NOTICE}Configure Apple Acct > {caller_self.PyiCloud.account_owner}, "
                             f"Code accepted, Verification completed")
 
                 await caller_self._build_icloud_device_selection_list()
@@ -2685,7 +2685,7 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
                 caller_self.errors['base'] = caller_self.header_msg = 'verification_code_accepted'
 
             else:
-                post_event( f"{EVLOG_NOTICE}The Apple Account Verification Code is invalid "
+                post_event( f"{EVLOG_NOTICE}Configure Apple Acct > Verification Code is invalid "
                             f"({user_input[CONF_VERIFICATION_CODE]})")
                 caller_self.errors[CONF_VERIFICATION_CODE] = 'verification_code_invalid'
 
@@ -2707,7 +2707,7 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
         try:
             PyiCloud = self.PyiCloud
             if PyiCloud:
-                post_event(f"{EVLOG_NOTICE}Apple Acct > {PyiCloud.account_owner}, Authentication needed")
+                post_event(f"{EVLOG_NOTICE}Configure Apple Acct > {PyiCloud.account_owner}, Authentication needed")
 
                 await self.async_delete_pyicloud_cookies_session_files(PyiCloud.username)
 
@@ -2727,7 +2727,7 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
             # Delete the session files four the username selected on the request form and
             # try to login
             elif username and password:
-                post_event(f"{EVLOG_NOTICE}Apple Acct > {username}, Authentication needed")
+                post_event(f"{EVLOG_NOTICE}Configure Apple Acct > {username}, Authentication needed")
 
                 await self.async_delete_pyicloud_cookies_session_files(username)
 
@@ -2735,12 +2735,12 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
                 user_input[CONF_USERNAME] = username
                 user_input[CONF_PASSWORD] = password
 
-                await self.log_into_icloud_account(user_input)
+                await self.log_into_apple_account(user_input)
 
                 PyiCloud = self.PyiCloud
 
             if PyiCloud:
-                post_event( f"{EVLOG_NOTICE}Apple Acct > {PyiCloud.account_owner}, "
+                post_event( f"{EVLOG_NOTICE}Configure Apple Acct > {PyiCloud.account_owner}, "
                             f"Waiting for 6-digit Verification Code to be entered")
                 return
 
@@ -2759,14 +2759,14 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
                 self.errors['base'] = 'icloud_acct_login_error_503'
 
             if PyiCloudSession.response_code == 503:
-                post_event( f"{EVLOG_ERROR}Apple Acct > {username}, "
+                post_event( f"{EVLOG_ERROR}Configure Apple Acct > {username}, "
                             f"Apple is delaying displaying a new Verification code to "
                             f"prevent Suspicious Activity, probably due to too many requests. "
                             f"It should be displayed in about 20-30 minutes. "
                             f"{CRLF_DOT}The Apple Acct login will be retried within 15-mins. "
                             f"The Verification Code will be displayed then if successful")
             else:
-                post_event( f"{EVLOG_ERROR}Apple Acct > {username}, "
+                post_event( f"{EVLOG_ERROR}Configure Apple Acct > {username}, "
                             f"An Error was encountered requesting the 6-digit Verification Code, "
                             f"{login_err}")
 
@@ -2778,7 +2778,7 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
         This is called from config_flow/setp_reauth and pyicloud_reset_session
 
         '''
-        post_event(f"{EVLOG_NOTICE}Apple Acct > Resetting Cookie/Session Files")
+        post_event(f"{EVLOG_NOTICE}Configure Apple Acct > Resetting Cookie/Session Files")
 
         if username is None: username = self.username
         cookie_directory  = Gb.icloud_cookie_directory
@@ -2800,7 +2800,7 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
         Cycle through the Apple accounts and delete the cookie and session files
         '''
 
-        post_event(f"{EVLOG_ALERT}All Apple Account Cookies and Session files are being deleted")
+        post_event(f"{EVLOG_ALERT}Configure All Apple Account Cookies and Session files are being deleted")
 
         for Device in Gb.Devices:
             Device.pause_tracking()
@@ -3879,13 +3879,15 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
             icloud_dname_apple_acct, status_msg = \
                         self._format_apple_acct_device_info(conf_device)
             device_text += (f"iCloud > "
-                            f"{icloud_dname_apple_acct}{status_msg}, ")
+                            f"({icloud_dname_apple_acct}{status_msg}), ")
 
         if conf_device[CONF_MOBILE_APP_DEVICE] != 'None':
             mobapp_dname = conf_device[CONF_MOBILE_APP_DEVICE]
             device_text += "MobApp > "
-            if mobapp_dname in Gb.device_info_by_mobapp_dname:
-                device_text += f"{Gb.device_info_by_mobapp_dname[mobapp_dname][0]}, "
+            if mobapp_dname.startswith('ScanFor:'):
+                device_text += f"({mobapp_dname}), "
+            elif mobapp_dname in Gb.device_info_by_mobapp_dname:
+                device_text += f"({Gb.device_info_by_mobapp_dname[mobapp_dname][0]}), "
             else:
                 device_text += f"{mobapp_dname} ({RED_ALERT}UNKNOWN MOBAPP ENTITY), "
 
@@ -4249,19 +4251,20 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
 
         try:
             scan_for_mobapp_devices = {
-                        f"ScanFor: {devicename}": (
-                        f"Starting with > ‘{devicename}’ "
-                        f"({_conf_device[CONF_FNAME]})")
+                        f"ScanFor: {_conf_device[CONF_IC3_DEVICENAME]}": (
+                        f"Scan for a Mobile App device starting with > ‘{_conf_device[CONF_IC3_DEVICENAME]}’")
                             for _conf_device in Gb.conf_devices}
 
-        except:
+        except Exception as err:
+            # log_exception(err)
             scan_for_mobapp_devices = {}
 
         if devices_available == {}:
             devices_available = {f"nodev": f"{CIRCLE_STAR} All MobApp devices are assigned"}
         if (selected_devicename
                 and is_empty(devices_this_device)
-                and self.conf_device[CONF_MOBILE_APP_DEVICE] != 'None'):
+                and self.conf_device[CONF_MOBILE_APP_DEVICE] != 'None'
+                and self.conf_device[CONF_MOBILE_APP_DEVICE].startswith('ScanFor:') is False):
             devices_this_device = {'.unknown':
                     f"{RED_ALERT}{self.conf_device[CONF_MOBILE_APP_DEVICE]}{RARROW}UNKNOWN MOBILE APP DEVICE"}
 
@@ -4447,7 +4450,7 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
 #           LOG INTO APPLE ACCOUNT
 #
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-    async def log_into_icloud_account(self, user_input, called_from_step_id=None):
+    async def log_into_apple_account(self, user_input, called_from_step_id=None):
         '''
         Log into the icloud account and check to see if a verification code is needed.
         If so, show the verification form, get the code from the user, verify it and
@@ -4486,8 +4489,10 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
         add_log_file_filter(username, hide_text=True)
         add_log_file_filter(password)
 
-        endpoint_suffix = user_input.get(CONF_ICLOUD_SERVER_ENDPOINT_SUFFIX,
+        icloud_server_suffix = user_input.get(CONF_ICLOUD_SERVER_ENDPOINT_SUFFIX,
                                         Gb.conf_tracking[CONF_ICLOUD_SERVER_ENDPOINT_SUFFIX])
+
+        start_ic3.setup_icloud_server_url(icloud_server_suffix)
 
         log_info_msg(   f"Apple Acct > {username}, Logging in, "
                         f"UserInput-{user_input}, Errors-{self.errors}, "
@@ -4497,11 +4502,12 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
         PyiCloud = Gb.PyiCloud_by_username.get(username)
         if (PyiCloud
                 and password == PyiCloud.password
-                and endpoint_suffix == PyiCloud.endpoint_suffix):
+                and icloud_server_suffix == PyiCloud.icloud_server_suffix
+                and PyiCloud.login_successful):
             self.PyiCloud = PyiCloud
             self.username = username
             self.password = password
-            self.header_msg =   'icloud_acct_logged_into'
+            self.header_msg = 'icloud_acct_logged_into'
 
             log_info_msg(f"Apple Acct > {username}, Already Logged in, {self.PyiCloud}")
             return True
@@ -4514,7 +4520,7 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
             return False
 
         event_msg =(f"{EVLOG_NOTICE}Configure Settings > Logging into Apple Account {username}")
-        if endpoint_suffix != 'None': event_msg += f", AppleServerURLSuffix-{endpoint_suffix}"
+        if icloud_server_suffix != '': event_msg += f", iCloud.com ServerSuffix-{icloud_server_suffix}"
         log_info_msg(event_msg)
 
         try:
@@ -4525,13 +4531,14 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
                                         self.create_PyiCloudService_config_flow,
                                         username,
                                         password,
-                                        endpoint_suffix)
+                                        icloud_server_suffix)
 
             # Successful login, set PyiCloud fields
             self.PyiCloud = PyiCloud
             self.username = username
             self.password = password
-            self.endpoint_suffix = endpoint_suffix
+            self.icloud_server_suffix = icloud_server_suffix
+            Gb.icloud_server_suffix   = icloud_server_suffix
             Gb.username_valid_by_username[username] = True
             log_info_msg(f"Apple Acct > {username}, Login successful, {self.PyiCloud}")
 
@@ -4566,6 +4573,18 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
             if Gb.PyiCloudLoggingInto.response_code_pwsrp_err == 503:
                 list_add(Gb.username_pyicloud_503_connection_error, username)
                 error_msg = 'icloud_acct_login_error_503'
+            elif response_code == 302:
+                error_msg = 'icloud_acct_login_error_302'
+
+                if Gb.PyiCloudLoggingInto is not None:
+                    country_code = Gb.PyiCloudLoggingInto.account_country_code
+                    icloud_server_suffix = Gb.PyiCloudLoggingInto.icloud_server_suffix
+
+                    if (country_code == 'CHN' and icloud_server_suffix == ''):
+                        error_msg += '_cn'
+                    elif (country_code != 'CHN' and icloud_server_suffix == 'cn'):
+                        error_msg += '_xcn'
+
             elif response_code == 400:
                 error_msg = 'icloud_acct_login_error_user_pw'
             elif response_code == 401 and instr(err, 'Python SRP'):
@@ -4609,8 +4628,7 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
         return valid_apple_acct
 
 #--------------------------------------------------------------------
-    @staticmethod
-    def create_PyiCloudService_config_flow(username, password, endpoint_suffix):
+    def create_PyiCloudService_config_flow(self, username, password, icloud_server_suffix):
         '''
         Create the PyiCloudService object without going through the error checking and
         authentication test routines. This is used by config_flow to open a second
@@ -4620,13 +4638,17 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
                                     password,
                                     cookie_directory=Gb.icloud_cookie_directory,
                                     session_directory=Gb.icloud_session_directory,
-                                    endpoint_suffix=endpoint_suffix,
+                                    icloud_server_suffix=icloud_server_suffix,
                                     config_flow_login=True)
 
-        log_debug_msg(  f"Apple Acct > {PyiCloud.account_owner}, Login Successful, "
-                        f"Update Connfiguration")
+        if PyiCloud and PyiCloud.login_successful:
+            log_debug_msg(  f"Apple Acct > {PyiCloud.account_owner}, Login Successful, "
+                            f"{PyiCloud.response_code_desc}, "
+                            f"Update Connfiguration")
+        else:
+            raise PyiCloudFailedLoginException
 
-        start_ic3.dump_startup_lists_to_log()
+        # start_ic3.dump_startup_lists_to_log()
         return PyiCloud
 
 #--------------------------------------------------------------------

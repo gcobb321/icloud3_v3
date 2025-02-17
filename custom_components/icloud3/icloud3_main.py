@@ -242,7 +242,7 @@ class iCloud3:
             #<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>
             self._main_5sec_loop_special_time_control()
 
-            # Start of uncommented out code to test of moving device into a statzone while home
+            # Start - Uncommented code to test of moving device into a statzone while home
             # if Gb.this_update_time.endswith('5:00'):
             #     if Gb.Devices[0].StatZone is None:
             #         _evlog(f"{Gb.Devices[0].fname} creating")
@@ -253,7 +253,7 @@ class iCloud3:
             #         _evlog(f"{Gb.Devices[0].StatZone.zone} removing")
             #         statzone.remove_statzone(Gb.Devices[0].StatZone, Gb.Devices[0])
             #         _evlog(f"{Gb.Devices[0].StatZone.zone} removed")
-            # End of uncommented out code to test of moving device into a statzone while home
+            # End - Unccommented code to test of moving device into a statzone while home
 
             if Gb.all_tracking_paused_flag:
                 post_evlog_greenbar_msg('All Devices > Tracking Paused')
@@ -276,7 +276,9 @@ class iCloud3:
                 self._main_5sec_loop_update_tracked_devices_mobapp(Device)
                 self._main_5sec_loop_update_tracked_devices_icloud(Device)
                 self._display_secs_to_next_update_info_msg(Device)
-                # Uncomment for testing self._log_zone_enter_exit_activity(Device)
+                # Start - Uncomment for testing
+                # zone_handler.log_zone_enter_exit_activity(Device)
+                # End - Uncomment for testing
                 self._clear_loop_control_device()
 
             # Remove all StatZones from HA flagged for removal in StatZone module

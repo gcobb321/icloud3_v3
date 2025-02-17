@@ -29,7 +29,7 @@ from .const             import (RED_ALERT, LINK, RLINK, RARROW,
                                 CONF_DISTANCE_BETWEEN_DEVICES,
                                 CONF_WAZE_USED, CONF_WAZE_SERVER, CONF_WAZE_MAX_DISTANCE, CONF_WAZE_MIN_DISTANCE,
                                 CONF_WAZE_REALTIME, CONF_WAZE_HISTORY_DATABASE_USED, CONF_WAZE_HISTORY_MAX_DISTANCE,
-                                CONF_WAZE_HISTORY_TRACK_DIRECTION,  
+                                CONF_WAZE_HISTORY_TRACK_DIRECTION,
                                 CONF_STAT_ZONE_FNAME, CONF_STAT_ZONE_STILL_TIME, CONF_STAT_ZONE_INZONE_INTERVAL,
                                 CONF_DISPLAY_TEXT_AS,
                                 CONF_IC3_DEVICENAME, CONF_FNAME, CONF_FAMSHR_DEVICENAME, CONF_MOBILE_APP_DEVICE,
@@ -307,7 +307,7 @@ def form_update_apple_acct(self):
     else:
         password_selector = selector.TextSelector(selector.TextSelectorConfig(type='password'))
 
-    url_suffix_china = (Gb.icloud_server_endpoint_suffix == 'cn')
+    url_suffix_china = (Gb.icloud_server_suffix == 'cn')
 
     if (self.add_apple_acct_flag is False
             and username not in Gb.PyiCloud_by_username):

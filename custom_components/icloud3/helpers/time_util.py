@@ -499,6 +499,8 @@ def calculate_time_zone_offset():
 
         Gb.time_zone_offset_str  = f"{local_zone_offset[0:3]}:{local_zone_offset[3:]}"
         Gb.time_zone_offset_secs = local_zone_offset_secs
+        Gb.time_zone_offset_secs_apple_server = \
+                Gb.time_zone_offset_secs_PST - Gb.time_zone_offset_secs
 
         post_event( f"Local Time Zone Offset > "
                     f"UTC{Gb.time_zone_offset_str} hrs, "
@@ -637,6 +639,21 @@ def timestamp_to_time_utcsecs(utc_timestamp) -> int:
         hhmmss = hhmmss[1:]
 
     return hhmmss
+
+#--------------------------------------------------------------------
+def apple_server_time():
+    '''
+    Return the Apple Server PST Time
+        - Feb 17, 2025, 8:19 AM PST
+        - Feb 17, 2025, 08:19 PST
+    '''
+    time_apple_server_secs = time_now_secs() + Gb.time_zone_offset_secs_apple_server
+    time_struct = time.localtime(time_apple_server_secs)
+
+    if Gb.time_format_12_hour:
+        return time.strftime("%b %d, %Y, %-I:%M %p PST", time_struct)
+    else:
+        return time.strftime("%b %d, %Y, %H:%M PST", time_struct)
 
 #--------------------------------------------------------------------
 # def _has_ap(hhmmss):
