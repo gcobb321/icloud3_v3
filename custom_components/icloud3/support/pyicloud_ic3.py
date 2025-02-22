@@ -24,7 +24,7 @@ from ..const                import (AIRPODS_FNAME, NONE_FNAME,
                                     EVLOG_NOTICE, EVLOG_ALERT, LINK, RLINK, LLINK, DOTS,
                                     HHMMSS_ZERO, RARROW, PDOT, CRLF, CRLF_DOT, CRLF_STAR, CRLF_CHK, CRLF_HDOT,
                                     ICLOUD, NAME, ID,
-                                    ICLOUD_SERVER_COUNTRY_CODE, ICLOUD_SERVER_ENDPOINT,
+                                    APPLE_SERVER_ENDPOINT,
                                     ICLOUD_HORIZONTAL_ACCURACY,
                                     LOCATION, TIMESTAMP, LOCATION_TIME, DATA_SOURCE,
                                     ICLOUD_BATTERY_LEVEL, ICLOUD_BATTERY_STATUS, BATTERY_STATUS_CODES,
@@ -32,7 +32,6 @@ from ..const                import (AIRPODS_FNAME, NONE_FNAME,
                                     ICLOUD_DEVICE_STATUS, DEVICE_STATUS_CODES,
                                     CONF_USERNAME, CONF_APPLE_ACCOUNT,
                                     CONF_PASSWORD, CONF_MODEL_DISPLAY_NAME, CONF_RAW_MODEL,
-                                    CONF_ICLOUD_SERVER_ENDPOINT_SUFFIX,
                                     CONF_IC3_DEVICENAME, CONF_FNAME, CONF_FAMSHR_DEVICENAME,
                                     CONF_FAMSHR_DEVICE_ID, CONF_LOG_LEVEL_DEVICES,
                                     )
@@ -177,15 +176,16 @@ class PyiCloudValidateAppleAcct():
         self.username = 'validate_upw'
         self.password = 'validate_upw'
 
+
         self.client_id = f"auth-{str(uuid1()).lower()}"
 
         self.ValidationPyiCloudSession = pyi_session.PyiCloudSession(self, validate_aa_upw=True)
         self.ValidationPyiCloud        = PyiCloudService(   self.username,
                                                             self.password,
-                                                            icloud_server_suffix=Gb.icloud_server_suffix,
+                                                            apple_server_location='usa',
                                                             validate_aa_upw=True)
 
-        # Gb.AUTH_ENDPOINT   = "https://idmsa.apple.com/appleauth/auth"
+        # self.AUTH_ENDPOINT   = "https://idmsa.apple.com/appleauth/auth"
 
         self.response_code       = 0
         self.last_response_code  = 0
@@ -297,7 +297,7 @@ class PyiCloudValidateAppleAcct():
             'User-Agent': 'Apple-iCloud/9.0 (Macintosh; Intel Mac OS X 10_15_1) AppleWebKit/605.1.15 (KHTML, like Gecko)',
             'Authorization': f"Basic {username_password_b64}"}
         # url  = f"https://setup.icloud.com/setup/authenticate/{self.username}"
-        url  = f"{ICLOUD_SERVER_ENDPOINT['auth_url']}/{self.username}"
+        url  = f"{APPLE_SERVER_ENDPOINT['auth_url']}/{self.username}"
         data = None
 
         response_code = self.ValidationPyiCloudSession.post(url, data=data, headers=headers)
@@ -366,10 +366,10 @@ class PyiCloudService():
     '''
 
     def __init__(   self, username, password=None,
+                    apple_server_location=None,
                     locate_all_devices=None,
                     cookie_directory=None,
                     session_directory=None,
-                    icloud_server_suffix=None,
                     validate_aa_upw=False,
                     config_flow_login=False):
 
@@ -423,23 +423,8 @@ class PyiCloudService():
             self.authentication_alert_displayed_flag = False
             self.update_requested_by = ''
 
-            # Gb.HOME_ENDPOINT       = "https://www.icloud.com"
-            # Gb.SETUP_ENDPOINT      = "https://setup.icloud.com/setup/ws/1"
-            # Gb.AUTH_ENDPOINT       = "https://idmsa.apple.com/appleauth/auth"
-
-
-            # This handles the .cn endpoint suffix but can be expanded to other contries if needed
-            # if endpoint_suffix is None:
-            #     self.endpoint_suffix = ''
-            # elif endpoint_suffix in ICLOUD_SERVER_COUNTRY_CODE:
-            #     self.endpoint_suffix = endpoint_suffix.lower()
-            #     self._setup_url_endpoint_suffix()
-            # else:
-            #     self.endpoint_suffix = ''
-            if icloud_server_suffix is None:
-                self.icloud_server_suffix = Gb.icloud_server_suffix
-            else:
-                self.icloud_server_suffix = icloud_server_suffix
+            self.apple_server_location = 'usa' if apple_server_location is None else apple_server_location
+            self._setup_apple_server_url()
 
             self.cookie_directory    = cookie_directory or Gb.icloud_cookie_directory
             self.session_directory   = session_directory or Gb.icloud_session_directory
@@ -477,9 +462,8 @@ class PyiCloudService():
             else:
                 err_msg = ( f"Apple Acct > {self.username_base}, Login Failed, "
                             f"{self.response_code_desc}, "
+                            f"AppleServerLocation-`{self.apple_server_location}`, "
                             "Location Data not Refreshed")
-                if Gb.icloud_server_suffix != '':
-                    err_msg += f", iCloud ServerSuffix-`{Gb.icloud_server_suffix}`"
                 post_error_msg(err_msg)
 
         except Exception as err:
@@ -522,6 +506,21 @@ class PyiCloudService():
         self.device_model_info_by_fname  = {}       # {'Gary-iPhone': [raw_model, model, model_display_name]}
         self.dup_icloud_dname_cnt        = {}       # Used to create a suffix for duplicate devicenames
                                                     # {'Gary-iPhone': ['iPhone15,2', 'iPhone', 'iPhone 14 Pro']}
+
+#------------------------------------------------------------------------------
+    def _setup_apple_server_url(self):
+        '''
+        Set up the icloud.com server endpoint urls for China (icloud.com.cn)
+        '''
+        if self.apple_server_location.startswith('.'):
+            endpoint_suffix = f"icloud.com{self.apple_server_location}"
+        else:
+            endpoint_suffix = 'icloud.com'
+
+        self.HOME_ENDPOINT  = APPLE_SERVER_ENDPOINT['home'].replace('icloud.com', endpoint_suffix)
+        self.SETUP_ENDPOINT = APPLE_SERVER_ENDPOINT['setup'].replace('icloud.com', endpoint_suffix)
+        self.AUTH_ENDPOINT  = APPLE_SERVER_ENDPOINT['auth']
+
 #---------------------------------------------------------------------------
     @property
     def is_DeviceSvc_setup_complete(self):
@@ -644,9 +643,8 @@ class PyiCloudService():
 
             err_msg = f"{self.username_base}, Authentication Failed, "
             if self.response_code == 302:
-                err_msg += f"{HTTP_RESPONSE_CODES[302]}, "
-                if Gb.icloud_server_suffix != '':
-                    err_msg += f"iCloud ServerSuffix-`{Gb.icloud_server_suffix}`, "
+                err_msg += (f"Apple Server Location-`{self.apple_server_location}`, "
+                            f"{HTTP_RESPONSE_CODES[302]}, ")
 
             elif (self.auth_method == 'PasswordSRP'
                     and self.response_code == 401):
@@ -733,7 +731,7 @@ class PyiCloudService():
             return False
 
         try:
-            url = f"{Gb.SETUP_ENDPOINT}/accountLogin"
+            url = f"{self.SETUP_ENDPOINT}/accountLogin"
 
             self.data = self.PyiCloudSession.post(url, params=self.params, data=data)
 
@@ -803,7 +801,7 @@ class PyiCloudService():
         '''
         headers = self._get_auth_headers()
 
-        url = f"{Gb.AUTH_ENDPOINT}/signin"
+        url = f"{self.AUTH_ENDPOINT}/signin"
         params = {"isRememberMeEnabled": "true"}
         data = {"accountName": self.username,
                 "password": self.password,
@@ -873,7 +871,7 @@ class PyiCloudService():
         headers = self._get_auth_headers()
         headers["Accept"] = "application/json, text/javascript"
 
-        url  = f"{Gb.AUTH_ENDPOINT}/signin/init"
+        url  = f"{self.AUTH_ENDPOINT}/signin/init"
         data = {
             'a': base64.b64encode(A).decode(),
             'accountName': uname,
@@ -913,7 +911,7 @@ class PyiCloudService():
         m1 = usr.process_challenge( salt, b )
         m2 = usr.H_AMK
 
-        url  = f"{Gb.AUTH_ENDPOINT}/signin/complete"
+        url  = f"{self.AUTH_ENDPOINT}/signin/complete"
         data = {
             "accountName": uname,
             "c": c,
@@ -943,7 +941,7 @@ class PyiCloudService():
 
         # log_debug_msg(f"{self.username_base}, Checking session token validity")
 
-        url = f"{Gb.SETUP_ENDPOINT}/validate"
+        url = f"{self.SETUP_ENDPOINT}/validate"
         data = "null"
 
         try:
@@ -1069,7 +1067,8 @@ class PyiCloudService():
         self.PyiCloudSession = pyi_session.PyiCloudSession(self)
 
         self.PyiCloudSession.verify = True
-        self.PyiCloudSession.headers.update({"Origin":Gb.HOME_ENDPOINT, "Referer":Gb.HOME_ENDPOINT,})
+        self.PyiCloudSession.headers.update({"Origin":self.HOME_ENDPOINT, 
+                                            "Referer":self.HOME_ENDPOINT,})
 
         self.PyiCloudSession.cookies = cookielib.LWPCookieJar(filename=self.cookie_dir_filename)
         if path.exists(self.cookie_dir_filename):
@@ -1088,7 +1087,7 @@ class PyiCloudService():
     #     Reset the url endpoint suffix if it has changed. This applies to China (.cn)
     #     '''
 
-    #     if (self.endpoint_suffix and Gb.HOME_ENDPOINT.endswith(self.endpoint_suffix)):
+    #     if (self.endpoint_suffix and self.HOME_ENDPOINT.endswith(self.endpoint_suffix)):
     #         return
 
     #     if self.endpoint_suffix in ICLOUD_SERVER_COUNTRY_CODE:
@@ -1100,9 +1099,9 @@ class PyiCloudService():
     #     # Comment out the following line for non-texting
     #     # self.endpoint_suffix = ''
 
-    #     Gb.HOME_ENDPOINT  = f"https://www.icloud.com{self.endpoint_suffix}"
-    #     Gb.SETUP_ENDPOINT = f"https://setup.icloud.com{self.endpoint_suffix}/setup/ws/1"
-    #     Gb.AUTH_ENDPOINT  = f"https://idmsa.apple.com/appleauth/auth"
+    #     self.HOME_ENDPOINT  = f"https://www.icloud.com{self.endpoint_suffix}"
+    #     self.SETUP_ENDPOINT = f"https://setup.icloud.com{self.endpoint_suffix}/setup/ws/1"
+    #     self.AUTH_ENDPOINT  = f"https://idmsa.apple.com/appleauth/auth"
 
 #----------------------------------------------------------------------------
     '''
@@ -1242,7 +1241,7 @@ class PyiCloudService():
         return
         '''Returns devices trusted for two-step authentication.'''
         headers = self._get_auth_headers()
-        url = f"{Gb.SETUP_ENDPOINT}/listDevices"
+        url = f"{self.SETUP_ENDPOINT}/listDevices"
 
         try:
             data = self.PyiCloudSession.post(url, params=self.params, headers=headers,)
@@ -1257,10 +1256,10 @@ class PyiCloudService():
 
         # try:
             # _log(f"BUILD IN PYICLOUD TRUSTED DEVICES {self.data}")
-            # url = f"{Gb.SETUP_ENDPOINT}/listDevices"
+            # url = f"{self.SETUP_ENDPOINT}/listDevices"
             # return await Gb.hass.async_add_executor_job(
             #                         self.PyiCloudSession.get,
-            #                         (f"{Gb.SETUP_ENDPOINT}/listDevices"
+            #                         (f"{self.SETUP_ENDPOINT}/listDevices"
             #                         f"?clientBuildNumber=2021Project52"
             #                         f"&clientMasteringNumber=2021B29"
             #                         f"&clientId={self.client_id[5:]}"))
@@ -1272,7 +1271,7 @@ class PyiCloudService():
             # _session_request(self, method, url, **kwargs
             # request = self.PyiCloudSession.get(url, params=self.params)
             # return request.json().get("devices")
-            # url = f"{Gb.SETUP_ENDPOINT}/listDevices"
+            # url = f"{self.SETUP_ENDPOINT}/listDevices"
             # request = self.PyiCloudSession.get(url, params=self.params)
             # return request.json().get("devices")
             # headers = self._get_auth_headers()
@@ -1293,14 +1292,14 @@ class PyiCloudService():
 
             # request = await Gb.hass.async_add_executor_job(
             #                     self.PyiCloudSession.get,
-            #                     f"{Gb.SETUP_ENDPOINT}/listDevices"
+            #                     f"{self.SETUP_ENDPOINT}/listDevices"
             #                     f"?clientBuildNumber=2021Project52"
             #                     f"&clientMasteringNumber=2021B29"
             #                     f"&clientId={self.client_id[5:]}",
             #                     headers)
             # return request.json().get("devices")
         #     request = self.PyiCloudSession.get(
-        #                 f"{Gb.SETUP_ENDPOINT}/listDevices",
+        #                 f"{self.SETUP_ENDPOINT}/listDevices",
         #                 params=self.params,
         #                 data=data,
         #                 headers=headers)
@@ -1326,7 +1325,7 @@ class PyiCloudService():
     def send_verification_code(self, device):
         '''Requests that a verification code is sent to the given device.'''
 
-        url  = f"{Gb.SETUP_ENDPOINT}/sendVerificationCode"
+        url  = f"{self.SETUP_ENDPOINT}/sendVerificationCode"
         data = device
 
         self.data = self.PyiCloudSession.post(url, params=self.params, data=data)
@@ -1339,7 +1338,7 @@ class PyiCloudService():
 
         headers = self._get_auth_headers()      #{"Accept": "application/json"})
 
-        url  = f"{Gb.AUTH_ENDPOINT}/verify/trusteddevice/securitycode"
+        url  = f"{self.AUTH_ENDPOINT}/verify/trusteddevice/securitycode"
         data = {"securityCode": {"code": code}}
 
         try:
@@ -1374,7 +1373,7 @@ class PyiCloudService():
         headers = self._get_auth_headers()
 
         try:
-            self.PyiCloudSession.get(f"{Gb.AUTH_ENDPOINT}/2sv/trust", headers=headers,)
+            self.PyiCloudSession.get(f"{self.AUTH_ENDPOINT}/2sv/trust", headers=headers,)
 
             if self._authenticate_with_token():
                 self.requires_2fa = self._check_2fa_needed

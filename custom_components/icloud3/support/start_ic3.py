@@ -15,7 +15,6 @@ from ..const            import (VERSION, VERSION_BETA, ICLOUD3, ICLOUD3_VERSION,
                                 CRLF_RED_ALERT, RED_ALERT, YELLOW_ALERT, UNKNOWN,
                                 RARROW, NBSP2, NBSP4, NBSP6, CIRCLE_STAR, INFO_SEPARATOR, DASH_20, CHECK_MARK,
                                 ICLOUD, FAMSHR,
-                                ICLOUD_SERVER_COUNTRY_CODE, ICLOUD_SERVER_ENDPOINT,
                                 DEVICE_TYPE_FNAME, DEVICE_TYPE_FNAMES,
                                 IPHONE, IPAD, IPOD, WATCH, AIRPODS,
                                 MOBAPP, NO_MOBAPP, ICLOUD_DEVICE_STATUS, TIMESTAMP,
@@ -29,7 +28,7 @@ from ..const            import (VERSION, VERSION_BETA, ICLOUD3, ICLOUD3_VERSION,
                                 CONF_EVLOG_CARD_DIRECTORY, CONF_EVLOG_CARD_PROGRAM, CONF_EVLOG_BTNCONFIG_URL,
                                 PICTURE_WWW_STANDARD_DIRS, CONF_PICTURE_WWW_DIRS,
                                 CONF_APPLE_ACCOUNT, CONF_USERNAME, CONF_PASSWORD,
-                                CONF_DATA_SOURCE, CONF_ICLOUD_SERVER_ENDPOINT_SUFFIX,
+                                CONF_DATA_SOURCE,
                                 CONF_DEVICE_TYPE, CONF_RAW_MODEL, CONF_MODEL, CONF_MODEL_DISPLAY_NAME,
                                 CONF_INZONE_INTERVALS, CONF_TRACK_FROM_ZONES,
                                 CONF_UNIT_OF_MEASUREMENT, CONF_TIME_FORMAT,
@@ -360,11 +359,7 @@ def initialize_on_initial_load():
     if Gb.initial_icloud3_loading_flag is False:
         return
 
-    # Gb.internet_connection_error = True
-    # _evlog(f"{Gb.internet_connection_error=}")
-
     Gb.log_level = 'info'
-    # Gb.username_valid_by_username = {}
 
 #------------------------------------------------------------------------------
 #
@@ -518,12 +513,6 @@ def initialize_data_source_variables():
     Gb.username_base                = Gb.username.split('@')[0]
     Gb.password                     = conf_password
     Gb.encode_password_flag         = Gb.conf_tracking[CONF_ENCODE_PASSWORD]
-    Gb.icloud_server_suffix         = Gb.conf_tracking[CONF_ICLOUD_SERVER_ENDPOINT_SUFFIX]
-    if Gb.icloud_server_suffix == 'None':
-        Gb.icloud_server_suffix = ''
-        Gb.conf_tracking[CONF_ICLOUD_SERVER_ENDPOINT_SUFFIX] = ''
-
-    setup_icloud_server_url(Gb.icloud_server_suffix)
 
     Gb.PyiCloud_logging_in_usernames= []
 
@@ -548,16 +537,6 @@ def initialize_data_source_variables():
     Gb.icloud_force_update_flag   = False
     Gb.get_ICLOUD_devices_retry_cnt = 0
     Gb.startup_alerts             = []
-
-#------------------------------------------------------------------------------
-def setup_icloud_server_url(server_suffix):
-    '''
-    Set up the icloud.com server endpoint urls for China (icloud.com.cn)
-    '''
-    icloud_server_suffix = 'icloud.com' if server_suffix == '' else f"icloud.com.{server_suffix}"
-    Gb.HOME_ENDPOINT  = ICLOUD_SERVER_ENDPOINT['home'].replace('icloud.com', icloud_server_suffix)
-    Gb.SETUP_ENDPOINT = ICLOUD_SERVER_ENDPOINT['setup'].replace('icloud.com', icloud_server_suffix)
-    Gb.AUTH_ENDPOINT  = ICLOUD_SERVER_ENDPOINT['auth']
 
 #------------------------------------------------------------------------------
 def set_primary_data_source(data_source):
@@ -1331,7 +1310,7 @@ def setup_data_source_ICLOUD(retry=False):
     the account info to display.
     '''
     if Gb.internet_connection_error:
-            post_startup_alert(f"HOME ASSISTANT SERVER IS OFFLINE")
+            post_startup_alert(f"INTERNET CONNECTION ERROR")
     apple_acct_not_found_msg = ''
     for username, PyiCloud in Gb.PyiCloud_by_username.items():
         if is_empty(PyiCloud.RawData_by_device_id):

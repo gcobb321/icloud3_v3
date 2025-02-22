@@ -25,7 +25,7 @@
 
 from .const          import (DEVICENAME_MOBAPP, VERSION, VERSION_BETA,
                             NOT_SET, HOME_FNAME, HOME, STORAGE_DIR, WAZE_USED,
-                            ICLOUD_SERVER_ENDPOINT,
+                            APPLE_SERVER_ENDPOINT,
                             DEFAULT_GENERAL_CONF,
                             CONF_UNIT_OF_MEASUREMENT,
                             CONF_DISPLAY_ZONE_FORMAT, CONF_DEVICE_TRACKER_STATE_SOURCE,
@@ -106,7 +106,7 @@ class GlobalVariables(object):
     PyiCloudSession_by_username = {}    # Session object for a username, set in Session so exists on an error
 
     username_pyicloud_503_connection_error = [] # Session object for a username, set in Session so exists on an error
-    log_file_filter_items = []  # items to be filtered from the log file (passwords, etc)
+    log_file_filter_items = {}  # items to be filtered from the log file (passwords, etc)
     log_file_hide_items = []  # email extensions filter from apple accounts to remove in the icloud3-0.log file (messaging.py)
     disable_log_filter  = False
 
@@ -145,9 +145,9 @@ class GlobalVariables(object):
 
     # icloud.com url suffix for china HOME_ENDPOINT & SETUP_ENDPOINT .com --> .com.cn for China
     icloud_server_suffix         = ''
-    HOME_ENDPOINT                = ICLOUD_SERVER_ENDPOINT['home']
-    SETUP_ENDPOINT               = ICLOUD_SERVER_ENDPOINT['setup']
-    AUTH_ENDPOINT                = ICLOUD_SERVER_ENDPOINT['auth']
+    HOME_ENDPOINT                = APPLE_SERVER_ENDPOINT['home']
+    SETUP_ENDPOINT               = APPLE_SERVER_ENDPOINT['setup']
+    AUTH_ENDPOINT                = APPLE_SERVER_ENDPOINT['auth']
 
 
     # Global Object Dictionaries
@@ -170,6 +170,8 @@ class GlobalVariables(object):
     internet_connection_test          = False   # Raise ConnectionError in PyiCloud_session, set in service_handler - Show/Hide Tracking Monitors
     internet_connection_error         = False   # Set in PyiCloud_session from an http connection error. Shuts down all PyiCloud requests
     internet_connection_error_secs    = 0       # Time https connection error received
+    internet_connection_error_code    = 0       # Error msg returned from http handler
+    internet_connection_error_msg     = ''      # Error msg returned from http handler
     internet_connection_progress_cnt  = 0       # Progress display counter
     internet_connection_status_request_cnt  = 0       # Recheck counter
     internet_connection_status_request_secs = 0
@@ -276,6 +278,7 @@ class GlobalVariables(object):
     log_debug_flag_restart       = None
     log_rawdata_flag_restart     = None
     evlog_trk_monitors_flag      = False
+    evlog_startup_log_flag       = False
     info_notification            = ''
     ha_notification              = {}
     trace_prefix                 = '_INIT_'
@@ -312,7 +315,6 @@ class GlobalVariables(object):
     time_zone_offset_secs = 0
     time_zone_offset_str  = '+00:00'
     time_zone_offset_secs_PST = -8 * 60 * 60
-    time_zone_offset_secs_apple_server = 0
 
     # timestamp_local_offset_secs = 0
 
@@ -492,6 +494,7 @@ class GlobalVariables(object):
     mobapp_update_flag             = {}
     attr_tracking_msg              = '' # tracking msg on attributes
     all_tracking_paused_flag       = False
+    all_tracking_paused_secs       = 0
     dist_to_other_devices_update_sensor_list = set()    # Contains a list of devicenames that need their distance sensors updated
                                                         # at the end of polling loop after all devices have been processed
 

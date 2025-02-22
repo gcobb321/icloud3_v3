@@ -12,8 +12,8 @@
 
 # from homeassistant.const import (Platform)
 
-VERSION                         = '3.1.5.2'
-VERSION_BETA                    = 'b2'
+VERSION                         = '3.1.6'
+VERSION_BETA                    = ''
 #-----------------------------------------
 DOMAIN                          = 'icloud3'
 PLATFORMS                       = ['sensor', 'device_tracker']
@@ -127,7 +127,7 @@ NO_IOSAPP         = 'no_iosapp'
 # Apple is using a country specific iCloud server based on the country code in pyicloud_ic3.
 # Add to the HOME_ENDPOINT & SETUP_ENDPOINT urls if the HA country code is one of these values.
 ICLOUD_SERVER_COUNTRY_CODE = ['cn', 'CN']
-ICLOUD_SERVER_ENDPOINT = {
+APPLE_SERVER_ENDPOINT = {
         'home':     'https://www.icloud.com',
         'setup':    'https://setup.icloud.com/setup/ws/1',
         'auth':     'https://idmsa.apple.com/appleauth/auth',
@@ -205,10 +205,10 @@ EVENT_RECDS_MAX_CNT_ZONE = 2000         # Used to calculate the max recds to sto
 EVENT_LOG_CLEAR_SECS     = 900          # Clear event log data interval
 EVENT_LOG_CLEAR_CNT      = 50           # Number of recds to display when clearing event log
 
-EVLOG_BTN_URLS           = {'btnConfig': '',
-                            'btnBuyMeACoffee': '',
-                            'btnIssues': '',
-                            'btnHelp': ''}
+EVLOG_BTN_URLS           =     {'btnConfig': '',
+                                'btnBuyMeACoffee': '',
+                                'btnIssues': '',
+                                'btnHelp': ''}
 
 #Devicename config parameter file extraction
 DI_DEVICENAME           = 0
@@ -665,6 +665,8 @@ CONF_DEVICES                    = 'devices'
 CONF_DATA_SOURCE                = 'data_source'
 CONF_VERIFICATION_CODE          = 'verification_code'
 CONF_ICLOUD_SERVER_ENDPOINT_SUFFIX = 'icloud_server_endpoint_suffix'
+CONF_SERVER_LOCATION            = 'server_location'
+CONF_SERVER_LOCATION_NEEDED     = 'apple_server_location_needed'
 CONF_ENCODE_PASSWORD            = 'encode_password'
 CONF_SETUP_ICLOUD_SESSION_EARLY = 'setup_icloud_session_early'
 CONF_DEVICENAME                 = 'device_name'
@@ -873,6 +875,7 @@ DEFAULT_TRACKING_CONF = {
         CONF_PASSWORD: '',
         CONF_ENCODE_PASSWORD: True,
         CONF_ICLOUD_SERVER_ENDPOINT_SUFFIX: '',
+        CONF_SERVER_LOCATION_NEEDED: False,
         CONF_SETUP_ICLOUD_SESSION_EARLY: True,
         CONF_DATA_SOURCE: f'{ICLOUD},{MOBAPP}',
         CONF_APPLE_ACCOUNTS: [],
@@ -884,6 +887,7 @@ DEFAULT_APPLE_ACCOUNT_CONF = {
         CONF_PASSWORD: '',
         CONF_TOTP_KEY: '',
         CONF_LOCATE_ALL: True,
+        CONF_SERVER_LOCATION: 'usa',
 }
 
 DEFAULT_DEVICE_CONF = {
