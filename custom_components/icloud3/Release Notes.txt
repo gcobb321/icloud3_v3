@@ -7,9 +7,36 @@ v3.1.5b1 Removed, Replaced with v3.1.5b2 [here](https://github.com/gcobb321/iclo
 
 
 
-### Release Notes - v3.1.7
+### Release Notes - v3.2
+#### 🎉 Improvements and New Features
+1. Added the Dashboard Builder.
+The Dashboard Builder is a tool that will create and update dashboards showing iCloud3 tracking results and other device information provided by iCloud3. It is added to the HA Sidebar panel when it is created and can be edited using the HA Dashboard Editor in the same manner as other dashboards. It's name starts with *iCloud3-#* and can be changed to meet your needs. There is no limit to the number of iCloud3 dashboards that can be created.
+
+It is found on the *Configure Settings > iCloud3 Devices & Sensors* menu.
+
+- When the iCloud3 Integration is install the first time, the *iCloud3* is created and added to the HA Sidebar panel.
+- When new devices are added on the *Update iCloud3 Devices* screen, they are added to all iCloud3 dashboards *All Info, *Track Results and *Badge, Battery view tabs.*
+
+Each dashboard has six view tabs. The *Main* and *Other Devices* view tabs are built for the selected devices when the dashboard is created. The other view tabs (their name starts with a '*') are recreated for all devices whenever a dashboard is updated. The type of elements that are created are:
+
+- All tracking information (tracking results sensors + tracking status sensors  + device information sensors) as one item
+- All tracking information (tracking results sensors, tracking status sensors, device information sensors) as separate items
+- Device Badge sensors and Battery sensor as one item in several formats
+- Device Battery sensors in several formats
+
+See the iCloud3 Docs - Dashboard Builder [here](https://gcobb321.github.io/icloud3_v3_docs/#/chapters/1cs-dashboard-builder) for more information, example screens and instructions on using it.
+
+#### 🐛 Bug Fixes
+1.  Fixed a problem where the Device wants to move into a Stationary Zone but couldn't because it was too close (< 200m) to a real zone and 'Too Close' messages were added to the Event Log every 5-seconds. This could happen if you were at the house next door for a long time. Now, a small Stationary Zone is created that can overlap the zone it is close to. The inZone time is set to 5-mins.
+2. Fixed a problem doing End-of-Day Waze History file maintenance when the Internet was down.
+
+
+
+
+### Release Notes - v3.1.6.1 (2/26/2025)
 #### 🎉 Improvements and New Features
 1. _Configure > Update Devices_ screen - Added an Action option to open a new screen to update the rarely updated parameters (inzone interval, log zone, track-from-zone, etc).
+
 
 #### 🐛 Bug Fixes
 1. Fixed a problem restarting after an Internet Connection Error occurred. iCloud3 would get stuck in a loop displaying a 'Paused/Resumed' message on the Event Log and tracking would stop.
