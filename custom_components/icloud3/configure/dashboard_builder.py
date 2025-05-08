@@ -488,8 +488,8 @@ def _build_devices_str(self, template_name, devicenames):
 
         else:
             device_template = template.replace('^devicename', devicename)
-            fname           =  self.conf_fnames_by_devicename()[devicename]
-            device_template = device_template.replace('^fname',fname)
+            fname           =  self.conf_fnames_by_devicename()[devicename].replace("'", "`").replace('"', '`')
+            device_template = device_template.replace('^fname', fname)
 
         devices_str += f"{device_template},"
 
