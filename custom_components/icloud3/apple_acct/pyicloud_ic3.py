@@ -26,7 +26,7 @@ from ..const            import (AIRPODS_FNAME, NONE_FNAME,
                                 ICLOUD, NAME, ID,
                                 APPLE_SERVER_ENDPOINT,
                                 ICLOUD_HORIZONTAL_ACCURACY,
-                                LOCATION, TIMESTAMP, LOCATION_TIME, DATA_SOURCE,
+                                LOCATION, TIMESTAMP, LOCATION_TIME, DATA_SOURCE, LATITUDE, LONGITUDE,
                                 ICLOUD_BATTERY_LEVEL, ICLOUD_BATTERY_STATUS, BATTERY_STATUS_CODES,
                                 BATTERY_LEVEL, BATTERY_STATUS, BATTERY_LEVEL_LOW,
                                 ICLOUD_DEVICE_STATUS, DEVICE_STATUS_CODES,
@@ -44,16 +44,17 @@ from ..utils.messaging  import (post_event, post_monitor_msg, post_startup_alert
                                 _evlog, _log, more_info, add_log_file_filter,
                                 log_info_msg, log_error_msg, log_debug_msg, log_warning_msg,
                                 log_rawdata, log_exception, log_rawdata_unfiltered, filter_data_dict, )
+from ..utils            import gps
 
-from ..apple_acct           import pyicloud_session as pyi_session   #(PyiCloudSession, PyiCloudPasswordFilter)
+from ..apple_acct       import pyicloud_session as pyi_session   #(PyiCloudSession, PyiCloudPasswordFilter)
 
-from ..apple_acct           import pyicloud_srp as srp
+from ..apple_acct       import pyicloud_srp as srp
 # import srp
 
 #--------------------------------------------------------------------
-from uuid                   import uuid1
-from os                     import path
-from re                     import match
+from uuid               import uuid1
+from os                 import path
+from re                 import match
 import hashlib
 import base64
 import json
@@ -426,7 +427,13 @@ class PyiCloudService():
             self.authentication_alert_displayed_flag = False
             self.update_requested_by = ''
 
-            self.apple_server_location = 'usa' if apple_server_location is None else apple_server_location
+            self.apple_server_location = 'usa'  if apple_server_location is None \
+                                                else apple_server_location.split(',')[0]
+
+            # GPS returned by Apple servers in China is GCJ02 or BD09 coded, convert to WGS84
+            self.china_gps_coordinates    = ''  if instr(apple_server_location, ',') is False \
+                                                else apple_server_location.split(',')[1]
+
             self._setup_apple_server_url()
 
             self.cookie_directory    = cookie_directory or Gb.icloud_cookie_directory
@@ -1744,7 +1751,7 @@ class PyiCloud_DeviceSvc():
 
                 _Device = _RawData.Device
                 if (_RawData.Device is None
-                        or 'location' not in _RawData.device_data):
+                        or LOCATION not in _RawData.device_data):
                     continue
 
                 _RawData.save_new_device_data(device_data)
@@ -1804,17 +1811,17 @@ class PyiCloud_DeviceSvc():
         '''
         device_data_test1 = device_data.copy()
         device_data_test2 = device_data.copy()
-        device_data_test1['location'] = device_data['location'].copy()
-        device_data_test2['location'] = device_data['location'].copy()
+        device_data_test1[LOCATION] = device_data[LOCATION].copy()
+        device_data_test2[LOCATION] = device_data[LOCATION].copy()
 
-        device_data['location']['timeStamp'] = 0
+        device_data[LOCATION]['timeStamp'] = 0
 
         monitor_msg +=\
             self._create_iCloud_RawData_object(device_id, device_data_name, device_data)
 
         device_data_test1[NAME] = f"{device_data_name}(1)"
         device_data_test1[ID]   = f"XX1_{device_id}"
-        device_data_test1['location']['timeStamp'] -= 3000000000
+        device_data_test1[LOCATION]['timeStamp'] -= 3000000000
         device_data_test1['rawDeviceModel'] = 'iPad8,91'
 
         monitor_msg +=\
@@ -2263,6 +2270,9 @@ class PyiCloud_RawData():
 #----------------------------------------------------------------------------
     def save_new_device_data(self, device_data):
         '''Update the device data.'''
+        if self.PyiCloud.china_gps_coordinates != '':
+            device_data = self.convert_GCJ02_BD09_to_WGS84(device_data)
+
         try:
             self.last_loc_time     = self.location_time
             self.last_loc_time_gps = f"{self.location_time}/±{self.gps_accuracy}m"
@@ -2312,6 +2322,43 @@ class PyiCloud_RawData():
         return not (LOCATION not in self.device_data
                     or self.device_data[LOCATION] == {}
                     or self.device_data[LOCATION] is None)
+#----------------------------------------------------------------------------
+    def convert_GCJ02_BD09_to_WGS84(self, device_data):
+
+        latitude  = device_data[LOCATION][LATITUDE]
+        longitude = device_data[LOCATION][LONGITUDE]
+
+        if self.PyiCloud.china_gps_coordinates == 'GCJ02':
+            _log(f"GCJ02..=({latitude}, {longitude})")
+            latitude, longitude = gps.gcj_to_wgs(latitude, longitude)
+            _log(f"WGS84..=({latitude}, {longitude})")
+        elif self.PyiCloud.china_gps_coordinates == 'BD09':
+            _log(f"BD09....=({latitude}, {longitude})")
+            latitude, longitude = gps.bd_to_wgs(latitude, longitude)
+            _log(f"WGS84...=({latitude}, {longitude})")
+
+        return device_data
+
+
+        # latitude = 30.283775889481795
+        # longitude = 120.01081025456176
+
+
+        # # if self.china_gps_encoding == 'BD09':
+        # _log(f"ORIG...=({latitude}, {longitude})")
+        # wgs_cgj = gps.wgs_to_gcj(latitude, longitude)
+        # lat, lon = wgs_cgj
+        # _log(f"{wgs_cgj=}")
+        # cgj_wgs = gps.gcj_to_wgs(lat, lon)
+        # lat, lon = cgj_wgs
+        # _log(f"{cgj_wgs=}")
+
+        # wgs_bd = gps.wgs_to_bd(latitude, longitude)
+        # _log(f"{wgs_bd=}")
+        # lat, lon = wgs_bd
+        # bd_wgs = gps.bd_to_wgs(lat, lon)
+        # _log(f"{bd_wgs=}")
+
 #----------------------------------------------------------------------------
     def set_located_time_battery_info(self):
 

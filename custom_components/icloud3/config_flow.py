@@ -182,10 +182,15 @@ class iCloud3_ConfigFlow(config_entries.ConfigFlow, FlowHandler, domain=DOMAIN):
         if user_input is not None:
             _CF_LOGGER.info(f"Added iCloud3 Integration")
 
-            # await start_ic3.update_lovelace_resource_event_log_js_entry(silent=True)
-            # icloud3_dashboard_status = await dbb.install_initial_icloud3_dashboard(Gb.OptionsFlowHandler)
-            # if icloud3_dashboard_status:
-            #     _CF_LOGGER.info(f"iCloud3 Dashboard added")
+            if user_input.get('reset_tracking', False):
+                _OptFlow = iCloud3_OptionsFlowHandler()
+
+                _CF_LOGGER.info(f"Reinitialize Apple Accounts and Devices")
+                _OptFlow.reset_icloud3_config_file_tracking()
+                await _OptFlow.delete_all_files_and_remove_directory(Gb.icloud_cookie_directory)
+
+                Gb.config_parms_update_control = ['tracking', 'restart']
+                await config_file.async_write_icloud3_configuration_file()
 
             if Gb.restart_ha_flag:
                 return await self.async_step_restart_ha()
@@ -194,11 +199,8 @@ class iCloud3_ConfigFlow(config_entries.ConfigFlow, FlowHandler, domain=DOMAIN):
             data = {'added': dt_util.now().strftime(DATETIME_FORMAT)[0:19]}
             return self.async_create_entry(title="iCloud3", data=data)
 
-        schema = vol.Schema({
-            vol.Required('continue', default=True): bool})
-
         return self.async_show_form(step_id="user",
-                                    data_schema=schema,
+                                    data_schema=forms.form_config_option_user(self),
                                     errors=errors)
 
 
@@ -1459,7 +1461,7 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
         post_event(f"{EVLOG_ALERT}All iCloud3 Configuration files are being deleted")
         list_add(self.config_parms_update_control, ['restart_ha'])
 
-        return await self._delete_all_files_and_remove_directory(Gb.icloud_cookie_directory)
+        return await self.delete_all_files_and_remove_directory(Gb.icloud_cookie_directory)
 
 #................................................................................
     async def async_delete_all_ic3_configuration_files(self):
@@ -1469,10 +1471,10 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
 
         post_event(f"{EVLOG_ALERT}All iCloud3 Configuration files are being deleted")
 
-        return await self._delete_all_files_and_remove_directory(Gb.ha_storage_icloud3)
+        return await self.delete_all_files_and_remove_directory(Gb.ha_storage_icloud3)
 
 #................................................................................
-    async def _delete_all_files_and_remove_directory(self, start_dir):
+    async def delete_all_files_and_remove_directory(self, start_dir):
         for Device in Gb.Devices:
             Device.pause_tracking()
 
@@ -2524,7 +2526,7 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
         self.aa_idx = 0
         self.aa_page_item[self.aa_page_no] = ''
 
-        self._reset_all_devices_data_source_fields(reset_mobapp=False)
+        self.reset_all_devices_data_source_fields(reset_mobapp=False)
         self._update_config_file_tracking(user_input={}, update_config_flag=True)
         lists.build_apple_accounts_list(self)
         lists.build_devices_list(self)
@@ -2836,7 +2838,7 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
             log_exception(err)
 
 #-------------------------------------------------------------------------------------------
-    def _reset_all_devices_data_source_fields(self, reset_mobapp=None):
+    def reset_all_devices_data_source_fields(self, reset_mobapp=None):
         """
         Reset the iCloud & Mobile App fields to their initiial values.
         Keep the devicename, friendly name, picture and other fields

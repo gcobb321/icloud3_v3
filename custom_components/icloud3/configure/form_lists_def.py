@@ -220,8 +220,10 @@ DATA_SOURCE_OPTIONS = {
 
 # Apple Server Endpoint value - Add onto the Server URL in PyiCloud_ic3 if this starts with a period ('.')
 APPLE_SERVER_LOCATION_OPTIONS = {
-        'usa':   'USA/OTHER - The Apple Server does not require a URL Endpoint suffix',
-        '.cn':   'CHINA - Add `.cn` to the Apple Server URL Endpoint'
+        'usa':       'USA/OTHER - The Apple Server is not located in China',
+        '.cn':       'CHINA - The Apple Server is located in China (GCJ02)',
+        '.cn,GCJ02': 'CHINA - The Apple Server is located in China (GCJ02 → WGS84)',
+        '.cn,BD09':  'CHINA - The Apple Server is located in China (BD09 → WGS84)'
         }
 DELETE_APPLE_ACCT_DEVICE_ACTION_OPTIONS = {
         'reassign_devices': 'REASSIGN DEVICES > Search for another Apple Account with this device device and reassign it to that Apple Account. Set it to  Inactive if one is not found',

@@ -30,11 +30,15 @@
     "step": {
       "user": {
         "data": {
-          "continue": "Select to continue iCloud3 installation (and parameter migration)",
-          "continue_restart_ha": "Select to continue iCloud3 installation. Then RESTART HOME ASSISTANT."
+          "continue": "CONTINUE > Select SUBMIT to complete the iCloud3 installation",
+          "reset_tracking": "PREVIOUS ICLOUD3 CONFIG WAS FOUND. DO YOU WANT TO REINITIALIZE THE APPLE ACCOUNTS & DEVICES?",
+          "continue_restart_ha": "Select to continue iCloud3 installation. Then RESTART HOME ASSISTANT"
         },
         "description": "CONGRATULATIONS! The iCloud3 v3 Integration has been added to Home Assistant. The next step is to configure the devices you want to track.\n\nSelect SUBMIT below, then select CONFIGURE to configure iCloud3.\n\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\nThe iCloud3 User Guide will help you get started. Select the question mark (?) in the upper-right corner of this screen to open the “iCloud User Guide”. The following chapters will be helpful:\n&nbsp;&nbsp;• ICLOUD COMPONENTS - Provides an overview of the Device Tracker screen,\n&nbsp;&nbsp;&nbsp;&nbsp;the Event Logand the Configure screens that are used to set up iCloud3\n&nbsp;&nbsp;• APPLE ACCOUNT - Covers setting up and logging into your Apple Account.\n&nbsp;&nbsp;&nbsp;&nbsp;It will provide information about your devices including their location.\n&nbsp;&nbsp;• MOBILE APP INTEGRATION - Covers setting up and configuring the Mobile App. \n&nbsp;&nbsp;&nbsp;&nbsp;It will provide zone enter/exit triggers and location data.\n&nbsp;&nbsp;• EVENT LOG - Provides information on iCloud3 activities to include startup status, \n&nbsp;&nbsp;&nbsp;&nbsp;errors, alerts, device tracking results, battery information, shortcuts for\n&nbsp;&nbsp;&nbsp;&nbsp;configuring iCloud3 and Actions that can control iCloud3 operations.\n&nbsp;&nbsp;• DASHBOARD BUILDER - Builds an iCloud3 Dashboard showing Device\n&nbsp;&nbsp;&nbsp;&nbsp;Tracking Results and the Event log.\n\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n🕓 After you click Submit, be patient. HA will scan for your iCloud Devices. It may take up to 30-seconds to discover them all.",
-        "title": "iCloud3 v3 Integration Installer"
+        "title": "iCloud3 v3 Integration Installer",
+        "data_description": {
+          "reset_tracking": "The iCloud3 Configuration has been previously set up and is normally used when adding the iCloud3 Integration again. Check this option if you want to remove the Apple account and Devices configuration and start over"
+        }
       },
       "reauth": {
         "title": "Apple ID Verification Code (HA Notifications)",

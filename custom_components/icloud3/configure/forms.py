@@ -12,6 +12,7 @@ from ..const            import (RED_ALERT, LINK, RLINK, RARROW,
                                 DEVICE_TYPE_FNAME, DEVICE_TYPE_FNAMES, MOBAPP, NO_MOBAPP,
                                 INACTIVE_DEVICE, HOME_DISTANCE,
                                 PICTURE_WWW_STANDARD_DIRS, CONF_PICTURE_WWW_DIRS,
+                                CONF_VERSION,
                                 CONF_EVLOG_CARD_DIRECTORY, CONF_EVLOG_BTNCONFIG_URL,
                                 CONF_APPLE_ACCOUNT, CONF_USERNAME, CONF_PASSWORD, CONF_LOCATE_ALL, CONF_TOTP_KEY,
                                 CONF_DATA_SOURCE, CONF_VERIFICATION_CODE,
@@ -58,6 +59,28 @@ from .form_lists_def    import *
 from ..mobile_app       import mobapp_interface
 from ..startup          import config_file
 
+
+#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+#             USER - INITIAL ADD INTEGRATION
+#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+def form_config_option_user(self):
+
+
+    if (Gb.conf_profile[CONF_VERSION] >=1
+            and (isnot_empty(Gb.conf_apple_accounts)
+                or isnot_empty(Gb.conf_devices))):
+        schema = {
+            vol.Required('reset_tracking', default=False): bool,
+            # vol.Required('reset_general', default=False): bool,
+        }
+    else:
+        schema = {}
+
+    schema.update({
+        vol.Required('continue', default=True): bool
+    })
+
+    return vol.Schema(schema)
 
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 #             MENU

@@ -208,7 +208,7 @@ class PyiCloudSession(Session):
                             f"iCloudServerSuffix-`{Gb.icloud_server_suffix}`, "
                             f"Error-{err}")
 
-            Gb.internet_connection_error_msg = err
+            Gb.internet_connection_error_msg  = err
             Gb.internet_connection_error_code = self.response_code
 
             self.response_code = -3

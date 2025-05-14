@@ -7,9 +7,15 @@ v3.1.5b1 Removed, Replaced with v3.1.5b2 [here](https://github.com/gcobb321/iclo
 
 
 
+### Release Notes - v3.2b5
+### 🎉 Improvements and New Features
+1. READD ICLOUD3 INTEGRATION - When the iCloud3 integration is deleted and then readded, a check is made to see if any Apple accounts or Devices have been configured. If any are found, an option is now available to erase the Apple account and Device configuration during the reinstallation.
+2. CHINA GPS COORDINATE SYSTEM (GCJ02, BD09) - The Apple acount server location in China normally reports GPS coordinates (latitude, longitude) in GCJ02 values. An option to convert these to WGS84 coordinates has been added to the Apple Server Location on the _Update Apple Account Username/Password_ screen.
+
+
 ### Release Notes - v3.2
-#### 🎉 Improvements and New Features
-1. Added the Dashboard Builder.
+### 🎉 Improvements and New Features
+### The Dashboard Builder
 The Dashboard Builder is a tool that will create and update dashboards showing iCloud3 tracking results and other device information provided by iCloud3. It is added to the HA Sidebar panel when it is created and can be edited using the HA Dashboard Editor in the same manner as other dashboards. It's name starts with *iCloud3-#* and can be changed to meet your needs. There is no limit to the number of iCloud3 dashboards that can be created.
 
 It is found on the *Configure Settings > iCloud3 Devices & Sensors* menu.
@@ -24,11 +30,21 @@ Each dashboard has six view tabs. The *Main* and *Other Devices* view tabs are b
 - Device Badge sensors and Battery sensor as one item in several formats
 - Device Battery sensors in several formats
 
-See the iCloud3 Docs - Dashboard Builder [here](https://gcobb321.github.io/icloud3_v3_docs/#/chapters/1cs-dashboard-builder) for more information, example screens and instructions on using it.
+See the *iCloud3 User Guide - Dashboard Builder* [here](https://gcobb321.github.io/icloud3_v3_docs/#/chapters/1cs-dashboard-builder) for more information, example screens and instructions on using it.
 
-#### 🐛 Bug Fixes
-1.  Fixed a problem where the Device wants to move into a Stationary Zone but couldn't because it was too close (< 200m) to a real zone and 'Too Close' messages were added to the Event Log every 5-seconds. This could happen if you were at the house next door for a long time. Now, a small Stationary Zone is created that can overlap the zone it is close to. The inZone time is set to 5-mins.
-2. Fixed a problem doing End-of-Day Waze History file maintenance when the Internet was down.
+![Image](https://github.com/user-attachments/assets/de758663-e6cf-4fa1-8f8a-73e46ed04dc0)
+
+### 🐛 Bug Fixes
+1. **Event Log** - Fixed a problem where the *Configure Settings* menu was not being displayed when using an the Home Assistant Mobile App on an iPad or iPhone logged in using an External Link.  A browser Refresh message will be displayed.
+2.  **Stationary Zones** - Fixed a problem where the Device wants to move into a Stationary Zone but couldn't because it was too close (< 200m) to a real zone and 'Too Close' messages were added to the Event Log every 5-seconds. This could happen if you were at the house next door for a long time. Now, a small Stationary Zone is created that can overlap the zone it is close to. The inZone time is set to 5-mins.
+3. **Waze** - Fixed a problem doing End-of-Day Waze History file maintenance when the Internet was down.
+4. **iCloud3 v2** - Removed all messages related to iCloud3 v2 since v3 has been out for about 2-years.
+
+### iCloud3 Directory Structure
+A lot of modules have been added to iCloud3 during the past few years and the directory structure in the *custom_components/icloud3* directory was becoming very large. So I reorganized it. What this means to you:
+- **HACS Installation** - If you install using HACS, HACS will take care of everything and you do not have to do anything special.
+-  **Manual unzip icloud3.zip file installation** -  If you install iCloud3 by unzipping the icloud3.zip file on the GitHub Releases page, all directories and program modules in the *custom_components/ icloud3* directory should be deleted. Do not delete the *icloud3* directory itself. Then unzip the *icloud3.zip* file into the *icloud3* directory. iCloud3 will still work if you  do not do this, but obsolete program modules will be left in the icloud3 directory.
+
 
 
 
