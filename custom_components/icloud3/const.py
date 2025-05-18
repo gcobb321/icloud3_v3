@@ -13,7 +13,7 @@
 # from homeassistant.const import (Platform)
 
 VERSION                         = '3.2'
-VERSION_BETA                    = 'b5'
+VERSION_BETA                    = ''
 #-----------------------------------------
 DOMAIN                          = 'icloud3'
 PLATFORMS                       = ['sensor', 'device_tracker']

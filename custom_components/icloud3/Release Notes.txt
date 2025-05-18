@@ -3,19 +3,14 @@
 **iCloud3 v3 Documentation** - iCloud3 User Guide can be found [here](https://gcobb321.github.io/icloud3_v3_docs/#/)
 **Migrating from v2.4.7_** - See [here](https://gcobb321.github.io/icloud3_v3_docs/#/chapters/3.1-migrating-v2-to-v3) for instructions on migrating from from an older version.
 
-v3.1.5b1 Removed, Replaced with v3.1.5b2 [here](https://github.com/gcobb321/icloud3_v3/issues/399#issuecomment-2620099037)
-
-
-
-### Release Notes - v3.2b5
-### 🎉 Improvements and New Features
-1. READD ICLOUD3 INTEGRATION - When the iCloud3 integration is deleted and then readded, a check is made to see if any Apple accounts or Devices have been configured. If any are found, an option is now available to erase the Apple account and Device configuration during the reinstallation.
-2. CHINA GPS COORDINATE SYSTEM (GCJ02, BD09) - The Apple acount server location in China normally reports GPS coordinates (latitude, longitude) in GCJ02 values. An option to convert these to WGS84 coordinates has been added to the Apple Server Location on the _Update Apple Account Username/Password_ screen.
 
 
 ### Release Notes - v3.2
 ### 🎉 Improvements and New Features
-### The Dashboard Builder
+1. **Reinstalling the iCloud3 Integraion** - When the iCloud3 integration is deleted and then readded, a check is made to see if any Apple accounts or Devices have been configured. If any are found, an option is now available to erase the Apple account and Device configuration during the reinstallation.
+2. **China GPS Coordinate Conversion (GCJ02, BD09)** - The Apple acount server location in China normally reports GPS coordinates (latitude, longitude) in GCJ02 values. An option to convert these to WGS84 coordinates has been added to the Apple Server Location on the _Update Apple Account Username/Password_ screen.
+
+### ✨ The Dashboard Builder
 The Dashboard Builder is a tool that will create and update dashboards showing iCloud3 tracking results and other device information provided by iCloud3. It is added to the HA Sidebar panel when it is created and can be edited using the HA Dashboard Editor in the same manner as other dashboards. It's name starts with *iCloud3-#* and can be changed to meet your needs. There is no limit to the number of iCloud3 dashboards that can be created.
 
 It is found on the *Configure Settings > iCloud3 Devices & Sensors* menu.
