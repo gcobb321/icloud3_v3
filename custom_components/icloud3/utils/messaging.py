@@ -180,9 +180,11 @@ def post_event(devicename_or_Device, event_msg='+'):
     if len(event_msg) <= 3:
         return
 
-    elif event_msg[0:2] in [EVLOG_ALERT, EVLOG_ERROR, EVLOG_WARNING]:
+    event_msg = filter_special_chars(event_msg)
+    if devicename: devicename += ' > '
+    if event_msg[0:2] in [EVLOG_ALERT, EVLOG_ERROR, EVLOG_WARNING]:
         alert_type = event_msg[0:2]
-        event_msg = (f"{devicename} > {str(event_msg)}")
+        event_msg = (f"{devicename}{str(event_msg)}")
         if alert_type == EVLOG_ALERT:
             log_warning_msg(event_msg)
         elif alert_type == EVLOG_ERROR:
@@ -194,11 +196,11 @@ def post_event(devicename_or_Device, event_msg='+'):
         pass
 
     elif event_msg.startswith('^') is False:
-        event_msg = (f"{devicename} > {str(event_msg)}")
+        event_msg = (f"{devicename}{str(event_msg)}")
         log_info_msg(event_msg)
 
     elif event_msg.startswith(EVLOG_TIME_RECD) is False:
-        event_msg = (f"{devicename} > {str(event_msg)}")
+        event_msg = (f"{devicename}{str(event_msg)}")
         log_debug_msg(event_msg)
 
 #--------------------------------------------------------------------
@@ -379,18 +381,22 @@ def more_info(key):
 #   ICLOUD3-DEBUG.LOG FILE ROUTINES
 #
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-def open_ic3log_file_init():
+async def async_open_ic3log_file_init():
     '''
     Entry point for async_add_executor_job in __init__.py
+
+    Open log file in append mode (new_log_file=False.
+    Close and reopen the log file after the Configuration file has been read in __init__/config_file
     '''
-    open_ic3log_file(new_log_file=Gb.log_debug_flag)
+    new_log_file = True
+    await Gb.hass.async_add_executor_job(open_ic3log_file, new_log_file)
 
 #------------------------------------------------------------------------------
 def open_ic3log_file(new_log_file=False):
 
     # Items will be logged to home-assistane.log until the configuration file has been read
-    if is_empty(Gb.conf_general):
-        return
+    # if is_empty(Gb.conf_general):
+    #     return
 
     ic3logger_file = Gb.hass.config.path(IC3LOG_FILENAME)
     filemode = 'w' if new_log_file else 'a'
@@ -409,10 +415,18 @@ def open_ic3log_file(new_log_file=False):
     if isnot_empty(Gb.conf_general):
         Gb.iC3Logger.propagate = (Gb.conf_general[CONF_LOG_LEVEL] == 'debug-ha')
 
+    if is_empty(Gb.conf_general):
+        write_ic3log_recd(f"Loading {ICLOUD3_VERSION_MSG}")
+
+    write_ic3log_recd(f"Open iCloud3 Log File ({IC3LOG_FILENAME})")
+
 #--------------------------------------------------------------------
-def close_ic3_log_file():
-    Gb.iC3Logger.removeHandler(Gb.iC3Logger.handlers[0])
-    # Gb.iC3Logger.flush()
+def close_ic3log_file():
+
+    if Gb.iC3Logger:
+        write_ic3log_recd(f"Close iCloud3 Log File  ({IC3LOG_FILENAME})")
+        Gb.iC3Logger.removeHandler(Gb.iC3Logger.handlers[0])
+        # Gb.iC3Logger.flush()
 
 #--------------------------------------------------------------------
 def write_ic3log_recd(log_msg):
@@ -424,11 +438,6 @@ def write_ic3log_recd(log_msg):
     try:
         # _log(f"{Gb.iC3Logger=} {Gb.HALogger=}")
         if Gb.iC3Logger is None:
-            Gb.HALogger.info(log_msg)
-            return
-
-        if is_empty(Gb.conf_general):
-            Gb.prestartup_log += f"\n{dt_util.now().strftime(DATETIME_FORMAT)[5:19]} {log_msg}"
             return
 
         time_now_msecs = time.time()
@@ -515,38 +524,35 @@ def write_config_file_to_ic3log():
     # conf_tracking_recd[CONF_DEVICES] = len(Gb.conf_devices)
 
     Gb.trace_prefix = '_INIT_'
-    indent = SP(44) if Gb.log_debug_flag else SP(26)
+    indent = SP(37) if Gb.log_debug_flag else SP(18)
     log_msg = ( f"{ICLOUD3_VERSION_MSG}, "
                 f"{dt_util.now().strftime('%A')}, "
                 f"{dt_util.now().strftime(DATETIME_FORMAT)[:19]}")
-    log_msg = ( f" \n"
-                f"{indent}⛔{DASH_50}\n"
-                f"{indent}⛔    {log_msg}\n"
-                f"{indent}⛔{DASH_50}")
+    log_msg = ( f"\n⛔{DASH_50}{DASH_50}"
+                f"\n⛔    {log_msg}"
+                f"\n⛔{DASH_50}{DASH_50}")
 
-    Gb.iC3Logger.info(log_msg)
+    # Gb.iC3Logger.info(log_msg)
 
     # Write the ic3 configuration (general & devices) to the Log file
-    log_info_msg(f"PROFILE:\n"
-                f"{indent} {Gb.conf_profile}")
-    log_info_msg("")
-    log_info_msg(f"GENERAL CONFIGURAION:\n"
-                f"{indent} {Gb.conf_general}\n"
-                f"{indent} {Gb.ha_location_info}")
-    log_info_msg("")
-    log_info_msg(f"TRACKING:\n"
-                f"{indent} {conf_tracking_recd}")
+    log_msg  += (f""
+                f"\nPROFILE:"
+                f"\n{Gb.conf_profile}"
+                f"\nGENERAL CONFIGURAION:"
+                f"\n{Gb.conf_general}"
+                f"\n{Gb.ha_location_info}"
+                f"\nTRACKING:"
+                f"\n{conf_tracking_recd}")
 
-    log_info_msg("")
     for conf_apple_accounts in Gb.conf_apple_accounts:
-        log_info_msg(   f"APPLE ACCOUNTS: {conf_apple_accounts.get(CONF_USERNAME)}:\n"
-                        f"{indent} {conf_apple_accounts}")
+        log_msg += (f"\nAPPLE ACCOUNTS: {conf_apple_accounts.get(CONF_USERNAME)}:"
+                    f"\n{conf_apple_accounts}")
 
-    log_info_msg("")
     for conf_device in Gb.conf_devices:
-        log_info_msg(   f"DEVICE: {conf_device[CONF_FNAME]}, {conf_device[CONF_IC3_DEVICENAME]}:\n"
-                        f"{indent} {conf_device}")
-    log_info_msg("")
+        log_msg += (f"\nDEVICE: {conf_device[CONF_FNAME]}, {conf_device[CONF_IC3_DEVICENAME]}:"
+                    f"\n{conf_device}")
+    log_msg += f"\n{DASH_50}{DASH_50}"
+    log_info_msg(log_msg)
 
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 #
@@ -582,7 +588,7 @@ def log_info_msg(module_name, log_msg='+'):
 def log_warning_msg(module_name, log_msg='+'):
 
     log_msg = _resolve_module_name_log_msg(module_name, log_msg)
-    log_msg = filter_special_chars(log_msg)
+    # log_msg = filter_special_chars(log_msg)
     Gb.HALogger.warning(log_msg)
 
     log_msg = format_msg_line(log_msg)
@@ -592,7 +598,7 @@ def log_warning_msg(module_name, log_msg='+'):
 def log_error_msg(module_name, log_msg='+'):
 
     log_msg = _resolve_module_name_log_msg(module_name, log_msg)
-    log_msg = filter_special_chars(log_msg)
+    # log_msg = filter_special_chars(log_msg)
     Gb.HALogger.error(log_msg)
 
     log_msg = format_msg_line(log_msg)
@@ -611,20 +617,18 @@ def log_exception(err):
 #--------------------------------------------------------------------
 def log_debug_msg(devicename_or_Device, log_msg='+', msg_prefix=None):
 
-    if Gb.log_debug_flag is False: return
-    if devicename_or_Device and log_msg == '': return
+    if Gb.log_debug_flag is False or Gb.iC3Logger is None:
+        return
+    if devicename_or_Device and log_msg == '':
+        return
 
     devicename, log_msg = _resolve_devicename_log_msg(devicename_or_Device, log_msg)
 
-    dn_str = '' if devicename == '*' else f"{devicename} > "
-    log_msg = f"{dn_str}{str(log_msg)}"
-    # log_msg = f"{dn_str}{str(log_msg).replace(CRLF, ', ')}"
+    if devicename: devicename = f"{devicename} > "
+    log_msg = f"{devicename}{str(log_msg)}"
     log_msg = format_msg_line(log_msg)
 
     write_ic3log_recd(log_msg)
-
-    # log_msg = log_msg.replace(' > +', f" > ……\n{SP(22)}+")
-    # Gb.HALogger.debug(log_msg)
 
 #--------------------------------------------------------------------
 def log_start_finish_update_banner(start_finish, devicename,
@@ -634,10 +638,8 @@ def log_start_finish_update_banner(start_finish, devicename,
     device update cycle
     '''
     # The devicename may be the 'appleacct~devicename'
-    # if instr(devicename, '~'): devicename = devicename.split('~')[1]
-    # Device = Gb.Devices_by_devicename[devicename]
     text  = (f"{devicename}, {method}, {update_reason} ")
-    log_msg = format_header_box(text, indent=43, start_finish=start_finish)
+    log_msg = format_header_box(text, start_finish=start_finish)
 
     log_info_msg(log_msg)
 
@@ -648,7 +650,7 @@ def log_start_finish_update_banner(start_finish, devicename,
 #   LOG MESSAGE SUPPORT ROUTINES
 #
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-def format_msg_line(log_msg, area=None):
+def format_msg_line(log_msg):
     try:
         if type(log_msg) is str is False:
             return log_msg
@@ -658,15 +660,16 @@ def format_msg_line(log_msg, area=None):
                     '\n🔻 ' if instr(log_msg, 'RESPONSE') else \
                     '\n❗' if instr(log_msg, 'ICLOUD DATA') else \
                     ' ⡇ ' if Gb.trace_group else \
-                    '  '
-        program_area =  f"{RED_STOP}    "  if instr(log_msg, EVLOG_ALERT) else \
-                        f"{RED_ALERT}    " if instr(log_msg, EVLOG_ERROR) else \
-                        area               if area else \
-                        Gb.trace_prefix
+                    ' '
+
+        # program_area =  f"{RED_STOP}    "  if instr(log_msg, EVLOG_ALERT) else \
+        #                 f"{RED_ALERT}    " if instr(log_msg, EVLOG_ERROR) else \
+        #                 Gb.trace_prefix
+        program_area = ''
 
         source  = f"{_called_from()}{program_area}"
         log_msg = format_startup_header_box(log_msg)
-        log_msg = filter_special_chars(log_msg)
+        # log_msg = filter_special_chars(log_msg)
         log_msg = f"{source}{msg_prefix}{log_msg}"
 
     except:
@@ -679,10 +682,9 @@ def filter_special_chars(log_msg, evlog_export=False):
     '''
     Filter out EVLOG_XXX control fields
     '''
-
-    indent =SP(16) if evlog_export else \
-            SP(48) if Gb.log_debug_flag else \
-            SP(28)
+    indent =SP(9) if evlog_export else \
+            SP(37) if Gb.log_debug_flag else \
+            SP(17)
     if log_msg.startswith('^'): log_msg = log_msg[3:]
 
     log_msg = log_msg.replace(EVLOG_MONITOR, '')
@@ -693,7 +695,7 @@ def filter_special_chars(log_msg, evlog_export=False):
     log_msg = log_msg.replace(NBSP5, ' ')
     log_msg = log_msg.replace(NBSP6, ' ')
     log_msg = log_msg.strip()
-    log_msg = log_msg.replace(CRLF, f"\n{indent}")
+    log_msg = log_msg.replace(CRLF, f"\n.{indent}")
     log_msg = log_msg.replace('◦', f"   ◦")
     log_msg = log_msg.replace('* >', '')
     log_msg = log_msg.replace('&lt;', '<')
@@ -729,8 +731,8 @@ def format_startup_header_box(log_msg):
         return log_msg
 
     hdr_code = log_msg[p:p+3]
-    log_msg = log_msg[:p] + log_msg[p+3:]
     if hdr_code in [EVLOG_IC3_STARTING, EVLOG_IC3_STAGE_HDR]:
+        log_msg = log_msg[:p] + log_msg[p+3:]
         log_msg = format_header_box(log_msg)
 
     return log_msg
@@ -743,30 +745,30 @@ def format_header_box(log_msg, indent=None, start_finish=None, evlog_export=Fals
     start_pos = log_msg.find('^')
     if start_pos == -1: start_pos = 0
 
-    # Default indent for icloud3-0.log file is 43
-    if indent is None: indent = 44
+    indent = indent if indent is not None else 36 if Gb.log_debug_flag else 16
 
     top_char = bot_char = DASH_50
     if start_finish == 'start':
-        bot_char = f"{'⠂'*37}"
+        bot_char = f"{'⠂'*20}"
         Gb.trace_group = True
     elif start_finish == 'finish':
-        top_char = f"{'⠂'*37}"
+        top_char = f"{'⠂'*20}"
         Gb.trace_group = False
 
-    return (f"⡇{top_char}\n"
-            f"{SP(indent)}⡇{SP(4)}{log_msg[start_pos:].upper()}\n"
-            f"{SP(indent)}⡇{bot_char}")
+    return (f"⡇{top_char}"
+            f"\n.{SP(indent)}⡇{SP(4)}{log_msg[start_pos:].upper()}"
+            f"\n.{SP(indent)}⡇{bot_char}")
 
 #-------------------------------------------------------------------------------------------
 def _resolve_devicename_log_msg(devicename_or_Device, event_msg):
+    if devicename_or_Device == '*': devicename_or_Device = ''
     if event_msg == '+':
-        return ("*", devicename_or_Device)
+        return ('', devicename_or_Device)
     if devicename_or_Device in Gb.Devices:
         return devicename_or_Device.devicename, event_msg
     if devicename_or_Device in Gb.Devices_by_devicename:
         return devicename_or_Device, event_msg
-    return ('*', event_msg)
+    return ('', event_msg)
 
 #--------------------------------------------------------------------
 def _resolve_module_name_log_msg(module_name, log_msg):
@@ -807,7 +809,7 @@ def log_data_unfiltered(title, rawdata, data_source=None, filter_id=None):
         log_info_msg(log_msg)
 
 #--------------------------------------------------------------------
-def log_data(title, rawdata, log_data_flag=False, data_source=None, filter_id=None):
+def log_data(title, rawdata, log_rawdata_flag=False, data_source=None, filter_id=None):
     '''
     Add raw data records to the HA log file for debugging purposes.
 
@@ -823,7 +825,7 @@ def log_data(title, rawdata, log_data_flag=False, data_source=None, filter_id=No
 
     if rawdata is None:
         return False
-    elif Gb.log_data_flag is False and log_data_flag is False:
+    elif Gb.log_rawdata_flag is False and log_rawdata_flag is False:
         return False
 
     if (Gb.start_icloud3_inprocess_flag
@@ -855,7 +857,7 @@ def log_data(title, rawdata, log_data_flag=False, data_source=None, filter_id=No
 
         rawdata_data['filter'] = {k: _shrink_value(k, v)
                                 for k, v in rawdata['filter'].items()
-                                if k in FILTER_FIELDS or Gb.log_data_flag_unfiltered}
+                                if k in FILTER_FIELDS or Gb.log_rawdata_flag_unfiltered}
 
     except:
         rawdata_items = {k: _shrink_value(k, v)
@@ -864,7 +866,7 @@ def log_data(title, rawdata, log_data_flag=False, data_source=None, filter_id=No
 
         rawdata_data['filter'] = {k: _shrink_value(k, v)
                                         for k, v in rawdata.items()
-                                        if (k in FILTER_FIELDS or Gb.log_data_flag_unfiltered)}
+                                        if (k in FILTER_FIELDS or Gb.log_rawdata_flag_unfiltered)}
 
     rawdata_data['filter']['items'] = rawdata_items
     if rawdata_data['filter']:
@@ -912,7 +914,7 @@ def filter_data_dict(rawdata_data, data_dict):
 
         filter_results = {k: _shrink_value(k, v)
                             for k, v in rawdata_data[data_dict].items()
-                            if (k in FILTER_FIELDS or Gb.log_data_flag_unfiltered)}
+                            if (k in FILTER_FIELDS or Gb.log_rawdata_flag_unfiltered)}
 
         return filter_results
 
@@ -929,10 +931,10 @@ def _filter_data_list(rawdata_data_list):
 
             filter_results = {k: _shrink_value(k, v)
                                 for k, v in list_item.items()
-                                if (k in FILTER_FIELDS or Gb.log_data_flag_unfiltered)}
+                                if (k in FILTER_FIELDS or Gb.log_rawdata_flag_unfiltered)}
 
             if 'location' in filter_results and filter_results['location']:
-                if Gb.log_data_flag_unfiltered:
+                if Gb.log_rawdata_flag_unfiltered:
                     filter_results['location'] = {k: v for k, v in filter_results['location'].items()}
                 else:
                     filter_results['location'] = {k: v for k, v in filter_results['location'].items()
@@ -950,7 +952,7 @@ def _filter_data_list(rawdata_data_list):
 #--------------------------------------------------------------------
 def _shrink_value(k, v):
     if (k in DO_NOT_SHRINK
-            or Gb.log_data_flag_unfiltered):
+            or Gb.log_rawdata_flag_unfiltered):
         return v
 
     if type(v) is str:
@@ -1129,7 +1131,7 @@ def _called_from(trace=False):
     caller_filename = caller_path.split('/')[-1]
     if len(caller_filename) > 12 and instr(caller_filename, '_ic3_'):
         caller_filename = caller_filename.replace('_ic3_', '…')
-    caller_filename = f"{caller_filename}………………"
+    caller_filename = f"{caller_filename}……………………"
     caller_lineno = caller.lineno
 
     return f"[{caller_filename[:12]}:{caller_lineno:04}] "

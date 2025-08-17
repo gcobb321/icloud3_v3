@@ -53,7 +53,7 @@ from .utils.utils       import (instr, isnumber, is_empty, isnot_empty, list_to_
                                 sort_dict_by_values,
                                 encode_password, decode_password, )
 from .utils.messaging import (log_exception, log_debug_msg, log_info_msg, add_log_file_filter,
-                                _log, _evlog, more_info, write_config_file_to_ic3log, close_ic3_log_file,
+                                _log, _evlog, more_info, write_config_file_to_ic3log, close_ic3log_file,
                                 post_event, post_monitor_msg, update_alert_sensor, )
 
 from .configure         import forms
@@ -719,6 +719,10 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
         self.errors_user_input = {}
         await config_sensors.update_configure_file_device_sensors()
         await self._async_write_icloud3_configuration_file()
+
+        for devicename in Gb.sensors_removed_by_devicename.keys():
+            ic3_sensor.log_sensors_added_deleted('ADDED', devicename)
+            ic3_sensor.log_sensors_added_deleted('REMOVED', devicename)
 
         user_input, action_item = utils.action_text_to_item(self, user_input)
         utils.log_step_info(self, user_input, action_item)
@@ -1573,7 +1577,7 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
             post_event("RELOAD ICLOUD3")
             write_config_file_to_ic3log()
             await config_file.async_write_icloud3_configuration_file()
-            close_ic3_log_file()
+            close_ic3log_file()
 
             await Gb.hass.services.async_call(
                     "homeassistant",
@@ -1736,6 +1740,12 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
             self.config_file_commit_updates = True
 
             Gb.sensor_names_by_devicename = {}
+
+            # if devicename := user_input.get(CONF_IC3_DEVICENAME):
+            #     ic3_sensor.log_sensors_added_deleted('ADDED',
+            #                             devicename, Gb.sensors_added_by_devicenames[devicename])
+            #     ic3_sensor.log_sensors_added_deleted('REMOVED',
+            #                             devicename, Gb.sensors_removed_by_devicenames[devicename])
 
 
 
@@ -3550,6 +3560,7 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
 
             self.conf_device.update(user_input)
             self._update_config_file_tracking(update_config_flag=True)
+
             if tfz_changed:
                 config_sensors.update_track_from_zones_sensors(self, user_input)
 

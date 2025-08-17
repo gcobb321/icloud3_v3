@@ -75,6 +75,8 @@ def create_device_tracker_and_sensor_entities(self, devicename, conf_device):
     sensors_list = build_all_sensors_list()
     create_sensor_entity(devicename, conf_device, sensors_list)
     self.devices_added_deleted_flag = True
+    ic3_sensor.log_sensors_added_deleted('ADDED', devicename)
+                                #devicename, Gb.sensors_added_by_devicename[devicename])
 
 #-------------------------------------------------------------------------------------------
 def remove_device_tracker_entity(self, devicename):
@@ -109,9 +111,11 @@ def remove_device_tracker_entity(self, devicename):
     except:
         pass
 
-    ic3_device_tracker.get_ha_device_ids_from_device_registry(Gb.hass)
+    ic3_sensor.log_sensors_added_deleted('REMOVED', devicename)
 
+    ic3_device_tracker.get_ha_device_ids_from_device_registry(Gb.hass)
     self.devices_added_deleted_flag = True
+
 
 #-------------------------------------------------------------------------------------------
 def devices_form_identify_new_and_removed_tfz_zones(self, user_input):
@@ -152,11 +156,14 @@ def remove_track_fm_zone_sensor_entity(devicename, remove_tfz_zones_list):
     # Cycle through the zones that are no longer tracked from for the device, then cycle
     # through the Device's sensor list and remove all track_from_zone sensors ending with
     # that zone.
+    removed_sensors = []
     for zone in remove_tfz_zones_list:
         for sensor, Sensor in device_tfz_sensors.copy().items():
             if (sensor.endswith(f"_{zone}")
                     and Sensor.entity_removed_flag is False):
                 entity_io.remove_entity(Sensor.entity_id)
+
+    ic3_sensor.log_sensors_added_deleted('REMOVED', devicename)
 
 #-------------------------------------------------------------------------------------------
 def create_track_fm_zone_sensor_entity(self, devicename, new_tfz_zones_list):
@@ -178,8 +185,18 @@ def create_track_fm_zone_sensor_entity(self, devicename, new_tfz_zones_list):
     if NewZones is not []:
         Gb.sensor_async_add_entities(NewZones, True)
 
+    tfz_sensors_list = [f"{sensor.replace('tfz_', '')}_{new_zone}"
+                                for sensor in sensors_list
+                                for new_zone in new_tfz_zones_list]
+
+    ic3_sensor.log_sensors_added_deleted('ADDED', devicename)
+
 #-------------------------------------------------------------------------------------------
 def update_track_from_zones_sensors(self, user_input):
+    '''
+    Update track_from zone sensors that were changed on the Update Devices screen.
+    Called from config_flow Update Devices Other fields screen
+    '''
 
     devicename = self.conf_device[CONF_IC3_DEVICENAME]
     self.conf_device[CONF_TRACK_FROM_ZONES] = user_input[CONF_TRACK_FROM_ZONES]
@@ -196,6 +213,9 @@ def update_track_from_zones_sensors(self, user_input):
     if 'new_tfz_zones' in self.update_device_ha_sensor_entity:
         new_tfz_zones_list = self.update_device_ha_sensor_entity['new_tfz_zones']
         create_track_fm_zone_sensor_entity(self, devicename, new_tfz_zones_list)
+
+    ic3_sensor.log_sensors_added_deleted('ADDED', devicename)
+    ic3_sensor.log_sensors_added_deleted('REMOVED', devicename)
 
 #-------------------------------------------------------------------------------------------
 def sensor_form_identify_new_and_removed_sensors(self, user_input):
@@ -283,6 +303,8 @@ def remove_sensor_entity(remove_sensors_list, select_devicename=None):
             if Sensor.entity_removed_flag is False:
                 entity_io.remove_entity(Sensor.entity_id)
 
+        ic3_sensor.log_sensors_added_deleted('REMOVED', devicename)
+
     # Remove track_fm_zone sensors
     device_track_from_zones = {k['ic3_devicename']: k['track_from_zones'] for k in Gb.conf_devices}
     for devicename, devicename_sensors in Gb.Sensors_by_devicename_from_zone.items():
@@ -318,6 +340,7 @@ def create_sensor_entity(devicename, conf_device, new_sensors_list):
         return
 
     Gb.sensor_async_add_entities(NewSensors, True)
+    ic3_sensor.log_sensors_added_deleted('ADDED', devicename)#, sensors_list)
 
 #-------------------------------------------------------------------------------------------
 def build_all_sensors_list():

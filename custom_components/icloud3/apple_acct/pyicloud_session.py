@@ -168,13 +168,13 @@ class PyiCloudSession(Session):
             kwargs['data'] = json.loads(kwargs['data'])
         retry_cnt = kwargs.get('retry_cnt', 0)
 
-        log_data_flag = (url.endswith('refreshClient') is False)
-        if Gb.log_data_flag or log_data_flag or Gb.initial_icloud3_loading_flag:
+        log_rawdata_flag = (url.endswith('refreshClient') is False)
+        if Gb.log_rawdata_flag or log_rawdata_flag or Gb.initial_icloud3_loading_flag:
             _hdr = ( f"{self.PyiCloud.username_base}, {method}, Request, "
                         f"{callee.function}/{callee.lineno} ▲")
             _data = {'url': url[8:], 'retry': kwargs.get("retry_cnt", 0)}
             _data.update(kwargs)
-            log_data(_hdr, _data, log_data_flag=log_data_flag)
+            log_data(_hdr, _data, log_rawdata_flag=log_rawdata_flag)
 
         kwargs.pop("retried", False)
         kwargs.pop("retry_cnt", 0)
@@ -257,7 +257,6 @@ class PyiCloudSession(Session):
             #                 f"Error-{err_msg}")
 
             Gb.internet_error = True
-            _evlog(f"{Gb.internet_error=}")
             Gb.InternetError.internet_error_msg  = err
             Gb.InternetError.internet_error_code = self.response_code
 
@@ -277,16 +276,16 @@ class PyiCloudSession(Session):
         self.response_code = self.PyiCloud.response_code = response.status_code
         self.response_ok   = self.PyiCloud.response_ok   = response.ok
 
-        log_data_flag = (url.endswith('refreshClient') is False) or response.status_code != 200
-        if Gb.log_data_flag or log_data_flag or Gb.initial_icloud3_loading_flag:
+        log_rawdata_flag = (url.endswith('refreshClient') is False) or response.status_code != 200
+        if Gb.log_rawdata_flag or log_rawdata_flag or Gb.initial_icloud3_loading_flag:
             _hdr = ( f"{self.PyiCloud.username_base}, {method}, Response, "
                         f"{callee.function}/{callee.lineno} ▼")
             _data = {'code': response.status_code, 'ok': response.ok, 'data': data}
 
 
-            if retry_cnt >= 2 or Gb.log_data_flag_unfiltered:
+            if retry_cnt >= 2 or Gb.log_rawdata_flag_unfiltered:
                 _data['headers'] = response.headers
-            log_data(_hdr, _data, log_data_flag=log_data_flag)
+            log_data(_hdr, _data, log_rawdata_flag=log_rawdata_flag)
 
 
         # Validating the username/password, code=409 is valid, code=401 is invalid
@@ -391,7 +390,6 @@ class PyiCloudSession(Session):
 #----------------------------------------------------------------------------
     def request_timed_out(self, timeout_time=None):
         Gb.internet_error = True
-        _evlog(f"{Gb.internet_error=}")
         post_event(f"{EVLOG_ALERT}Internet Connection Error Detected (www.icloud.com) > "
                         "More than 1-min since last location request with no response. "
                         "Possible causes:"

@@ -871,7 +871,7 @@ def form_actions(self):
         debug_OPTIONS.pop('debug_start')
     else:
         debug_OPTIONS.pop('debug_stop')
-    if Gb.log_data_flag:
+    if Gb.log_rawdata_flag:
         debug_OPTIONS.pop('rawdata_start')
     else:
         debug_OPTIONS.pop('rawdata_stop')

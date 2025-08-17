@@ -637,10 +637,10 @@ def set_log_level(log_level):
     # level overrides on an iC3 restart
 
     Gb.log_debug_flag   = instr(log_level, 'debug')
-    Gb.log_data_flag = instr(log_level, 'rawdata')
-    Gb.log_data_flag_unfiltered = instr(log_level, 'unfiltered')
-    Gb.log_data_flag = Gb.log_data_flag or Gb.log_data_flag_unfiltered
-    Gb.log_debug_flag   = Gb.log_debug_flag or Gb.log_data_flag
+    Gb.log_rawdata_flag = instr(log_level, 'rawdata')
+    Gb.log_rawdata_flag_unfiltered = instr(log_level, 'unfiltered')
+    Gb.log_rawdata_flag = Gb.log_rawdata_flag or Gb.log_rawdata_flag_unfiltered
+    Gb.log_debug_flag   = Gb.log_debug_flag or Gb.log_rawdata_flag
     Gb.evlog_trk_monitors_flag = Gb.evlog_trk_monitors_flag or instr(log_level, 'eventlog')
 
     if Gb.iC3Logger:
@@ -1724,7 +1724,7 @@ def _post_evlog_apple_acct_tracked_devices_info(PyiCloud):
             # display no location exception msg in EvLog
             exception_msg = ''
 
-            if _AADevData and Gb.log_data_flag:
+            if _AADevData and Gb.log_rawdata_flag:
                 log_title = (   f"iCloud Data {PyiCloud.account_name}{LINK}"
                                 f"{devicename}/{pyicloud_icloud_dname} "
                                 f"({_AADevData.device_identifier})")

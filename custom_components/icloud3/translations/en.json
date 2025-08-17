@@ -3,7 +3,7 @@
   "config": {
     "abort": {
       "config_update_complete": "iCloud3 configuration updated successfully",
-      "already_configured": "iCloud3 is already installed and can not be installed again. \n\nTo configure iCloud3, select the Gear icon (⚙️) or CONFIGURE on the iCloud3 Integration Entries line.\n\nIf you are deleting and then reinstalling, restart HA first and then reinstall iCloud3",
+      "already_configured": "iCloud3 Configure screens are used to add Devices and change various settings.\n\nClose this screen, then select the Gear icon (⚙️) below. \n\nIf you are deleting and then reinstalling the iCloud3 integration, delete iCloud3, then restart HA to clear HA's caches. After HA restarts, readd the iCloud3 integration. Your previous configuration files are not deleted and will be used when iCloud3 reloads.",
       "disabled": "iCloud3 is DISABLED and can not be installed again. Enable iCloud3, then select CONFIGURE in the iCloud3 Integration entry to configure iCloud3.\n\nIf you are deleting and then reinstalling, restart HA first and then reinstall iCloud3",
       "login_error": "The Apple account is not log into",
       "xlogin_error_upw": "Apple account login error - Verify the username and password",

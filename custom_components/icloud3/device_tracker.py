@@ -23,7 +23,7 @@ from .const             import (DOMAIN, PLATFORM_DEVICE_TRACKER,ICLOUD3, ICLOUD3
                                 CONF_IC3_DEVICENAME,
                                 )
 
-from .utils.utils       import (instr, isnumber, is_statzone, zone_dname)
+from .utils.utils       import (instr, isnumber, is_statzone, zone_dname, is_empty, list_to_str, )
 from .utils.messaging   import (post_event,
                                 log_info_msg, log_debug_msg, log_error_msg, log_exception,
                                 log_exception_HA, log_info_msg_HA,
@@ -100,6 +100,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
                 Gb.DeviceTrackers_by_devicename[devicename] = DeviceTracker
                 NewDeviceTrackers.append(DeviceTracker)
 
+
+        log_devices_added_deleted('', Gb.DeviceTrackers_by_devicename)
+
         # Set the total count of the device_trackers that will be created
         if Gb.device_trackers_cnt == 0:
             Gb.device_trackers_cnt = len(NewDeviceTrackers)
@@ -111,21 +114,22 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
             get_ha_device_ids_from_device_registry(hass)
             log_info_msg_HA(f"{ICLOUD3} Device Tracker entities: {Gb.device_trackers_cnt}")
 
-        Devices_no_area = [Device   for Device in Gb.DeviceTrackers_by_devicename.values() \
-                                    if Device.ha_area_id in [None, 'unknown', '']]
-
-        Devices_no_area = []
-        if Devices_no_area != []:
-            for Device in Devices_no_area:
-                try:
-                    Device.update_entity_attribute(area_id=Gb.area_id_personal_device)
-                except:
-                    pass
 
     except Exception as err:
         log_exception(err)
         log_msg = f"►INTERNAL ERROR (Create device_tracker loop-{err})"
         log_error_msg(log_msg)
+
+#....................................................................
+def log_devices_added_deleted(base_name, devices_list):
+    if is_empty(devices_list):
+        return
+
+    _devices = list(devices_list.keys()) if type(devices_list) is dict else devices_list
+    _devices_msg = {'BaseName': f"device_tracker.{base_name}",
+                    'Count': len(devices_list),
+                    'Entities': list_to_str(_devices)}
+    log_info_msg(f"DEVICE TRACKERS ADDED: {_devices_msg}")
 
 #-------------------------------------------------------------------------------------------
 def get_ha_device_ids_from_device_registry(hass):
@@ -261,7 +265,7 @@ class iCloud3_DeviceTracker(TrackerEntity):
             self.extra_attrs_away_time_zone_offset = 'HomeZone'
 
             Gb.device_trackers_created_cnt += 1
-            log_debug_msg(f'Device Tracker entity created: {self.entity_id}, #{Gb.device_trackers_created_cnt}')
+            # log_debug_msg(f'Device Tracker entity created: {self.entity_id}, #{Gb.device_trackers_created_cnt}')
 
         except Exception as err:
             log_exception(err)
@@ -578,7 +582,7 @@ class iCloud3_DeviceTracker(TrackerEntity):
         and called by HA after processing the async_remove request
         """
 
-        log_info_msg(f"Unregistered device_tracker.icloud3 entity removed: {self.entity_id}")
+        log_info_msg(f"DEVICE TRACKER REMOVED: {self.devicename}")
 
         self._remove_from_registries()
         self.entity_removed_flag = True
@@ -603,15 +607,9 @@ class iCloud3_DeviceTracker(TrackerEntity):
 
         self.remove_device_flag = True
 
-        # deleted = f"deleted-{datetime_now()}"
-        # kwargs = {'merge_identifiers': (deleted)}
-        # # kwargs = {'merge_identifiers': (DOMAIN, self.devicename, deleted)}
-        # dr_entry = device_registry.async_update_device(self.ha_device_id, **kwargs)
-        # _log(f"{dr_entry=}")
-
         # Remove from device registry.
         if device_id := self.registry_entry.device_id:
-            device_registry = dr.async_get(self.hass)
+            device_registry = dr.async_get(Gb.hass)
             if device_id in device_registry.devices:
                 device_registry.async_remove_device(device_id)
 
@@ -651,7 +649,12 @@ class iCloud3_DeviceTracker(TrackerEntity):
             self._data = None
 
         # self.async_write_ha_state()
-        self.schedule_update_ha_state()
+        try:
+            if self.hass is None: self.hass = Gb.hass
+            self.schedule_update_ha_state(force_refresh=True)
+
+        except Exception as err:
+            log_exception(err)
 
 #-------------------------------------------------------------------------------------------
     def __repr__(self):

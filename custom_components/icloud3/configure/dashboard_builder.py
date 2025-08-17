@@ -414,7 +414,9 @@ def _build_devices_str_main_view(self):
     elif self.main_view_template_style == 'result-summary':
         devicenames = [conf_device[CONF_IC3_DEVICENAME]
                                     for conf_device in Gb.conf_devices
-                                    if (conf_device[CONF_TRACKING_MODE] == TRACK_DEVICE)]
+                                    if (conf_device[CONF_TRACKING_MODE] == TRACK_DEVICE
+                                            and _selected_devicename(self, conf_device))]
+
         template_name = 'template-trk-results-group'
         devices_str   = _build_devices_str(self, template_name, devicenames)
 
@@ -433,6 +435,12 @@ def _build_devices_str_main_view(self):
 
 
     return devicenames, devices_str
+
+#............................................................................................
+def _selected_devicename(self, conf_device):
+    selected = (is_empty(self.main_view_devices)
+                    or conf_device[CONF_IC3_DEVICENAME] in self.main_view_devices)
+    return selected
 
 #............................................................................................
 def _get_main_view_template_style(dashboard_str):
@@ -580,6 +588,9 @@ async def _load_templates(self):
     for template_filename in template_filenames:
         filename      = f"{directory}/{template_filename}"
         template_json = await file_io.async_read_json_file(filename)
+        # template_json = await Gb.hass.async_add_executor_job(
+        #                     file_io.read_json_file,
+        #                     filename)
 
         template_name = template_filename.split('.')[0]
 
@@ -654,10 +665,8 @@ async def build_existing_dashboards_selection_list(self):
             continue
 
         self.AllDashboards_by_dashboard[_dbname] = _Dashboard
-        # self.ic3db_Dashboards_by_dbname[_dbname]    = _Dashboard
 
         await _get_main_other_views_devicenames(self, _dbname, _Dashboard)
-
 
         main_view_devices  = self.main_view_device_fnames_by_dashboard[_dbname]
         other_view_devices = self.other_view_device_fnames_by_dashboard[_dbname]
@@ -725,15 +734,13 @@ async def _get_main_other_views_devicenames(self, dbname, _Dashboard):
 
     main_view  = dashboard_view_dict[0]
     other_view = dashboard_view_dict[1]
-    # main_view  = dashboard_data_dict['data']['config']['views'][0]
-    # other_view = dashboard_data_dict['data']['config']['views'][1]
 
     try:
         main_view_str = str(main_view)
         other_view_str = str(other_view)
     except:
         main_view_str = ''
-        view_otner_str = ''
+        view_other_str = ''
 
     self.main_view_template_style_by_dashboard[dbname] = \
         _get_main_view_template_style(str(dashboard_view_dict))
@@ -742,13 +749,15 @@ async def _get_main_other_views_devicenames(self, dbname, _Dashboard):
     main_view_device_fnames  = []
     main_view_devicenames    = []
     other_view_device_fnames = []
+    other_view_devicenames   = []
 
     # for devicename, fname in self.conf_fnames_by_devicename().items():
     for devicename, fname in lists.devices_selection_list().items():
-        if instr(main_view_str, devicename):
+        if instr(main_view_str, f"device_tracker.{devicename}"):
             list_add(main_view_devicenames, devicename)
             list_add(main_view_device_fnames, fname)
-        if instr(other_view_str, devicename):
+        if instr(other_view_str, f"device_tracker.{devicename}"):
+            list_add(other_view_devicenames, devicename)
             list_add(other_view_device_fnames, fname)
 
     self.main_view_device_fnames_by_dashboard[dbname]  = main_view_device_fnames
@@ -814,6 +823,10 @@ async def _read_dashboard_layout_file(dbname):
     try:
         dashboard_file = f"{Gb.ha_storage_directory}/lovelace.{dbname.replace('-', '_')}"
         dashboard_layout_dict = await file_io.async_read_json_file(dashboard_file)
+        # dashboard_layout_dict = await Gb.hass.async_add_executor_job(
+        #                                     file_io.read_json_file,
+        #                                     dashboard_file)
+
 
         return dashboard_layout_dict
 
@@ -970,6 +983,9 @@ async def _read_lovelace_dashboards_file():
     try:
         dashboards_file = f"{Gb.ha_storage_directory}/lovelace_dashboards"
         dashboards_config = await file_io.async_read_json_file(dashboards_file)
+        # dashboards_config = await Gb.hass.async_add_executor_job(
+        #                                     file_io.read_json_file,
+        #                                     dashboards_file)
 
         if is_empty(dashboards_config):
             return []
@@ -993,6 +1009,9 @@ async def _add_dashboard_to_lovelace_dashboards_file(dbname, dashboard_config):
     try:
         lovelace_dashboards_file = f"{Gb.ha_storage_directory}/lovelace_dashboards"
         lovelace_dashboards = await file_io.async_read_json_file(lovelace_dashboards_file)
+        # lovelace_dashboards = await Gb.hass.async_add_executor_job(
+        #                     file_io.read_json_file,
+        #                     lovelace_dashboards_file)
 
         log_debug_msg(f"Updating {lovelace_dashboards_file}, URL-{dashboard_config['url_path']}")
         for item in lovelace_dashboards['data']['items']:
