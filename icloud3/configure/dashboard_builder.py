@@ -50,7 +50,6 @@ DASHBOARD_TEMPLATE_FILES = [
 MAIN_VIEW_STYLE_TEMPLATE = 'Main-View-Template-Style: '
 CONFIGURE_DASHBOARD_TEMPLATES_DIR = '/configure/dashboard_templates'
 
-
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 #
 #           BUILD INITIAL DASHBOARD WHEN ICLOUD3 INTEGRATION IS INSTALLED
