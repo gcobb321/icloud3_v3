@@ -7,8 +7,9 @@ from homeassistant.components.lovelace.const import (LOVELACE_DATA,
                                                     STORAGE_DASHBOARD_UPDATE_FIELDS)
 
 from ..global_variables  import GlobalVariables as Gb
-from ..const             import (IPHONE_FNAME, DEVICE_TYPES,
-                                CONF_IC3_DEVICENAME, CONF_TRACKING_MODE, TRACK_DEVICE)
+from ..const             import (IPHONE_FNAME, DEVICE_TYPES, IPHONE,
+                                CONF_IC3_DEVICENAME, CONF_TRACKING_MODE, CONF_DEVICE_TYPE,
+                                TRACK_DEVICE, INACTIVE_DEVICE)
 
 from ..utils.utils     import (instr, isnumber, is_empty, isnot_empty, list_to_str, str_to_list,
                                 list_add, dict_value_to_list, six_item_list, six_item_dict, )
@@ -49,7 +50,6 @@ DASHBOARD_TEMPLATE_FILES = [
 MAIN_VIEW_STYLE_TEMPLATE = 'Main-View-Template-Style: '
 CONFIGURE_DASHBOARD_TEMPLATES_DIR = '/configure/dashboard_templates'
 
-
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 #
 #           BUILD INITIAL DASHBOARD WHEN ICLOUD3 INTEGRATION IS INSTALLED
@@ -64,7 +64,7 @@ async def install_initial_icloud3_dashboard(self):
     except Exception as err:
         return False
 
-    if self.selected_dbname != 'add':
+    if self.ui_selected_dbname != ADD:
         return False
 
     dbname = self.dbname = 'ic3db-icloud3'
@@ -77,18 +77,18 @@ async def install_initial_icloud3_dashboard(self):
         master_dashboard_json = file_io.str_to_json_str(self, master_dashboard_str)
         master_dashboard_json = _replace_json_text_items(self, master_dashboard_json)
 
-        master_dashboard_layout = file_io.json_str_to_dict(master_dashboard_json)
-        new_dashboard_dict = await _prepare_selected_from_master_dashboard(
-                                                dbname, '', master_dashboard_layout)
-
         if file_io.is_valid_json_str(master_dashboard_json) is False:
             log_debug_msg(f"Error Preparing Initial Dashboard, Invalid Json string > {master_dashboard_json}")
             return False
 
+        master_dashboard_layout = file_io.json_str_to_dict(master_dashboard_json)
+        new_dashboard_dict = await _prepare_selected_from_master_dashboard(
+                                                dbname, '', master_dashboard_layout)
+
         await _add_dashboard_to_lovelace_dashboards(self, dbname)
         await _write_lovelace_dashboard_layout_file(self, dbname, new_dashboard_dict)
         await _update_lovelace_dashboard_layout_ha_data(self, dbname, new_dashboard_dict)
-        log_debug_msg(f"Created Dashboard-{dbname}, Devices-{self.main_view_devices}")
+        log_debug_msg(f"Created Dashboard-{dbname}, Devices-{self.ui_main_view_devices}")
         return True
 
     except Exception as err:
@@ -124,7 +124,7 @@ async def update_dashboard_ic3db_views_new_deleted_devices(self):
         master_dashboard_str    = _build_master_dashboard(self)
         master_dashboard_json   = file_io.str_to_json_str(self, master_dashboard_str)
         master_dashboard_layout = file_io.json_str_to_dict(master_dashboard_json)
-        master_views            = master_dashboard_layout['data']['config']['views']
+        master_views            = master_dashboard_layout[DATA][CONFIG][VIEWS]
 
         if file_io.is_valid_json_str(master_dashboard_json) is False:
             log_debug_msg(f"Error Preparing Initial Dashboard, Invalid Json string > {master_dashboard_json}")
@@ -154,6 +154,8 @@ async def update_or_create_dashboard(self, user_input):
     master_dashboard_str  = _build_master_dashboard(self)
     master_dashboard_json = file_io.str_to_json_str(self, master_dashboard_str)
     master_dashboard_json = _replace_json_text_items(self, master_dashboard_json)
+    # master_dashboard_json = master_dashboard_json.replace('[,', '[')
+    # master_dashboard_json = master_dashboard_json.replace('{,', '{')
 
     if file_io.is_valid_json_str(master_dashboard_json) is False:
         self.errors['base'] = 'dashboard_json_error'
@@ -162,17 +164,17 @@ async def update_or_create_dashboard(self, user_input):
 
     action_item = user_input['action_item']
 
-    if self.selected_dbname == 'add':
+    if self.ui_selected_dbname == ADD:
         dbname = self.dbname = get_next_dashboard_name(self)
         master_dashboard_str = master_dashboard_str.replace('ic3db_template_master', dbname)
         await _add_dashboard_to_lovelace_dashboards(self, dbname)
         await _write_lovelace_dashboard_layout_file(self, dbname, master_dashboard_json)
         await _update_lovelace_dashboard_layout_ha_data(self, dbname, master_dashboard_json)
         self.errors['base'] = 'dashboard_created'
-        log_debug_msg(f"Created Dashboard-{dbname}, Devices-{self.main_view_devices}")
+        log_debug_msg(f"Created Dashboard-{dbname}, Devices-{self.ui_main_view_devices}")
         return
 
-    dbname = self.dbname = self.selected_dbname
+    dbname = self.dbname = self.ui_selected_dbname
 
     master_dashboard_layout = file_io.json_str_to_dict(master_dashboard_json)
     selected_dashboard_dict = await _prepare_selected_from_master_dashboard(
@@ -205,7 +207,7 @@ async def _prepare_selected_from_master_dashboard(dbname, action_item, master_da
     If recreating an existing dashboard, the current main view will be added to the
     end and serve as a backup view in case the user just meant to update it
     '''
-    master_views = master_dashboard_layout['data']['config']['views']
+    master_views = master_dashboard_layout[DATA][CONFIG][VIEWS]
     if action_item == 'update_dashboard':
         return await _update_selected_views_from_master_dashboard(dbname, master_views)
 
@@ -213,17 +215,17 @@ async def _prepare_selected_from_master_dashboard(dbname, action_item, master_da
 
     selected_main_view = [selected_views[idx]
                                 for idx in range(0, len(selected_views))
-                                if selected_views[idx]['path'] == 'main']
+                                if selected_views[idx][PATH] == 'main']
     master_main_backup_view = [idx
                                 for idx in range(0, len(master_views))
-                                if master_views[idx]['path'] == 'main-backup']
+                                if master_views[idx][PATH] == 'main-backup']
     master_main_backup_idx = master_main_backup_view[0] if isnot_empty(master_main_backup_view) else -1
 
     # Backup the main view to main-backup view. Update it if it exists. Add it if it does not exist
     if isnot_empty(selected_main_view):
         selected_main_view = selected_main_view[0].copy()
-        selected_main_view['title'] = 'Main (Backup)'
-        selected_main_view['path']  = 'main-backup'
+        selected_main_view[TITLE] = 'Main (Backup)'
+        selected_main_view[PATH]  = 'main-backup'
         if master_main_backup_idx < 0:
             master_views.append(selected_main_view)
         else:
@@ -244,17 +246,17 @@ async def _update_selected_views_from_master_dashboard(dbname, master_views, rec
     '''
 
     selected_dashboard_dict  = await _read_dashboard_layout_file(dbname)
-    selected_views           = selected_dashboard_dict['data']['config']['views']
+    selected_views           = selected_dashboard_dict[DATA][CONFIG][VIEWS]
 
     # Get master views to copy to the selected dashboard
-    copy_master_views_idx_by_path = {master_views[idx]['path']: idx
+    copy_master_views_idx_by_path = {master_views[idx][PATH]: idx
                                     for idx in range(0, len(master_views))
                                     if (recreating_db
-                                        or master_views[idx]['path'].startswith('ic3db-'))}
+                                        or master_views[idx][PATH].startswith(IC3DB))}
 
     # Copy the master view tabs to the selected view tabs
     for selected_idx in range(0, len(selected_views)):
-        selected_view_path = selected_views[selected_idx]['path']
+        selected_view_path = selected_views[selected_idx][PATH]
         if selected_view_path in copy_master_views_idx_by_path:
             master_idx = copy_master_views_idx_by_path[selected_view_path]
             selected_views[selected_idx] = master_views[master_idx]
@@ -312,16 +314,16 @@ def _build_main_other_view(self, dashboard_str):
 
     devicenames_main, devices_str = _build_devices_str_main_view(self)
     dashboard_str  = dashboard_str.replace(template_base, devices_str)
-
-    dashboard_str = _set_main_view_template_style(self, dashboard_str)
+    dashboard_str = _insert_main_view_template_style(self, dashboard_str)
 
     template_fname = 'Template-Other-View'
     template_base = self.db_templates['master-template-base']
     template_base  = template_base.replace('^template_name', template_fname)
 
     devicenames_other, devices_str = _build_devices_str_other_view(self, devicenames_main)
-    found = instr(dashboard_str, template_base)
     dashboard_str  = dashboard_str.replace(template_base, devices_str)
+
+    self.main_view_template_style_by_dashboard[self.dbname] = self.ui_main_view_devices
 
     return dashboard_str
 
@@ -383,7 +385,7 @@ def _build_devices_str_main_view(self):
 
     Template styles are:
         'iphone-first-2': 'Display the first 2 iPhones',
-        'iphone-all': 'Display all iPhones',
+        'devices-all': 'Display all iPhones',
         'result-summary': 'Display the Tracking Result Summary for all Devices'}
         devicename
 
@@ -391,86 +393,120 @@ def _build_devices_str_main_view(self):
         - devicenames on the main view
         - devices string to be inserted into the main view on the Master Dashboard
     '''
-    _main_view_template_style = ['']
-    _main_view_template_style.extend([selected_template_style
-                                for selected_template_style in self.main_view_devices
-                                if selected_template_style in DASHBOARD_MAIN_VIEW_STYLE_BASE])
-
-    self.main_view_template_style = _main_view_template_style[-1]
-    idx = self.main_view_devices.index(self.main_view_template_style)
-    self.main_view_devices = self.main_view_devices[idx:]
-
-    if self.main_view_template_style in ['iphone-first-2', 'iphone-all']:
-        devicenames = [devicename   for devicename, fname in lists.devices_selection_list().items()
-                                    if instr(fname, f"({IPHONE_FNAME})")]
-
-        if self.main_view_template_style == 'iphone-first-2':
-            if len(devicenames) > 2:
-                devicenames = devicenames[0:1]
-
-        template_name = 'template-device-block'
-        devices_str   = _build_devices_str(self, template_name, devicenames)
-
-    elif self.main_view_template_style == 'result-summary':
-        devicenames = [conf_device[CONF_IC3_DEVICENAME]
+    active_devicenames = {conf_device[CONF_IC3_DEVICENAME]: (
+                                            f"{conf_device[CONF_TRACKING_MODE]},"
+                                            f"{conf_device[CONF_DEVICE_TYPE]}")
                                     for conf_device in Gb.conf_devices
-                                    if (conf_device[CONF_TRACKING_MODE] == TRACK_DEVICE
-                                            and _selected_devicename(self, conf_device))]
+                                    if conf_device[CONF_TRACKING_MODE] != INACTIVE_DEVICE}
+    selected_devicenames = [devicename
+                                    for devicename in self.ui_main_view_devices
+                                    if devicename in active_devicenames]
+
+
+    format_result_summary = RESULT_SUMMARY in self.ui_main_view_devices
+    format_track_details  = TRACK_DETAILS  in self.ui_main_view_devices
+    if format_result_summary is False and format_track_details is False:
+        format_result_summary = True
+    elif format_result_summary and format_track_details:
+        format_track_details = False
+
+    devices_all    = DEVICES_ALL    in self.ui_main_view_devices
+    devices_2_iphn = IPHONE_FIRST_2 in self.ui_main_view_devices
+    if isnot_empty(selected_devicenames):
+        devices_all = devices_2_iphn = False
+    if devices_all and devices_2_iphn:
+        devices_2_iphn = False
+    if devices_2_iphn is False and is_empty(selected_devicenames):
+        devices_all = True
+
+    if format_result_summary: self.main_view_template_style  = RESULT_SUMMARY
+    if format_track_details:   self.main_view_template_style  = TRACK_DETAILS
+    if devices_all:            self.main_view_template_style += f",{DEVICES_ALL}"
+    if devices_2_iphn:         self.main_view_template_style += f",{IPHONE_FIRST_2}"
+
+    self.ui_main_view_devices = self.main_view_template_style.split(',')
+    if devices_all is False and devices_2_iphn is False:
+        self.ui_main_view_devices.extend(selected_devicenames)
+
+    if devices_2_iphn:
+        selected_devicenames = [devicename
+                                    for devicename, device_info in active_devicenames.items()
+                                    if (instr(device_info, TRACK_DEVICE)
+                                        and instr(device_info, IPHONE))]
+        selected_devicenames = selected_devicenames[:2]
+
+    # Build dashboard 'summary-all/sel' screen for all or selected devices
+    if format_result_summary:
+        devicenames = [devicename   for devicename, device_info in active_devicenames.items()
+                                    if (instr(device_info, TRACK_DEVICE)
+                                        and (devices_all or devicename in selected_devicenames))]
 
         template_name = 'template-trk-results-group'
         devices_str   = _build_devices_str(self, template_name, devicenames)
 
-        devicenames   = list(self.conf_fnames_by_devicename().keys())
+        devicenames   = list(active_devicenames.keys())
         template_name = 'template-battery'
         devices_str  += ','
         devices_str  += _build_devices_str(self, template_name, devicenames)
 
-    else:
-        devicenames = [devicename
-                        for devicename in self.main_view_devices
-                        if devicename in self.conf_fnames_by_devicename()]
+    # Build dashboard  ' Tracking results' screen for all or  first 2 iPhones
+    elif format_track_details:
+        devicenames = [devicename   for devicename, device_info in active_devicenames.items()
+                                    if (instr(device_info, TRACK_DEVICE)
+                                        and (devices_all or devicename in selected_devicenames))]
 
         template_name = 'template-device-block'
         devices_str   = _build_devices_str(self, template_name, devicenames)
 
+    else:
+        devicenames = []
+        devices_str = ''
 
     return devicenames, devices_str
 
-#............................................................................................
-def _selected_devicename(self, conf_device):
-    selected = (is_empty(self.main_view_devices)
-                    or conf_device[CONF_IC3_DEVICENAME] in self.main_view_devices)
-    return selected
+# #............................................................................................
+# def _selected_devicename(self, conf_device):
+#     selected = (is_empty(self.ui_main_view_devices)
+#                     or conf_device[CONF_IC3_DEVICENAME] in self.ui_main_view_devices)
+#     return selected
 
 #............................................................................................
 def _get_main_view_template_style(dashboard_str):
     '''
-    Save the main view style on the Event Log card to be used to update the dashboard
-    after adding a device. Clear all possible styles before setting it to the current one
-    The Main view Styles are iphone-first-2, iphone-all, result-summary
-    '''
-    for style_base_key in DASHBOARD_MAIN_VIEW_STYLE_BASE.keys():
-        style_str = f"{MAIN_VIEW_STYLE_TEMPLATE}{style_base_key}"
-        if instr(dashboard_str, style_str):
-            style_str = style_str.replace(MAIN_VIEW_STYLE_TEMPLATE, '')
-            return style_str
+    The type, device selection and devices on the main screen are at the end of the dashboard
+    and displayed as a heading
 
-    return ''
+    Extract the style (type, devices and devicenames) from the dashboard layout. Search for the
+    "Main-View-Template-Style: text, find the next quote mark and extract the text.
+
+        "...'heading': 'Main-View-Template-Style: result-summary, devices-all, gary_iphone',
+        'heading_style': 'subtitle' ..."
+    '''
+    p = dashboard_str.find(MAIN_VIEW_STYLE_TEMPLATE)
+    if p < 0:
+        return ''
+
+    style_str = dashboard_str[p:]
+    p = style_str.find(' ')
+    style_str = style_str[p+1:]
+    p = style_str.find("'")
+    style_str = style_str[:p]
+    return style_str
 
 #............................................................................................
-def _set_main_view_template_style(self, dashboard_str):
+def _insert_main_view_template_style(self, dashboard_str):
     '''
     Save the main view style on the Event Log card to be used to update the dashboard
     after adding a device. Clear all possible styles before setting it to the current one
     The Main view Styles are iphone-first-2, iphone-all, result-summary
     '''
-    style_str = _get_main_view_template_style(dashboard_str)
-    if style_str != '':
-        style_str = f"{MAIN_VIEW_STYLE_TEMPLATE}{style_str}"
-        dashboard_str = dashboard_str.replace(style_str, MAIN_VIEW_STYLE_TEMPLATE)
+    style_str =(f"{MAIN_VIEW_STYLE_TEMPLATE}"
+                f"{list_to_str(self.ui_main_view_devices)}")
 
-    style_str = f"{MAIN_VIEW_STYLE_TEMPLATE}{self.main_view_template_style}"
-    dashboard_str = dashboard_str.replace(MAIN_VIEW_STYLE_TEMPLATE, style_str)
+    current_style_str = _get_main_view_template_style(dashboard_str)
+    replace_style_str = f"{MAIN_VIEW_STYLE_TEMPLATE}{current_style_str}"
+
+    dashboard_str = dashboard_str.replace(replace_style_str, style_str)
 
     return dashboard_str
 
@@ -483,7 +519,7 @@ def _build_devices_str_other_view(self, devicenames_main):
         devicename
 
     '''
-    if self.main_view_template_style == 'result-summary':
+    if instr(self.main_view_template_style, RESULT_SUMMARY):
         devicenames = list(self.conf_fnames_by_devicename().keys())
 
     else:
@@ -542,8 +578,8 @@ async def _update_lovelace_dashboard_layout_ha_data(self, dbname, dashboard_dict
         dashboard_dict = file_io.json_str_to_dict(dashboard_dict)
 
     Dashboard       = self.ic3db_Dashboards_by_dbname[dbname]
-    dashboard_data  = dashboard_dict['data']['config']
-    Dashboard._data = {'config': dashboard_data}
+    dashboard_data  = dashboard_dict[DATA][CONFIG]
+    Dashboard._data = {CONFIG: dashboard_data}
 
     await Dashboard.async_save(dashboard_data)
 
@@ -588,9 +624,6 @@ async def _load_templates(self):
     for template_filename in template_filenames:
         filename      = f"{directory}/{template_filename}"
         template_json = await file_io.async_read_json_file(filename)
-        # template_json = await Gb.hass.async_add_executor_job(
-        #                     file_io.read_json_file,
-        #                     filename)
 
         template_name = template_filename.split('.')[0]
 
@@ -646,8 +679,8 @@ async def build_existing_dashboards_selection_list(self):
         }
 
     ic3db_db_configs=[
-        {'id': 'ic3db_icloud3_2', 'icon': 'mdi:cloud-alert-outline', 'title': 'iCloud3-2', 'url_path': 'ic3db-icloud3-2', 'show_in_sidebar': True, 'require_admin': False, 'mode': 'storage'},
-        {'id': 'ic3db_icloud3_4', 'icon': 'mdi:cloud-alert-outline', 'title': 'iCloud3-4', 'url_path': 'ic3db-icloud3-4', 'show_in_sidebar': True, 'require_admin': False, 'mode': 'storage'}
+        {'id': 'ic3db_icloud3_2', 'icon': 'mdi:cloud-alert-outline', TITLE: 'iCloud3-2', 'url_path': 'ic3db-icloud3-2', 'show_in_sidebar': True, 'require_admin': False, 'mode': 'storage'},
+        {'id': 'ic3db_icloud3_4', 'icon': 'mdi:cloud-alert-outline', TITLE: 'iCloud3-4', 'url_path': 'ic3db-icloud3-4', 'show_in_sidebar': True, 'require_admin': False, 'mode': 'storage'}
         ]
     '''
 
@@ -689,21 +722,21 @@ async def build_existing_dashboards_selection_list(self):
         # is because the file was not updated. If it is not in _the file, it was probably
         # deleted. But maybe not if the icloud3 configure was exited and then reentered
         # and dbnames_just_added is empty.
-        # if instr(ll_dashboards_file_configs_str, _dbname) is False:
-        #         #or _dbname in self.dbnames_just_added):
-        #     deleted_msg = 'DELETE PENDING, '
-        # else:
         deleted_msg = ''
 
-        dashboard_msg =(f"{_Dashboard.config['title']} > "
+        dashboard_msg =(f"{_Dashboard.config[TITLE]} > "
                         f"{deleted_msg}"
                         f"MainView-({main_view_devices_msg})")
-        if self.main_view_template_style_by_dashboard[_dbname] == 'result-summary':
-            dashboard_msg += ', Results Summary displayed'
+
+        main_view_template_style = self.main_view_template_style_by_dashboard[_dbname]
+        if RESULT_SUMMARY in main_view_template_style:
+            dashboard_msg += f", {DASHBOARD_MAIN_VIEW_STYLE_BASE[RESULT_SUMMARY]}"
+        elif TRACK_DETAILS in main_view_template_style:
+            dashboard_msg += f", {DASHBOARD_MAIN_VIEW_STYLE_BASE[TRACK_DETAILS]}"
 
         self.dbf_dashboard_key_text[_dbname] = dashboard_msg
 
-    self.dbf_dashboard_key_text['add'] = (
+    self.dbf_dashboard_key_text[ADD] = (
                 f"➤ CREATE A NEW ICLOUD3 DASHBOARD")
 
 #-------------------------------------------------------------------------------------------
@@ -712,7 +745,7 @@ def select_available_dashboard(self):
     Get the first item in the dashboard list(dashboard #1 or 'add')
     '''
     if self.dbname == '':
-        self.selected_dbname = list(self.dbf_dashboard_key_text.keys())[0]
+        self.ui_selected_dbname = list(self.dbf_dashboard_key_text.keys())[0]
 
     return
 
@@ -743,7 +776,7 @@ async def _get_main_other_views_devicenames(self, dbname, _Dashboard):
         view_other_str = ''
 
     self.main_view_template_style_by_dashboard[dbname] = \
-        _get_main_view_template_style(str(dashboard_view_dict))
+                    _get_main_view_template_style(str(dashboard_view_dict))
 
     # Build device info msg for any devices found in the Dashboard
     main_view_device_fnames  = []
@@ -793,7 +826,7 @@ def _dashboard_layout_views(dbname):
 
     # _Dashboard = Gb.hass.data[LOVELACE_DATA][dbname]
 
-    return Gb.hass.data[LOVELACE_DATA].dashboards[dbname]._data['config']['views']
+    return Gb.hass.data[LOVELACE_DATA].dashboards[dbname]._data[CONFIG][VIEWS]
 
 #-------------------------------------------------------------------------------------------
 async def _load_dashboard_layout_files(self):
@@ -806,7 +839,7 @@ async def _load_dashboard_layout_files(self):
         if _Dashboard._data is None:
             dashboard_layout_dict = await _read_dashboard_layout_file(_dbname)
             _Dashboard._data = {}
-            _Dashboard._data['config'] = dashboard_layout_dict['data']['config']
+            _Dashboard._data[CONFIG] = dashboard_layout_dict[DATA][CONFIG]
             await _Dashboard.async_load(force=True)
 
     return
@@ -823,10 +856,6 @@ async def _read_dashboard_layout_file(dbname):
     try:
         dashboard_file = f"{Gb.ha_storage_directory}/lovelace.{dbname.replace('-', '_')}"
         dashboard_layout_dict = await file_io.async_read_json_file(dashboard_file)
-        # dashboard_layout_dict = await Gb.hass.async_add_executor_job(
-        #                                     file_io.read_json_file,
-        #                                     dashboard_file)
-
 
         return dashboard_layout_dict
 
@@ -866,14 +895,12 @@ def _load_ic3db_Dashboards_by_dbname(self):
         dictionary of {_dbname: _Dashboard object}
     '''
 
-
     self.ic3db_Dashboards_by_dbname = {_dbname: _Dashboard
                     for _dbname, _Dashboard in Gb.hass.data[LOVELACE_DATA].dashboards.items()
                     if (_dbname is not None
-                        and _dbname.startswith('ic3db-')
+                        and _dbname.startswith(IC3DB)
                         and _Dashboard is not None
-                        and _Dashboard.config['url_path'].startswith('ic3db-'))}
-
+                        and _Dashboard.config['url_path'].startswith(IC3DB))}
 
 #-------------------------------------------------------------------------------------------
 #       .STORAGE/LOVELACE_DASHBOARDS CONFIG FILE FUNCTIONS
@@ -890,7 +917,7 @@ async def _add_dashboard_to_lovelace_dashboards(self, dbname):
         return
 
     url_path = dbname
-    title    = dbname.replace('ic3db-', '').replace('icloud3', 'iCloud3')
+    title    = dbname.replace(IC3DB, '').replace('icloud3', 'iCloud3')
     icon     = _icon(dbname)
 
     dashboard_config = {
@@ -906,7 +933,7 @@ async def _add_dashboard_to_lovelace_dashboards(self, dbname):
     db_collections_item = {
         'allow_single_word': True,
         'icon': icon,
-        'title': title,
+        TITLE: title,
         'url_path': dbname,
         }
 
@@ -923,7 +950,6 @@ async def _add_dashboard_to_lovelace_dashboards(self, dbname):
 
     await dashboards_collection.async_create_item(db_collections_item)
 
-    # self.dashboard_config_just_added = dashboard_config
     # Force lovelace_dashboards save since async_create_item does a delayed save. It will be updated
     # again in async_create_item
     await _add_dashboard_to_lovelace_dashboards_file(dbname, dashboard_config)
@@ -983,15 +1009,12 @@ async def _read_lovelace_dashboards_file():
     try:
         dashboards_file = f"{Gb.ha_storage_directory}/lovelace_dashboards"
         dashboards_config = await file_io.async_read_json_file(dashboards_file)
-        # dashboards_config = await Gb.hass.async_add_executor_job(
-        #                                     file_io.read_json_file,
-        #                                     dashboards_file)
 
         if is_empty(dashboards_config):
             return []
 
-        ic3db_db_configs = [config for config in dashboards_config['data']['items']
-                                if config['url_path'].startswith('ic3db-')]
+        ic3db_db_configs = [config for config in dashboards_config[DATA][ITEMS]
+                                if config['url_path'].startswith(IC3DB)]
 
         return ic3db_db_configs
 
@@ -1009,16 +1032,13 @@ async def _add_dashboard_to_lovelace_dashboards_file(dbname, dashboard_config):
     try:
         lovelace_dashboards_file = f"{Gb.ha_storage_directory}/lovelace_dashboards"
         lovelace_dashboards = await file_io.async_read_json_file(lovelace_dashboards_file)
-        # lovelace_dashboards = await Gb.hass.async_add_executor_job(
-        #                     file_io.read_json_file,
-        #                     lovelace_dashboards_file)
 
         log_debug_msg(f"Updating {lovelace_dashboards_file}, URL-{dashboard_config['url_path']}")
-        for item in lovelace_dashboards['data']['items']:
+        for item in lovelace_dashboards[DATA][ITEMS]:
             if item['url_path'] == dbname:
                 return False
 
-        lovelace_dashboards['data']['items'].append(dashboard_config)
+        lovelace_dashboards[DATA][ITEMS].append(dashboard_config)
 
         await file_io.async_save_json_file(lovelace_dashboards_file, lovelace_dashboards)
 

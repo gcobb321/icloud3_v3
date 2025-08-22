@@ -240,7 +240,7 @@ class InternetConnection_ErrorHandler:
                         f"for less than 1-min")
 
         post_event(f"{EVLOG_BROWN_BAR}{event_msg}")
-        log_error_msg(f"{EVLOG_ALERT}{event_msg}")
+        log_error_msg(f"iCloud3 Alert > {event_msg}")
 
         update_alert_sensor(ALERT_CRITICAL, f"Internet Connection restored at "
                                             f"{secs_to_time(time_now_secs())}")

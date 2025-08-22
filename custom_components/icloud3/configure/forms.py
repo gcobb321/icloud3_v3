@@ -45,7 +45,7 @@ from ..const            import (RED_ALERT, LINK, RLINK, RARROW,
                                 CF_PROFILE,
                                 )
 
-from ..utils.utils      import (instr, isbetween, list_to_str, list_add, is_empty, isnot_empty,
+from ..utils.utils      import (instr, isbetween, list_to_str, list_add, list_del, is_empty, isnot_empty,
                                 zone_dname, decode_password, dict_value_to_list,
                                 six_item_list, six_item_dict, )
 from ..utils.messaging  import (log_exception, log_debug_msg, log_info_msg,
@@ -58,7 +58,6 @@ from .                  import selection_lists as lists
 from .const_form_lists  import *
 from ..mobile_app       import mobapp_interface
 from ..startup          import config_file
-
 
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 #             USER - INITIAL ADD INTEGRATION
@@ -808,19 +807,39 @@ def form_update_other_device_parameters(self):
 #           DASHBOARD BUILDER FORM
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 def form_dashboard_builder(self):
+    dbname = self.ui_selected_dbname
     self.actions_list = []
-    action_default = 'update_dashboard'
+    action_default = 'create_dashboard'
+    self.actions_list.append(ACTION_LIST_OPTIONS['create_dashboard'])
     if isnot_empty(self.dbf_dashboard_key_text):
         self.actions_list.append(ACTION_LIST_OPTIONS['update_dashboard'])
-    self.actions_list.append(ACTION_LIST_OPTIONS['create_dashboard'])
     self.actions_list.append(ACTION_LIST_OPTIONS['cancel_goto_menu'])
 
     # Set default dashboard to current dashboard, the previous dashboard or 'add'
-    default_dbname = self.dbf_dashboard_key_text[self.selected_dbname]
+    default_dbname = self.dbf_dashboard_key_text[dbname]
 
     self.dbf_main_view_devices_key_text = {}
     self.dbf_main_view_devices_key_text.update(DASHBOARD_MAIN_VIEW_STYLE_BASE)
     self.dbf_main_view_devices_key_text.update(lists.devices_selection_list())
+
+    if self.main_view_template_style == '':
+        self.main_view_template_style = f"{RESULT_SUMMARY}, {DEVICES_ALL}"
+        list_add(self.ui_main_view_devices, RESULT_SUMMARY)
+        list_add(self.ui_main_view_devices, DEVICES_ALL)
+
+    main_view_template_style = self.main_view_template_style_by_dashboard.get(dbname, '')
+    if instr(main_view_template_style, RESULT_SUMMARY):
+        list_add(self.ui_main_view_devices, RESULT_SUMMARY)
+        list_del(self.ui_main_view_devices, TRACK_DETAILS)
+    if instr(main_view_template_style, TRACK_DETAILS):
+        list_add(self.ui_main_view_devices, TRACK_DETAILS)
+        list_del(self.ui_main_view_devices, RESULT_SUMMARY)
+    if instr(main_view_template_style, DEVICES_ALL):
+        list_add(self.ui_main_view_devices, DEVICES_ALL)
+        list_del(self.ui_main_view_devices, IPHONE_FIRST_2)
+    if instr(main_view_template_style, IPHONE_FIRST_2):
+        list_add(self.ui_main_view_devices, IPHONE_FIRST_2)
+        list_del(self.ui_main_view_devices, DEVICES_ALL)
 
     return vol.Schema({
         vol.Required('selected_dashboard',
@@ -828,7 +847,7 @@ def form_dashboard_builder(self):
                     selector.SelectSelector(selector.SelectSelectorConfig(
                         options=dict_value_to_list(self.dbf_dashboard_key_text), mode='list')),
         vol.Required('main_view_devices',
-                    default=self.main_view_devices):
+                    default=self.ui_main_view_devices):
                     cv.multi_select(six_item_dict(self.dbf_main_view_devices_key_text)),
 
         vol.Required('action_items',

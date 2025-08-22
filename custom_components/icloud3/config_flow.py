@@ -486,24 +486,24 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
         self.cdo_curr_idx      = 0
 
         # Dashboard Builder
-        self.db_templates               = {}    # iCloud3 device templates from icloud3/dashboard folder
-        self.db_templates_used          = []    # Templates used in master-dashboard template
-        self.db_templates_used_by_device = []   # Templates used in master-dashboard template to be built
-                                                # by device rather than by template. the names start with
-                                                # template-device
-        self.master_dashboard           = {}    # Master Dashboard dictionary (json str --> dict)
-        self.dashboards                 = []    # List of dashboards (lovelace.icloud3_xxx files) in conig./storage)
-        self.icloud3_dashboards         = []    # List of iCloud3 dashboards created by the Dashboard Builder
-        self.ic3db_Dashboards_by_dbname = {}    # HA Dashboard by dashboard name for Dashboards with Device-x available
-        self.AllDashboards_by_dashboard = {}    # All HA Dashboard objects by dashboard name
-        self.selected_dbname            = 'add' # Dashboard currently selected on Dashboard Builder screen
-        self.dbname                     = ''    # Dashboard  being created or updates
-        self.Dashboard                  = None
-        self.dbnames_just_added         = []    # The dbnames (url_path) added in this session. Used to see if the dashboard was deleted
+        self.db_templates                = {}    # iCloud3 device templates from icloud3/dashboard folder
+        self.db_templates_used           = []    # Templates used in master-dashboard template
+        self.db_templates_used_by_device = []    # Templates used in master-dashboard template to be built
+                                                    # by device rather than by template. the names start with
+                                                    # template-device
+        self.master_dashboard            = {}    # Master Dashboard dictionary (json str --> dict)
+        self.dashboards                  = []    # List of dashboards (lovelace.icloud3_xxx files) in conig./storage)
+        self.icloud3_dashboards          = []    # List of iCloud3 dashboards created by the Dashboard Builder
+        self.ic3db_Dashboards_by_dbname  = {}    # HA Dashboard by dashboard name for Dashboards with Device-x available
+        self.AllDashboards_by_dashboard  = {}    # All HA Dashboard objects by dashboard name
+        self.ui_selected_dbname          = ADD   # Dashboard currently selected on Dashboard Builder screen
+        self.dbname                      = ''    # Dashboard  being created or updates
+        self.Dashboard                   = None
+        self.dbnames_just_added          = []    # The dbnames (url_path) added in this session. Used to see if the dashboard was deleted
         self.dbf_main_view_devices_key_text = {}
-        self.main_view_template_style   = ''    # Template used to build main view iphone-fitst-2/all, result summary
-        self.main_view_devices          = ['result-summary']    # Devices to be inserted into the dashboard layout
-        self.dbf_dashboard_key_text     = {}    # db form device selection dictionary
+        self.main_view_template_style    = ''    # Template used to build main view iphone-fitst-2/all, result summary
+        self.ui_main_view_devices        = [RESULT_SUMMARY, DEVICES_ALL]    # Devices to be inserted into the dashboard layout
+        self.dbf_dashboard_key_text      = {}    # db form device selection dictionary
 
         self.main_view_device_fnames_by_dashboard  = {}    # Devices on the Main view of the dashboard
         self.main_view_devicenames_by_dashboard    = {}    # Devicenames on the Main view of the dashboard
@@ -3704,14 +3704,11 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
         if action_item == 'cancel_goto_menu':
             return await self.async_step_menu()
 
-        # if 'selected_dashboard' not in user_input:
-        #     user_input['selected_dashboard'] = 'add'
-
-        self.selected_dbname = user_input.get('selected_dashboard', 'add')
-        if self.selected_dbname == 'add':
+        self.ui_selected_dbname = user_input.get('selected_dashboard', 'add')
+        if self.ui_selected_dbname == 'add':
             action_item == 'create_dashboard'
 
-        self.main_view_devices  = [devicename
+        self.ui_main_view_devices  = [devicename
                                         for devicename in user_input['main_view_devices']
                                         if devicename.startswith('.') is False]
         self.errors = {}
@@ -3731,7 +3728,7 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
 
 # #-------------------------------------------------------------------------------------------
     def _validate_dashboard_user_input(self, action_item, user_input):
-        if is_empty(self.main_view_devices):
+        if is_empty(self.ui_main_view_devices):
             self.errors['main_view_devices'] = 'required_field'
 
 

@@ -3,6 +3,25 @@ from ..global_variables  import GlobalVariables as Gb
 from ..const             import (NAME, BATTERY, WAZE_SERVERS_FNAME, )
 
 #----------------------------------------------------------------------------------------
+# Dashboard constants
+RESULT_SUMMARY = 'result-summary'
+TRACK_DETAILS  = 'track-details'
+DEVICES_ALL    = 'devices-all'
+IPHONE_FIRST_2 = 'iphone-first-2'
+
+DATA           = 'data'
+CONFIG         = 'config'
+ITEMS          = 'items'
+VIEWS          = 'views'
+TITLE          = 'title'
+PATH           = 'path'
+ADD            = 'add'
+IC3DB          = 'ic3db-'
+
+DATA_ENTRY_ALERT_CHAR = '⛔'
+DATA_ENTRY_ALERT      = f"      {DATA_ENTRY_ALERT_CHAR} "
+
+#----------------------------------------------------------------------------------------
 MENU_PAGE_0_INITIAL_ITEM = 1
 MENU_PAGE_TITLE = [
         'Devices & Sensors Menu',
@@ -90,8 +109,8 @@ ACTION_LIST_OPTIONS = {
         'restart_ic3_later':        'RESTART LATER > The configuration changes have been saved. Load the updated configuration the next time iCloud3 is started',
         'review_inactive_devices':  'REVIEW INACTIVE DEVICES > Some Devices are `Inactive` and will not be located or tracked ^add-text^',
 
-        'update_dashboard':         'UPDATE A DASHBOARD > Update the *All Info, *Track Results & *Badge, Battery views with the current devices (Main and Other Devices views are not updated)',
-        'create_dashboard':         'RECREATE A DASHBOARD > Erase and recreate an existing Dashboard with current devices, Create a new Dashboard',
+        'update_dashboard':         'UPDATE DEVICES ON *TEMPLATE VIEWS > Recreate the *All Info, *Track Results & *Badge, Battery views, Main and Other Devices views are not updated',
+        'create_dashboard':         'CREATE/RESET A DASHBOARD (ALL VIEWS) > Erase and recreate an existing Dashboard with current devices, Create a new Dashboard',
 
         'select_text_as':           'SELECT > Update selected `Display Text As‘ field',
         'clear_text_as':            'CLEAR > Remove `Display Text As‘ entry',
@@ -188,8 +207,8 @@ CONFIRM_ACTIONS =  [
         ACTION_LIST_OPTIONS['confirm_action_yes'],
         ACTION_LIST_OPTIONS['confirm_return_no']]
 DASHBOARD_BUILDER_ACTIONS = [
-        ACTION_LIST_OPTIONS['update_dashboard'],
         ACTION_LIST_OPTIONS['create_dashboard'],
+        ACTION_LIST_OPTIONS['update_dashboard'],
         ACTION_LIST_OPTIONS['cancel_goto_menu']]
 TOOL_LIST = {
         'reset_data_source':      'CLEAR DEVICE`S DATA SOURCE SELECTIONS > Erase the `Apple Acct Device` and `Mobile App Device` selection fields for all iCloud3 devices (Update iCloud3 Device screen)',
@@ -238,9 +257,10 @@ PICTURE_NONE_KEY_TEXT = {
         'None': 'None - Display the Device’s Icon instead of a picture'
         }
 DASHBOARD_MAIN_VIEW_STYLE_BASE = {
-        'result-summary':   'Tracking Result Summary',
-        'iphone-first-2':   'Tracking Results & Status - 2 iPhones',
-        'iphone-all':       'Tracking Results & Status - All iPhones',
+        'result-summary': 'Result Summary',
+        'track-details':  'Tracking Details',
+        'devices-all':    'All Devices',
+        'iphone-first-2': 'First 2 iPhones',
         }
 LOG_ZONES_KEY_TEXT = {
         'name-zone':        ' → [year]-[zone].csv',
@@ -454,6 +474,3 @@ DATA_SOURCE_MOBAPP_HDR = (
         "HA MOBILE APP > Location data and zone Enter/Exit triggers are provided by the Mobile App")
 
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-
-DATA_ENTRY_ALERT_CHAR = '⛔'
-DATA_ENTRY_ALERT      = f"      {DATA_ENTRY_ALERT_CHAR} "

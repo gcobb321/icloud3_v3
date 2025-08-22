@@ -1,4 +1,4 @@
-### Important Links:
+### 📌 Important Links:
 **Installing for the first time_** - See [here](https://gcobb321.github.io/icloud3_v3_docs/#/chapters/3.2-installing-and-configuring) for instructions on installing as a New Installation
 **iCloud3 v3 Documentation** - iCloud3 User Guide can be found [here](https://gcobb321.github.io/icloud3_v3_docs/#/)
 **Migrating from v2.4.7_** - See [here](https://gcobb321.github.io/icloud3_v3_docs/#/chapters/3.1-migrating-v2-to-v3) for instructions on migrating from from an older version.
@@ -7,21 +7,36 @@
 *Thanks to all of you who clicked the coffee cup icon on the Event Log and bought me a coffee.*
 Gary
 
+
+
+📢🚩🐛✨💥🚀🎁
+
+
+
 <a href="https://www.buymeacoffee.com/gcobb321" target="_blank">
 <img src="https://gcobb321.github.io/icloud3_v3_docs/images/buymeacoffee-docs-button-icon.png" width="150" height="50"></a>
 
 
-Home Assistant OS (HAOS v16.1 notes)
+### iCloud3 ➤ v3.2.4.1 (8/22/2025)
+### 🐞 Bug Fixes
+1. Dashboard Builder:
+    - Fixed a problem where the Dashboard Builder would fail if 'All Devices' was selected from the _Main View Devices_ selection list.
+
+### ✨ Improvements
+1. Dashboard Builder:
+    - The Devices to be displayed on the Main View (All Devices, First 2 iPhones or specific devices) can now be selected for both of the Main View formats (Result Summary & Tracking Details).
+    - Changed the Action options description t better describe their functions.
+
 
 
 ### iCloud3 ➤ v3.2.4 (8/15/2025)
-### 🐛 Bug Fixes
+### 🐞 Bug Fixes
 1. Dashboard Builder:
      - Fixed an error reading the base template and dashboard files that are used to construct new dashboards.
      - Fixed a problem where all devices would be inserted into a dashboards instead of only the selected ones.
 2. iCloud3 Log File - Fixed a problem when the log-level was set to 'unfiltered'.
 
-### 🎉 Improvements
+### ✨ Improvements
 1. Internet Connection Error - Added the following:
     - The Event Log error description message and alerts are added after the internet has been down for 1-minute to prevent very short dropouts from creating a lot of unnecessary messages.
     - Improved the error detection and testing done when verifying that Apple (icloud.com) can be connected to after the Internet is back online.
