@@ -1,0 +1,16 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"errorLens.addNumberOfDiagnostics": true,
+		"errorLens.fontStyleItalic": true,
+		"errorLens.fontWeight": "bold",
+		"errorLens.gutterIconsEnabled": true,
+		"files.associations": {
+			"*.yaml": "home-assistant"
+		}
+	}
+}
