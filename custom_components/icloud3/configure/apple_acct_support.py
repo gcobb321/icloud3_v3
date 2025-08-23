@@ -16,6 +16,7 @@ from ..utils.messaging  import (post_event, post_monitor_msg, post_error_msg, up
 from .                  import selection_lists as lists
 
 from ..apple_acct.pyicloud_ic3  import (PyiCloudManager, PyiCloudFailedLoginException, )
+from ..apple_acct.pyicloud_session  import (HTTP_RESPONSE_CODES )
 from ..startup          import start_ic3
 from ..utils            import file_io
 
@@ -152,11 +153,9 @@ async def log_into_apple_account(self, user_input, called_from_step_id=None):
         # if called_from_step_id == 'update_apple_acct':
         response_code = Gb.PyiCloudLoggingInto.response_code
         if Gb.PyiCloudLoggingInto.response_code_pwsrp_err == 503:
+            response_code = 503
             list_add(Gb.username_pyicloud_503_internet_error, username)
-            error_msg = 'apple_acct_login_error_503'
         elif response_code == 302:
-            error_msg = 'apple_acct_login_error_302'
-
             if Gb.PyiCloudLoggingInto is not None:
                 country_code = Gb.PyiCloudLoggingInto.account_country_code
                 apple_server_location = Gb.PyiCloudLoggingInto.apple_server_location
@@ -174,6 +173,7 @@ async def log_into_apple_account(self, user_input, called_from_step_id=None):
             self.errors[CONF_USERNAME] = 'apple_acct_invalid_upw'
         else:
             self.errors['base'] = 'apple_acct_login_error_other'
+        error_msg = HTTP_RESPONSE_CODES.get(response_code, 'Other Error')
 
         log_info_msg(   f"Apple Acct > {username}, Login Failed, "
                         f"Error-{err}/{error_msg}, Code-{response_code}")

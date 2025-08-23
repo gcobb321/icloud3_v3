@@ -19,9 +19,8 @@ Gary
 
 ### iCloud3 ➤ v3.2.4.1 (8/22/2025)
 ### 🐞 Bug Fixes
-1. Dashboard Builder:
-    - Fixed a problem where the Dashboard Builder would fail if 'All Devices' was selected from the _Main View Devices_ selection list.
-
+1. Dashboard Builder - Fixed a problem where the Dashboard Builder would fail if 'All Devices' was selected from the _Main View Devices_ selection list.
+2. Apple Account Login - Fixed a problem where the error message description was not being set correctly when logging into an Apple Account being added failed.
 ### ✨ Improvements
 1. Dashboard Builder:
     - The Devices to be displayed on the Main View (All Devices, First 2 iPhones or specific devices) can now be selected for both of the Main View formats (Result Summary & Tracking Details).

@@ -60,18 +60,20 @@ AUTHENTICATION_NEEDED_450 = 450
 CONNECTION_ERROR_503 = 503
 
 HTTP_RESPONSE_CODES = {
-    200: 'iCloud Server Responded',
+    0: 'Unknown Error',
+    200: ' Successful Response',
+    201: 'Device Offline',    
     204: 'Verification Code Accepted',
-    421: 'Verification Code May Be Needed',
-    450: 'Verification Code May Be Needed',
-    500: 'Verification Code May Be Needed',
-    503: 'Apple Server Refused SRP Password Validation Request',
+    302: 'Apple Server not Available (Connection Error)',
     400: 'Invalid Verification Code',
+    401: 'Invalid  Username/Password',
     403: 'Verification Code Requested',
     404: 'Apple http Error, Web Page not Found',
-    201: 'Device Offline',
+    421: 'Verification Code May Be Needed',
+    450: 'Verification Code May Be Needed',    
+    500: 'Verification Code May Be Needed',
+    503: 'Apple Server Refused Password Validation Request',
     -2:  'Apple Server not Available (Connection Error)',
-    302: 'Apple Server not Available (Connection Error)',
 }
 HTTP_RESPONSE_CODES_IDX = {str(code): code for code in HTTP_RESPONSE_CODES.keys()}
 
