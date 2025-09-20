@@ -7,7 +7,7 @@ from ..const            import (CRLF_DOT, EVLOG_NOTICE, EVLOG_ERROR, EVLOG_ALERT
                                 ALERT_APPLE_ACCT,
                                 )
 
-from ..utils.utils      import (instr, isnumber, is_empty, isnot_empty, list_add, list_del,
+from ..utils.utils      import (instr, is_number, is_empty, isnot_empty, list_add, list_del,
                                 encode_password, decode_password, username_id, )
 from ..utils.messaging  import (post_event, post_monitor_msg, post_error_msg, update_alert_sensor,
                                 log_exception, log_debug_msg, log_info_msg, _log, _evlog,
@@ -156,14 +156,13 @@ async def log_into_apple_account(self, user_input, called_from_step_id=None):
             response_code = 503
             list_add(Gb.username_pyicloud_503_internet_error, username)
         elif response_code == 302:
-            if Gb.PyiCloudLoggingInto is not None:
-                country_code = Gb.PyiCloudLoggingInto.account_country_code
-                apple_server_location = Gb.PyiCloudLoggingInto.apple_server_location
-
-                if (country_code == 'CHN' and apple_server_location == 'usa'):
-                    self.errors[CONF_SERVER_LOCATION] = 'apple_acct_login_error_302_cn'
-                elif (country_code != 'CHN' and apple_server_location == '.cn'):
-                    self.errors[CONF_SERVER_LOCATION] = 'apple_acct_login_error_302_usa'
+            apple_server_location = Gb.PyiCloudLoggingInto.apple_server_location
+            if (apple_server_location == 'usa'):
+                self.errors[CONF_SERVER_LOCATION] = 'apple_acct_login_error_302_cn'
+            elif (apple_server_location == '.cn'):
+                self.errors[CONF_SERVER_LOCATION] = 'apple_acct_login_error_302_usa'
+            else:
+                self.errors[CONF_SERVER_LOCATION] = 'apple_acct_login_error_302'
 
         elif response_code == 400:
             self.errors['base'] = 'apple_acct_invalid_upw'
@@ -171,11 +170,19 @@ async def log_into_apple_account(self, user_input, called_from_step_id=None):
             self.errors['base'] = 'apple_acct_login_error_srp_401'
         elif response_code == 401:
             self.errors[CONF_USERNAME] = 'apple_acct_invalid_upw'
+        elif response_code == 302:
+            apple_server_location = Gb.PyiCloudLoggingInto.apple_server_location
+            if (apple_server_location == 'usa'):
+                self.errors[CONF_SERVER_LOCATION] = 'apple_acct_login_error_302_cn'
+            elif (apple_server_location == '.cn'):
+                self.errors[CONF_SERVER_LOCATION] = 'apple_acct_login_error_302_usa'
+            else:
+                self.errors[CONF_SERVER_LOCATION] = 'apple_acct_login_error_302'
         else:
             self.errors['base'] = 'apple_acct_login_error_other'
         error_msg = HTTP_RESPONSE_CODES.get(response_code, 'Other Error')
 
-        log_info_msg(   f"Apple Acct > {username}, Login Failed, "
+        post_error_msg( f"Apple Acct > {username}, Login Failed, "
                         f"Error-{err}/{error_msg}, Code-{response_code}")
 
     except Exception as err:
@@ -314,9 +321,9 @@ async def async_finish_authentication_and_data_refresh(caller_self):
                                 PyiCloud.authenticate)
 
     if PyiCloud.login_successful is False:
-        err_msg = ( f"Apple Acct > {caller_self.username_base}, Authentication Failed, "
-                            f"{caller_self.response_code_desc}, "
-                            f"AppleServerLocation-`{caller_self.apple_server_location}`, "
+        err_msg = ( f"Apple Acct > {PyiCloud.username_base}, Authentication Failed, "
+                            f"{PyiCloud.response_code_desc}, "
+                            f"AppleServerLocation-`{PyiCloud.apple_server_location}`, "
                             "Location Data not Refreshed")
         post_error_msg(err_msg)
         return

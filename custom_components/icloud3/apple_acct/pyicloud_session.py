@@ -62,7 +62,7 @@ CONNECTION_ERROR_503 = 503
 HTTP_RESPONSE_CODES = {
     0: 'Unknown Error',
     200: ' Successful Response',
-    201: 'Device Offline',    
+    201: 'Device Offline',
     204: 'Verification Code Accepted',
     302: 'Apple Server not Available (Connection Error)',
     400: 'Invalid Verification Code',
@@ -70,7 +70,7 @@ HTTP_RESPONSE_CODES = {
     403: 'Verification Code Requested',
     404: 'Apple http Error, Web Page not Found',
     421: 'Verification Code May Be Needed',
-    450: 'Verification Code May Be Needed',    
+    450: 'Verification Code May Be Needed',
     500: 'Verification Code May Be Needed',
     503: 'Apple Server Refused Password Validation Request',
     -2:  'Apple Server not Available (Connection Error)',
@@ -145,8 +145,9 @@ class PyiCloudSession(Session):
 
         self.response_code = 0
         self.response_ok   = True
-        self.host_ip_addr_by_hostname = {}
+
         self.cancel_request_timeout_fct = None
+        self.cancel_request_timeout_timer()
         self.request_timeout_time = dt.timedelta(seconds=60)
 
         super().__init__()
@@ -391,6 +392,7 @@ class PyiCloudSession(Session):
 
 #----------------------------------------------------------------------------
     def request_timed_out(self, timeout_time=None):
+
         Gb.internet_error = True
         post_event(f"{EVLOG_ALERT}Internet Connection Error Detected (www.icloud.com) > "
                         "More than 1-min since last location request with no response. "
@@ -402,6 +404,7 @@ class PyiCloudSession(Session):
 
 #------------------------------------------------------------------
     def cancel_request_timeout_timer(self):
+
         Gb.last_PyiCloud_request_secs = 0
         if self.cancel_request_timeout_fct is not None:
             self.cancel_request_timeout_fct()

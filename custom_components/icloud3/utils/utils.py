@@ -164,7 +164,7 @@ def isnot_statzone(zone):
     return (instr(zone, STATIONARY) is False)
 
 #--------------------------------------------------------------------
-def isnumber(string):
+def is_number(string):
 
     try:
         test_number = float(string)
@@ -199,7 +199,7 @@ def isnot_empty(list_dict_str):
 
 #--------------------------------------------------------------------
 def round_to_zero(number):
-    if isnumber(number) is False:
+    if is_number(number) is False:
         return number
 
     int_number = int(number*100000000)

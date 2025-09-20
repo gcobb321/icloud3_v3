@@ -6,8 +6,9 @@ from ..const             import (NAME, BATTERY, WAZE_SERVERS_FNAME, )
 # Dashboard constants
 RESULT_SUMMARY = 'result-summary'
 TRACK_DETAILS  = 'track-details'
-DEVICES_ALL    = 'devices-all'
+ALL_DEVICES    = 'all-devices'
 IPHONE_FIRST_2 = 'iphone-first-2'
+ALL_IPH2_DEVICES = [ALL_DEVICES, IPHONE_FIRST_2]
 
 DATA           = 'data'
 CONFIG         = 'config'
@@ -47,14 +48,14 @@ MENU_KEY_TEXT = {
         'select':               'SELECT > Select the parameter update form',
         'next_page_0':          f'{MENU_PAGE_TITLE[0].upper()} > iCloud Account & Mobile App, iCloud3 Devices, Enter & Request Verification Code; Change Device Order; Sensors; Action Commands',
         'next_page_1':          f'{MENU_PAGE_TITLE[1].upper()} > Tracking Parameters, Field Formats & Directories, Display Text As, Waze Route Distance/Time & History, Special Zones, Default inZone Intervals',
-        'exit':                 f'EXIT AND RESTART/RELOAD ICLOUD3 (Current version is v{Gb.version})'
+        'exit':                 'EXIT AND RESTART ICLOUD3',
+        'exit_update_dashboards': 'EXIT AND RESTART ICLOUD3 - UPDATE DASHBOARDS WITH DEVICE CHANGES'
 }
 
 MENU_KEY_TEXT_PAGE_0 = [
         MENU_KEY_TEXT['data_source'],
         MENU_KEY_TEXT['device_list'],
         MENU_KEY_TEXT['verification_code'],
-        # MENU_KEY_TEXT['away_time_zone'],
         MENU_KEY_TEXT['sensors'],
         MENU_KEY_TEXT['dashboard_builder'],
         MENU_KEY_TEXT['tools'],
@@ -109,8 +110,7 @@ ACTION_LIST_OPTIONS = {
         'restart_ic3_later':        'RESTART LATER > The configuration changes have been saved. Load the updated configuration the next time iCloud3 is started',
         'review_inactive_devices':  'REVIEW INACTIVE DEVICES > Some Devices are `Inactive` and will not be located or tracked ^add-text^',
 
-        'update_dashboard':         'UPDATE DEVICES ON *TEMPLATE VIEWS > Recreate the *All Info, *Track Results & *Badge, Battery views, Main and Other Devices views are not updated',
-        'create_dashboard':         'CREATE/RESET A DASHBOARD (ALL VIEWS) > Erase and recreate an existing Dashboard with current devices, Create a new Dashboard',
+        'create_dashboard':         'CREATE/UPDATE A DASHBOARD > Erase and recreate an existing Dashboard, Create a new Dashboard',
 
         'select_text_as':           'SELECT > Update selected `Display Text As‘ field',
         'clear_text_as':            'CLEAR > Remove `Display Text As‘ entry',
@@ -208,7 +208,6 @@ CONFIRM_ACTIONS =  [
         ACTION_LIST_OPTIONS['confirm_return_no']]
 DASHBOARD_BUILDER_ACTIONS = [
         ACTION_LIST_OPTIONS['create_dashboard'],
-        ACTION_LIST_OPTIONS['update_dashboard'],
         ACTION_LIST_OPTIONS['cancel_goto_menu']]
 TOOL_LIST = {
         'reset_data_source':      'CLEAR DEVICE`S DATA SOURCE SELECTIONS > Erase the `Apple Acct Device` and `Mobile App Device` selection fields for all iCloud3 devices (Update iCloud3 Device screen)',
@@ -256,10 +255,16 @@ MOBAPP_DEVICE_NONE_OPTIONS = {
 PICTURE_NONE_KEY_TEXT = {
         'None': 'None - Display the Device’s Icon instead of a picture'
         }
-DASHBOARD_MAIN_VIEW_STYLE_BASE = {
+DASHBOARD_MAIN_VIEW_STYLE_OPTIONS = {
+        'result-summary': 'Result Summary - Show Arrival Time, Distance Travel Time, Battery Info',
+        'track-details':  'Tracking Details - Show all results of a location update',
+        }
+DASHBOARD_MAIN_VIEW_STYLES = {
         'result-summary': 'Result Summary',
         'track-details':  'Tracking Details',
-        'devices-all':    'All Devices',
+        }
+DASHBOARD_MAIN_VIEW_DEVICES_BASE = {
+        'all-devices':    'All Devices',
         'iphone-first-2': 'First 2 iPhones',
         }
 LOG_ZONES_KEY_TEXT = {

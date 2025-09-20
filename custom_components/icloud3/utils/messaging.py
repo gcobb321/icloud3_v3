@@ -17,12 +17,14 @@ set reject_attr = [ 'integration', 'icon', 'sensor_updated', 'friendly_name' ] %
 
 from ..global_variables import GlobalVariables as Gb
 from ..const            import (VERSION, VERSION_BETA, ICLOUD3, ICLOUD3_VERSION, DOMAIN, ICLOUD3_VERSION_MSG,
-                                DOT, ICLOUD3_ERROR_MSG, EVLOG_DEBUG, EVLOG_ERROR, EVLOG_INIT_HDR, EVLOG_MONITOR,
+                                ICLOUD3_ERROR_MSG, EVLOG_DEBUG, EVLOG_ERROR, EVLOG_INIT_HDR, EVLOG_MONITOR,
                                 EVLOG_TIME_RECD, EVLOG_UPDATE_HDR, EVLOG_UPDATE_START, EVLOG_UPDATE_END,
                                 EVLOG_ALERT, EVLOG_WARNING, EVLOG_HIGHLIGHT, EVLOG_IC3_STARTING,EVLOG_IC3_STAGE_HDR,
                                 ALERT_CRITICAL, ALERT_OTHER,
                                 IC3LOG_FILENAME, EVLOG_TIME_RECD, EVLOG_TRACE,
-                                CRLF, CRLF_DOT, NBSP, NBSP2, NBSP3, NBSP4, NBSP5, NBSP6, CRLF_INDENT, LINK,
+                                CRLF, CRLF_DOT, CRLF_HDOT, NL4, NLSP4, NL4_DATA,
+                                NBSP, NBSP2, NBSP3, NBSP4, NBSP5, NBSP6,
+                                DOT, HDOT, CRLF_INDENT, LINK,
                                 DASH_50, DASH_DOTTED_50, TAB_11, RED_ALERT, RED_STOP, RED_CIRCLE, YELLOW_ALERT,
                                 DATETIME_FORMAT, DATETIME_ZERO,
                                 NEXT_UPDATE_TIME, INTERVAL,
@@ -50,7 +52,7 @@ from homeassistant.components  import persistent_notification
 
 import os
 import time
-from inspect                import getframeinfo, stack
+import inspect
 import traceback
 import logging
 
@@ -90,7 +92,7 @@ FILTER_FIELDS = [
         'code', 'ok', 'method', 'securityCode', 'fmly', 'shouldLocate', 'selectedDevice',
         'accountName', 'salt', 'a', 'b', 'c', 'm1', 'm2', 'protocols', 'iteration', 'Authorization',
         'X-Apple-OAuth-State', 'X-Apple-ID-Session-Id', 'Accept',
-         'identifiers', 'labels', 'model', 'name_by_user', 'area_id', 'manufacturer', 'sw_version', ]
+        'identifiers', 'labels', 'model', 'name_by_user', 'area_id', 'manufacturer', 'sw_version', ]
 FILTER_OUT = [
     'features', 'BTR', 'LLC', 'CLK', 'TEU', 'SND', 'ALS', 'CLT', 'PRM', 'SVP', 'SPN', 'XRM', 'NWF', 'CWP',
     'MSG', 'LOC', 'LME', 'LMG', 'LYU', 'LKL', 'LST', 'LKM', 'WMG', 'SCA', 'PSS', 'EAL', 'LAE', 'PIN',
@@ -98,7 +100,6 @@ FILTER_OUT = [
     'rm2State', 'pendingRemoveUntilTS', 'repairReadyExpireTS', 'repairReady', 'lostModeCapable', 'wipedTimestamp',
     'encodedDeviceId', 'scdPh', 'locationCapable', 'trackingInfo', 'nwd', 'remoteWipe', 'canWipeAfterLock', 'baUUID',
     'snd', 'continueButtonTitle', 'alertText', 'cancelButtonTitle', 'createTimestamp',  'alertTitle', ]
-
 
 SP_str = ' '*50
 SP_dict = {
@@ -436,7 +437,6 @@ def write_ic3log_recd(log_msg):
     and renames while iCloud3 is running
     '''
     try:
-        # _log(f"{Gb.iC3Logger=} {Gb.HALogger=}")
         if Gb.iC3Logger is None:
             return
 
@@ -528,30 +528,28 @@ def write_config_file_to_ic3log():
     log_msg = ( f"{ICLOUD3_VERSION_MSG}, "
                 f"{dt_util.now().strftime('%A')}, "
                 f"{dt_util.now().strftime(DATETIME_FORMAT)[:19]}")
-    log_msg = ( f"\n⛔{DASH_50}{DASH_50}"
-                f"\n⛔    {log_msg}"
-                f"\n⛔{DASH_50}{DASH_50}")
+    log_msg = ( f"{NL4}⛔{DASH_50}{DASH_50}"
+                f"{NL4}⛔    {log_msg}"
+                f"{NL4}⛔{DASH_50}{DASH_50}")
 
     # Gb.iC3Logger.info(log_msg)
 
     # Write the ic3 configuration (general & devices) to the Log file
     log_msg  += (f""
-                f"\nPROFILE:"
-                f"\n{Gb.conf_profile}"
-                f"\nGENERAL CONFIGURAION:"
-                f"\n{Gb.conf_general}"
-                f"\n{Gb.ha_location_info}"
-                f"\nTRACKING:"
-                f"\n{conf_tracking_recd}")
+                f"{NLSP4}PROFILE:"
+                f"{NLSP4}{Gb.conf_profile}"
+                f"{NLSP4}GENERAL CONFIGURAION:"
+                f"{NLSP4}{Gb.conf_general}"
+                f"{NLSP4}{Gb.ha_location_info}")
 
     for conf_apple_accounts in Gb.conf_apple_accounts:
-        log_msg += (f"\nAPPLE ACCOUNTS: {conf_apple_accounts.get(CONF_USERNAME)}:"
-                    f"\n{conf_apple_accounts}")
+        log_msg += (f"{NLSP4}APPLE ACCOUNT: {conf_apple_accounts.get(CONF_USERNAME)}:"
+                    f"{NLSP4}{conf_apple_accounts}")
 
     for conf_device in Gb.conf_devices:
-        log_msg += (f"\nDEVICE: {conf_device[CONF_FNAME]}, {conf_device[CONF_IC3_DEVICENAME]}:"
-                    f"\n{conf_device}")
-    log_msg += f"\n{DASH_50}{DASH_50}"
+        log_msg += (f"{NLSP4}DEVICE: {conf_device[CONF_IC3_DEVICENAME]}, {conf_device[CONF_FNAME]}:"
+                    f"{NLSP4}{conf_device}")
+    log_msg += f"{NLSP4}{DASH_50}{DASH_50}"
     log_info_msg(log_msg)
 
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -643,6 +641,48 @@ def log_start_finish_update_banner(start_finish, devicename,
 
     log_info_msg(log_msg)
 
+#--------------------------------------------------------------------
+def log_stack(hdr_msg=None, return_function=False, return_cnt=0):
+    '''
+    (frame=<frame at 0x7f16894c1c60, file '/usr/src/homeassistant/homeassistant/config_entries.py',
+    line 2595, code <genexpr>>, filename='/usr/src/homeassistant/homeassistant/config_entries.py',
+    lineno=2595, function='<genexpr>', code_context=['                create_eager_task(\n'],
+    index=0, positions=Positions(lineno=2595, end_lineno=2602, col_offset=16, end_col_offset=17))
+    '''
+    cnt = -1
+    stack_frames = inspect.stack()
+    hdr_msg = hdr_msg if hdr_msg else ''
+    log_msg = ''
+
+    for frame_recd in stack_frames[1:]:
+        cnt += 1
+        if cnt > 30:
+            break
+
+        filename = frame_recd.filename
+
+        if filename.startswith('/usr/local/lib/python'):
+            break
+
+        # Return function name if this is 1 above the fct that called log_stack
+        if return_function and cnt == 1:
+            return frame_recd.function
+
+        filename = filename.replace('/usr/src/homeassistant/homeassistant', 'ha')
+        filename = filename.replace('/config/custom_components/icloud3', 'ic3')
+
+        log_msg += (f"{NL4}{SP(5)}{DOT}{filename}, {frame_recd.lineno}, {frame_recd.function}, ")
+
+        if return_cnt == 0:
+            if cnt > 0:
+                code = frame_recd.code_context[0].replace('\n', '').strip()
+                log_msg += f"{NL4}{SP(9)}{[code]}"
+        elif return_cnt == cnt:
+            return log_msg
+
+    log_msg = f"{NL4}🟩 LOG STACK: {hdr_msg}{log_msg}"
+    log_info_msg(log_msg)
+
 
 
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -656,9 +696,9 @@ def format_msg_line(log_msg):
             return log_msg
 
         msg_prefix= ' ' if log_msg.startswith('⡇') else \
-                    '\n🔺 ' if instr(log_msg, 'REQUEST') else \
-                    '\n🔻 ' if instr(log_msg, 'RESPONSE') else \
-                    '\n❗' if instr(log_msg, 'ICLOUD DATA') else \
+                    '\n⠀⠀⠀🔺 ' if instr(log_msg, 'REQUEST') else \
+                    '\n⠀⠀⠀🔻 ' if instr(log_msg, 'RESPONSE') else \
+                    '\n⠀⠀⠀❗ ' if instr(log_msg, 'ICLOUD DATA') else \
                     ' ⡇ ' if Gb.trace_group else \
                     ' '
 
@@ -790,7 +830,7 @@ def log_data_unfiltered(title, rawdata, data_source=None, filter_id=None):
         rawdata_copy = rawdata['raw'].copy() if 'raw' in rawdata else rawdata.copy()
 
     except:
-        log_info_msg(f"__ {title.upper()}\n{rawdata}")
+        log_info_msg(f"{title.upper()}{NL4_DATA}{rawdata}")
         return
 
     devices_data = {}
@@ -801,7 +841,7 @@ def log_data_unfiltered(title, rawdata, data_source=None, filter_id=None):
 
         rawdata_copy['content'] = 'DeviceData……'
 
-    log_info_msg(f"__ {title.upper()}\n{rawdata_copy}")
+    log_info_msg(f"{title.upper()}{NL4_DATA}{rawdata_copy}")
 
     for device_data in devices_data:
         log_msg = ( f"iCloud PyiCloud Data (unfiltered -- "
@@ -848,7 +888,7 @@ def log_data(title, rawdata, log_rawdata_flag=False, data_source=None, filter_id
 
     try:
         if type(rawdata) is not dict:
-            log_info_msg(f"__ {title.upper()}\n{rawdata}")
+            log_info_msg(f"{title.upper()}{NL4_DATA}{rawdata}")
             return
 
         rawdata_items = {k: _shrink_value(k, v)
@@ -873,13 +913,13 @@ def log_data(title, rawdata, log_rawdata_flag=False, data_source=None, filter_id
         for data_dict in FILTER_DATA_DICTS:
             filter_results = filter_data_dict(rawdata_data['filter'], data_dict)
             if filter_results:
-                log_msg += f"\n❗   {data_dict}={filter_results}"
+                log_msg += f"{NL4_DATA}{data_dict}={filter_results}"
 
         for data_list in FILTER_DATA_LISTS:
             if data_list in rawdata_data['filter']:
                 filter_results = _filter_data_list(rawdata_data['filter'][data_list])
                 if filter_results:
-                    log_msg += f"\n❗   {data_list}={filter_results}"
+                    log_msg += f"{NL4_DATA}{data_list}={filter_results}"
 
 
         if 'data' in rawdata_data['filter']:
@@ -888,14 +928,14 @@ def log_data(title, rawdata, log_rawdata_flag=False, data_source=None, filter_id
                                             for k, v in rawdata_data['filter']['data'].items()
                                             if k in FILTER_FIELDS and type(v) not in [dict, list]}
                 if rawdata_data_items:
-                    log_msg += f"\n❗   data.items={rawdata_data_items}"
+                    log_msg += f"{NL4_DATA}data.items={rawdata_data_items}"
             except:
                 pass
 
             for data_dict in FILTER_DATA_DICTS:
                 filter_results = filter_data_dict(rawdata_data['filter']['data'], data_dict)
                 if filter_results:
-                    log_msg += f"\n❗   data.{data_dict}={filter_results}"
+                    log_msg += f"{NL4_DATA}data.{data_dict}={filter_results}"
 
 
     if log_msg:
@@ -942,7 +982,7 @@ def _filter_data_list(rawdata_data_list):
                 filter_results['location'].pop('address', None)
 
             if filter_results:
-                filtered_list += f"\n❗     {filter_results['name']}={filter_results}"
+                filtered_list += f"{NL4_DATA}  {filter_results['name']}={filter_results}"
 
         return filtered_list
 
@@ -973,10 +1013,10 @@ def _shrink_value(k, v):
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 def internal_error_msg(err_text, msg_text=''):
 
-    caller   = getframeinfo(stack()[1][0])
+    caller   = inspect.getframeinfo(stack()[1][0])
     filename = os.path.basename(caller.filename).split('.')[0][:12]
     try:
-        parent = getframeinfo(stack()[2][0])
+        parent = inspect.getframeinfo(stack()[2][0])
         parent_lineno = parent.lineno
     except:
         parent_lineno = ''
@@ -1024,7 +1064,7 @@ def post_internal_error(err_text, traceback_format_exec_obj='+'):
     log_error_msg(tb_err_msg)
 
     # rc9 Reworked message extraction due to Python code change
-    err_lines = tb_err_msg.split('\n')
+    err_lines = tb_err_msg.split('{NL4}')
     err_error_msg = err_code = err_file_line_module = ""
     err_lines.reverse()
 
@@ -1043,7 +1083,6 @@ def post_internal_error(err_text, traceback_format_exec_obj='+'):
 
         elif err_line.startswith('File') and err_file_line_module == '':
             err_file_line_module = err_line.replace(Gb.icloud3_directory, '')
-
 
     try:
         err_msg =  (f"{CRLF_DOT}File.. > {err_file_line_module})"
@@ -1082,31 +1121,38 @@ def _evlog(devicename_or_Device, items='+'):
         items = f"{items}"
     items = items.replace('<', '&lt;')
     called_from = _called_from(trace=True)
+    function = log_stack(return_function=True)
 
-    #rc9 Reworked post_event and write_config_file to call modules directly
     if Gb.EvLog:
         Gb.EvLog.post_event(devicename, f"{EVLOG_TRACE}{called_from} {items}")
-    write_ic3log_recd(f"{called_from}⛔.⛔ . . . {devicename} > {items}")
+
+    log_msg = (f"{called_from} [{function}]{NL4}🟩 {items}")
+    write_ic3log_recd(log_msg)
 
 #--------------------------------------------------------------------
 def _log(items, v1='+++', v2='', v3='', v4='', v5=''):
     '''
     Display a message or variable in the HA log file
     '''
+    log_msg = ''
     try:
         called_from = _called_from(trace=True)
-        if v1 == '+++':
-            trace_msg = ''
-        else:
-            trace_msg = (f"|{v1}|-|{v2}|-|{v3}|-|{v4}|-|{v5}|")
+        function = log_stack(return_function=True)
 
-        trace_msg = (f"{called_from}⛔.⛔ . . . {items} {trace_msg}")
+        # res = list(inspect.signature(_log).parameters.keys())
+        # log_msg = (f"{called_from} [{function}]{NL4}🟩 {res}")
+        # write_ic3log_recd(log_msg)
 
-        write_ic3log_recd(trace_msg)
+
+        if v1 != '+++':
+            log_msg = (f"|{v1}|-|{v2}|-|{v3}|-|{v4}|-|{v5}|")
+
+        log_msg = (f"{called_from} [{function}]{NL4}🟩 {items} {log_msg} !!!")
+        write_ic3log_recd(log_msg)
 
     except Exception as err:
-        Gb.HARootLogger.info(trace_msg)
-        # log_exception(err)
+        # Gb.HARootLogger.info(log_msg)
+        log_exception(err)
 
 #--------------------------------------------------------------------
 def _called_from(trace=False):
@@ -1119,7 +1165,7 @@ def _called_from(trace=False):
     level = 0
     while level < 5:
         level += 1
-        caller = getframeinfo(stack()[level][0])
+        caller = inspect.getframeinfo(inspect.stack()[level][0])
 
         if caller.filename.endswith('messaging.py') is False:
             break
@@ -1133,7 +1179,8 @@ def _called_from(trace=False):
         caller_filename = caller_filename.replace('_ic3_', '…')
     caller_filename = f"{caller_filename}……………………"
     caller_lineno = caller.lineno
-
+    # caller_filename_lineno_msg = {'msg': f"{caller_filename[:12]}:{caller_lineno:04} "}
+    # return {caller_filename_lineno_msg['msg']}
     return f"[{caller_filename[:12]}:{caller_lineno:04}] "
 
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>

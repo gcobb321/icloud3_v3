@@ -69,7 +69,7 @@ from ..utils.messaging      import (broadcast_info_msg,
                                     post_error_msg, post_monitor_msg, update_alert_sensor,
                                     post_internal_error,
                                     log_info_msg, log_debug_msg, log_error_msg, log_warning_msg,
-                                    log_data, log_exception, format_filename,
+                                    log_data, log_exception, format_filename, log_stack,
                                     internal_error_msg2,
                                     _evlog, _log, more_info, format_header_box,)
 from ..utils.dist_util      import (format_dist_km, m_to_um, )
@@ -1283,20 +1283,29 @@ def _verify_away_time_zone_devicenames():
     Verify the devicenames in the Away time zone fields
     '''
     update_conf_file_flag = False
-    if Gb.conf_general[CONF_AWAY_TIME_ZONE_1_DEVICES] != 'none':
+
+    if ('none' in Gb.conf_general[CONF_AWAY_TIME_ZONE_1_DEVICES]
+            or 'all' in Gb.conf_general[CONF_AWAY_TIME_ZONE_1_DEVICES]):
+        pass
+    else:
         for devicename in Gb.conf_general[CONF_AWAY_TIME_ZONE_1_DEVICES]:
             if devicename not in Gb.Devices_by_devicename:
                 Gb.conf_general[CONF_AWAY_TIME_ZONE_1_DEVICES].remove(devicename)
-                update_conf_file_flag = False
+                update_conf_file_flag = True
+
         if Gb.conf_general[CONF_AWAY_TIME_ZONE_1_DEVICES] == []:
             Gb.conf_general[CONF_AWAY_TIME_ZONE_1_DEVICES] = ['none']
             Gb.conf_general[CONF_AWAY_TIME_ZONE_1_OFFSET] = 0
 
-    if Gb.conf_general[CONF_AWAY_TIME_ZONE_2_DEVICES] != 'none':
+    if ('none' in Gb.conf_general[CONF_AWAY_TIME_ZONE_2_DEVICES]
+            or 'all' in Gb.conf_general[CONF_AWAY_TIME_ZONE_2_DEVICES]):
+        pass
+    else:
         for devicename in Gb.conf_general[CONF_AWAY_TIME_ZONE_2_DEVICES]:
             if devicename not in Gb.Devices_by_devicename:
                 Gb.conf_general[CONF_AWAY_TIME_ZONE_2_DEVICES].remove(devicename)
-                update_conf_file_flag = False
+                update_conf_file_flag = True
+
         if Gb.conf_general[CONF_AWAY_TIME_ZONE_2_DEVICES] == []:
             Gb.conf_general[CONF_AWAY_TIME_ZONE_2_DEVICES] = ['none']
             Gb.conf_general[CONF_AWAY_TIME_ZONE_2_OFFSET] = 0

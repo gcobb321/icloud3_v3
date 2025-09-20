@@ -40,7 +40,7 @@ from .const_sensor      import (SENSOR_DEFINITION, SENSOR_GROUPS, SENSOR_LIST_DI
                                 SENSOR_ATTRS, SENSOR_DEFAULT, SENSOR_LIST_ALWAYS, ICLOUD3_SENSORS,
                                 SENSOR_TYPE_RECORDER_EXCLUDE_ATTRS, )
 
-from .utils.utils       import (instr, is_empty, isnot_empty, round_to_zero, isnumber,
+from .utils.utils       import (instr, is_empty, isnot_empty, round_to_zero, is_number,
                                 list_add, list_to_str, )
 from .utils.format      import (icon_circle, icon_box, )
 from .utils.messaging   import (post_event, post_evlog_greenbar_msg, log_info_msg, log_debug_msg,
@@ -723,7 +723,7 @@ class DeviceSensor_Base():
 
                 if Gb.um_MI:
                     zone_dist_m = self._get_sensor_value(ZONE_DISTANCE_M)
-                    if isnumber(zone_dist_m):
+                    if is_number(zone_dist_m):
                         sensor_value_mi = zone_dist_m*Gb.um_km_mi_factor/1000
                         extra_attrs['distance (miles)'] = set_precision(sensor_value_mi)
                         extra_attrs['distance_units (attributes)'] = 'mi'
@@ -912,6 +912,7 @@ class DeviceSensor_Base():
 
         kwargs = {}
         kwargs['original_name'] = self.sensor_fname
+        kwargs['disabled_by']   = None
 
         # entity_registry = er.async_get(Gb.hass)
         # entity_registry.async_update_entity(self.entity_id, **kwargs)

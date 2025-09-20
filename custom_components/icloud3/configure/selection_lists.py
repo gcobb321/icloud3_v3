@@ -16,7 +16,7 @@ from ..const            import (RARROW, PHDOT, CRLF_DOT, DOT, HDOT, PHDOT, CIRCL
                                 CONF_TRACKING_MODE, CONF_INZONE_INTERVAL, CONF_FIXED_INTERVAL,
                                 )
 
-from ..utils.utils      import (instr, isnumber, is_empty, isnot_empty, list_to_str, str_to_list,
+from ..utils.utils      import (instr, is_number, is_empty, isnot_empty, list_to_str, str_to_list,
                                 is_statzone, zone_dname, isbetween, list_del, list_add,
                                 sort_dict_by_values,
                                 encode_password, decode_password, )
@@ -69,13 +69,13 @@ def build_apple_accounts_list(self):
             if PyiCloud is None or PyiCloud.is_AADevices_setup_complete is False:
                 aa_text = f"{username}{RARROW}{RED_ALERT}"
                 if valid_upw is False:
-                    aa_text += 'NOT LOGGED IN, INVALID USERNAME/PASSWORD'
+                    aa_text += 'Not logged in, Invalid Username/Password'
                 elif instr(Gb.conf_tracking[CONF_DATA_SOURCE], ICLOUD) is False:
-                    aa_text += 'NOT LOGGED IN, APPLE DATA SOURCE DISABLED'
+                    aa_text += 'Not logged iIn, Apple data src is disabled'
                 elif valid_upw is None:
-                    aa_text += 'NOT LOGGED INTO THIS APPLE ACCOUNT'
+                    aa_text += 'Not logged into this Apple Account'
                 else:
-                    aa_text += 'NOT LOGGED IN DUE TO ANOTHER ERROR, RESTART ICLOUD3'
+                    aa_text += 'Not logged in, Unknown error, Restart iCloud3'
                 self.apple_acct_items_by_username[username] = aa_text
                 continue
 
@@ -533,7 +533,7 @@ async def build_mobapp_entity_selection_list(self, selected_devicename=None):
     self.mobapp_list_text_by_entity_id.update(sort_dict_by_values(scan_for_mobapp_devices))
 
     return
- 
+
 #-------------------------------------------------------------------------------------------
 async def build_picture_filename_selection_list(self):
 

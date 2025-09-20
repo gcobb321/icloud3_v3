@@ -235,7 +235,7 @@ class InternetConnection_ErrorHandler:
                 Device.resume_tracking()
 
         if mins_since(last_internet_error_secs) <= 1:
-            event_msg =(f"Internet went down at "
+            event_msg =(f"Internet Connection issue at "
                         f"{secs_to_time(last_internet_error_secs)} "
                         f"for less than 1-min")
 

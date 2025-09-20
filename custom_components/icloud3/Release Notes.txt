@@ -8,21 +8,30 @@
 Gary
 
 
-
 📢🚩🐛✨💥🚀🎁
-
 
 
 <a href="https://www.buymeacoffee.com/gcobb321" target="_blank">
 <img src="https://gcobb321.github.io/icloud3_v3_docs/images/buymeacoffee-docs-button-icon.png" width="150" height="50"></a>
 
 
+### iCloud3 ➤ v3.2.4.2 (9/20/2025)
+### 🐞 Bug Fixes
+- **Away Time Zone** - Fixed a problem where the time zone adjustment was reset to the Home zone server time zone when iCloud3 was restarted
+- **Apple Account Login** - Fixed a problem where the Apple account server in China was not displaying an error message because the HA server was logged into through a VPN in another country.
+- **Other Bugs** - A few other minor bugs were fixed
+### ✨ Improvements
+- **Dashboard Builder:**
+    - When a device is added or deleted, all dashboards are now automatically updated. The new device is added to the Main View when it is displaying Result Summary information or when All Devices are displayed. It is removed from all views when it is deleted.
+    - The Dashboard Builder screen has been reformatted
+
+
 ### iCloud3 ➤ v3.2.4.1 (8/22/2025)
 ### 🐞 Bug Fixes
-1. Dashboard Builder - Fixed a problem where the Dashboard Builder would fail if 'All Devices' was selected from the _Main View Devices_ selection list.
-2. Apple Account Login - Fixed a problem where the error message description was not being set correctly when logging into an Apple Account being added failed.
+- **Dashboard Builder** - Fixed a problem where the Dashboard Builder would fail if 'All Devices' was selected from the _Main View Devices_ selection list.
+- **Apple Account Login** - Fixed a problem where the error message description was not being set correctly when logging into an Apple Account being added failed.
 ### ✨ Improvements
-1. Dashboard Builder:
+- **Dashboard Builder:**
     - The Devices to be displayed on the Main View (All Devices, First 2 iPhones or specific devices) can now be selected for both of the Main View formats (Result Summary & Tracking Details).
     - Changed the Action options description t better describe their functions.
 
