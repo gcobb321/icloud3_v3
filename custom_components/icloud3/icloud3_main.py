@@ -72,7 +72,7 @@ import time
 import traceback
 from re import match
 import homeassistant.util.dt        as dt_util
-from   homeassistant.helpers.event  import (track_utc_time_change, async_track_time_change)
+from   homeassistant.helpers.event  import track_utc_time_change
 
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 class iCloud3:

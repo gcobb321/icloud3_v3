@@ -36,7 +36,7 @@ import inspect
 import json
 import datetime as dt
 
-from homeassistant.helpers.event import async_track_time_interval
+from homeassistant.helpers.event import track_time_interval
 
 import time
 
@@ -385,7 +385,7 @@ class PyiCloudSession(Session):
         Gb.last_PyiCloud_request_secs = time_now_secs()
         if (Gb.polling_5_sec_loop_running is False
                 or self.PyiCloud.config_flow_login):
-            self.cancel_request_timeout_fct = async_track_time_interval(Gb.hass,
+            self.cancel_request_timeout_fct = track_time_interval(Gb.hass,
                                         self.request_timed_out,
                                         self.request_timeout_time,
                                         cancel_on_shutdown=True)

@@ -18,7 +18,7 @@ from ..utils            import file_io
 #----------------------------------------------------------------------------
 import datetime as dt
 
-from homeassistant.helpers.event         import async_track_time_interval
+from homeassistant.helpers.event         import track_time_interval
 
 STATUS_MESSAGE_DOTS = '🟨🟨🟨🟨🟥'
 
@@ -87,7 +87,7 @@ class InternetConnection_ErrorHandler:
         status every 20-secs.
         '''
 
-        self.cancel_status_check_timer_fct = async_track_time_interval(Gb.hass,
+        self.cancel_status_check_timer_fct = track_time_interval(Gb.hass,
                                     self.check_internet_connection,
                                     self.status_check_interval,
                                     cancel_on_shutdown=True)

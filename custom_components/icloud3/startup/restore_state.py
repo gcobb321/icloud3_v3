@@ -17,7 +17,7 @@ import json
 import logging
 
 from homeassistant.core             import (callback, )
-from homeassistant.helpers.event    import (async_track_point_in_time, )
+from homeassistant.helpers.event    import (track_point_in_time, )
 import homeassistant.util.dt    as dt_util
 from datetime                   import datetime, timedelta, timezone
 
@@ -151,7 +151,7 @@ def write_icloud3_restore_state_file():
         Gb.restore_state_commit_time = time_now_secs() + 10
         Gb.restore_state_commit_cnt  = 0
 
-        async_track_point_in_time(Gb.hass,
+        track_point_in_time(Gb.hass,
                             _async_commit_icloud3_restore_state_file_changes,
                             datetime_plus(utcnow(), secs=10))
 
