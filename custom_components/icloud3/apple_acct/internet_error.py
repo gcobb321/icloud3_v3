@@ -9,11 +9,12 @@ from ..utils.utils      import (instr, is_empty, isnot_empty, list_add, list_del
 from ..utils.time_util  import (time_now, time_now_secs, mins_since, format_time_age, format_age,
                                 secs_to_time, secs_since, )
 from ..utils.messaging  import (_evlog, _log, more_info, add_log_file_filter,
-                                post_event, post_evlog_greenbar_msg, post_error_msg, update_alert_sensor,
+                                post_event, post_alert, post_evlog_greenbar_msg, post_error_msg, update_alert_sensor,
                                 log_info_msg, log_error_msg, log_debug_msg, log_warning_msg,
                                 log_data, log_exception, log_data_unfiltered, filter_data_dict, )
 
 from ..utils            import file_io
+from typing import Callable, Optional
 
 #----------------------------------------------------------------------------
 import datetime as dt
@@ -57,7 +58,7 @@ class InternetConnection_ErrorHandler:
     status_check_interval_secs = 5
     status_check_secs       = 20
     status_check_interval = dt.timedelta(seconds=status_check_interval_secs)
-    cancel_status_check_timer_fct = None
+    cancel_status_check_timer_fct: Optional[Callable[[], None]] = None
 
 #----------------------------------------------------------------------------
     def start_internet_error_handler(self):
@@ -81,23 +82,35 @@ class InternetConnection_ErrorHandler:
         self.update_internet_connection_status_msg()
 
 #----------------------------------------------------------------------------
+    def _on_loop(self) -> bool:
+        loop_tid = getattr(Gb.hass.loop, "_thread_id", None)
+        return loop_tid is not None and loop_tid == threading.get_ident()
+
+#----------------------------------------------------------------------------
+    def _run_on_loop(self, fn):
+        if self._on_loop():
+            fn()
+        else:
+            Gb.hass.loop.call_soon_threadsafe(fn)
+
+#----------------------------------------------------------------------------
     def schedule_next_status_check(self):
         '''
         Start ha time_interval callback. Refresh display indicator every 5-secs
         to show activity. The check_internet_connection will check the internet
         status every 20-secs.
         '''
-
-        if (ident := Gb.hass.loop.__dict__.get("_thread_id")) and ident == threading.get_ident():
-          self.cancel_status_check_timer_fct = async_track_time_interval(Gb.hass,
-                                    self.check_internet_connection,
-                                    self.status_check_interval,
-                                    cancel_on_shutdown=True)
-        else:
-          self.cancel_status_check_timer_fct = track_time_interval(Gb.hass,
-                                      self.check_internet_connection,
-                                      self.status_check_interval,
-                                      cancel_on_shutdown=True)
+        def _start():
+            if self._cancel_status_check_timer_fct:
+                self._cancel_status_check_timer_fct()
+                self._cancel_status_check_timer_fct = None
+            self._cancel_status_check_timer_fct = async_track_time_interval(
+                Gb.hass,
+                self.check_internet_connection,   # sync or async callback, both OK
+                self.status_check_interval,
+                cancel_on_shutdown=True,
+            )
+        self._run_on_loop(_start)
 
 #----------------------------------------------------------------------------
     async def check_internet_connection(self, check_time=None):
@@ -134,7 +147,7 @@ class InternetConnection_ErrorHandler:
                 return
 
             elif self.icloud_check_cnt == 2:
-                post_event( f"{EVLOG_ALERT}Internet Connection available > "
+                post_alert( f"Internet Connection available > "
                             f"Checking Apple Connection")
 
         if self.internet_error_test_ended():
@@ -345,8 +358,11 @@ class InternetConnection_ErrorHandler:
 
 #----------------------------------------------------------------------------
     def reset_internet_error_fields(self):
-        if self.cancel_status_check_timer_fct:
-            self.cancel_status_check_timer_fct()
+        def _cancel():
+            if self._cancel_status_check_timer_fct:
+                self._cancel_status_check_timer_fct()
+                self._cancel_status_check_timer_fct = None
+        self._run_on_loop(_cancel)
 
         if self.internet_error_secs > 0:
             self.reset_internet_error_test_fields()
@@ -412,7 +428,7 @@ class InternetConnection_ErrorHandler:
                     f"Tracking Paused, "
                     f"{self.internet_error_msg}, "
                     f"Error-{self.internet_error_code}")
-        post_event( f"{EVLOG_ALERT}Internet Error detected > "
+        post_alert( f"Internet Error detected > "
                     f"Checking status every 20-secs, Tracking Paused, "
                     f"{self.internet_error_msg}, "
                     f"Error Code-{self.internet_error_code}, Possible causes:"
