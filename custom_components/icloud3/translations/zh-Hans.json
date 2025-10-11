@@ -1,31 +1,31 @@
 {
-          "title": "iCloud3 v3：Apple 设备追踪器",
+  "title": "iCloud3 v3：Apple 设备追踪器",
   "config": {
     "abort": {
-              "config_update_complete": "iCloud3 配置已更新完成",
-        "already_configured": "iCloud3 已经安装，不能重复安装。请在 iCloud3 集成中点击配置\n\n如果要删除后重新安装，请先重启 HA，再重新安装 iCloud3",
-        "disabled": "iCloud3 已禁用，无法安装。请先启用 iCloud3，再点击配置\n\n如果要删除后重新安装，请先重启 HA，再重新安装 iCloud3",
-                "login_error": "登录 Apple 账户时出错。请检查用户名和密码。",
-        "reauth_successful": "重新验证完成",
-        "verification_code_requested": "已请求新的 Apple ID 双重验证码",
-        "verification_code_accepted": "Apple ID 双重验证码已接受，重新验证完成",
-        "verification_code_cancelled": "Apple ID 双重验证已取消",
-        "update_cancelled": "更新已取消",
-        "icloud3_init_error": "初始化 iCloud3 配置界面时出现问题。iCloud3 可能在启动时出错。请查看 'home-assistant.log' 文件中的 iCloud3 相关错误。",
-        "reauth_apple_acct_unknown": "请求双重验证码的 Apple 账户不存在",
-        "reauth_apple_acct_unused": "请求双重验证码的 Apple 账户未使用"
+      "config_update_complete": "iCloud3 配置已更新完成",
+      "already_configured": "iCloud3 已经安装，不能重复安装。请在 iCloud3 集成中点击配置\n\n如果要删除后重新安装，请先重启 HA，再重新安装 iCloud3",
+      "disabled": "iCloud3 已禁用，无法安装。请先启用 iCloud3，再点击配置\n\n如果要删除后重新安装，请先重启 HA，再重新安装 iCloud3",
+      "login_error": "登录 Apple 账户时出错。请检查用户名和密码。",
+      "reauth_successful": "重新验证完成",
+      "verification_code_requested": "已请求新的 Apple ID 双重验证码",
+      "verification_code_accepted": "Apple ID 双重验证码已接受，重新验证完成",
+      "verification_code_cancelled": "Apple ID 双重验证已取消",
+      "update_cancelled": "更新已取消",
+      "icloud3_init_error": "初始化 iCloud3 配置界面时出现问题。iCloud3 可能在启动时出错。请查看 'home-assistant.log' 文件中的 iCloud3 相关错误。",
+      "reauth_apple_acct_unknown": "请求双重验证码的 Apple 账户不存在",
+      "reauth_apple_acct_unused": "请求双重验证码的 Apple 账户未使用"
     },
     "error": {
       "invalid_path": "提供的路径无效。应该使用 `user/repo-name` 格式",
-              "verification_code_send_error": "发送 Apple ID 双重验证码失败",
-        "verification_code_requested": "已请求新的 Apple ID 双重验证码",
-        "verification_code_accepted": "Apple ID 双重验证码已接受，重新验证完成",
-        "verification_code_invalid": "双重验证码错误。请重新输入或请求新的验证码",
-        "verification_code_needed": "需要 Apple 账户双重验证码",
-        "verification_code_cancelled": "Apple ID 双重验证已取消",
+      "verification_code_send_error": "发送 Apple ID 双重验证码失败",
+      "verification_code_requested": "已请求新的 Apple ID 双重验证码",
+      "verification_code_accepted": "Apple ID 双重验证码已接受，重新验证完成",
+      "verification_code_invalid": "双重验证码错误。请重新输入或请求新的验证码",
+      "verification_code_needed": "需要 Apple 账户双重验证码",
+      "verification_code_cancelled": "Apple ID 双重验证已取消",
 
-              "icloud_no_devices": "在 iCloud 家庭共享列表中未找到设备",
-        "icloud_other_error": "验证 Apple 账户时出现未知错误，请稍后重试"
+      "icloud_no_devices": "在 iCloud 家庭共享列表中未找到设备",
+      "icloud_other_error": "验证 Apple 账户时出现未知错误，请稍后重试"
     },
     "step": {
       "user": {
