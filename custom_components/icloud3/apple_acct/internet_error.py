@@ -391,6 +391,8 @@ class InternetConnection_ErrorHandler:
                 'address': ['fe80::802:b59f:10ee:face/64'], 'nameservers': [], 'gateway': None,
                 'ready': False}, 'wifi': None, 'vlan': None}
         '''
+        if "hassio_network_info" not in Gb.hass.data:
+            return None 
         interfaces = Gb.hass.data['hassio_network_info']['interfaces']
         for interface in interfaces:
             if interface['ipv6']['method'] != 'disabled':
