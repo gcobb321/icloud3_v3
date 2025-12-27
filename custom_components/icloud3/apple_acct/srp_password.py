@@ -2,10 +2,9 @@
 
 from ..utils.messaging   import (_log, )
 
-from enum import Enum
 from hashlib import pbkdf2_hmac, sha256
 
-class SrpProtocolType(Enum):
+class SrpProtocolType():
     """SRP password types."""
 
     S2K = "s2k"
@@ -41,7 +40,6 @@ class SrpPassword:
     def __init__(self, password: str) -> None:
         self.password = password
         self._password_hash: bytes = sha256(password.encode("utf-8")).digest()
-        _log(f'{self._password_hash=} ')
         self.salt: bytes | None = None
         self.iterations: int | None = None
         self.key_length: int | None = None
@@ -65,9 +63,9 @@ class SrpPassword:
 
         password_digest: bytes | None = None
 
-        if self.protocol == SrpProtocolType.S2K_FO.value:
+        if self.protocol == SrpProtocolType.S2K_FO:
             password_digest = self._password_hash.hex().encode()
-        elif self.protocol == SrpProtocolType.S2K.value:
+        elif self.protocol == SrpProtocolType.S2K:
             password_digest = self._password_hash
 
         if password_digest is None:

@@ -609,11 +609,6 @@ async def async_reauthenticate_apple_account(self,
                 self.errors[CONF_USERNAME] = login_err_msg(AppleAcct, username)
                 return 'refresh_screen', reauth_username, user_input, errors
 
-            #_log(f"{user_input[CONF_USERNAME]=} {Gb.AppleAcct_by_username=}")
-            
-            #Gb.AppleAcct_by_username[user_input[CONF_USERNAME]] = AppleAcct or Gb.AppleAcctLoggingInto
-            _log(f"{user_input[CONF_USERNAME]=} {Gb.AppleAcct_by_username=}")
-            
             #Gb.AppleAcct_password_by_username[username] = password
             if instr(self.data_source, ICLOUD) is False:
                 self._update_data_source({CONF_DATA_SOURCE: [ICLOUD, self.data_source]})
