@@ -204,7 +204,7 @@ DEVICE_LIST_ACTIONS_NO_ADD = [
         ACTION_LIST_OPTIONS['change_device_order'],
         ACTION_LIST_OPTIONS['goto_menu']]
 
-REVIEW_INACTIVE_DEVICES =  [
+REVIEW_INACTIVES =  [
         ACTION_LIST_OPTIONS['inactive_to_track'],
         ACTION_LIST_OPTIONS['goto_previous'],
         ACTION_LIST_OPTIONS['goto_menu']]
