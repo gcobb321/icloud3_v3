@@ -388,8 +388,8 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
                 'yes_fct': None,
                 'yes_fct_async': None,
                 'action_desc': 'Confirm Action',
-                'return_to_fct': None,
-                'return_to_async_step_fct': self.async_step_tools}
+                'return_to_tools_fct': self.async_step_tools,
+                'action_yes_next_fct': None}
 
         # Variables used for icloud_account update forms
         self.logging_into_icloud_flag = False
@@ -886,8 +886,8 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
                     'yes_fct': self.confirm_test_yes,
                     'yes_fct_async': self.async_confirm_test_yes,
                     'action_desc': TOOL_LIST[acton_item],
-                    'return_to_fct': None,
-                    'return_to_async_step_fct': self.async_step_tools}
+                    'return_to_tools_fct': self.async_step_tools,
+                    'action_yes_next_fct': self.async_step_tools}
 
         '''
         self.step_id = 'confirm_action'
@@ -903,6 +903,10 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
         user_input, action_item = utils.action_text_to_item(self, user_input)
         utils.log_step_info(self, user_input, action_item)
 
+        if action_item == 'confirm_action_no':
+            self.errors = {'base': 'action_cancelled'}
+            return await self.confirm_action['return_to_tools_fct'](errors=self.errors)
+
         if action_item == 'confirm_action_yes':
             self.config_file_commit_updates = True
             list_add(self.config_parms_update_control, 'restart')
@@ -914,14 +918,13 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
 
             elif self.confirm_action['yes_fct_async'] is not None:
                 await self.confirm_action['yes_fct_async']()
-
                 self.errors = {'base': 'action_completed'}
                 self.confirm_action['yes_fct_async'] = None
 
-        if self.confirm_action['return_to_fct']:
-            return self.confirm_action['return_to_fct'](errors=self.errors)
+            if self.confirm_action['action_yes_next_fct']:
+                return self.confirm_action['action_yes_next_fct'](errors=self.errors)
 
-        return await self.confirm_action['return_to_async_step_fct'](errors=self.errors)
+        return await self.confirm_action['return_to_tools_fct'](errors=self.errors)
 
 
 #-------------------------------------------------------------------------------------------
@@ -1411,7 +1414,6 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
             Gb.log_level_devices = user_input[CONF_LOG_LEVEL_DEVICES].copy()
 
             self._update_config_file_general(user_input)
-            # return await self.async_step_tools()
             action_item = 'goto_menu'
 
         if action_item == 'goto_menu':
@@ -1421,8 +1423,8 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
                 'yes_fct': None,
                 'yes_fct_async': None,
                 'action_desc': TOOL_LIST[action_item],
-                'return_to_fct': None,
-                'return_to_async_step_fct': self.async_step_tools}
+                'return_to_tools_fct': self.async_step_tools,
+                'action_yes_next_fct': None}
 
         if action_item == 'reset_data_source':
             self.confirm_action['yes_fct'] = self._reset_all_devices_data_source_fields
@@ -1437,19 +1439,19 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
             self.confirm_action['yes_fct'] = self.reset_icloud3_config_file_tracking_general
 
         elif action_item == 'del_apple_acct_cookies':
-            self.confirm_action['return_to_async_step_fct'] = self.async_step_restart_ha
             self.confirm_action['yes_fct_async'] = self.async_delete_all_apple_cookie_files
+            self.confirm_action['action_yes_next_fct'] = self.async_step_restart_ha
 
         elif action_item == 'del_icloud3_config_files':
-            self.confirm_action['return_to_async_step_fct'] = self.async_step_restart_ha
             self.confirm_action['yes_fct_async'] = self.async_delete_all_ic3_configuration_files
+            self.confirm_action['action_yes_next_fct'] = self.async_step_restart_ha
 
         elif action_item == 'fix_entity_name_error':
             if ic3_sensor.correct_sensor_entity_ids_with_2_extension(verify=True):
                 ic3_sensor.correct_sensor_entity_ids_with_2_extension()
-                self.base='fix_entity_name_complete'
+                self.errors['base'] ='fix_entity_name_complete'
             else:
-                self.base='fix_entity_name_not_needed'
+                self.errors['base'] ='fix_entity_name_not_needed'
 
         if (self.confirm_action['yes_fct']
                 or self.confirm_action['yes_fct_async']):
@@ -2723,8 +2725,8 @@ class iCloud3_OptionsFlowHandler(config_entries.OptionsFlow):
             self.confirm_action = {
                 'yes_fct': self._delete_device,
                 'action_desc': action_desc,
-                'return_to_fct': None,
-                'return_to_async_step_fct': self.async_step_device_list}
+                'return_to_tools_fct': self.async_step_tools,
+                'action_yes_next_fct': self.async_step_device_list}
 
             return await self.async_step_confirm_action()
 

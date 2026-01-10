@@ -125,7 +125,7 @@ def form_confirm_action(self, action_desc=None):
     '''
 
     actions_list = CONFIRM_ACTIONS.copy()
-    actions_list_default = 'confirm_return_no'
+    actions_list_default = 'confirm_action_no'
     action_desc = action_desc if action_desc is not None else\
                     'Do you want to perform the selected action?'
 

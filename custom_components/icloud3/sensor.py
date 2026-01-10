@@ -819,6 +819,8 @@ def correct_sensor_entity_ids_with_2_extension(verify=None):
 
     # Get all iCloud sensors in hass.states
     entity_ids = entity_io.get_states_entity_ids()
+    log_debug_msg(f"No iCloud3 Sensor entities found")
+    _log(f'{entity_ids=}')
     if is_empty(entity_ids):
         return False
 
@@ -826,6 +828,8 @@ def correct_sensor_entity_ids_with_2_extension(verify=None):
     entity_ids = [entity_id for entity_id in entity_ids
                             if entity_id[-2:-1] == '_']
 
+    _log(f'{entity_ids=}')
+    log_debug_msg(f"Sensor entities with '_x', Found {len(entity_ids)} entities")
     if is_empty(entity_ids):
         return False
     if verify:
