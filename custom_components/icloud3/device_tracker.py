@@ -72,15 +72,21 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
         start_ic3.initialize_directory_filenames()
         await config_file.async_load_icloud3_configuration_file()
 
-    Gb.conf_devicenames = [conf_device[CONF_IC3_DEVICENAME]
-                                for conf_device in Gb.conf_devices
-                                if conf_device[CONF_IC3_DEVICENAME] != '']
-
     if is_empty(Gb.entity_reg_items_by_status):
         er_util.scan_entity_reg_for_icloud3_items()
     disabled_devices = er_util.extract_item_from_device_reg_items(
                                 'disabled', 'device_id', PLATFORM_DEVICE_TRACKER)
 
+    Gb.conf_devicenames = [conf_device[CONF_IC3_DEVICENAME]
+                                for conf_device in Gb.conf_devices
+                                if conf_device[CONF_IC3_DEVICENAME] != '']
+
+    # Initialize these now so they will be available before the HA Sensors and iC3
+    # Device objects are created. This insures everything can be linked properly
+    # later on.
+    for devicename in Gb.conf_devicenames:
+        if devicename not in Gb.DeviceTrackers_by_devicename:
+            Gb.DeviceTrackers_by_devicename[devicename] = None
 
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 #
@@ -98,11 +104,11 @@ async def async_create_Device_Tracker_objects():
         Gb.device_trackers_cnt = 0
         for conf_device in Gb.conf_devices:
             devicename = conf_device[CONF_IC3_DEVICENAME]
-            if devicename == '':
+            if (devicename == ''
+                    or conf_device[CONF_TRACKING_MODE] == INACTIVE):
                 continue
 
-            if (devicename in Gb.DeviceTrackers_by_devicename
-                    or conf_device[CONF_TRACKING_MODE] == INACTIVE):
+            if Gb.DeviceTrackers_by_devicename.get(devicename):
                 continue
 
             DeviceTracker = iCloud3_DeviceTracker(devicename, conf_device)
@@ -111,6 +117,9 @@ async def async_create_Device_Tracker_objects():
                 Gb.DeviceTrackers_by_devicename[devicename] = DeviceTracker
                 DeviceTrackersToAdd.append(DeviceTracker)
 
+            if Device := Gb.Devices_by_devicename.get(devicename):
+                Device.DeviceTracker = DeviceTracker
+                DeviceTracker.Device = Device
 
         log_devices_added_deleted('', Gb.DeviceTrackers_by_devicename)
 

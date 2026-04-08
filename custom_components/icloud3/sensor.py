@@ -107,6 +107,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
     disabled_devices = er_util.extract_item_from_device_reg_items(
                                     'disabled', 'entity_id', PLATFORM_SENSOR)
 
+    # Initialize these now so they will be available before the HA Sensors and iC3 
+    # Device objects are created. This insures everything can be linked properly
+    # later on. 
+    for devicename in Gb.conf_devicenames:
+        if devicename not in Gb.Sensors_by_devicename:
+            Gb.Sensors_by_devicename[devicename]           = {}
+            Gb.Sensors_by_devicename_from_zone[devicename] = {}
+
 #--------------------------------------------------------------------
 def _create_icloud3_internal_sensors():
     '''

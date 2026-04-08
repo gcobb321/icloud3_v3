@@ -58,47 +58,6 @@ successful_startup = True
 
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>><><><><><><><><><>
 #
-#   PLATFORM MODE - STARTED FROM CONFIGURATION.YAML 'DEVICE_TRACKER/PLATFORM: ICLOUD3 STATEMENT
-#
-#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>><><><><><><><><><>
-
-async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
-    """Old way of setting up the iCloud tracker with platform: icloud3 statem a ent."""
-    hass.data.setdefault(DOMAIN, {})
-    Gb.hass   = hass
-    Gb.config = config
-
-    try:
-        device_trackers = config.get('device_tracker')
-        if device_trackers:
-            for tracker in device_trackers:
-                if tracker['platform'] != DOMAIN:
-                    continue
-
-                Gb.ha_config_platform_stmt = True
-                Gb.operating_mode = MODE_PLATFORM
-
-                # Initialize the config/.storage/icloud3/configuration file before the config_flow
-                # has set up the integration
-                start_ic3.initialize_directory_filenames()
-                await config_file.async_load_icloud3_configuration_file()
-
-                if Gb.conf_profile[CONF_VERSION] == 1:
-                    Gb.HALogger.warning(f"Starting iCloud3 v{VERSION}{VERSION_BETA} > "
-                                        "Detected a `platform: icloud3` statement in the "
-                                        "configuration.yaml file. This is depreciated and "
-                                        "should be removed.")
-
-    except Exception as err:
-        # log_exception(err)
-        # log_exception_HA(err)
-        pass
-
-    return True
-
-
-#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>><><><><><><><><><>
-#
 #   INTEGRATION MODE - STARTED FROM CONFIGURATION > INTEGRATIONS ENTRY
 #
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>><><><><><><><><><>
@@ -148,7 +107,7 @@ async def async_initialize_icloud3(hass, entry):
     Gb.ValidateAppleAcctUPW = ValidateAppleAcctUPW()
     post_event( f"{ICLOUD3_ATTENTION_MSG} > Initial Start-up")
 
-    await async_setup_device_tracker_sensor_platforms()
+    await async_create_device_tracker_sensor_platforms()
     Gb.is_icloud3_initial_startup = True
     await start_icloud3_on_init_load_only()
     await Gb.hass.async_add_executor_job(Gb.iCloud3.start_icloud3_stage_1_2_3_prep_to_config_device)
@@ -285,10 +244,10 @@ def setup_event_listeners():
 
 
 #-------------------------------------------------------------------------------------------
-async def async_setup_device_tracker_sensor_platforms():
+async def async_create_device_tracker_sensor_platforms():
     '''
     Create iCloud3 internal sensors (icloud3_event_log, icloud3_alerts, icloud3_wazehist_track)
-    All other device sensors are created after the cevices are created
+    All other device sensors are created after the devices are created
     '''
     if Gb.was_icloud3_reloaded:
         return
@@ -383,3 +342,43 @@ def startup_test_code_after_complete():
         log_exception(err)
 
 #-------------------------------------------------------------------------------------------
+
+#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>><><><><><><><><><>
+#
+#   PLATFORM MODE - STARTED FROM CONFIGURATION.YAML 'DEVICE_TRACKER/PLATFORM: ICLOUD3 STATEMENT
+#
+#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>><><><><><><><><><>
+
+async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
+    """Old way of setting up the iCloud tracker with platform: icloud3 statem a ent."""
+    hass.data.setdefault(DOMAIN, {})
+    Gb.hass   = hass
+    Gb.config = config
+
+    try:
+        device_trackers = config.get('device_tracker')
+        if device_trackers:
+            for tracker in device_trackers:
+                if tracker['platform'] != DOMAIN:
+                    continue
+
+                Gb.ha_config_platform_stmt = True
+                Gb.operating_mode = MODE_PLATFORM
+
+                # Initialize the config/.storage/icloud3/configuration file before the config_flow
+                # has set up the integration
+                start_ic3.initialize_directory_filenames()
+                await config_file.async_load_icloud3_configuration_file()
+
+                if Gb.conf_profile[CONF_VERSION] == 1:
+                    Gb.HALogger.warning(f"Starting iCloud3 v{VERSION}{VERSION_BETA} > "
+                                        "Detected a `platform: icloud3` statement in the "
+                                        "configuration.yaml file. This is depreciated and "
+                                        "should be removed.")
+
+    except Exception as err:
+        # log_exception(err)
+        # log_exception_HA(err)
+        pass
+
+    return True
