@@ -206,8 +206,7 @@ class iCloud3_ConfigFlow(config_entries.ConfigFlow, FlowHandler,
             if Gb.is_ha_restart_needed:
                 return await self.async_step_restart_ha()
 
-            data = {'flow': self,
-                    'added': dt_util.now().strftime(DATETIME_FORMAT)[0:19]}
+            data = {'added': dt_util.now().strftime(DATETIME_FORMAT)[0:19]}
 
             return self.async_create_entry(title=CONFIG_UPDATE_COMPLETE_MSG, data=data)
 
