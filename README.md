@@ -1,8 +1,8 @@
-# iCloud3 v3 - Development/Prerelease Version
+# iCloud3 - Development/Prerelease
 
-[![CurrentVersion](https://img.shields.io/badge/Current_Version-v3.5-orange.svg)](https://github.com/gcobb321/icloud3_v3)   [![Released](https://img.shields.io/badge/Released-Aoril,_2026-orange.svg)](https://github.com/gcobb321/icloud3_v3) [![HACS](https://img.shields.io/badge/HACS-Custom_Installation-orangered.svg)](https://github.com/gcobb321/icloud3_v3)
+[![CurrentVersion](https://img.shields.io/badge/Current_Version-v3.6-orange.svg)](https://github.com/gcobb321/icloud3)   [![Released](https://img.shields.io/badge/Released-June,_2026-orange.svg)](https://github.com/gcobb321/icloud3) [![HACS](https://img.shields.io/badge/HACS-Standard_Installation-darkorange.svg)](https://github.com/gcobb321/icloud3)
 
- [![Type](https://img.shields.io/badge/Type-Custom_Component-forestgreen.svg)](https://github.com/gcobb321/icloud3_v3)   [![ProjectStage](https://img.shields.io/badge/Project_Stage-General_Availability-lightseagreen.svg)](https://github/gcobb321/icloud3_v3) 
+ [![Type](https://img.shields.io/badge/Type-Custom_Component-forestgreen.svg)](https://github.com/gcobb321/icloud3)   [![ProjectStage](https://img.shields.io/badge/Project_Stage-General_Availability-forestgreen.svg)](https://github/gcobb321/icloud3) 
 
 
 
@@ -18,7 +18,18 @@ There are 4 major parts to the iCloud3 custom component that are used to configu
 - **Configure Settings** - Set up all the iCloud3 tracked devices, Apple Accounts, iCloud3 Dashboards, sensors and other parameters.
 - **Dashboard Builder** - Create iCloud3 dashboards with tracking results, battery information and the Event Log in several formats. The dashboards can then be customized with the Home Assistant Dashboard Editor and the various items and views can be copied and pasted into other dashboards. The Dashboard Builder is one of the *Configure Settings* screens. 
 
-### iCloud3 v3 Highlights
+### iCloud3 Documentation
+
+- Introduces the many features and components of iCloud3
+- Highlights the configuration screens and parameters
+- Provides example screens, automations and scripts
+- The User Guide is quite extensive and can be found [here](https://gcobb321.github.io/icloud3_v3_docs/#/)
+
+### Installing iCloud3
+
+iCloud3 is available on HACS. Installation instructions are in the Users Guide  [here](https://gcobb321.github.io/icloud3_v3_docs/#/chapters/1_installing)
+
+### iCloud3 Highlights
 
 Although Home Assistant has it's own official iCloud component, iCloud3 goes far beyond it's capabilities. The following highlights the important features.
 
@@ -46,7 +57,6 @@ Although Home Assistant has it's own official iCloud component, iCloud3 goes far
 - **Stationary Zone** - A dynamic *Stationary Zone* is created when the device has not moved for a while (doctors office, store, friend's house). This helps conserve battery life.
 - **Zone monitoring** - The number of devices in each zone is displayed when a device is updated. 
 - **Zone Distance Sensor Attributes** - Shows the distance to the center and edge of the Home zone, distance to other zones and distance to other devices. 
-
 - **Track from multiple zones** - Tracking results (location, travel time, distance, arrival time, etc.) are reported from the Home zone or another zone (office, second home, parents, etc.). 
 - **Enter Zone delay** - Delay processing Zone Enter triggers in case you are just driving through it.
 - **Zone Exits for devices not using the Mobile App** - Devices that do not or can not (Apple Watch) use the Mobile App respond to a zone exit when it detects another nearby device has left a zone.
@@ -76,19 +86,17 @@ The screens below are an example of how the many tracking sensors can be display
 
 ![](https://gcobb321.github.io/icloud3_v3_docs/images/dashboard-allinfo-summary.png)
 
-### iCloud3 Documentation
 
-- Introduces the many features and components of iCloud3
-- Highlights the configuration screens and parameters
-- Provides example screens, automations and scripts
-- The User Guide is [here](https://gcobb321.github.io/icloud3_v3_docs/#/)
 
 ### Important Links
 
-- **iCloud3 v3 User Guide** -The User Guide is quite extensive and can be found [here](https://gcobb321.github.io/icloud3_v3_docs/#/)
-- **iCloud3 v3 GitHub Repository** - The primary GitHub Repository is [here](https://github.com/gcobb321/icloud3)
-- **iCloud3 v3 Development GitHub Repository** - The Development Repository is used for beta version changes that have not been released yet is [here](https://github.com/gcobb321_v3)
-- **Installing as a New Installation** - iCloud3 v3 is available on HACS as a prerelease version.  Installation instructions are [here](https://gcobb321.github.io/icloud3_v3_docs/#/chapters/2-installing-and-configuring)
+- **iCloud3 User Guide** -The User Guide is quite extensive and can be found [here](https://gcobb321.github.io/icloud3_v3_docs/#/)
+
+- **iCloud3 GitHub Repository** - The primary GitHub Repository is [here](https://github.com/gcobb321/icloud3)
+
+- **iCloud3 Development GitHub Repository** - The Development Repository is used for beta version changes that have not been released yet is [here](https://github.com/gcobb321/icloud3_v3)
+
+  
 
 
 
