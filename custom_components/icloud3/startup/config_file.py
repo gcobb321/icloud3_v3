@@ -42,7 +42,7 @@ from ..const_sensor      import (SENSOR_DEFINITION, SENSOR_GROUPS, SENSOR_LIST_D
                                 )
 
 from ..startup          import start_ic3
-from ..utils.utils      import (instr, is_empty, isnot_empty, ordereddict_to_dict, isbetween,
+from ..utils.utils      import (instr, is_empty, isnot_empty, ordereddict_to_dict, is_between,
                                 list_add, list_to_str, list_add, list_del, dict_del, get_string_hash,
                                 username_id, )
 from ..utils.messaging  import (log_exception, _evlog, _log, log_info_msg, add_log_file_filter,
@@ -410,7 +410,7 @@ def conf_apple_acct(idx_or_username):
 
         # Get conf_apple_acct by it's index
         if type(idx_or_username) is int:
-            if isbetween(idx_or_username, 0, len(Gb.conf_apple_accounts)-1):
+            if is_between(idx_or_username, 0, len(Gb.conf_apple_accounts)-1):
                 conf_apple_acct = Gb.conf_apple_accounts[idx_or_username].copy()
                 conf_apple_acct[CONF_PASSWORD] = decode_password(conf_apple_acct[CONF_PASSWORD])
                 return (conf_apple_acct, idx_or_username)
@@ -877,7 +877,7 @@ def _verify_device_parameters_values():
         if conf_device[CONF_TRACK_FROM_ZONES] == []:
             conf_device[CONF_TRACK_FROM_ZONES] = [HOME]
             update_configuration_flag = True
-        if isbetween(conf_device[CONF_FIXED_INTERVAL], 1, 2):
+        if is_between(conf_device[CONF_FIXED_INTERVAL], 1, 2):
             conf_device[CONF_FIXED_INTERVAL] = 3.0
             update_configuration_flag = True
 
