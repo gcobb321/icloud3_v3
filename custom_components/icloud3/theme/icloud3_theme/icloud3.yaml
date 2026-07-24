@@ -25,6 +25,9 @@ iCloud3 Theme:
       mdc-dialog-content-ink-color: rgb(10, 136, 194)
       # Text entry heading, Dropdown box label, Description text
       mdc-dialog-content-heading-ink-color: rgb(9, 119, 170)
+      wa-form-control-label-color: rgb(9, 119, 170)
+      secondary-text-color: rgb(9, 119, 170)
+      ha-color-text-secondary: rgb(9, 119, 170)
       # Select item heading
       mdc-select-label-ink-color: rgb(9, 119, 170)
 
@@ -39,6 +42,13 @@ iCloud3 Theme:
 
       # Text entry heading, Dropdown box label, Description text
       mdc-dialog-content-heading-ink-color: salmon
+      # WebAwesome config-flow fields (no -- prefix; HA adds it). Confirmed by
+      # toggle test: wa-form-control-label-color drives the field heading +
+      # dropdown descriptions; secondary-text-color is broad (tints most
+      # secondary text UI-wide); ha-color-text-secondary had no effect (no-op).
+      wa-form-control-label-color: salmon
+      secondary-text-color: salmon
+      #ha-color-text-secondary: salmon
 
       # Select item heading
       mdc-select-label-ink-color: salmon

@@ -21,6 +21,7 @@ Gary
     - Added support for authenticating using Security Keys. See iCloud3 docs [here](https://gcobb321.github.io/icloud3_v3_docs/#/chapters/3_apple-acct-auth) for more information and instructions.
     - Simplified the Authentication Method description when no code was sent.
 2. **New** - *Import Apple Devices* screen
+    - This screen lets you import all (or some) devices in your Apple Account(s) that have not yet been added to the iCloud3 Devices configuration with one click. This will then create the device_tracker and sensor entities for the devices. See docs [here](https://gcobb321.github.io/icloud3_v3_docs/#/chapters/3_devices?id=importing-apple-account-devices-to-create-the-icloud3-devices)
     - This screen is displayed on the *iCloud3 Devices* and *Update Apple Account* screens
     - This screen lists all Apple Devices that have not been added to iCloud3. They can be imported, creating iCloud3 device_tracker entities
     - The iCloud3 device_tracker entity id is derived from the Apple device name

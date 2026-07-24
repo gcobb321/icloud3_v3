@@ -399,7 +399,7 @@ dark_circled_letters = "🅐 🅑 🅒 🅓 🅔 🅕 🅖 🅗 🅘 🅙 🅚 �
 ⓪ ① ② ③ ④ ⑤ ⑥ ⑦ ⑧ ⑨ ⑩ ⑪ ⑫ ⑬ ⑭ ⑮ ⑯ ⑰ ⑱ ⑲ ⑳ ㉑ ㉒ ㉓ ㉔ ㉕
 ㉖ ㉗ ㉘ ㉙ ㉚ ㉛ ㉜ ㉝ ㉞ ㉟ ㊱ ㊲ ㊳ ㊴ ㊵ ㊶ ㊷ ㊸ ㊹ ㊺ ㊻ ㊼ ㊽ ㊾ ㊿
 Symbols = ±▪•●▬⮾ ⊗⊗ ⊘✓×ø¦ ▶◀ ►◄▲▼ ∙▪ »« oPhone=►▶→⟾➤➟➜➔➤🡆🡪🡺⟹🡆➔ᐅ◈🝱☒☢⦻⛒⊘Ɵ⊗ⓧⓍ⛒z🜔
-〔 〕《》᚛-᚜ ｟ ｠ 〈 〉 ◹◿ ◢◥ ⩓⩔/\ v^△▽▿▴▾ ↘⇗ ⩠⩢
+〔 〕《》᚛-᚜ ｟ ｠ 〈 〉 ◹◿ ◢◥ ⩓⩔ v^△▽▿▴▾ ↘⇗ ⩠⩢
 Important =✔️❗❌✨➰⚠️☢❓⚽⛔🛑⚡⭐◌\⭕🔶🔸ⓘ• ⍰ ‶″“”‘’‶″ 🕓 🔻🔺✔☁️🍎🔻⮽➕⚙️
 🔵🔴🟠🟡🟢🟣🟤
 🟦🟥🟧🟨🟩🟪🟫
@@ -525,11 +525,7 @@ TRACK               = 'track'
 MONITOR             = 'monitor'
 INACTIVE            = 'inactive'
 TRACKING_MODES      = [TRACK, MONITOR, INACTIVE]
-TRACKING_MODE_DN = {
-        TRACK: 'Tracked',
-        MONITOR: 'Monitored',
-        INACTIVE: 'INACTIVE',
-}
+TRACKING_MODE_DN    = {TRACK: 'Tracked', MONITOR: 'Monitored', INACTIVE: 'INACTIVE',}
 
 # Zone field names
 NAME              = 'name'
@@ -871,18 +867,18 @@ DEFAULT_TRACKING_CONF = {
 #-------------------------------------------------------------------
 # #     CONF_APPLE_ACCTS-
 #--------------------------------------------------------------------
-CONF_LOCATE_ALL                 = 'locate_all'
-CONF_AUTH_CODE                  = 'auth_code'
-CONF_SERVER_LOCATION            = 'server_location'
+CONF_LOCATE_ALL         = 'locate_all'
+CONF_AUTH_CODE          = 'auth_code'
+CONF_SERVER_LOCATION    = 'server_location'
 
-CONF_AUTH_METHODS               = 'auth_methods'
-CONF_LAST_METHOD                = 'last_method'
-PUSH                       = 'push'
-TEXT                       = 'text'
-TEXT_1                     = 'text_1'
-TEXT_2                     = 'text_2'
-HWKEY                      = 'hwkey'
-AUTH_METHOD_FNAME = {
+CONF_AUTH_METHODS       = 'auth_methods'
+CURRENT                 = 'current'
+PUSH                    = 'push'
+TEXT                    = 'text'
+TEXT_1                  = 'text_1'
+TEXT_2                  = 'text_2'
+HWKEY                   = 'hwkey'
+AUTH_METHOD_FNAME       = {
         PUSH: 'Push',
         TEXT_1: 'Text-1',
         TEXT_2: 'Text-2',
@@ -892,7 +888,7 @@ AUTH_METHOD_FNAME = {
 }
 
 DEFAULT_AUTH_METHODS = {
-        CONF_LAST_METHOD: PUSH,
+        CURRENT: PUSH,
         TEXT_1: '',
         TEXT_2: '',
         HWKEY: '',

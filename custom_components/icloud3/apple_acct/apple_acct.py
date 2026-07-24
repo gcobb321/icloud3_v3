@@ -20,7 +20,7 @@ from ..global_variables     import GlobalVariables as Gb
 from ..const                import (EVLOG_NOTICE, EVLOG_ALERT, LINK, RLINK, LLINK,
                                     DOTS, RED_X, NL3, CRLF_DOT, CRLF_STAR, CRLF_CHK, CRLF_HDOT,
                                     APPLE_SERVER_ENDPOINT, TRUST_COOKIE_NAME,
-                                    CONF_AUTH_METHODS, CONF_LAST_METHOD,
+                                    CONF_AUTH_METHODS, CURRENT,
                                     PUSH, TEXT, TEXT_1, TEXT_2, HWKEY,
                                     CONF_USERNAME, CONF_PASSWORD, HIGH_INTEGER,
                                     AUTH_METHOD_FNAME, )
@@ -527,37 +527,37 @@ class AppleAcctManager(object):
         return self.conf_apple_acct[CONF_AUTH_METHODS]
 
     @property
-    def auth_method(self):
+    def current_auth_method(self):
         '''
-        return the last auth_method
+        return the current auth_method
             - 'push'
-            - 'text_1'
+            - 'text_1', 'text_2'
             - 'hwkey'
         '''
 
-        return self.conf_apple_acct[CONF_AUTH_METHODS][CONF_LAST_METHOD]
+        return self.conf_apple_acct[CONF_AUTH_METHODS][CURRENT]
 
     @property
-    def auth_method_info(self):
+    def current_auth_method_value(self):
         '''
         return the last auth_method and it's info vlaue
             - 'push' = ''
             - 'text_1' = '**66'
             - 'hwkey' = 'green, pink'
         '''
-        return self.conf_apple_acct[CONF_AUTH_METHODS].get(self.auth_method, '')
+        return self.conf_apple_acct[CONF_AUTH_METHODS].get(self.current_auth_method, '')
 
     @property
     def is_auth_method_PUSH(self):
-        return self.auth_method == PUSH
+        return self.current_auth_method == PUSH
 
     @property
     def is_auth_method_TEXT(self):
-        return self.auth_method.startswith(TEXT)
+        return self.current_auth_method.startswith(TEXT)
 
     @property
     def is_auth_method_HWKEY(self):
-        return self.auth_method == HWKEY
+        return self.current_auth_method == HWKEY
 
 #----------------------------------------------------------------------------
     @property
@@ -1403,7 +1403,7 @@ class AppleAcctManager(object):
 
     @property
     def authentication_method(self):
-        return self.auth_method
+        return self.current_auth_method
 
     @property
     def login_failed(self):
@@ -1492,7 +1492,7 @@ class AppleAcctManager(object):
         the last time this was done and use it as a basis
         '''
 
-        self._update_token_pw('valid_reauth_method', self.auth_method)
+        self._update_token_pw('valid_reauth_method', self.current_auth_method)
         self._update_token_pw('valid_reauth_secs', time_now_secs())
 
 #----------------------------------------------------------------------------
@@ -1629,10 +1629,10 @@ class AppleAcctManager(object):
 
         if auth_data is None and self.login_successful_srp:
             try:
-                auth_data = icloud_io.get(self, self.AUTH_ENDPOINT,
-                                            headers=self.get_auth_headers())
+                auth_data = icloud_io.get(self, self.AUTH_ENDPOINT, headers=self.get_auth_headers())
                 if self.response_code != 200:
                     auth_data = None
+
             except Exception:
                 auth_data = None
 
@@ -1641,10 +1641,11 @@ class AppleAcctManager(object):
         # Normalize to the internal {deviceId, phoneNumber} shape used below and
         # persisted to token_pw. Only overwrite the cached list on a real read so
         # an empty/failed fetch does not wipe previously discovered numbers.
+        _log(f'{auth_data=}')
         if auth_data is not None:
             trusted_phone_numbers = (auth_data.get('trustedPhoneNumbers', [])
-                                    or (auth_data.get('phoneNumberVerification', {})
-                                                 .get('trustedPhoneNumbers', [])))
+                                or  (auth_data.get('phoneNumberVerification', {})
+                                                .get('trustedPhoneNumbers', [])))
 
             self.trusted_phone_data = [
                 {'deviceId': phone['id'], 'phoneNumber': phone.get('lastTwoDigits', '')}
@@ -1653,16 +1654,15 @@ class AppleAcctManager(object):
 
         # Delete and readd 'text_' items in case anything changed
         conf_auth_methods = self.conf_apple_acct[CONF_AUTH_METHODS]
+        _log(f'{self.current_auth_method=} {conf_auth_methods=}')
 
         # If hwkeys are available, change last_method to 'hwkey'
-        if (self.is_auth_method_HWKEY is False
-                and self.conf_apple_acct[CONF_AUTH_METHODS][HWKEY] != ''):
-            self.conf_apple_acct[CONF_AUTH_METHODS][CONF_LAST_METHOD] = HWKEY
+        if (self.is_auth_method_HWKEY is False and conf_auth_methods[HWKEY] != ''):
+            conf_auth_methods[CURRENT] = HWKEY
 
         # If hwkeys are not available, change last_method to 'push'
-        if (self.is_auth_method_HWKEY
-                and self.conf_apple_acct[CONF_AUTH_METHODS][HWKEY] == ''):
-            self.conf_apple_acct[CONF_AUTH_METHODS][CONF_LAST_METHOD] = PUSH
+        if (self.is_auth_method_HWKEY and conf_auth_methods[HWKEY] == ''):
+            conf_auth_methods[CURRENT] = PUSH
 
         # Clear Text_x phone number
         for auth_method, method_info in conf_auth_methods.items():
@@ -1682,10 +1682,10 @@ class AppleAcctManager(object):
             conf_auth_methods[TEXT_1] = ''
 
         # Make sure last auth is still available if it is text
-        last_auth_method = conf_auth_methods[CONF_LAST_METHOD]
+        last_auth_method = conf_auth_methods[CURRENT]
         if (last_auth_method.startswith(TEXT)
                 and conf_auth_methods.get(last_auth_method, '')) == '':
-            conf_auth_methods[CONF_LAST_METHOD] = default_text_method or PUSH
+            conf_auth_methods[CURRENT] = default_text_method or PUSH
 
         return
 
@@ -1722,7 +1722,7 @@ class AppleAcctManager(object):
         This is separate from validate_2fa_code() which uses the trusted device path.
         '''
         self.iCloudSession.cookies.list()
-        phone_id = int(self.auth_method[-1:])
+        phone_id = int(self.current_auth_method[-1:])
 
         headers = self.get_auth_headers()
         url     = f"{self.AUTH_ENDPOINT}/verify/phone/securitycode"
@@ -1874,7 +1874,7 @@ class AppleAcctManager(object):
 
         # /appleauth/auth only returns keyNames when a fresh SRP sign-in has put
         # the idmsa session into the 2FA-pending (409) state. On the TrustToken
-        # path it always returns 401, so keep the cached value (auth_method_info)
+        # path it always returns 401, so keep the cached value (auth_method_value)
         # instead of overwriting it with an empty result.
         if auth_data is None and self.login_successful_srp:
             data = icloud_io.get(self, self.AUTH_ENDPOINT,

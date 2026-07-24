@@ -8,7 +8,7 @@ from ..const            import (RARROW, CRLF_DOT, DOT, HDOT, CIRCLE_STAR, RED_X,
                                 DEVICE_TYPES, DEVICE_TYPE_DN, DEVICE_TYPE_DNS, DEVICE_TRACKER_DOT,
                                 TRACK, MONITOR, INACTIVE, TRACKING_MODE_DN, TRACKING_MODES,
                                 CONF_APPLE_ACCOUNTS, CONF_APPLE_ACCOUNT,
-                                CONF_AUTH_METHODS, CONF_LAST_METHOD,
+                                CONF_AUTH_METHODS, CURRENT,
                                 PUSH, TEXT, TEXT_1, TEXT_2, HWKEY,
                                 CONF_USERNAME, CONF_PASSWORD, CONF_DEVICES, CONF_SETUP_ICLOUD_SESSION_EARLY,
                                 CONF_DATA_SOURCE, CONF_AUTH_CODE, CONF_LOCATE_ALL,
@@ -146,9 +146,9 @@ def _build_aa_auth_text_line(self, AppleAcct, conf_apple_acct):
     build_aa_auth_methods_list(self, AppleAcct)
 
     aa_text = ''
-    if (AppleAcct.auth_method in AppleAcct.auth_methods
-            and AppleAcct.auth_method_info != ''):
-        auth_method = AppleAcct.auth_method
+    if (AppleAcct.current_auth_method in AppleAcct.auth_methods
+            and AppleAcct.current_auth_method_value != ''):
+        auth_method = AppleAcct.current_auth_method
     else:
         auth_method = PUSH
 

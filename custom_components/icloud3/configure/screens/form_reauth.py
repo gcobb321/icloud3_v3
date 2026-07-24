@@ -1,7 +1,7 @@
 
 
 from ...global_variables    import GlobalVariables as Gb
-from ...const               import (CONF_AUTH_CODE, CONF_AUTH_METHODS, CONF_LAST_METHOD, PUSH, HWKEY, )
+from ...const               import (CONF_AUTH_CODE, CONF_AUTH_METHODS, CURRENT, PUSH, HWKEY, )
 
 from ...utils.utils         import (dict_value_to_list, list_del, dict_del, )
 from ...utils.messaging     import (_log, log_info_msg, log_exception, log_debug_msg,
@@ -48,7 +48,7 @@ def form_reauth(self, user_input=None, reauth_username=None):
         self.actions_list.append(ACTION_LIST_OPTIONS['accept_terms_of_use'])
     self.actions_list.extend(REAUTH_ACTIONS)
 
-    # if AppleAcct.conf_apple_acct[CONF_AUTH_METHODS][CONF_LAST_METHOD] != PUSH:
+    # if AppleAcct.conf_apple_acct[CONF_AUTH_METHODS][CURRENT] != PUSH:
     #     list_del(self.actions_list, ACTION_LIST_OPTIONS['auth_code_from_applecom_login'])
 
     default_action = 'goto_previous'
@@ -136,7 +136,7 @@ def form_reauth_change_auth_method(self, account_selected=None):
 
     default_acct_selected = self.apple_acct_auth_items_by_username[account_selected]
 
-    default_auth_method = self.AppleAcct.auth_method
+    default_auth_method = self.AppleAcct.current_auth_method
     if self.aa_auth_methods_by_auth_method.get(HWKEY):
         default_auth_method = HWKEY
         dict_del(self.aa_auth_methods_by_auth_method, PUSH)

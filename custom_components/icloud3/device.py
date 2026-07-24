@@ -2153,10 +2153,6 @@ class iCloud3_Device(TrackerEntity):
                 and new_battery_update_secs == self.mobapp_data_battery_update_secs):
             return False
 
-        log_debug_msg(f"MOBAPP {self.devicename} > MobApp Battery > "
-            f"{new_battery_level}, "
-            f"Updated-{s2t(new_battery_update_secs)}, "
-            f"{new_battery_status}")
 
         self.mobapp_data_battery_status = new_battery_status
 
@@ -2167,6 +2163,11 @@ class iCloud3_Device(TrackerEntity):
             self.mobapp_data_battery_update_secs = new_battery_update_secs
             self.mobapp_data_battery_level       = new_battery_level
             data_source                          = MOBAPP
+
+            log_debug_msg(f"MOBAPP {self.devicename} > MobApp Battery > "
+                f"{new_battery_level}, "
+                f"Updated-{s2t(new_battery_update_secs)}, "
+                f"{new_battery_status}")
         else:
             self.mobapp_data_battery_update_secs = \
                 new_battery_update_secs          = self.dev_data_battery_update_secs

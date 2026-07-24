@@ -2,7 +2,7 @@
 import asyncio
 
 from ...global_variables    import GlobalVariables as Gb
-from ...const               import (CONF_AUTH_CODE, CONF_AUTH_METHODS, CONF_LAST_METHOD, PUSH, HWKEY,
+from ...const               import (CONF_AUTH_CODE, CONF_AUTH_METHODS, CURRENT, PUSH, HWKEY,
                                     EVLOG_NOTICE, )
 from ...utils.utils         import (instr, is_number, is_empty, isnot_empty, dict_del, )
 from ...utils.messaging     import (_log, log_info_msg, log_exception, log_debug_msg,
@@ -142,7 +142,7 @@ class OptionsFlow_Reauth_Steps:
 
                 # Verify the hwkey is plugged into the HA server before hwkey authentication
                 # if AppleAcct.hwkey_names != '':
-                #     AppleAcct.conf_apple_acct[CONF_AUTH_METHODS][CONF_LAST_METHOD] = HWKEY
+                #     AppleAcct.conf_apple_acct[CONF_AUTH_METHODS][CURRENT] = HWKEY
                 if AppleAcct.is_auth_method_PUSH and AppleAcct.hwkey_names != '':
                     self.update_auth_method(HWKEY)
 
@@ -158,10 +158,10 @@ class OptionsFlow_Reauth_Steps:
                 # Request the auth code or tell user to click Auth button on screen
                 await self.request_auth_code_or_trigger_hwkey_keypress(AppleAcct)
 
-                auth_method = f"{AppleAcct.auth_method.title()}"
+                auth_method = f"{AppleAcct.current_auth_method.title()}"
 
                 if AppleAcct.is_auth_method_TEXT or AppleAcct.is_auth_method_HWKEY:
-                    auth_method = f": {self.AppleAcct.auth_method_info}"
+                    auth_method = f": {self.AppleAcct.current_auth_method_value}"
 
                 post_event( f"{EVLOG_NOTICE}Apple Acct > {AppleAcct.account_owner}, "
                             f"Requested a new Auth Code, {auth_method}")
@@ -241,14 +241,14 @@ class OptionsFlow_Reauth_Steps:
         '''
         try:
             post_event(f"{EVLOG_NOTICE}Apple Acct > {AppleAcct.username_id}, Authentication Inprocess")
-            log_info_msg(f"{AppleAcct.username_id} > Request Auth code, {AppleAcct.auth_method}")
+            log_info_msg(f"{AppleAcct.username_id} > Request Auth code, {AppleAcct.current_auth_method}")
 
 
             if AppleAcct.is_auth_alert_displayed is False:
                 AppleAcct.is_auth_alert_displayed = True
 
             if (AppleAcct.is_auth_method_PUSH is False
-                    and AppleAcct.auth_method not in AppleAcct.conf_apple_acct[CONF_AUTH_METHODS]):
+                    and AppleAcct.current_auth_method not in AppleAcct.conf_apple_acct[CONF_AUTH_METHODS]):
                 await self.update_auth_method(PUSH)
 
             if AppleAcct.is_auth_method_HWKEY:
@@ -276,7 +276,7 @@ class OptionsFlow_Reauth_Steps:
 
             elif AppleAcct.is_auth_method_TEXT:
                 await Gb.hass.async_add_executor_job(AppleAcct.untrust_session_and_authenticate)
-                await Gb.hass.async_add_executor_job(AppleAcct.request_auth_code_via_text_msg, AppleAcct.auth_method)
+                await Gb.hass.async_add_executor_job(AppleAcct.request_auth_code_via_text_msg, AppleAcct.current_auth_method)
                 waiting_msg = 'Waiting for the Text Auth Code to be entered'
 
 
@@ -302,7 +302,10 @@ class OptionsFlow_Reauth_Steps:
             AppleAcct = self.AppleAcct
             AppleAcct.was_ha_auth_code_alert_sent = False
             auth_successful = True
-            log_info_msg(f"{AppleAcct.username_id} > Send Auth code, {AppleAcct.auth_method}")
+            log_info_msg(f"{AppleAcct.username_id} > Send Auth code, {AppleAcct.current_auth_method}")
+            _log(f'{AppleAcct.is_auth_method_PUSH=} {force_PUSH=}')
+            _log(f'{AppleAcct.is_auth_method_TEXT=} ')
+            _log(f'{AppleAcct.is_auth_method_HWKEY=} ')
 
             if AppleAcct.is_auth_method_PUSH or force_PUSH:
                 auth_successful = await Gb.hass.async_add_executor_job(
@@ -324,7 +327,7 @@ class OptionsFlow_Reauth_Steps:
             self.errors[CONF_AUTH_CODE], evlog_msg = self._finish_auth_status_msg(AppleAcct, auth_successful)
 
             post_event(f"{EVLOG_NOTICE}Apple Acct > {AppleAcct.account_owner}, {evlog_msg}")
-            log_info_msg(f"{AppleAcct.account_owner} > Send Auth code, {AppleAcct.auth_method}, "
+            log_info_msg(f"{AppleAcct.account_owner} > Send Auth code, {AppleAcct.current_auth_method}, "
                             f"Successful-{auth_successful}")
 
             if auth_successful is False:
@@ -632,7 +635,7 @@ class OptionsFlow_Reauth_Steps:
         '''
         AppleAcct = self.AppleAcct
         AppleAcct.conf_apple_acct[CONF_AUTH_METHODS][HWKEY] = AppleAcct.hwkey_names
-        AppleAcct.conf_apple_acct[CONF_AUTH_METHODS][CONF_LAST_METHOD] = \
+        AppleAcct.conf_apple_acct[CONF_AUTH_METHODS][CURRENT] = \
                             HWKEY if AppleAcct.hwkey_names != '' else \
                             auth_method
 
