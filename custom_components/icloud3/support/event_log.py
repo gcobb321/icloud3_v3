@@ -349,8 +349,9 @@ class EventLog(object):
                     or event_text.startswith(EVLOG_IC3_STAGE_HDR)):
                 this_update_time = dt_util.now().strftime('%a')
                 if Device:
-                    space = '' if Device.dev_data_battery_level == 100 else ' '
-                    this_update_time += f",{space}{Device.dev_data_battery_level}%"
+                    # space = '' if Device.dev_data_battery_level == 100 else ' '
+                    # this_update_time += f",{space}{Device.dev_data_battery_level}%"
+                    this_update_time += f",{Device.dev_data_battery_level}%"
 
             else:
                 this_update_time = dt_util.now().strftime('%H:%M:%S')

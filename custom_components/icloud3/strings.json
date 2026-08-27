@@ -124,7 +124,7 @@
   },
   "options": {
     "abort": {
-      "config_update_complete": "✅ iCloud3 configuration updated successfully",
+      "config_update_complete": "{exit_msg}",
       "already_configured": "iCloud3 is already installed and can not be installed again. Select CONFIGURE in the iCloud3 Integration entry to configure iCloud3",
       "disabled": "iCloud3 is DISABLED and can not be installed again. Enable iCloud, then select CONFIGURE in the iCloud3 Integration entry to configure iCloud3",
       "ha_restarting": "Home Assistant is Restarting\n\nTHE ICLOUD3 SCREEN MUST BE REFRESHED AFTER RESTARTING",
@@ -159,7 +159,7 @@
       "apple_acct_not_available": "❌ Login Failed, Apple Account is not Available",
       "apple_acct_locked": "❌ Login Failed, Apple Account may be Locked",
       "apple_acct_not_logged_into": "The Apple Account is not logged into",
-      "apple_acct_updated_not_logged_into": "Apple Acct info was saved, Login Error, Will Complete Login Later",
+      "apple_acct_updated_login_error": "Apple Acct info was saved, Login Error, Will Complete Login Later",
       "apple_acct_data_source_warning": "Warning: Apple Accts have been set up but are not used as a data source",
       "apple_acct_not_set_up": "No Apple Accts are set up. See `Apple Accounts & Mobile App` screen",
       "apple_acct_parm_error": "Apple Account parameter error. Update it on the `Apple Accounts & Mobile App` screen",
@@ -559,7 +559,7 @@
 
       "dashboard_builder": {
         "title": "iCloud3 Dashboard Builder",
-        "description": "This screen will create and update iCloud3 Dashboards for tracked devices (up to 4) with different styles and views. The Dashboards can then be customized using the HA Dashboard tools or used as-is.",
+        "description": "This screen will create and update iCloud3 Dashboards for tracked devices (up to 4) with different styles and views. The Dashboards can then be customized using the HA Dashboard tools or used as-is.\n{db_icons}",
         "data": {
           "selected_dashboard": "⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯ ICLOUD3 DASHBOARDS",
           "main_view_style": "MAIN VIEW STYLE FORMAT - How the device information should be presented",

@@ -11,6 +11,7 @@ from ...utils.utils         import (list_to_str, list_add, list_del, isnot_empty
 from ...utils.messaging     import (_log, log_info_msg, log_exception, log_debug_msg,
                                     post_event, post_alert, post_greenbar_msg, update_alert_sensor,)
 
+from ...startup             import config_file
 from ..                     import utils_cf
 from ..const_form_lists     import *
 from ...configure           import dashboard_builder as dbb
@@ -28,7 +29,7 @@ import voluptuous as vol
 #       - form_config_option_user
 #       - form_menu
 #       - form_confirm_action
-#       - form_restart_icloud3
+#       - exit_icloud3_configure
 #       - form_restart_ha
 #       - form_restart_ha_reload_icloud3
 #
@@ -75,10 +76,11 @@ def form_menu(self):
             menu_items['exit'] = MENU_EXIT_ITEMS['exit_update_dashboards']
 
     if self.menu_page_no == 0:
+        device_cnt, inactive_device_cnt, inactive_pct = config_file.device_cnts()
         if (self.username == '' or self.password == ''):
             self.menu_item_selected[0] = 'apple_accounts'
         elif (self.username and self.password
-                and (self._device_cnt() == 0 or self._device_cnt() == self._inactive_device_cnt())):
+                and (device_cnt == 0 or device_cnt == inactive_device_cnt)):
             self.menu_item_selected[0] = 'device_list'
 
     return vol.Schema({
@@ -117,84 +119,28 @@ def form_confirm_action(self):
         log_exception(err)
 
 
-
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-#             RESTART ICLOUD3
+#             EXIT ICLOUD3 CONFIGURE
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-def form_restart_icloud3(self):
-    self.actions_list = []
-    restart_default='restart_ic3_now'
+def form_exit_icloud3_configure_settings(self):
+    self.actions_list = EXIT_ICLOUD3_CONFIGURE_SETTINGS.copy()
 
-    if 'restart_ha' in self.config_parms_update_control:
-        restart_default='restart_ha'
-        self.actions_list.append(ACTION_LIST_OPTIONS['restart_ha'])
+    device_cnt, inactive_device_cnt, inactive_pct = config_file.device_cnts()
+    if inactive_device_cnt == 0:
+        self.actions_list['review_inactive_devices'].pop()
     else:
-        restart_default='restart_ic3_now'
-        self.actions_list.append(ACTION_LIST_OPTIONS['restart_ic3_now'])
-
-    self.actions_list.append(ACTION_LIST_OPTIONS['restart_ic3_later'])
-
-    actions_list_default = utils_cf.default_action_text(restart_default)
-    if self._inactive_device_cnt() > 0:
         inactive_devices = [conf_device[CONF_IC3_DEVICENAME]
                     for conf_device in Gb.conf_devices
                     if conf_device[CONF_TRACKING_MODE] == INACTIVE]
-        inactive_devices_list = \
-            ACTION_LIST_OPTIONS['review_inactive_devices'].replace(
+
+        # self.actions_list['review_inactive_devices'].replace(
+        self.actions_list[0] = \
+            self.actions_list[0].replace(
                     '^add-text^', list_to_str(inactive_devices))
-        self.actions_list.append(inactive_devices_list)
-
-    self.actions_list.append(ACTION_LIST_OPTIONS['goto_menu'])
 
     return vol.Schema({
         vol.Required('action_items',
-                    default=actions_list_default):
+                    default=utils_cf.default_action_text('exit')):
                     selector.SelectSelector(selector.SelectSelectorConfig(
                         options=self.actions_list, mode='list')),
         })
-
-
-#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-#            RESTART HA IC3
-#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-def form_restart_ha(self):
-
-    self.actions_list = []
-    self.actions_list.append(ACTION_LIST_OPTIONS['restart_ha'])
-    # self.actions_list.append(ACTION_LIST_OPTIONS['restart_icloud3'])
-    self.actions_list.append(ACTION_LIST_OPTIONS['goto_menu'])
-    if self.create_device_tracker_sensor_enities_on_exit:
-        self.actions_list.append(ACTION_LIST_OPTIONS['exit_add_dev_trkrs_sensors'])
-    elif self.rebuild_ic3db_dashboards:
-        self.actions_list.append(ACTION_LIST_OPTIONS['exit_update_dashboards'])
-    else:
-        self.actions_list.append(ACTION_LIST_OPTIONS['exit'])
-
-    actions_list_default = utils_cf.default_action_text('restart_ha')
-
-    return vol.Schema({
-        vol.Required('action_items',
-                    default=actions_list_default):
-                    selector.SelectSelector(selector.SelectSelectorConfig(
-                        options=self.actions_list, mode='list')),
-        })
-
-
-#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-#            RESTART HA, RELOAD ICLOUD3
-#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-def form_restart_ha_reload_icloud3(self):
-
-    self.actions_list = []
-    self.actions_list.append(ACTION_LIST_OPTIONS['reload_icloud3'])
-    self.actions_list.append(ACTION_LIST_OPTIONS['restart_ha'])
-    self.actions_list.append(ACTION_LIST_OPTIONS['exit'])
-
-    actions_list_default = utils_cf.default_action_text('exit')
-
-    return vol.Schema({
-        vol.Required('action_items',
-                    default=actions_list_default):
-                    selector.SelectSelector(selector.SelectSelectorConfig(
-                        options=self.actions_list, mode='list')),
-                })

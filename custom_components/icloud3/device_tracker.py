@@ -823,7 +823,7 @@ class iCloud3_DeviceTracker(TrackerEntity):
 
 #-------------------------------------------------------------------------------------------
     def __repr__(self):
-        return (f"<DeviceTracker: {self.devicename}/{self.device_type}>")
+        return (f"{self.devicename}/{self.device_type}")
 
 
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>

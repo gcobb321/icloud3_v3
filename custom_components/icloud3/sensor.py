@@ -777,8 +777,11 @@ class DeviceSensor_Base():
         for _sensor in self._get_sensor_definition(sensor, SENSOR_ATTRS):
             _sensor_attr_name = _sensor.replace('_date/time', '')
             _sensor_value = self._get_sensor_value(_sensor)
+
             try:
                 _sensor_value = set_precision(_sensor_value)
+                if _sensor_attr_name == CALC_DISTANCE and _sensor_value < 1:
+                    _sensor_value = f"{_sensor_value:.4f}"
             except:
                 pass
 
@@ -1133,7 +1136,7 @@ class DeviceSensor_Base():
 
 #-------------------------------------------------------------------------------------------
     def __repr__(self):
-            return (f"<Sensor: {self.entity_name}>")
+            return self.entity_name
 
 
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -1369,9 +1372,7 @@ class Sensor_Distance(DeviceSensor_Base, SensorEntity):
             self._attr_native_unit_of_measurement = Gb.um
 
         if self._attr_native_unit_of_measurement == 'km':
-            if round_to_zero(sensor_value) == 0:
-                sensor_value = 0.0
-            elif sensor_value > 20:
+            if sensor_value > 20:
                 sensor_value = round(sensor_value, 0)
             elif sensor_value >= 1:
                 sensor_value = round(sensor_value, 2)
@@ -1379,12 +1380,10 @@ class Sensor_Distance(DeviceSensor_Base, SensorEntity):
                 sensor_value =  round(sensor_value*1000, 2)
                 self._attr_native_unit_of_measurement = 'm'
             else:
-                sensor_value =  round(sensor_value, 2)
+                sensor_value =  round(sensor_value, 4)
 
         elif self._attr_native_unit_of_measurement == 'mi':
-            if round_to_zero(sensor_value) == 0:
-                sensor_value = 0.0
-            elif sensor_value > 20:
+            if sensor_value > 20:
                 sensor_value = round(sensor_value, 1)
             elif sensor_value > .1:
                 sensor_value = round(sensor_value, 2)
@@ -1392,7 +1391,7 @@ class Sensor_Distance(DeviceSensor_Base, SensorEntity):
                 sensor_value = round(sensor_value*5280, 2)
                 self._attr_native_unit_of_measurement = 'ft'
             else:
-                sensor_value = round(sensor_value, 2)
+                sensor_value = round(sensor_value, 4)
 
         return sensor_value
 

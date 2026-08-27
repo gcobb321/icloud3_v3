@@ -130,7 +130,7 @@ class GlobalVariables(object):
     iC3EntityPlatform               = None   # iCloud3 Entity Platform (homeassistant.helpers.entity_component)
     AppleAcct                       = None   # iCloud Account service
     AppleAcctLoggingInto            = None   # AppleAcct being set up  that can be used if the login fails
-    AppleAcct_needing_reauth_via_ha = None   # Reauth needed sent to ha for notify msg display
+    AppleAcct_reauth_needed         = None   # Reauth needed sent to ha for notify msg display
     ValidateAppleAcctUPW            = None    # A session that can be used to verify the username/password
 
     # AppleAcct objects by various categories
@@ -139,6 +139,12 @@ class GlobalVariables(object):
     AppleAcct_logging_in_usernames   = []  # usernames that are currently logging in. Used to prevent another login
     AppleAcct_error_by_username      = {}  # An error was encountered during verification, login or authentication
     iCloudSession_by_username        = {}  # Session object for a username, set in Session so exists on an error
+
+    # The signin session token earned by a username/password SRP validation is reused
+    # by the acct login that runs right after validation. This prevents second srp password proof,
+    # preventing Apple refusal leading to a 503 error.
+    # See AppleAcctManager._use_srp_signin_handoff. Consumed once, then discarded.
+    srp_token_info_by_username       = {}
 
     valid_upw_by_username            = {}  # The username/password validation status
     valid_upw_results_msg            = ''  # valid upw results from Stage 3 to redisplay in Stage 4
@@ -494,8 +500,8 @@ class GlobalVariables(object):
     # iCloud account authorization variables
     # force_icloud_update_flag     = False
     trusted_device               = None
-    auth_code            = None
-    icloud_cookies_directory      = ''
+    auth_code                    = None
+    icloud_cookies_directory     = ''
     icloud_session_directory     = ''
     icloud_cookie_file           = ''
     icloud_device_verified_cnt   = 0

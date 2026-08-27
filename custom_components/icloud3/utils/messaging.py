@@ -96,10 +96,21 @@ FILTER_FIELDS = [
         'data', 'json', 'headers', 'params', 'url', 'retry_cnt', 'retried', 'retry', '#',
         'code', 'ok', 'method', 'fmly', 'shouldLocate', 'selectedDevice', 'membersInfo',
         'X-Apple-OAuth-State', 'X-Apple-ID-Session-Id', 'Accept', 'Authorization',
+        # scnt pairs with X-Apple-ID-Session-Id to identify the idmsa signin
+        # session. Logged so a rejected /appleauth/auth request can be checked
+        # for whether the session headers were actually attached to it.
+        'scnt', 'Content-Type', 'X-Apple-Widget-Key',
         'identifiers', 'labels', 'model', 'name_by_user', 'area_id', 'manufacturer', 'sw_version',
         'keyNames', 'securityCode', 'trustedPhoneNumbers', 'trustedPhoneNumber',
         'deviceType', 'areaCode', 'phoneNumber', 'deviceId',
         'authenticationType', 'pushSupported',
+        # Apple's 2fa error/status fields. Without these, a rejected auth code
+        # request (verify/phone 423) logs only the trusted phone numbers and the
+        # reason Apple gives for the rejection is filtered out of the log.
+        'service_errors', 'serviceErrors', 'hasError', 'message', 'title',
+        'restrictedAccount', 'authType', 'mode', 'pushMode',
+        'tooManyCodesSent', 'tooManyCodesValidated',
+        'securityCodeLocked', 'securityCodeCooldown',
         'username', 'password', 'accountName', 'salt', 'protocols', 'protocol', 'iteration',
         'a', 'A', 'b', 'B', 'c', 'm1', 'M1', 'm2', 'M2', 'g', 'K', 'N', 'u', 'v',
         ]

@@ -26,7 +26,7 @@ from .const             import (DEVICE_TRACKER, DEVICE_TRACKER_DOT, CIRCLE_STAR2
                                 FRIENDLY_NAME, PICTURE, ICON, BADGE, ALERT,
                                 LATITUDE, LONGITUDE, POSITION_TYPE,
                                 LOCATION, LOCATION_SOURCE, TRIGGER, TRACKING, NEAR_DEVICE_USED,
-                                FROM_ZONE, INTERVAL,
+                                FROM_ZONE, INTERVAL, INTERVAL_METHOD,
                                 ZONE, ZONE_DNAME, ZONE_NAME, ZONE_FNAME, ZONE_DATETIME, ZONE_ENTER_SECS, ZONE_EXIT_SECS,
                                 LAST_ZONE, LAST_ZONE_DNAME, LAST_ZONE_NAME, LAST_ZONE_FNAME, LAST_ZONE_DATETIME,
                                 BATTERY_SOURCE, BATTERY, BATTERY_LEVEL, BATTERY_STATUS, BATTERY_LEVEL_LOW,
@@ -188,6 +188,7 @@ class iCloud3_Device(TrackerEntity):
         self.trigger                      = 'iCloud3'
         self.interval_secs                = 0
         self.interval_str                 = ''
+        self.interval_method              = ''
         self.next_update_secs             = 0
         self.zone_enter_secs              = 0
         self.zone_enter_time              = HHMMSS_ZERO
@@ -441,7 +442,8 @@ class iCloud3_Device(TrackerEntity):
 
         # Sensors overlaid with DeviceFmZone sensors for nearest zone
         self.sensors[FROM_ZONE]             = ''
-        self.sensors[INTERVAL]              = ''
+        self.sensors[INTERVAL]              = 0
+        self.sensors[INTERVAL_METHOD]       = ''
         self.sensors[NEXT_UPDATE_DATETIME]  = DATETIME_ZERO
         self.sensors[NEXT_UPDATE_TIME]      = HHMMSS_ZERO
         self.sensors[NEXT_UPDATE]           = HHMMSS_ZERO
@@ -493,14 +495,6 @@ class iCloud3_Device(TrackerEntity):
         if self.devicename in Gb.restore_state_devices:
             self.sensors.update(Gb.restore_state_devices[self.devicename]['sensors'])
             self.restore_state_reset_other_items()
-
-            self.zone_enter_secs = self.sensors[ZONE_ENTER_SECS]
-            self.zone_exit_secs  = self.sensors[ZONE_EXIT_SECS]
-            self.last_zone       = self.sensors[LAST_ZONE_NAME]
-
-            self.sensors[DISTANCE_TO_OTHER_DEVICES] = {}
-            self.sensors[DISTANCE_TO_OTHER_DEVICES_DATETIME] = HHMMSS_ZERO
-            self.sensors[ALERT] = ''
 
 #------------------------------------------------------------------------------
     def initialize_mobapp_device_tracker_entity_name(self):
@@ -1147,6 +1141,9 @@ class iCloud3_Device(TrackerEntity):
         if (self.no_location_data
                 or (self.dev_data_device_status_code == DEVICE_STATUS_OFFLINE
                     and mins_since(self.loc_data_secs) > 5)):
+            self.dev_data_device_status      = "Offline"
+            self.dev_data_device_status_code = 201
+            self.offline_secs                = time_now_secs()
             return True
         return False
 
@@ -1860,12 +1857,22 @@ class iCloud3_Device(TrackerEntity):
         try:
 
             device_items = Gb.restore_state_devices[self.devicename]
-            if 'other' not in device_items: return
+            if 'other' in device_items:
+                other_items = device_items['other']
+                if other_items.get('zone', '') == self.loc_data_zone:
+                    self.zone_change_secs     = other_items['zone_change_secs']
+                    self.zone_change_datetime = other_items['zone_change_datetime']
 
-            other_items = device_items['other']
-            if other_items.get('zone', '') == self.loc_data_zone:
-                self.zone_change_secs     = other_items['zone_change_secs']
-                self.zone_change_datetime = other_items['zone_change_datetime']
+            self.zone_enter_secs = self.sensors[ZONE_ENTER_SECS]
+            self.zone_exit_secs  = self.sensors[ZONE_EXIT_SECS]
+            self.last_zone       = self.sensors[LAST_ZONE_NAME]
+            self.dev_data_battery_level  = self.sensors[BATTERY]
+            self.dev_data_battery_status = self.sensors[BATTERY_STATUS]
+            self.dev_data_battery_source = self.sensors[BATTERY_SOURCE]
+
+            self.sensors[DISTANCE_TO_OTHER_DEVICES] = {}
+            self.sensors[DISTANCE_TO_OTHER_DEVICES_DATETIME] = HHMMSS_ZERO
+            self.sensors[ALERT] = ''
 
 
         except Exception as err:
@@ -2219,8 +2226,9 @@ class iCloud3_Device(TrackerEntity):
         battery level is divisible by 5 (80, 85, etc.)
         '''
 
-        # if self.dev_data_battery_level < 1:
-        #     return False
+        # Return if it hasn't been set up yet
+        if self.dev_data_battery_update_secs == 0:
+            return False
 
         if (self.dev_data_battery_level != self.dev_data_battery_level_last
                 or self.dev_data_battery_status != self.dev_data_battery_status_last):
@@ -2440,6 +2448,7 @@ class iCloud3_Device(TrackerEntity):
             self.interval_str                  = self.FromZone_NextToUpdate.interval_str
             self.next_update_secs              = self.FromZone_NextToUpdate.next_update_secs
             self.sensors[INTERVAL]             = self.FromZone_NextToUpdate.sensors[INTERVAL]
+            self.sensors[INTERVAL_METHOD]      = self.FromZone_NextToUpdate.sensors[INTERVAL_METHOD]
             self.sensors[NEXT_UPDATE_DATETIME] = self.FromZone_NextToUpdate.sensors[NEXT_UPDATE_DATETIME]
             self.sensors[NEXT_UPDATE_TIME]     = self.FromZone_NextToUpdate.sensors[NEXT_UPDATE_TIME]
             self.sensors[NEXT_UPDATE]          = self.FromZone_NextToUpdate.sensors[NEXT_UPDATE]

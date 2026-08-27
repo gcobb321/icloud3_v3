@@ -10,7 +10,7 @@
 #
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-VERSION                         = '3.7.2'
+VERSION                         = '3.7.3'
 VERSION_BETA                    = ''
 #-----------------------------------------
 DOMAIN                          = 'icloud3'
@@ -139,6 +139,13 @@ IPOD                            = 'ipod'
 AIRPODS                         = 'airpods'
 OTHER                           = 'other'
 
+# Device tracking modes
+TRACK               = 'track'
+MONITOR             = 'monitor'
+INACTIVE            = 'inactive'
+TRACKING_MODES      = [TRACK, MONITOR, INACTIVE]
+TRACKING_MODE_DN    = {TRACK: 'Tracked', MONITOR: 'Monitored', INACTIVE: 'INACTIVE',}
+
 DEVICE_TYPES = [
         IPHONE, IPAD, IPAD_CELL, WATCH, WATCH_WIFI,
         IPHONE_DN, IPAD_DN, IPAD_DN_WIFI, IPAD_DN_WIFI_CELL,
@@ -147,6 +154,19 @@ DEVICE_TYPES = [
         MAC_DN, IPOD_DN, AIRPODS_DN,
         ICLOUD,
 ]
+DEVICE_TYPES_TRACK_MONITOR = [
+        IPHONE, IPAD, IPAD_CELL, WATCH, WATCH_WIFI, MAC,
+]
+DEVICE_TYPE_DEFAULT_TRACKING_MODE = {
+        IPHONE: TRACK,
+        WATCH: TRACK,
+        IPAD: MONITOR,
+        MAC: MONITOR,
+}
+def DEVICE_TYPE_TRACKING_MODE(device_type):
+        device_type_base = device_type.split('_')[0]
+        return DEVICE_TYPE_DEFAULT_TRACKING_MODE.get(device_type_base, INACTIVE)
+
 DEVICE_TYPE_DNS = {
         IPHONE: IPHONE_DN,
         WATCH: WATCH_DN_WIFI_CELL,
@@ -450,6 +470,7 @@ CIRCLE_SLASH      = '⊘'
 CIRCLE_X          = 'ⓧ'
 MONITOR_SYMB      = 'Ⓜ'
 INACTIVE_SYMB     = 'ⓧ'
+INACTIVE_SYMB     = '🔺'
 DOT               = '• '
 PDOT              = '•'
 SQUARE_DOT        = '▪'
@@ -484,7 +505,7 @@ CRLF_LDIAMOND     = f'{CRLF}✦{NBSP}'
 
 CRLF_RED_X        = f'{CRLF}❌{NBSP}'
 CRLF_RED_ALERT    = f'{CRLF}⛔{NBSP2}'
-CRLF_LRED_ALERT    = f'{CRLF}⛔{NBSP}'
+CRLF_LRED_ALERT   = f'{CRLF}⛔{NBSP}'
 CRLF_CHK          = f'{CRLF}{NBSP2}✓{NBSP}'
 CRLF_STAR         = f'{CRLF}{NBSP}✪{NBSP}'
 CRLF_YELLOW_ALERT = f'{CRLF}⚠️{NBSP}'
@@ -519,13 +540,6 @@ DATA_ENTRY_ALERT_CHAR = '⛔'
 DATA_ENTRY_ALERT      = f"      {DATA_ENTRY_ALERT_CHAR} "
 
 OPT_NONE          = 0
-
-# Device tracking modes
-TRACK               = 'track'
-MONITOR             = 'monitor'
-INACTIVE            = 'inactive'
-TRACKING_MODES      = [TRACK, MONITOR, INACTIVE]
-TRACKING_MODE_DN    = {TRACK: 'Tracked', MONITOR: 'Monitored', INACTIVE: 'INACTIVE',}
 
 # Zone field names
 NAME              = 'name'
@@ -750,6 +764,11 @@ DEVICE_STATUS_SET = [
         LOCATION
         ]
 DEVICE_STATUS_CODES = {
+        200:   'Online',
+        201:   'Offline',
+        203:   'Pending',
+        204:   'Unregistered',
+        0:     'Unknown',
         '200': 'Online',
         '201': 'Offline',
         '203': 'Pending',
@@ -1136,6 +1155,7 @@ INFO                           = "info"
 
 CONF_SENSORS_TRACKING_UPDATE   = 'tracking_update'
 INTERVAL                       = "interval"
+INTERVAL_METHOD                = "interval_method"
 LOCATED                        = "located"
 LAST_LOCATED                   = "last_located"
 LAST_UPDATE                    = "last_update"

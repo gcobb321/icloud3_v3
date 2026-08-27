@@ -121,11 +121,10 @@ def stage_2_prepare_configuration():
             configuration_needed_msg = 'INITIAL INSTALLATION - CONFIGURATION IS REQUIRED'
 
         elif Gb.conf_profile[CONF_VERSION] == 0:
-            configuration_needed_msg = 'INITIAL CONFIGURATION PARAMETERS WERE INSTALLED - ' \
-                                        'THEY MUST BE REVIEWED BEFORE STARTING ICLOUD3'
+            configuration_needed_msg = 'THE INITIAL CONFIGURATION FILE WAS INSTALLED'
         elif ((is_empty(Gb.conf_apple_accounts) and Gb.conf_data_source_ICLOUD)
                 or is_empty(Gb.conf_devices)):
-            configuration_needed_msg = 'ICLOUD3 APPLE ACCT OR DEVICES HAVE NOT BEEN SETUP '
+            configuration_needed_msg = 'ICLOUD3 APPLE ACCT OR DEVICES NEED TO BE SETUP'
 
         if configuration_needed_msg:
             post_greenbar_msg('iCloud3 Configuration not set up')
@@ -241,12 +240,12 @@ def stage_4_setup_data_sources():
 
             # Tell HA to generate reauth needed notification that will be handled
             # handled in config_flow
-            if Gb.AppleAcct_needing_reauth_via_ha:
+            if Gb.AppleAcct_reauth_needed:
                 try:
                     Gb.hass.add_job(Gb.config_entry.async_start_reauth, Gb.hass)
 
-                    Gb.AppleAcct_needing_reauth_via_ha.was_ha_auth_code_alert_sent = True
-                    post_event( f"Apple Acct > {Gb.AppleAcct_needing_reauth_via_ha.account_owner}, "
+                    Gb.AppleAcct_reauth_needed.was_ha_auth_code_alert_sent = True
+                    post_event( f"Apple Acct > {Gb.AppleAcct_reauth_needed.account_owner}, "
                                 f"Auth request submitted() to HA")
                 except Exception as err:
                     log_exception(err)

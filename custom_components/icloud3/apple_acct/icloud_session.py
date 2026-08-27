@@ -281,6 +281,9 @@ class iCloudSession(Session):
             kwargs['data'] = json.loads(kwargs['data'])
         retry_cnt = kwargs.get('retry_cnt', 0)
 
+        if kwargs.get("timeout") is None:
+            kwargs["timeout"] = 30
+
         log_request_data('Request', method, url, kwargs, self.AppleAcct)
 
 

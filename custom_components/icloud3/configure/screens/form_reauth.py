@@ -10,6 +10,7 @@ from ...utils.messaging     import (_log, log_info_msg, log_exception, log_debug
 from ..                     import utils_cf
 from ..                     import selection_lists as lists
 from ..const_form_lists     import *
+from ...apple_acct          import apple_acct_support_cf as aascf
 
 from homeassistant.helpers  import selector
 import homeassistant.helpers.config_validation as cv
@@ -30,44 +31,48 @@ import voluptuous as vol
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 #            REAUTH
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-def form_reauth(self, user_input=None, reauth_username=None):
+def form_reauth(self, user_input=None, reauth_username=''):
     lists.build_apple_accounts_auth_list(self)
 
     terms_of_use_update_needed = False
-    is_auth_code_needed        = False
+    is_reauth_needed           = False
     was_auth_code_requested    = False
 
-    AppleAcct, reauth_username = self.get_username_needing_reauth(reauth_username)
+    AppleAcct, reauth_username = self.get_AppleAcct_reauth_needed()
 
-    is_auth_code_needed        = AppleAcct.is_auth_code_needed or self.is_another_auth_code_needed()
+    is_reauth_needed           = AppleAcct.is_reauth_needed or self.is_another_auth_code_needed()
     was_auth_code_requested    = AppleAcct.was_auth_code_requested
     terms_of_use_update_needed = AppleAcct.terms_of_use_update_needed
 
+
     self.actions_list = []
+
     if terms_of_use_update_needed:
         self.actions_list.append(ACTION_LIST_OPTIONS['accept_terms_of_use'])
     self.actions_list.extend(REAUTH_ACTIONS)
 
-    # if AppleAcct.conf_apple_acct[CONF_AUTH_METHODS][CURRENT] != PUSH:
-    #     list_del(self.actions_list, ACTION_LIST_OPTIONS['auth_code_from_applecom_login'])
+    if self.menu_item =='config_flow_reauth':
+        self.actions_list.append(ACTION_LIST_OPTIONS['exit_ha_reconfigure_reauth'])
+        default_action = 'exit_ha_reconfigure_reauth'
 
-    default_action = 'goto_previous'
-    if self.is_config_flow_handler:
-        self.actions_list.append(ACTION_LIST_OPTIONS['goto_ha_auth_done'])
-        default_action = 'goto_ha_auth_done'
+    elif self.menu_item == 'apple_accounts':
+        self.actions_list.append(ACTION_LIST_OPTIONS['rtn_apple_accounts'])
+        default_action = 'rtn_apple_accounts'
+
     else:
-        self.actions_list.append(ACTION_LIST_OPTIONS['goto_previous'])
+        self.actions_list.append(ACTION_LIST_OPTIONS['menu'])
+        default_action = 'menu'
 
     if (Gb.internet_error
             or AppleAcct is None
-            or is_auth_code_needed is False):
+            or is_reauth_needed is False):
         pass
     elif terms_of_use_update_needed:
         default_action = 'accept_terms_of_use'
     elif was_auth_code_requested:
         default_action = 'send_auth_code'
         AppleAcct.was_auth_code_requested = False
-    elif is_auth_code_needed or was_auth_code_requested is False:
+    elif is_reauth_needed or was_auth_code_requested is False:
         default_action = 'request_auth_code'
 
     default_acct_selected = self.apple_acct_auth_items_by_username[reauth_username]

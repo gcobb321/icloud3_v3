@@ -48,9 +48,16 @@ def menu_text_to_item(self, user_input, selection_list):
         selected_text = user_input[selection_list]
         selected_text_len = 35 if len(selected_text) > 35 else len(selected_text)
 
-        if selected_text.startswith('EXIT'):
+        # selected_text contains the 'exit_xxx key', not the displayed menu text
+        if selected_text.startswith('exit_'):
+            user_input['menu_items'] = selected_text
+            return user_input, selected_text
+
+        # selected_text contains the displayed menu text
+        elif selected_text.startswith('EXIT'):
             user_input['menu_items'] = 'exit'
             return user_input, 'exit'
+
         elif selected_text.startswith('MENU'):
             user_input['menu_items'] = 'menu'
             return user_input, 'menu'
@@ -78,8 +85,12 @@ def set_header_msg(self):
     '''
     if self.header_msg:
         if self.errors is None: self.errors = {}
-        self.errors['base'] = self.header_msg
+        self.errors = {'base': self.header_msg}
         self.header_msg = None
+
+        return self.errors
+
+    return {}
 
 #--------------------------------------------------------------------
 def strip_spaces(user_input, parm_list=[]):
@@ -466,7 +477,7 @@ def discard_changes(user_input):
         return False
 
 #--------------------------------------------------------------------
-def log_step_info(self, user_input, action_item=None):
+def log_step_info(self, user_input, action_item=None, subtitle=''):
 
-    log_info_msg(  f"⭐ {self.step_id.upper()} ({action_item}) > "
+    log_info_msg(  f"⭐ {self.step_id.upper()} {subtitle.upper()} ({action_item}/{self.menu_item}) > "
                     f"UserInput-{user_input}, Errors-{self.errors}")

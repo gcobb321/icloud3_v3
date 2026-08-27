@@ -1423,7 +1423,7 @@ class iCloud3:
 
         msg = ""
         for username, AppleAcct in Gb.AppleAcct_by_username.items():
-            if AppleAcct.is_auth_code_needed:
+            if AppleAcct.is_reauth_needed:
                 msg += (f"Apple Acct > {AppleAcct.account_owner}, "
                         f"Auth Code Needed")
 

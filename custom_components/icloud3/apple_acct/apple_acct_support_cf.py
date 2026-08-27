@@ -6,12 +6,12 @@ from ..const            import (DOMAIN, DEVICE_TRACKER,
                                 ICLOUD, CONF_DATA_SOURCE,
                                 CONF_APPLE_ACCOUNT, CONF_USERNAME, CONF_PASSWORD, CONF_LOCATE_ALL,
                                 CONF_SERVER_LOCATION,
-                                CONF_IC3_DEVICENAME, CONF_FNAME,
+                                CONF_IC3_DEVICENAME, CONF_FNAME, CONF_DEVICE_TYPE,
                                 CONF_APPLE_ACCOUNT, CONF_FAMSHR_DEVICENAME, CONF_FAMSHR_DEVICE_ID,
                                 CONF_RAW_MODEL, CONF_MODEL, CONF_MODEL_DISPLAY_NAME,
                                 CONF_TRACKING_MODE, CONF_MOBILE_APP_DEVICE,
                                 CONF_PICTURE, CONF_ICON,
-                                IPHONE_DN, WATCH_DN, IPAD_DN, MAC_DN, DEVICE_TYPES,
+                                IPHONE_DN, WATCH_DN, IPAD_DN, MAC_DN, DEVICE_TYPES, DEVICE_TYPE_TRACKING_MODE,
                                 DEVICE_TYPE_PICTURE_FILENAMES, DEVICE_TYPE_ICONS,
                                 TRACK, MONITOR, INACTIVE, TRACKING_MODES,
                                 )
@@ -66,6 +66,9 @@ async def async_log_into_apple_account(self, user_input):
     '''
     try:
         self.errors = {}
+        self.login_successful     = False
+        self.login_successful_srp = None
+        self.auth_failed_503      = False
 
         # The username may be changed to assign a new account, if so, log into the new one
         if CONF_USERNAME not in user_input or CONF_PASSWORD not in user_input:
@@ -88,24 +91,27 @@ async def async_log_into_apple_account(self, user_input):
         AppleAcct = Gb.AppleAcct_by_username.get(username)
         if (AppleAcct
                 and password == AppleAcct.password
+                and AppleAcct.login_successful
+                and AppleAcct.login_successful_srp != False
+                and AppleAcct.auth_failed_503 is False
                 and apple_server_location == AppleAcct.apple_server_location
                 and AppleAcct.login_successful):
             self.AppleAcct = AppleAcct
             self.username = username
             self.password = password
-            self.header_msg = 'apple_acct_logged_into'
+            # self.header_msg = 'apple_acct_logged_into'
 
             log_info_msg(f"Apple Acct > {username}, Already Logged in, {self.AppleAcct}")
             # return True
 
-        # Validate the account before actually logging in
-        valid_upw = await Gb.ValidateAppleAcctUPW.async_validate_username_password(username, password)
-        if valid_upw is False:
-            if username in Gb.valid_upw_by_username:
-                del Gb.valid_upw_by_username[username]
-            self.errors[CONF_USERNAME] = 'apple_acct_invalid_upw'
-            log_info_msg(f"Apple Acct > {username}, Invalid Username/password")
-            return False
+            # Validate the account before actually logging in
+            valid_upw = await Gb.ValidateAppleAcctUPW.async_validate_username_password(username, password)
+            if valid_upw is False:
+                if username in Gb.valid_upw_by_username:
+                    del Gb.valid_upw_by_username[username]
+                self.errors[CONF_USERNAME] = 'apple_acct_invalid_upw'
+                log_info_msg(f"Apple Acct > {username}, Invalid Username/password")
+                return False
 
 
         event_msg =(f"{EVLOG_NOTICE}Configure Settings > Logging into Apple Account {username}")
@@ -146,10 +152,26 @@ async def async_log_into_apple_account(self, user_input):
 
         start_ic3.dump_startup_lists_to_log()
 
-        if AppleAcct.is_auth_code_needed:
+        if AppleAcct.is_reauth_needed:
             log_info_msg(f"Apple Acct > {username}, 2fa Authentication Needed, {self.AppleAcct}")
-            alert_msg = f"Apple Authentication needed ({secs_to_hhmm(AppleAcct.is_auth_code_needed_secs)})"
+            alert_msg = f"Apple Authentication needed ({secs_to_hhmm(AppleAcct.is_reauth_needed_secs)})"
             update_alert_sensor(AppleAcct.username_id, alert_msg)
+
+            # Display the orange 'Reconfigure' button on the HA Settings screen as
+            # soon as the login reports that an Auth Code is needed. Waiting until
+            # the code is actually requested (step_reauth) leaves HA showing no
+            # indication that the account is not usable yet.
+            #
+            # Do not do this while the iCloud3 Configure (OptionsFlow) dialog is open.
+            # `async_start_reauth` does not just light up the orange button, it starts a
+            # real HA reauth ConfigFlow, which immediately runs the ConfigFlow's
+            # async_step_reauth and displays a 2nd reauth screen on top of the OptionsFlow
+            # reauth screen that step_apple_acct is about to display. The orange button is
+            # set by start_ic3_control when iCloud3 restarts as the Configure dialog is
+            # exited if the acct still needs to be authenticated.
+            if Gb.config_entry and Gb.is_config_flow_open is False:
+                Gb.hass.add_job(Gb.config_entry.async_start_reauth, Gb.hass)
+
             return True
 
         self.header_msg = 'apple_acct_logged_into'
@@ -257,7 +279,7 @@ def create_AADevices_config_flow(AppleAcct):
 #..............................................................................................
 def clear_AppleAcct_auth_alerts():
     for username, AppleAcct in Gb.AppleAcct_by_username.items():
-        if AppleAcct.is_auth_code_needed:
+        if AppleAcct.is_reauth_needed:
             AppleAcct.was_ha_auth_code_alert_sent = False
 
 #--------------------------------------------------------------------
@@ -295,6 +317,24 @@ async def async_finish_authentication_and_data_refresh(caller_self):
         update_alert_sensor(AppleAcct.username_id, '')
 
     Gb.is_icloud3_startup_inprocess = False
+
+#--------------------------------------------------------------------
+def any_conf_devices_for_apple_acct(ui_username):
+    existing_devices = [conf_device[CONF_IC3_DEVICENAME]
+                                    for conf_device in Gb.conf_devices
+                                    if conf_device[CONF_APPLE_ACCOUNT] == ui_username]
+
+    return isnot_empty(existing_devices)
+
+#--------------------------------------------------------------------
+def any_apple_accts_not_used():
+    aa_list = list(Gb.AppleAcct_by_username.keys())
+    aa_used = [conf_device[CONF_APPLE_ACCOUNT]
+                            for conf_device in Gb.conf_devices]
+    aa_unused = [username   for username in aa_list
+                            if username not in aa_used]
+
+    return isnot_empty(aa_unused)
 
 #--------------------------------------------------------------------
 # def delete_AppleAcct_trust_cookie(AppleAcct):
@@ -461,8 +501,15 @@ def build_import_devices_config_from_aadevices(self, AppleAcct):
         ic3_devicename = slugify(ic3_fname)
         ic3_fname      = ic3_fname.replace('-iPhone', '')
 
-        ic3_devicename = _make_unique_ic3_devicename(existing_devicenames, ic3_devicename)
-        ic3_fname      = _make_unique_ic3_fname(existing_fnames, ic3_fname)
+        # Check if an iCloud3 device that is inactive, change trk mode instead of add again
+        conf_device_idx = Gb.conf_devices_idx_by_devicename.get(ic3_devicename, -1)
+        if conf_device_idx == -1:
+            pass
+        elif Gb.conf_devices[conf_device_idx][CONF_TRACKING_MODE] == INACTIVE:
+            pass
+        else:
+            ic3_devicename = _make_unique_ic3_devicename(existing_devicenames, ic3_devicename)
+            ic3_fname      = _make_unique_ic3_fname(existing_fnames, ic3_fname)
 
         list_add(existing_devicenames, ic3_devicename)
         list_add(existing_fnames, ic3_fname)
@@ -473,29 +520,31 @@ def build_import_devices_config_from_aadevices(self, AppleAcct):
         ic3_conf_device[CONF_APPLE_ACCOUNT]      = AppleAcct.username
         ic3_conf_device[CONF_FAMSHR_DEVICENAME]  = aadevice_dname
         ic3_conf_device[CONF_FAMSHR_DEVICE_ID]   = device_id
+        ic3_conf_device[CONF_DEVICE_TYPE]        = model.lower() if model in DEVICE_TYPES else 'iphone'
         ic3_conf_device[CONF_RAW_MODEL]          = raw_model
         ic3_conf_device[CONF_MODEL]              = model
         ic3_conf_device[CONF_MODEL_DISPLAY_NAME] = model_display_name
         ic3_conf_device[CONF_MOBILE_APP_DEVICE]  = 'None'
-        ic3_conf_device[CONF_TRACKING_MODE] = tracking_mode = \
-                            TRACK if model in [IPHONE_DN, WATCH_DN] else \
-                            MONITOR  if model in [IPAD_DN, MAC_DN] else \
-                            INACTIVE
-        dev_type = model.lower()
-        ic3_conf_device[CONF_ICON] = DEVICE_TYPE_ICONS.get(dev_type, 'mdi:account')
-        if dev_type in DEVICE_TYPE_PICTURE_FILENAMES:
-            ic3_conf_device[CONF_PICTURE] = f'{Gb.www_evlog_js_directory}/{DEVICE_TYPE_PICTURE_FILENAMES[dev_type]}'
+        device_type = model.lower()
+        ic3_conf_device[CONF_TRACKING_MODE] = DEVICE_TYPE_TRACKING_MODE(device_type)
+        ic3_conf_device[CONF_ICON] = DEVICE_TYPE_ICONS.get(device_type, 'mdi:account')
+        if device_type in DEVICE_TYPE_PICTURE_FILENAMES:
+            ic3_conf_device[CONF_PICTURE] = f'{Gb.www_evlog_js_directory}/{DEVICE_TYPE_PICTURE_FILENAMES[device_type]}'
 
         # Gb.device_info_by_mobapp_dname={'lillian_ipad_app': ['Lillian-iPad-app', 'iPad14,3', 'iPad14,3', 'iPadPro4'],
         # 'gary_iphone_app': ['Gary-iPhone-app', 'iPhone17,2', 'iPhone', 'iPhone16ProMax'],
         # 'gary_ipad_app': ['Gary-iPad-app', 'iPad16,3', 'iPad16,3', 'iPadPro']}
+
         for mobapp_dname, mobapp_info in Gb.device_info_by_mobapp_dname.items():
-            mobapp_fname, _, _, mobapp_model_display_name = mobapp_info
-            if (mobapp_model_display_name == model_display_name
-                    and instr(mobapp_fname, model)
-                    and instr(mobapp_fname, ic3_fname.replace(f"_{model}", ""))):
-                ic3_conf_device[CONF_MOBILE_APP_DEVICE] = mobapp_dname
-                break
+            mobapp_fname, mobapp_raw_model, mobapp_device_type, mobapp_model_display_name = mobapp_info
+
+            if mobapp_raw_model == raw_model:
+                if (instr(mobapp_dname, ic3_devicename)
+                        or instr(ic3_devicename, mobapp_dname)
+                        or instr(ic3_fname, mobapp_fname)
+                        or instr(mobapp_fname, ic3_fname)):
+                    ic3_conf_device[CONF_MOBILE_APP_DEVICE] = mobapp_dname
+                    break
 
         # Create a sort_key = Tracking_mode (track/monitor/inactive),device_type,ic3_fname
         sk_tracking_mode = sk_device_type = 99

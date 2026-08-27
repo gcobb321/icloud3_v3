@@ -4,7 +4,7 @@ from ...global_variables    import GlobalVariables as Gb
 from ...const               import (MONITOR, INACTIVE,
                                     CONF_PICTURE_WWW_DIRS,
                                     CONF_DISPLAY_TEXT_AS,
-                                    CONF_IC3_DEVICENAME, CONF_FNAME,
+                                    CONF_IC3_DEVICENAME, CONF_FNAME, CONF_DATA_SOURCE,
                                     CONF_TRACKING_MODE,
                                     CONF_AWAY_TIME_ZONE_1_OFFSET, CONF_AWAY_TIME_ZONE_1_DEVICES,
                                     CONF_AWAY_TIME_ZONE_2_OFFSET, CONF_AWAY_TIME_ZONE_2_DEVICES,
@@ -22,7 +22,7 @@ from ...const               import (MONITOR, INACTIVE,
                                     CONF_STAT_ZONE_STILL_TIME,
                                     CONF_PARAMETER_TIME_STR, CONF_PARAMETER_FLOAT,
                                     DEFAULT_GENERAL_CONF,
-                                    CF_GENERAL,
+                                    CF_GENERAL, CF_TRACKING,
                                     )
 
 from ...utils.utils         import (instr, is_number, is_empty, isnot_empty, list_to_str, str_to_list,
@@ -173,6 +173,10 @@ class OptionsFlow_Parameters_Steps:
             return await self.async_step_menu()
 
         if utils_cf.no_errors(self):
+            user_input = utils_cf.option_text_to_parm(user_input,
+                                                                CONF_DATA_SOURCE,
+                                                                DATA_SOURCE_OPTIONS)
+
             self.update_config_file(CF_GENERAL, user_input, action_item)
             return await self.async_step_menu()
 
@@ -211,11 +215,12 @@ class OptionsFlow_Parameters_Steps:
             Gb.picture_www_dirs = Gb.conf_profile[CONF_PICTURE_WWW_DIRS].copy()
             self.picture_by_filename = {}
             await lists.build_picture_filename_selection_list(self)
+
             self.update_config_file(CF_GENERAL, user_input, action_item)
             return await self.async_step_menu()
 
         return self.async_show_form(step_id='format_settings',
-                            data_schema=fotms.form_format_settings(self),
+                            data_schema=forms.form_format_settings(self),
                             errors=self.errors)
 
 
@@ -473,7 +478,7 @@ class OptionsFlow_Parameters_Steps:
         elif action_item == 'select_text_as':
             return await self.async_step_display_text_as_update(user_input)
 
-        elif action_item == 'cancel_goto_menu':
+        elif action_item == 'menu':
             self.dta_selected_idx = UNSELECTED
             return await self.async_step_menu()
 

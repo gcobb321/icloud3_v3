@@ -117,11 +117,13 @@ def process_update_service_request(call):
 
     action = call.data.get('command') or call.data.get('action')
     if action is None: return
+    
+    action_fname = call.data.get('action_fname', action)
+    if action_fname.startswith('• '):
+        action_fname = action_fname[1:]
 
     action       = action.lower()
-    action_fname = call.data.get('action_fname').replace('• ', '')
-    devicename   = call.data.get(CONF_DEVICENAME)
-
+    devicename   = call.data.get(CONF_DEVICENAME)    
     action, devicename = resolve_action_devicename_values(action, devicename)
 
     update_service_handler(action, action_fname, devicename)
@@ -302,16 +304,17 @@ def update_service_handler(action_entry=None, action_fname=None, devicename=None
     if (action == CMD_REFRESH_EVENT_LOG
             and Gb.EvLog.secs_since_refresh <= 2
             and Gb.EvLog.last_refresh_devicename == devicename):
-        _post_device_monitor_msg(devicename, f"Service Action Ignored > {action_fname}, Action-{action_entry}")
+        _post_device_monitor_msg(devicename, f"Action Ignored > {action_fname}, Action-{action_entry}")
         return
 
     if action_fname not in NO_EVLOG_ACTION_POST_EVENT:
-        _post_device_monitor_msg(devicename, f"Service Action Received > Action-{action_entry}")
+        _post_device_monitor_msg(devicename, f"Action Received > Action-{action_entry}")
 
     action_entry  = action_entry.replace('eventlog', 'monitor')
     action_entry  = action_entry.replace(':', '')
     action        = action_entry.split(' ')[0]
     action_option = action_entry.replace(action, '').strip()
+    action_option = action_option.replace('device(s) using icloud', '')
 
     # EvLog version sent from the EvLog program already set, ignore the svc call
     if action == 'event_log_version':
@@ -320,7 +323,7 @@ def update_service_handler(action_entry=None, action_fname=None, devicename=None
     devicename_msg = devicename if devicename in Gb.Devices_by_devicename else None
     action_msg     = action_fname if action_fname else f"{action.title()}"
 
-    event_msg = f"Service Action > {action_msg}"
+    event_msg = f"Action > {action_msg}"
     if action_option: event_msg += f", Options-{action_option}"
     if devicename:    event_msg += f", Device-{devicename}"
 

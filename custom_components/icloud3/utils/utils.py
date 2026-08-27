@@ -402,18 +402,12 @@ def username_id(username):
     if username == '':
         return ''
 
-    _username_base = f"{username}@".split('@')[0]
-    _username_base = username_base(username)
-
-    if _username_base in Gb.upw_filter_items:
-        return Gb.upw_filter_items[_username_base]
-    else:
-        return f"{_username_base}@"
+    _username_base = username.split('@')[0]
+    return _username_base.rstrip("@") + "@"
 
 #--------------------------------------------------------------------
 def username_base(username):
-    _username_base = f"{username}@".split('@')[0]
-    return f"{_username_base}@"
+    return username_id(username)
 
 #--------------------------------------------------------------------
 def format_cnt(desc, n):

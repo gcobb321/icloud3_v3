@@ -28,7 +28,7 @@ from ..const_form_lists     import *
 #
 #    TOOLS CONFIG FLOW
 #        - async_step_tools
-#        - async_step_tools_entity_registry_cleanup
+#        - async_step_cleanup_entity_registry
 #        - async_step_restart_ha
 #        - async_step_restart_ha_reload_icloud3
 #
@@ -37,9 +37,9 @@ from ..const_form_lists     import *
 class OptionsFlow_Tools_Steps:
 
 
-    #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-    #           TOOLS
-    #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+#           TOOLS
+#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     async def async_step_tools(self, user_input=None, errors=None):
         '''
         1. Delete the device from the tracking devices list and adjust the device index
@@ -54,7 +54,7 @@ class OptionsFlow_Tools_Steps:
 
         if user_input is None or 'confrm_action_item' in user_input:
             return self.async_show_form(step_id='tools',
-                                        data_schema=forms.form_tools(self),
+                                        data_schema=forms.form_tools(self, user_input),
                                         errors=self.errors)
 
         action_item = TOOL_LIST_ITEMS_KEY_BY_TEXT.get(user_input['action_items'], '')
@@ -64,24 +64,15 @@ class OptionsFlow_Tools_Steps:
 
         utils_cf.log_step_info(self, user_input, action_item)
 
-        # Log Level was changed
-        if (user_input[CONF_LOG_LEVEL] != Gb.conf_general[CONF_LOG_LEVEL]
-                or user_input[CONF_LOG_LEVEL_DEVICES] != Gb.conf_general[CONF_LOG_LEVEL_DEVICES]):
-            if (user_input[CONF_LOG_LEVEL_DEVICES] == []
-                    or len(user_input[CONF_LOG_LEVEL_DEVICES]) >= len(Gb.Devices)):
-                user_input[CONF_LOG_LEVEL_DEVICES] = ['all']
-            elif len(user_input[CONF_LOG_LEVEL_DEVICES]) > 1:
-                list_del(user_input[CONF_LOG_LEVEL_DEVICES], 'all')
+        match action_item:
+            case 'menu':
+                return await self.async_step_menu()
 
-            if is_empty(user_input[CONF_LOG_LEVEL_DEVICES]):
-                user_input[CONF_LOG_LEVEL_DEVICES] = ['all']
-            Gb.log_level_devices = user_input[CONF_LOG_LEVEL_DEVICES].copy()
+            case 'log_level':
+                return await self.async_step_log_level()
 
-            self._update_config_file_general(user_input)
-            action_item = 'goto_menu'
-
-        if action_item == 'goto_menu':
-            return await self.async_step_menu()
+            case 'cleanup_entity_registry':
+                return await self.async_step_cleanup_entity_registry()
 
         self.confirm_action = {
                 'action_desc': TOOL_LIST[action_item],
@@ -90,39 +81,42 @@ class OptionsFlow_Tools_Steps:
                 'return_to_func_async': self.async_step_tools,
                 'return_to_next_yes_func_async': None}
 
-        if action_item == 'reset_data_source':
-            self.confirm_action['yes_func'] = self.reset_all_devices_data_source_fields
+        match action_item:
+            case 'restart_icloud3':
+                self.confirm_action['yes_func'] = self.restart_icloud3
 
-        elif action_item == 'reset_tracking':
-            self.confirm_action['yes_func'] = self.reset_icloud3_config_file_tracking
+            case 'reset_data_source':
+                self.confirm_action['yes_func'] = self.reset_all_devices_data_source_fields
 
-        elif action_item == 'reset_general':
-            self.confirm_action['yes_func'] = self.reset_icloud3_config_file_general
+            case 'reset_tracking':
+                self.confirm_action['yes_func'] = self.reset_icloud3_config_file_tracking
 
-        elif action_item == 'reset_config':
-            self.confirm_action['yes_func'] = self.reset_icloud3_config_file_tracking_general
+            case 'reset_general':
+                self.confirm_action['yes_func'] = self.reset_icloud3_config_file_general
 
-        elif action_item == 'del_apple_acct_cookies':
-            self.confirm_action['yes_func_async'] = self.async_delete_all_apple_cookie_files
-            self.confirm_action['return_to_next_yes_func_async'] = self.async_step_restart_ha
+            case 'reset_config':
+                self.confirm_action['yes_func'] = self.reset_icloud3_config_file_tracking_general
 
-        elif action_item == 'del_icloud3_config_files':
-            self.confirm_action['yes_func_async'] = self.async_delete_all_ic3_configuration_files
-            self.confirm_action['return_to_next_yes_func_async'] = self.async_step_restart_ha
+            case 'del_apple_acct_cookies':
+                self.confirm_action['yes_func_async'] = self.async_delete_all_apple_cookie_files
 
-        elif action_item == 'tools_entity_registry_cleanup':
-            return await self.async_step_tools_entity_registry_cleanup()
+            case 'del_icloud3_config_files':
+                self.confirm_action['yes_func_async'] = self.async_delete_all_ic3_configuration_files
 
         if (self.confirm_action['yes_func']
                 or self.confirm_action['yes_func_async']):
             return await self.async_step_confirm_action()
 
-        elif action_item == 'restart_ha_reload_icloud3':
-            return await self.async_step_restart_ha_reload_icloud3()
-
         list_add(self.config_parms_update_control, ['tracking', 'restart'])
 
         return await self.async_step_tools(errors=self.errors)
+
+#------------------------------------------------------------------------------------------
+    def restart_icloud3(self):
+
+        # The restart will be done immediately in the 5-sec
+        # polling loop in icloud33_main
+        Gb.was_icloud3_restart_requested = True
 
 #------------------------------------------------------------------------------------------
     def reset_icloud3_config_file_tracking(self):
@@ -151,10 +145,10 @@ class OptionsFlow_Tools_Steps:
         '''
 
         post_alert(f"All iCloud3 Configuration files are being deleted")
-        # list_add(self.config_parms_update_control, ['restart_ha'])
+        list_add(self.config_parms_update_control, ['restart'])
 
         await self.delete_all_files_and_remove_directory(Gb.icloud_cookies_directory)
-        return await self.async_step_restart_ha_reload_icloud3()
+        # return await self.async_step_restart_ha_reload_icloud3()
 
 #------------------------------------------------------------------------------------------
     async def async_delete_all_ic3_configuration_files(self):
@@ -185,7 +179,7 @@ class OptionsFlow_Tools_Steps:
             if isnot_empty(files):
                 await file_io.async_delete_directory( start_dir)
 
-                list_add(self.config_parms_update_control, 'restart_ha')
+                list_add(self.config_parms_update_control, 'restart')
 
         except Exception as err:
             log_exception(err)
@@ -205,63 +199,95 @@ class OptionsFlow_Tools_Steps:
 
         self.update_config_file_tracking(force_config_update=True)
 
-#------------------------------------------------------------------------------------------
-    # def _delete_all_apple_accts(self):
-    #     Gb.conf_apple_accounts = []
-    #     Gb.conf_tracking[CONF_USERNAME] = ''
-    #     Gb.conf_tracking[CONF_PASSWORD] = ''
-    #     self.aa_idx = 0
-    #     self.aa_page_item[self.aa_page_no] = ''
 
-    #     self.reset_all_devices_data_source_fields(reset_mobapp=False)
-    #     self.update_config_file_tracking(user_input={}, force_config_update=True)
-    #     lists.build_apple_accounts_list(self)
-    #     lists.build_devices_list(self)
-    #     config_file.build_log_file_filters()
+#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+#           LOG LEVEL
+#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+    async def async_step_log_level(self, user_input=None, errors=None):
+        '''
+        Update the Log Level
+        '''
+        self.step_id = 'log_level'
+        self.errors = errors or {}
+        self.errors_user_input = {}
 
+        await self.async_write_icloud3_configuration_file()
 
-    #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-    #           TOOLS > ENTITY REGISTRY CLEANUP
-    #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-    async def async_step_tools_entity_registry_cleanup(self, user_input=None, errors=None):
-        self.step_id = 'tools_entity_registry_cleanup'
+        if user_input is None:
+            return self.async_show_form(step_id='log_level',
+                                        data_schema=forms.form_log_level(self),
+                                        errors=self.errors)
+
+        user_input, action_item = utils_cf.action_text_to_item(self, user_input)
+        user_input = utils_cf.option_text_to_parm(user_input,
+                                CONF_LOG_LEVEL, LOG_LEVEL_OPTIONS)
+
+        utils_cf.log_step_info(self, user_input, action_item)
+
+        if action_item == 'menu':
+            return await self.async_step_menu()
+
+        # Log Level not was changed
+        if (user_input[CONF_LOG_LEVEL] == Gb.conf_general[CONF_LOG_LEVEL]
+                and user_input[CONF_LOG_LEVEL_DEVICES] == Gb.conf_general[CONF_LOG_LEVEL_DEVICES]):
+            return await self.async_step_menu()
+
+        if (is_empty(user_input[CONF_LOG_LEVEL_DEVICES])
+                or len(user_input[CONF_LOG_LEVEL_DEVICES]) >= len(Gb.Devices)):
+            user_input[CONF_LOG_LEVEL_DEVICES] = ['all']
+
+        elif len(user_input[CONF_LOG_LEVEL_DEVICES]) > 1:
+            list_del(user_input[CONF_LOG_LEVEL_DEVICES], 'all')
+
+        Gb.log_level_devices = user_input[CONF_LOG_LEVEL_DEVICES].copy()
+
+        self._update_config_file_general(user_input)
+
+        return await self.async_step_menu()
+
+#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+#           CLEANUP ENTITY REGISTRY
+#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+    async def async_step_cleanup_entity_registry(self, user_input=None, errors=None):
+        self.step_id = 'cleanup_entity_registry'
         user_input, action_item = utils_cf.action_text_to_item(self, user_input)
         utils_cf.log_step_info(self, user_input, action_item)
 
         if user_input is None:
-            return self.async_show_form(step_id='tools_entity_registry_cleanup',
-                                        data_schema=forms.form_tools_entity_registry_cleanup(self),
+            return self.async_show_form(step_id='cleanup_entity_registry',
+                                        data_schema=forms.form_cleanup_entity_registry(self),
                                         errors=self.errors)
 
-        if action_item == 'check_all':
-            self.tools_entity_reg_check_all = True
+        match action_item:
+            case 'check_all':
+                self.tools_entity_reg_check_all = True
 
-        elif action_item == 'check_none':
-            self.tools_entity_reg_check_all = False
+            case 'check_none':
+                self.tools_entity_reg_check_all = False
 
-        elif action_item == 'show_sensor_names_all':
-            self.tools_entity_reg_show_sensor_names_all = True
+            case 'show_all_sensors':
+                self.tools_cleanup_er_sensor_all = True
 
-        elif action_item == 'show_sensor_names_some':
-            self.tools_entity_reg_show_sensor_names_all = False
+            case 'show_some_sensors':
+                self.tools_cleanup_er_sensor_all = False
 
-        elif action_item == 'goto_previous':
-            return await self.async_step_tools()
-
-        elif action_item == 'delete_device_sensors':
-            for status in list(user_input.keys()):
-                if isnot_empty(user_input[status]):
-                    break
-            else:
+            case 'goto_previous':
                 return await self.async_step_tools()
 
-            self._tools_delete_device_sensors(user_input)
-            self.repair_entity_show_check_all = False
-            er_util.scan_entity_reg_for_icloud3_items()
-            self.errors['base'] = 'action_completed'
+            case 'delete_device_sensors':
+                for status in list(user_input.keys()):
+                    if isnot_empty(user_input[status]):
+                        break
+                else:
+                    return await self.async_step_tools()
 
-        return self.async_show_form(step_id='tools_entity_registry_cleanup',
-                            data_schema=forms.form_tools_entity_registry_cleanup(self, user_input),
+                self._tools_delete_device_sensors(user_input)
+                self.repair_entity_show_check_all = False
+                er_util.scan_entity_reg_for_icloud3_items()
+                self.errors['base'] = 'action_completed'
+
+        return self.async_show_form(step_id='cleanup_entity_registry',
+                            data_schema=forms.form_cleanup_entity_registry(self, user_input),
                             errors=self.errors)
 
 #......................................................
@@ -349,62 +375,3 @@ class OptionsFlow_Tools_Steps:
                             f"Entities: {list_to_str(_sensors)}")
 
             log_info_msg(f"ENTITIES REMOVED ({status}): {_deleted_msg}")
-
-
-    #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-    #            RESTART HA
-    #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-    async def async_step_restart_ha(self, user_input=None, errors=None):
-        '''
-        A restart HA or reload iCloud3
-        '''
-        self.step_id = 'restart_ha'
-        self.errors = errors or {}
-        self.errors_user_input = {}
-        user_input, action_item = utils_cf.action_text_to_item(self, user_input)
-
-        if user_input is None or action_item is None:
-            return self.async_show_form(step_id='restart_ha',
-                                    data_schema=forms_cf.form_restart_ha(self),
-                                    errors=self.errors)
-
-        if action_item == 'restart_ha':
-            await Gb.hass.services.async_call("homeassistant", "restart")
-            return self.async_abort(reason="ha_restarting")
-
-        elif action_item == 'restart_icloud3':
-            list_add(self.config_parms_update_control, 'restart')
-
-        elif action_item.startswith('exit'):
-            return self.async_create_entry(title="iCloud3", data={})
-
-        return await self.async_step_menu()
-
-
-    #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-    #            RESTART HA, RELOAD ICLOUD3
-    #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-    async def async_step_restart_ha_reload_icloud3(self, user_input=None, errors=None):
-        '''
-        A restart HA or reload iCloud3
-        '''
-        self.step_id = 'restart_ha_reload_icloud3'
-        self.errors = errors or {}
-        self.errors_user_input = {}
-        user_input, action_item = utils_cf.action_text_to_item(self, user_input)
-
-        if user_input is None or action_item is None:
-            return self.async_show_form(step_id='restart_ha_reload_icloud3',
-                                    data_schema=forms_cf.form_restart_ha_reload_icloud3(self),
-                                    errors=self.errors)
-
-        if action_item == 'restart_ha':
-            await Gb.hass.services.async_call("homeassistant", "restart")
-            return self.async_abort(reason="ha_restarting")
-
-        elif action_item == 'reload_icloud3':
-            service_handler.reload_icloud3()
-
-            return self.async_abort(reason="ic3_reloading")
-
-        return await self.async_step_menu()

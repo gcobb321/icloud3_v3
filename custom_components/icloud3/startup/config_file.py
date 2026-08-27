@@ -471,6 +471,17 @@ def apple_acct_password_for_username(username):
     except:
         return ''
 
+#-------------------------------------------------------------------------------------------
+def device_cnts():
+    device_cnt          = len(Gb.conf_devices)
+    inactive_device_cnt = len([conf_device[CONF_IC3_DEVICENAME]
+                                    for conf_device in Gb.conf_devices
+                                    if conf_device[CONF_TRACKING_MODE] == INACTIVE])
+    inactive_pct        = 0 if device_cnt == 0 else inactive_device_cnt / device_cnt
+
+    return device_cnt, inactive_device_cnt, inactive_pct
+
+
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 #
 #   CONFIGURE THE CONF_DEVICE_SENSORS DICTIONARY FRO CONF_SENSORS

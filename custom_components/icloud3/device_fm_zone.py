@@ -21,7 +21,7 @@ from .const             import (HOME, NOT_SET,
                                 DATETIME_ZERO, HHMMSS_ZERO, HHMM_ZERO,
                                 TOWARDS, AWAY_FROM,
                                 INZONE, INZONE_HOME, INZONE_STATZONE, INZONE_CODES,
-                                INTERVAL, DISTANCE,
+                                INTERVAL, INTERVAL_METHOD, DISTANCE,
                                 ZONE_DISTANCE, ZONE_DISTANCE_M, ZONE_DISTANCE_M_EDGE,
                                 MAX_DISTANCE, CALC_DISTANCE, WAZE_DISTANCE, WAZE_METHOD,
                                 FROM_ZONE, ZONE_INFO,
@@ -105,6 +105,7 @@ class iCloud3_DeviceFmZone():
 
         self.sensors[FROM_ZONE]            = self.from_zone
         self.sensors[INTERVAL]             = 0
+        self.sensors[INTERVAL_METHOD]      = 'FZIV'
         self.sensors[LAST_LOCATED_DATETIME] = DATETIME_ZERO
         self.sensors[LAST_LOCATED_TIME]     = HHMMSS_ZERO
         self.sensors[LAST_LOCATED]          = HHMMSS_ZERO

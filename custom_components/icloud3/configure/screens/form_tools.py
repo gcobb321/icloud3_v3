@@ -3,6 +3,7 @@
 from ...global_variables    import GlobalVariables as Gb
 from ...const               import (DOTS,
                                     CONF_LOG_LEVEL, CONF_LOG_LEVEL_DEVICES,
+                                    CONF_IC3_DEVICENAME, INACTIVE, CONF_TRACKING_MODE,
                                     )
 
 from ...utils.utils         import (list_to_str, list_add, list_del,
@@ -26,7 +27,7 @@ import voluptuous as vol
 #     TOOLS FORMS
 #
 #       - form_tools
-#       - form_tools_entity_registry_cleanup
+#       - form_cleanup_entity_registry
 #
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
@@ -35,9 +36,27 @@ import voluptuous as vol
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 #           TOOLS
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-def form_tools(self):
+def form_tools(self, user_input):
     self.actions_list = TOOL_LIST_ITEMS.copy()
-    default_action = 'goto_menu'
+    if user_input is None:
+        default_action = 'log_level'
+    else:
+        default_action = 'menu'
+
+    return vol.Schema({
+        vol.Required('action_items',
+                    default=TOOL_LIST[default_action]):
+                    selector.SelectSelector(
+                        selector.SelectSelectorConfig(options=self.actions_list, mode='list')),
+        })
+
+
+#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+#           LOG LEVEL
+#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+def form_log_level(self):
+    self.actions_list = LOG_LEVEL.copy()
+    default_action = 'save_menu'
 
     lists.build_log_level_devices_list(self)
     if Gb.conf_general[CONF_LOG_LEVEL_DEVICES] != 'all':
@@ -62,20 +81,19 @@ def form_tools(self):
                         selector.SelectSelectorConfig(options=self.actions_list, mode='list')),
         })
 
+
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-#           TOOLS ENTITY CLEANUP REGISTRY ERRORS
+#           CLEANUP E#NTITY REGISTRY
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-def form_tools_entity_registry_cleanup(self, user_input=None):
-    self.actions_list = ACTIONS_REPAIR_ENTITY_ERRORS.copy()
-    self.actions_list_default = 'delete_device_sensors'
-    if self.tools_entity_reg_check_all:
-        list_del(self.actions_list, 'check_all')
-    else:
-        list_del(self.actions_list, 'check_none')
-    if self.tools_entity_reg_show_sensor_names_all:
-        list_del(self.actions_list, 'show_sensor_names_all')
-    else:
-        list_del(self.actions_list, 'show_sensor_names_some')
+def form_cleanup_entity_registry(self, user_input=None):
+    self.actions_list = []
+
+    check_item  = 'check_none' if self.tools_entity_reg_check_all else 'check_all'
+    show_sensor = 'show_some_sensors' if self.tools_cleanup_er_sensor_all  else 'show_all_sensors'
+
+    self.actions_list.append(ACTION_LIST_OPTIONS[check_item])
+    self.actions_list.append(ACTION_LIST_OPTIONS[show_sensor])
+    self.actions_list.extend(CLEANUP_ENTITY_REGISTRY)
 
     if user_input is None:
         self.repair_entity_show_check_all = False
@@ -94,7 +112,7 @@ def form_tools_entity_registry_cleanup(self, user_input=None):
         for devicename, device_sensors in devicename_sensors.items():
             sensors = [sensor for sensor in device_sensors.keys()]
             sensors_str = list_to_str(sensors)
-            if self.tools_entity_reg_show_sensor_names_all:
+            if self.tools_cleanup_er_sensor_all:
                 hdr_bar = f"{'_'*100}"
             else:
                 hdr_bar = ''
@@ -136,7 +154,7 @@ def form_tools_entity_registry_cleanup(self, user_input=None):
 
     schema.update({
         vol.Required('action_items',
-                default=self.actions_list_default):
+                default=utils_cf.default_action_text('delete_device_sensors')):
                 selector.SelectSelector(selector.SelectSelectorConfig(
                     options=utils_cf.actions_list(self), mode='list')),})
 

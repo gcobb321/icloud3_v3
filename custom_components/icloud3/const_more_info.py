@@ -200,10 +200,18 @@ more_info_text = {
         f"{CRLF}5. Exit the configurator and `Restart iCloud3`."),
 
     'configure_icloud3': (
-        f"{CRLF}The Apple Account and Devices need to be setup in the iCloud3 configuration"
-        f"{CRLF}1. “Event Log `Gear` > Configure” or “HA Settngs > Devices & Services > iCloud3 > Configure”"
-        f"{CRLF}2. “Data Sources > Apple ……” to add an Apple account"
-        f"{CRLF}3. “iCloud3 Devices” to add devices that will be tracked"
+        f"{CRLF}The Apple Account and Devices need to be setup on the iCloud3 Configure screens"
+        f"{CRLF}1. Go to “HA Devices & Services > iCloud3 > Configure” or"
+        f"{CRLF}{NBSP4}Click the iCloud3 Dashboard > Event Log `Gear` Icon (⚙️) > "
+        f"{CRLF}{NBSP4}Configure”"
+        f"{CRLF}2. The “UPDATE APPLE ACCOUNTS” screen is displayed"
+        f"{CRLF}{NBSP4}Enter the username and password"
+        f"{CRLF}3. The “AUTH APPLE ACCT SIGN-IN” screen is displayed"
+        f"{CRLF}{NBSP4}Enter the Authentication Code"
+        f"{CRLF}4. The “IMPORT APPLE DEVICES” screen is displayed"
+        f"{CRLF}{NBSP4}iPhone/Watches are Tracked, iPad/Macs are Monitored"
+        f"{CRLF}5. “EXIT” the iCloud3 Configure screens."
+        f"{CRLF}6. The devices, sensors and dashboards will be set up."
         ),
 
     'unverified_devices_caused_by': (

@@ -195,7 +195,8 @@ def create_AppleAcct_validate_upw(username, password):
                             locate_all_devices=False,
                             cookie_directory=Gb.icloud_cookies_directory,
                             session_directory=Gb.icloud_session_directory,
-                            srp_validate_only=True)
+                            srp_validate_only=True,
+                            validate_aa_upw=True)
 
     except Exception as err:
         log_exception(err)
@@ -325,7 +326,7 @@ def is_authentication_2fa_code_needed(AppleAcct, initial_setup=False):
     '''
     if AppleAcct is None:
         return False
-    elif AppleAcct.is_auth_code_needed:
+    elif AppleAcct.is_reauth_needed:
         pass
     elif Gb.conf_data_source_MOBAPP is False:
         return False
@@ -337,12 +338,12 @@ def is_authentication_2fa_code_needed(AppleAcct, initial_setup=False):
     alert_msg = ''
     if (new_2fa_authentication_code_requested(AppleAcct, initial_setup)
             and AppleAcct.was_ha_auth_code_alert_sent is False):
-        alert_msg = f"Apple Authentication needed ({secs_to_hhmm(AppleAcct.is_auth_code_needed_secs)})"
+        alert_msg = f"Apple Authentication needed ({secs_to_hhmm(AppleAcct.is_reauth_needed_secs)})"
         post_alert(f"{AppleAcct.username_id_short} > {alert_msg}")
         update_alert_sensor(AppleAcct.username_id, alert_msg)
 
-        if Gb.AppleAcct_needing_reauth_via_ha is None:
-            Gb.AppleAcct_needing_reauth_via_ha = AppleAcct
+        if Gb.AppleAcct_reauth_needed is None:
+            Gb.AppleAcct_reauth_needed = AppleAcct
 
     if AppleAcct.terms_of_use_update_needed:
         alert_msg = "Apple Acct > Accept `Terms of Use` needed (Auth Code entry screen)"
@@ -412,7 +413,7 @@ def new_2fa_authentication_code_requested(AppleAcct, initial_setup=False):
             return True
 
         #See if 2fa Verification needed
-        if AppleAcct.is_auth_code_needed is False:
+        if AppleAcct.is_reauth_needed is False:
             return False
 
         return True
@@ -430,7 +431,7 @@ def issue_reauth_in_days_alert_msg(evlog_msg=False):
     for AppleAcct in Gb.AppleAcct_by_username.values():
         reauth_in_days, reauth_msg = \
                 AppleAcct.get_next_reauth_in_days_info_msg(APPLE_ACCT_ALERT_MSG_REAUTH_DAYS)
-        if (AppleAcct.is_auth_code_needed is False
+        if (AppleAcct.is_reauth_needed is False
                 and reauth_in_days <= 10
                 and reauth_msg is not None):
             alert_msg = (f"AppleAcct {reauth_msg}")
@@ -466,7 +467,7 @@ def reset_AppleAcct_Gb_variables():
     Gb.Devices_by_username            = {}
     Gb.owner_device_ids_by_username   = {}
     Gb.owner_Devices_by_username      = {}
-    Gb.AppleAcct_needing_reauth_via_ha = None
+    Gb.AppleAcct_reauth_needed = None
 
     Gb.AppleAcct_logging_in_usernames = []
     Gb.conf_usernames                 = set()
@@ -508,8 +509,8 @@ def delete_AppleAcct_Gb_variables_username(username):
 
     AppleAcct = Gb.AppleAcct_by_username.pop(username, None)
     if AppleAcct:
-        if  Gb.AppleAcct_needing_reauth_via_ha == AppleAcct:
-            Gb.AppleAcct_needing_reauth_via_ha = None
+        if  Gb.AppleAcct_reauth_needed == AppleAcct:
+            Gb.AppleAcct_reauth_needed = None
         del AppleAcct.iCloudSession
         del AppleAcct
 

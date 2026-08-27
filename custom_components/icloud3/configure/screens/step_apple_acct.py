@@ -1,12 +1,11 @@
 from ...global_variables    import GlobalVariables as Gb
 from ...const               import (ICLOUD, MOBAPP, NO_MOBAPP,
-                                    INACTIVE,
-                                    CONF_IC3_DEVICENAME, CONF_APPLE_ACCOUNT,
-                                    CONF_USERNAME, CONF_PASSWORD,
-                                    CONF_FAMSHR_DEVICENAME,
+                                    INACTIVE, PUSH, TEXT, TEXT_1, TEXT_2, HWKEY,
+                                    CONF_APPLE_ACCOUNT, CONF_IC3_DEVICENAME, CONF_FNAME,
+                                    CONF_USERNAME, CONF_PASSWORD, CONF_FAMSHR_DEVICENAME,
                                     CONF_DATA_SOURCE, CONF_LOCATE_ALL,
-                                    CONF_SERVER_LOCATION,
-                                    CONF_TRACKING_MODE,  DEFAULT_APPLE_ACCOUNT_CONF,
+                                    CONF_SERVER_LOCATION, CONF_SERVER_LOCATION_NEEDED,
+                                    CONF_TRACKING_MODE,  DEFAULT_APPLE_ACCOUNT_CONF, DEFAULT_DEVICE_CONF,
                                     )
 from ...utils.utils         import (instr, is_empty, isnot_empty, list_to_str, list_add,
                                     encode_password, decode_password, )
@@ -33,7 +32,7 @@ from ..                     import selection_lists as lists
 #           ICLOUD3 APPLE ACCOUNT CONFIG FLOW STEPS
 #
 #           - async_step_apple_accounts
-#           - async_step_update_apple_acct
+#           - ACTION_LIST_OPTIONS['apple_accounts'],
 #           - async_step_delete_apple_acct
 #           - async_step_other_apple_acct_parameters
 #
@@ -51,9 +50,11 @@ class OptionsFlow_AppleAccount_Steps:
         adds/updates/removes an Apple account using the Update Username/Password screen
         '''
         self.step_id = 'apple_accounts'
-        self.errors = errors or {}
+        self.errors = errors or utils_cf.set_header_msg(self) or {}
         self.errors_user_input = {}
         self.multi_form_user_input = {}
+        await self.async_write_icloud3_configuration_file()
+
         self.add_apple_acct_flag = False
         self.actions_list_default = ''
         action_item = ''
@@ -61,13 +62,15 @@ class OptionsFlow_AppleAccount_Steps:
         if Gb.internet_error:
             self.errors['base'] = 'internet_error'
 
-        await self.async_write_icloud3_configuration_file()
         user_input, action_item = utils_cf.action_text_to_item(self, user_input)
+
         if self._is_apple_acct_setup() is False:
             self.errors['apple_accts'] = 'apple_acct_not_set_up'
-        elif (isnot_empty(Gb.conf_apple_accounts)
-                and instr(Gb.conf_tracking[CONF_DATA_SOURCE], ICLOUD) is False):
-            self.errors['apple_accts'] = 'apple_acct_data_source_warning'
+
+            user_input = {'apple_accts': '➤ ADD'}
+
+        elif isnot_empty(Gb.conf_apple_accounts):
+            self._verify_data_source_ICLOUD()
 
         if user_input is None:
             self.actions_list_default = 'update_apple_acct'
@@ -75,22 +78,33 @@ class OptionsFlow_AppleAccount_Steps:
                                         data_schema=forms.form_apple_accounts(self),
                                         errors=self.errors)
 
-        user_input = self._update_data_source(user_input)
+        self._verify_data_source_ICLOUD()
         utils_cf.log_step_info(self, user_input, action_item)
 
-        if action_item == 'cancel_goto_menu':
-            self._initialize_self_AppleAcct_fields_from_Gb()
-            return await self.async_step_menu()
+        #.......................................................................
+        match action_item:
+            case 'menu':
+                self._initialize_self_AppleAcct_fields_from_Gb()
+                return await self.async_step_menu()
 
-        if action_item == 'other_apple_acct_parameters':
-            return await self.async_step_other_apple_acct_parameters()
+            case 'authenticate_apple_acct':
+                # if self.AppleAcct.is_reauth_needed:
+                # self.aa_reauth_username = self.username
+                # else:
+                #     self.aa_reauth_username = ''
 
+                return await self.async_step_reauth(reauth_username=self.username)
+
+            case 'import_apple_devices':
+                return await self.async_step_import_apple_devices()
+
+        #.......................................................................
         # Set add or display next page now since they are not in apple_acct_items_by_idx
         if user_input['apple_accts'].startswith('➤ ADD'):
             self.add_apple_acct_flag = True
             action_item = 'update_apple_acct'
             self.conf_apple_acct = DEFAULT_APPLE_ACCOUNT_CONF.copy()
-            return await self.async_step_update_apple_acct()
+            return await self.async_step_update_apple_acct(user_input=None)
 
         if user_input['apple_accts'].startswith('➤ OTHER'):
             self.aa_page_no += 1
@@ -107,9 +121,8 @@ class OptionsFlow_AppleAccount_Steps:
 
         utils_cf.log_step_info(self, user_input, action_item)
 
-        if action_item == 'import_apple_devices':
-            self.set_return_to_step_id(self.step_id)
-            return await self.async_step_import_apple_devices()
+        if action_item == 'other_apple_acct_parameters':
+            return await self.async_step_other_apple_acct_parameters(user_input)
 
         if action_item == 'delete_apple_acct':
             # Drop the tracked/untracked part from the current heading (user_input['account_selected'])
@@ -128,9 +141,9 @@ class OptionsFlow_AppleAccount_Steps:
                             f"Valid Accts-{list_to_str(conf_apple_acct_usernames)}")
 
 
-        if (self.username != user_input.get('apple_accts', self.username)
-                and action_item == 'save'):
-            action_item = 'update_apple_acct'
+        # if (self.username != user_input.get('apple_accts', self.username)
+        #         and action_item == 'save'):
+        #     action_item = 'update_apple_acct'
 
         self.username = self.conf_apple_acct[CONF_USERNAME]
         self.password = self.conf_apple_acct[CONF_PASSWORD]
@@ -138,29 +151,17 @@ class OptionsFlow_AppleAccount_Steps:
 
         if Gb.is_log_level_debug:
             log_user_input = user_input.copy()
-            log_debug_msg(  f"⭐ {self.step_id.upper()} ({action_item}) > "
-                            f"UserInput-{log_user_input}, Errors-{errors}")
+            utils_cf.log_step_info(self, user_input, action_item)
 
         if action_item == 'update_apple_acct':
             self.aa_page_item[self.aa_page_no] = self.conf_apple_acct[CONF_USERNAME]
             return await self.async_step_update_apple_acct()
 
-        # if action_item == 'auth_code':
-        #     self.apple_acct_reauth_username = self.username
-        #     self.set_return_to_step_id('update_apple_acct')
-        #     return await self.async_step_reauth(reauth_username=self.username)
-
-        if user_input[CONF_DATA_SOURCE] == '':
-            self.errors['base'] = 'apple_acct_no_data_source'
+        # if user_input[CONF_DATA_SOURCE] == '':
+        #     self.errors['base'] = 'apple_acct_no_data_source'
 
         if self.errors == {}:
             if action_item == 'add_change_apple_acct':
-                action_item == 'save'
-
-            if action_item == 'save':
-                if self.data_source != Gb.conf_tracking[CONF_DATA_SOURCE]:
-                    self.update_config_file_tracking(user_input)
-
                 return await self.async_step_menu()
 
         self.step_id = 'apple_accounts'
@@ -169,28 +170,18 @@ class OptionsFlow_AppleAccount_Steps:
                             errors=self.errors)
 
 #...........................................................
-    def _update_data_source(self, user_input):
+    def _verify_data_source_ICLOUD(self):
 
-        self.data_source = []
-        ds_apple_acct = user_input.pop('data_source_apple_acct', [])
-        ds_mobapp     = user_input.pop('data_source_mobapp', [])
+        if instr(Gb.conf_tracking[CONF_DATA_SOURCE], ICLOUD):
+            return
 
-        data_source = []
-        if isnot_empty(ds_apple_acct):
-            list_add(data_source, ICLOUD)
-        if isnot_empty(ds_mobapp):
-            list_add(data_source, MOBAPP)
+        Gb.conf_tracking[CONF_DATA_SOURCE] = f"{ICLOUD},{Gb.conf_tracking[CONF_DATA_SOURCE]}"
 
-        self.data_source = list_to_str(data_source, ',')
-        user_input[CONF_DATA_SOURCE] = self.data_source
-
-        if self.data_source != Gb.conf_tracking[CONF_DATA_SOURCE]:
-            self.update_config_file_tracking(user_input)
-
-        return user_input
+        return
 
 #...........................................................
     def _is_apple_acct_setup(self):
+
         if self.username:
             return True
         elif is_empty(Gb.conf_apple_accounts):
@@ -202,11 +193,11 @@ class OptionsFlow_AppleAccount_Steps:
 
 
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-#            APPLE USERNAME PASSWORD
+#            UPDATE APPLE ACCT (USERNAME PASSWORD)
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     async def async_step_update_apple_acct(self, user_input=None, errors=None):
         self.step_id = 'update_apple_acct'
-        self.errors = errors or {}
+        self.errors = errors or utils_cf.set_header_msg(self) or {}
         self.multi_form_user_input = {}
         self.errors_user_input = user_input or {}
         self.actions_list_default = ''
@@ -215,32 +206,37 @@ class OptionsFlow_AppleAccount_Steps:
 
         user_input, action_item = utils_cf.action_text_to_item(self, user_input)
 
-        if action_item == 'cancel_goto_previous':
-            self.username = self.conf_apple_acct[CONF_USERNAME]
-            self.password = decode_password(self.conf_apple_acct[CONF_PASSWORD])
-            self.AppleAcct = Gb.AppleAcct_by_username.get(self.username)
-            return await self.async_step_apple_accounts(user_input=None)
+        #.......................................................................
+        match action_item:
+            case 'cancel_goto_previous' | 'rtn_apple_accounts':
+                self.username = self.conf_apple_acct[CONF_USERNAME]
+                self.password = decode_password(self.conf_apple_acct[CONF_PASSWORD])
+                self.AppleAcct = Gb.AppleAcct_by_username.get(self.username)
+                return await self.async_step_apple_accounts(user_input=None)
 
-        elif action_item == 'stop_login_retry':
-            AppleAcct = Gb.AppleAcct_by_username.get(self.username)
-            if AppleAcct:
-                AppleAcct.error_retry_cnt = 0
-                AppleAcct.error_next_retry_secs = 0
-            user_input = None
-            post_alert(f"Apple Acct > {AppleAcct.username_id}, Retry Login Canceled")
-            self.errors['base'] = 'conf_updated'
-            return await self.async_step_update_apple_acct(
-                                            user_input=user_input, errors=self.errors)
+            case 'stop_login_retry':
+                AppleAcct = Gb.AppleAcct_by_username.get(self.username)
+                if AppleAcct:
+                    AppleAcct.error_retry_cnt = 0
+                    AppleAcct.error_next_retry_secs = 0
+                user_input = None
+                post_alert(f"Apple Acct > {AppleAcct.username_id}, Retry Login Canceled")
+                self.errors['base'] = 'conf_updated'
+                return await self.async_step_update_apple_acct(
+                                                user_input=user_input, errors=self.errors)
 
+        #.......................................................................
         if (user_input is None
                 or Gb.internet_error
                 or instr(self.errors.get(CONF_USERNAME, ''), 'invalid')
                 or instr(self.errors.get(CONF_USERNAME, ''), 'error')
                 or instr(self.errors.get(CONF_USERNAME, ''), 'required')
                 or instr(self.errors.get(CONF_PASSWORD, ''), 'required')):
+            errors=self.errors
+            self.errors = {}
             return self.async_show_form(step_id='update_apple_acct',
                         data_schema=forms.form_update_apple_acct(self),
-                        errors=self.errors)
+                        errors=errors)
 
         user_input = utils_cf.option_text_to_parm(user_input,
                                 'account_selected', self.apple_acct_items_by_username)
@@ -251,14 +247,16 @@ class OptionsFlow_AppleAccount_Steps:
         else:
             user_input[CONF_SERVER_LOCATION] = 'usa'
 
+        if action_item == 'other_apple_acct_parameters':
+            return await self.async_step_other_apple_acct_parameters(user_input)
+
         if (user_input[CONF_LOCATE_ALL] is False
                 and self._can_disable_locate_all(user_input) is False):
             self.errors[CONF_LOCATE_ALL] = 'apple_acct_locate_all_reqd'
             user_input[CONF_LOCATE_ALL] = True
             action_item = ''
             return await self.async_step_update_apple_acct(
-                                    user_input=user_input,
-                                    errors=self.errors)
+                                            user_input=user_input, errors=self.errors)
 
         if (Gb.internet_error and action_item == 'save_log_into_apple_acct'):
             self.errors['base'] = 'internet_error_no_change'
@@ -293,7 +291,7 @@ class OptionsFlow_AppleAccount_Steps:
 
         if Gb.is_log_level_debug:
             log_user_input = user_input.copy()
-            log_debug_msg(f"⭐ {self.step_id.upper()} ({action_item}) > UserInput-{log_user_input}, Errors-{errors}")
+            utils_cf.log_step_info(self, user_input, action_item)
 
         if action_item == 'save_log_into_apple_acct':
             if ui_username == '':
@@ -323,36 +321,35 @@ class OptionsFlow_AppleAccount_Steps:
         # Saving an existing account with no changes, nothing to do
         if (action_item == 'save_log_into_apple_acct'
                 and ui_apple_acct == self.conf_apple_acct
-                # and user_input[CONF_SERVER_LOCATION] == self.conf_apple_acct[CONF_SERVER_LOCATION]
                 and user_input[CONF_LOCATE_ALL] != conf_locate_all
                 and Gb.AppleAcct_by_username.get(ui_username) is not None):
-            self.header_msg = 'apple_acct_logged_into'
             action_item = ''
 
-        if action_item == '':
-            return await self.async_step_update_apple_acct(user_input=user_input, errors=self.errors)
+        #.......................................................................
+        match action_item:
+            case '':
+                return await self.async_step_update_apple_acct(user_input=user_input, errors=self.errors)
 
-        if action_item == 'auth_code':
-            self.apple_acct_reauth_username = self.username
-            self.set_return_to_step_id()
-            return await self.async_step_reauth(reauth_username=self.username)
+            case 'authenticate_apple_acct':
+                return await self.async_step_reauth(reauth_username=self.username)
 
-        # Display the Confirm Actions form which will execute the remove_apple.. function
-        if action_item == 'delete_apple_acct':
-            # Drop the tracked/untracked part from the current heading (user_input['account_selected'])
-            # Ex: account_selected = 'GaryCobb (gcobb321) -> 4 of 7 iCloud Devices Tracked, Tracked-(Gary-iPad ..'
-            confirm_action_form_hdr = ( f"Delete Apple Account - {user_input['account_selected']}")
-            if self.AppleAcct:
-                confirm_action_form_hdr += f", Devices-{list_to_str(self.AppleAcct.aadevice_dnames)}"
-            self.multi_form_user_input = user_input.copy()
+            # Display the Confirm Actions form which will execute the remove_apple.. function
+            case 'delete_apple_acct':
+                # Drop the tracked/untracked part from the current heading (user_input['account_selected'])
+                # Ex: account_selected = 'GaryCobb (gcobb321) -> 4 of 7 iCloud Devices Tracked, Tracked-(Gary-iPad ..'
+                confirm_action_form_hdr = ( f"Delete Apple Account - {user_input['account_selected']}")
+                if self.AppleAcct:
+                    confirm_action_form_hdr += f", Devices-{list_to_str(self.AppleAcct.aadevice_dnames)}"
+                self.multi_form_user_input = user_input.copy()
 
-            return await self.async_step_delete_apple_acct(user_input=user_input)
+                return await self.async_step_delete_apple_acct(user_input=user_input)
 
-        valid_upw = False
-        aa_login_info_changed   = False
-        other_flds_changed      = False
-        username_items_text = self.apple_acct_items_by_username.get(ui_username, NOT_LOGGED_IN)
-        aa_not_logged_into = instr(username_items_text, NOT_LOGGED_IN)
+        #.......................................................................
+        valid_upw             = False
+        aa_login_info_changed = False
+        other_fields_changed  = False
+        username_items_text   = self.apple_acct_items_by_username.get(ui_username, NOT_LOGGED_IN)
+        aa_not_logged_into    = instr(username_items_text, NOT_LOGGED_IN)
 
         if action_item == 'save_log_into_apple_acct':
             # Apple acct login info changed, validate it without logging in
@@ -364,46 +361,42 @@ class OptionsFlow_AppleAccount_Steps:
                 aa_login_info_changed = True
 
             if (user_input[CONF_LOCATE_ALL] != self.conf_apple_acct[CONF_LOCATE_ALL]):
-                other_flds_changed = True
+                other_fields_changed = True
 
             # if valid_upw:
-            #     if aa_login_info_changed or other_flds_changed:
-            #         self._update_conf_apple_accounts(self.aa_idx, user_input)
+            #     if aa_login_info_changed or other_fields_changed:
+            #         self._update_conf_apple_acct(self.aa_idx, user_input)
             #         await self.async_write_icloud3_configuration_file()
             #         self.add_apple_acct_flag = False
 
 
-            # Update the Apple config even if it is not validated. If the un/pw has been tried
-            # multiple times and it  was wrong, Apple will still refuse it even if it correct.
-            # A 401 is returned from validate_upw and 403 from PasswordSRP. If it is not saved,
-            # It will still be invalid on a restart because a failed valid one will not have
-            # been saved
-            if aa_login_info_changed or other_flds_changed:
-                self._update_conf_apple_accounts(self.aa_idx, user_input)
+            # Update the Apple config even though it is not validated. Otherwise, the
+            # entered data will not be available to be corrected
+            if aa_login_info_changed or other_fields_changed:
+                self._update_conf_apple_acct(self.aa_idx, user_input)
                 await self.async_write_icloud3_configuration_file()
-                self.add_apple_acct_flag = False
 
+            # App Specific Passwords are not valid
             if aascf.is_asp_password(ui_password):
-                pass
+                self.errors[CONF_PASSWORD] = 'password_asp_invalid'
 
+            # Validate the username/password doing an SRP check
             elif valid_upw is False or aa_login_info_changed:
                 if Gb.ValidateAppleAcctUPW is None:
                     Gb.ValidateAppleAcctUPW = ValidateAppleAcctUPW()
-                valid_upw = await Gb.ValidateAppleAcctUPW.async_validate_username_password(
+
+                valid_upw = await Gb.ValidateAppleAcctUPW.async_validate_username_password_srp(
                                         ui_username, ui_password)
+
                 Gb.valid_upw_by_username[ui_username] = valid_upw
 
                 if valid_upw is False:
                     self.actions_list_default = 'add_change_apple_acct'
                     self.errors['base'] = ''
-                    self.errors[CONF_USERNAME] = 'apple_acct_invalid_upw'
+                    self.errors[CONF_USERNAME] = self._login_error_msg('apple_acct_invalid_upw')
 
-                    # App Specific Password (ASP) format: uqvf-gguc-tzpd-knor
-                    if aascf.is_asp_password(ui_password):
-                        self.errors[CONF_PASSWORD] = 'password_asp_invalid'
                     return await self.async_step_update_apple_acct(
-                                        user_input=user_input,
-                                        errors=self.errors)
+                                                user_input=user_input, errors=self.errors)
 
         # A new config, Log into the account
         if (aa_login_info_changed
@@ -415,10 +408,10 @@ class OptionsFlow_AppleAccount_Steps:
 
             if successful_login is False:
                 self.add_apple_acct_flag = False
-                self.errors['base'] = 'apple_acct_updated_not_logged_into'
+
+                self.errors[CONF_USERNAME] = self._login_error_msg()
                 return await self.async_step_update_apple_acct(
-                                    user_input=user_input,
-                                    errors=self.errors)
+                                            user_input=user_input, errors=self.errors)
 
 
         # Update the Apple config even if it is not validated. If the un/pw has been tried
@@ -431,54 +424,63 @@ class OptionsFlow_AppleAccount_Steps:
         self.errors[CONF_USERNAME] = ''
 
         AppleAcct = self.AppleAcct = Gb.AppleAcct_by_username.get(ui_username)
-        Gb.AppleAcct_password_by_username[ui_username] = user_input[CONF_PASSWORD]
 
-        if instr(self.data_source, ICLOUD) is False:
-            self._update_data_source({CONF_DATA_SOURCE: [ICLOUD, self.data_source]})
+        # We can now set the auth_method using data returned from Apple during the login
+        # The first acct defaults to PUSH, others default to TEXT_1 if TEXT_1 is available
+        # HWKEY will override this if using a Security Key
+        if self.add_apple_acct_flag:
+            if (self.aa_idx > 0 and self.AppleAcct.auth_method_value(TEXT_1) != ''):
+                self.AppleAcct.update_auth_method(TEXT_1)
+                self.update_config_file_tracking(force_config_update=True)
+
+        Gb.AppleAcct_password_by_username[ui_username] = user_input[CONF_PASSWORD]
 
         if (aa_login_info_changed and
                 ui_username in Gb.AppleAcct_error_by_username):
-            self.errors['base'] = 'apple_acct_updated_not_logged_into'
+            self.errors[CONF_USERNAME] = self._login_error_msg()
 
-        if AppleAcct.is_auth_code_needed:
-            self.apple_acct_reauth_username = self.username
-            self.set_return_to_step_id('update_apple_acct')
-            if self._any_conf_devices_for_apple_acct(ui_username) is False:
-                self.set_return_to_step_id('import_apple_devices')
-            return await self.async_step_reauth(reauth_username=self.username)
+        self.add_apple_acct_flag = False
 
-        if self._any_conf_devices_for_apple_acct(ui_username) is False:
-            self.set_return_to_step_id('apple_accounts')
+        # Just logged into an Apple Acct, an authentication will probably be needed.
+        # Display the reauth screen and build a user_input to trigger a code
+        # request on entry.
+        if AppleAcct.is_reauth_needed:
+            # self.aa_reauth_username = self.username
+            user_input = {  'account_selected': self.username,
+                            'action_items': 'request_auth_code'}
+            # user_input = None
+            return await self.async_step_reauth(
+                            user_input=user_input, reauth_username=self.username)
+
+        # Just logged into an Apple Acct, if no devices have already been
+        # set up for this acct, display the import _apple_devices screen to
+        # import them
+        if aascf.any_conf_devices_for_apple_acct(ui_username) is False:
             return await self.async_step_import_apple_devices()
 
         return await self.async_step_apple_accounts(user_input=None)
 
 #...........................................................................................
-    def _any_conf_devices_for_apple_acct(self, ui_username):
-        existing_devices = [conf_device[CONF_IC3_DEVICENAME]
-                                        for conf_device in Gb.conf_devices
-                                        if conf_device[CONF_APPLE_ACCOUNT] == ui_username]
+    def _login_error_msg(self, default_msg=None):
+        if self.AppleAcct is None or default_msg is None:
+            AppleAcct = Gb.ValidateAppleAcctUPW.AppleAcct
+        else:
+            AppleAcct = self.AppleAcct
 
-        return isnot_empty(existing_devices)
+        if AppleAcct.auth_failed_503:
+            return 'apple_acct_login_error_503'
+        if AppleAcct.response_code == 302:
+            return 'apple_acct_login_error_302'
+        if AppleAcct.response_code == 403:
+            return 'apple_acct_locked'
 
-#-------------------------------------------------------------------------------------------
-    def _set_data_source(self, user_input):
+        if default_msg is not None:
+            return default_msg
 
-        # No Apple Accounts set up, don't use it as a data source
-        if len(Gb.conf_apple_accounts) == 1:
-            conf_username = self.conf_apple_acct[CONF_USERNAME]
-            conf_password = self.conf_apple_acct[CONF_PASSWORD]
-            if conf_username == '' and conf_password == '':
-                user_input['data_source_icloud'] = []
-
-        data_source = [ user_input['data_source_icloud'],
-                        user_input['data_source_mobapp']]
-        user_input[CONF_DATA_SOURCE] = self.data_source = list_to_str(data_source, ',')
-
-        return user_input
+        return 'apple_acct_updated_login_error'
 
 #-------------------------------------------------------------------------------------------
-    def _update_conf_apple_accounts(self, aa_idx, user_input, remove_acct_flag=False):
+    def _update_conf_apple_acct(self, aa_idx, user_input, remove_acct_flag=False):
         '''
         Update the apple accounts config entry with the new values.
 
@@ -493,6 +495,8 @@ class OptionsFlow_AppleAccount_Steps:
         is deleted if it is not the primary account (1st entry).
 
         '''
+        self._verify_data_source_ICLOUD()
+
         # Updating the account
         if remove_acct_flag is False:
             self.conf_apple_acct[CONF_USERNAME]   = user_input[CONF_USERNAME]
@@ -627,27 +631,45 @@ class OptionsFlow_AppleAccount_Steps:
         self.update_config_file_tracking(user_input={}, force_config_update=True)
 
         aas.delete_AppleAcct_Gb_variables_username(conf_username)
-        self._update_conf_apple_accounts(self.aa_idx, user_input, remove_acct_flag=True)
+        self._update_conf_apple_acct(self.aa_idx, user_input, remove_acct_flag=True)
 
         return user_input
 
 
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-#            UPDATE DATA SOURCE (APPLE) PARAMETERS
+#            OTHER APPLE ACCT PARAMETERS
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     async def async_step_other_apple_acct_parameters(self, user_input=None, errors=None):
         self.step_id = 'other_apple_acct_parameters'
         user_input, action_item = utils_cf.action_text_to_item(self, user_input)
+        save_user_input = None
+
+        user_input = utils_cf.option_text_to_parm(user_input,
+                                    CONF_SERVER_LOCATION, APPLE_SERVER_LOCATION_OPTIONS)
         utils_cf.log_step_info(self, user_input, action_item)
 
-        if action_item == 'cancel_goto_menu':
-            return await self.async_step_apple_accounts()
+        if user_input[CONF_SERVER_LOCATION] != 'usa':
+            user_input[CONF_SERVER_LOCATION_NEEDED] = True
 
-        if action_item == 'save':
-            self.update_config_file_tracking(user_input)
-            # Gb.password_srp_enabled = user_input[CONF_PASSWORD_SRP_ENABLED]
-            return await self.async_step_apple_accounts()
 
+
+        #.......................................................................
+        match action_item:
+            case None:
+                save_user_input = user_input
+
+            case 'rtn_update_apple_acct':
+                return await self.async_step_update_apple_acct(
+                                            user_input=save_user_input, errors=self.errors)
+
+            case 'save':
+                Gb.conf_tracking[CONF_SERVER_LOCATION_NEEDED] = user_input[CONF_SERVER_LOCATION_NEEDED]
+                self.conf_apple_acct[CONF_SERVER_LOCATION]    = user_input[CONF_SERVER_LOCATION]
+                self.update_config_file_tracking(user_input, force_config_update=True)
+                return await self.async_step_update_apple_acct(
+                                            user_input=save_user_input, errors=self.errors)
+
+        #.......................................................................
         if utils_cf.any_errors(self):
             self.errors['base'] = 'update_aborted'
 
@@ -663,14 +685,29 @@ class OptionsFlow_AppleAccount_Steps:
     async def async_step_import_apple_devices(self, user_input=None, errors=None):
 
         self.step_id = 'import_apple_devices'
-        self.errors = errors or {}
+        self.errors = errors or utils_cf.set_header_msg(self) or {}
         self.errors_user_input = {}
         self.errors_info_msg = None
 
+        await self.async_write_icloud3_configuration_file()
         user_input, action_item = utils_cf.action_text_to_item(self, user_input)
 
         utils_cf.log_step_info(self, user_input, action_item)
 
+        #.......................................................................
+        match action_item:
+            case 'rtn_device_list':
+                self.menu_item = 'device_list'
+                return await self.async_step_device_list()
+
+            case 'rtn_apple_accounts':
+                self.menu_item = 'apple_accounts'
+                return await self.async_step_apple_accounts()
+
+            case 'menu':
+                return await self.async_step_menu()
+
+        #.......................................................................
         if Gb.internet_error:
             self.errors['base'] = 'internet_error_no_change'
 
@@ -689,12 +726,9 @@ class OptionsFlow_AppleAccount_Steps:
         #.......................................................................
         if action_item == 'add_imported_apple_devices':
             await self._add_imported_devices(user_input)
-            action_item = 'goto_previous'
-
-        #.......................................................................
-        if action_item == 'goto_previous':
-            return_to_step_id = self.get_return_to_step_id()
-            return self.show_return_to_form(return_to_step_id)
+            if self.menu_item in ['apple_accounts', 'device_list']:
+                self.menu_item = 'device_list'
+                return await self.async_step_device_list()
 
         utils_cf.log_step_info(self, user_input, action_item)
 
@@ -722,20 +756,25 @@ class OptionsFlow_AppleAccount_Steps:
         for imported_aadevices_key in imported_aadevices_keys:
             self.conf_device = DEFAULT_DEVICE_CONF.copy()
 
-            ic3_conf_device = self.imported_aa_ic3_conf_devices[imported_aadevices_key]
+            conf_device = self.imported_aa_ic3_conf_devices[imported_aadevices_key]
+            devicename  = conf_device[CONF_IC3_DEVICENAME]
 
-            ic3_devicename  = ic3_conf_device[CONF_IC3_DEVICENAME]
-            self.update_device_ha_sensor_entity['add_device'] = True
-            self.update_device_ha_sensor_entity['new_ic3_devicename'] = ic3_devicename
+            # The devicename is already in the config file and probably set to inactive
+            # Update the current entry instead of adding it again
+            conf_device_idx = Gb.conf_devices_idx_by_devicename.get(devicename, -1)
 
-            self._add_new_device_to_conf_devices(ic3_conf_device)
-            await self._update_gb_dicts_and_config_file(self.conf_device)
+            if conf_device_idx == -1:
+                self._add_new_device_to_conf_devices(conf_device)
+            else:
+                self.conf_device.update(conf_device)
+                Gb.conf_devices[conf_device_idx] = self.conf_device.copy()
 
-            list_add(self.config_parms_update_control, ['devices', ic3_devicename])
-
+            self.update_config_file_tracking(force_config_update=True)
+            self.create_device_tracker_sensor_enities_on_exit = True
+            self.rebuild_ic3db_dashboards = True
             log_debug_msg(f'Add Imported Apple Device-({imported_aadevices_key}), '
-                            f'Device-{ic3_conf_device[CONF_FNAME]=}, '
-                            f'/{ic3_conf_device[CONF_IC3_DEVICENAME]=}')
+                            f'Device-{conf_device[CONF_FNAME]=}, '
+                            f'/{conf_device[CONF_IC3_DEVICENAME]=}')
 
 #--------------------------------------------------------------------
     def _unpack_ui_import_apple_devices(self, user_input):

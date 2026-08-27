@@ -27,7 +27,8 @@ from ..const                import (HOME, NOT_HOME, AWAY, NOT_SET, NOT_HOME_ZONE
                                     ERROR, UNKNOWN, VALID_DATA, NEAR_DEVICE_DISTANCE,
                                     WAZE_USED, WAZE_NOT_USED, WAZE_PAUSED, WAZE_OUT_OF_RANGE, WAZE_NO_DATA,
                                     NEAR_DEVICE_USEABLE_SYM, EXIT_ZONE, ENTER_ZONE,
-                                    ZONE, ZONE_INFO, ZONE_ENTER_SECS, ZONE_EXIT_SECS, INTERVAL,
+                                    ZONE, ZONE_INFO, ZONE_ENTER_SECS, ZONE_EXIT_SECS,
+                                    INTERVAL, INTERVAL_METHOD,
                                     DISTANCE, ZONE_DISTANCE, ZONE_DISTANCE_M, ZONE_DISTANCE_M_EDGE,
                                     MAX_DISTANCE, CALC_DISTANCE, WAZE_DISTANCE, WAZE_METHOD,
                                     TRAVEL_TIME, TRAVEL_TIME_MIN, TRAVEL_TIME_HHMM, ARRIVAL_TIME, DIR_OF_TRAVEL, MOVED_DISTANCE,
@@ -424,7 +425,7 @@ def determine_interval(Device, FromZone):
                         next_update_secs = _Device.FromZone_TrackFrom.next_update_secs
                         interval_secs    = _Device.FromZone_TrackFrom.interval_secs
                         interval_str     = _Device.FromZone_TrackFrom.interval_str
-                        interval_method  = _Device.fname
+                        interval_method  = _Device.FromZone_TrackFrom.interval_method
 
         except:
             pass
@@ -446,11 +447,11 @@ def determine_interval(Device, FromZone):
         Device.loc_data_dist_moved_km = dist_moved_km
         FromZone.interval_secs    = interval_secs
         FromZone.interval_str     = interval_str
+        FromZone.interval_method  = interval_method
         FromZone.next_update_secs = next_update_secs
         FromZone.next_update_time = secs_to_time(next_update_secs)
         FromZone.last_update_secs = Gb.this_update_secs
         FromZone.last_update_time = time_to_12hrtime(Gb.this_update_time)
-        FromZone.interval_method  = interval_method
 
         FromZone.dir_of_travel    = dir_of_travel
         FromZone.dir_of_travel_awayfrom_override = dir_of_travel_awayfrom_override
@@ -503,6 +504,7 @@ def determine_interval(Device, FromZone):
     sensors[LAST_LOCATED_DATETIME]= Device.loc_data_datetime
     sensors[LAST_LOCATED_TIME]    = Device.loc_data_time
     sensors[LAST_LOCATED]         = Device.loc_data_time
+    sensors[INTERVAL_METHOD]      = interval_method
 
     sensors.update(_update_next_update_fields_and_sensors(None, interval_secs))
 
@@ -531,6 +533,9 @@ def determine_interval(Device, FromZone):
 
     Device.loc_time_updates_icloud = [Device.loc_data_time]
     if Device.is_location_gps_good: Device.old_loc_cnt = 0
+
+    if Gb.is_log_level_debug:
+        log_tracking_results(Device, FromZone)
 
     return True
 
@@ -887,9 +892,15 @@ def _update_next_update_fields_and_sensors(Device_or_FromZone, interval_secs):
     sensors = {}
 
     if Device_or_FromZone:
-        Device = Device_or_FromZone if Device_or_FromZone in Gb.Devices else Device_or_FromZone.Device
+        if Device_or_FromZone in Gb.Devices:
+            Device = Device_or_FromZone
+            FromZone = None
+        else:
+            Device = Device_or_FromZone.Device
+            FromZone = Device_or_FromZone
         data_source_ICLOUD = Device.is_data_source_ICLOUD
     else:
+        FromZone = None
         data_source_ICLOUD = Gb.use_data_source_ICLOUD
 
     sensors[INTERVAL]             = format_timer(interval_secs)

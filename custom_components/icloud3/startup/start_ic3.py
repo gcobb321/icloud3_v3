@@ -1525,12 +1525,15 @@ def setup_data_source_ICLOUD(retry=False):
         if AppleAcct.login_failed:
             if username in Gb.AppleAcct_error_by_username:
                 reason = f"{AppleAcct.error_reason}"
-                if AppleAcct.error_next_retry_secs > 0:
-                    reason += f", Retry at {secs_to_hhmm(AppleAcct.error_next_retry_secs)}"
+                # if AppleAcct.error_next_retry_secs > 0:
+                #     reason += f", Retry at {secs_to_hhmm(AppleAcct.error_next_retry_secs)}"
             else:
                 reason =  'Devices not Available'
+            # if reason.startswith(',') is False: reason = f", {reason}"
             post_alert( f"Apple Acct > {username_id(username)}, "
                         f"Login Failed, {reason}")
+            update_alert_sensor(username_id(username), (
+                                f"Apple Acct Login Failed, {reason}"))
             continue
 
         if is_empty(AppleAcct.AADevData_by_device_id):
@@ -1871,7 +1874,7 @@ def _post_evlog_apple_acct_tracked_devices_info(AppleAcct):
 
         if AppleAcct.terms_of_use_update_needed:
             reauth_needed_msg += f"{CRLF}{NBSP2}{RED_ALERT}Accept Terms of Service Needed"
-        if AppleAcct.is_auth_code_needed:
+        if AppleAcct.is_reauth_needed:
             reauth_needed_msg += f"{CRLF}{NBSP2}{RED_ALERT}Authentication Needed"
 
         sorted_device_id_by_icloud_dname = OrderedDict(sorted(AppleAcct.device_id_by_icloud_dname.items()))
@@ -2815,15 +2818,18 @@ def display_all_devices_config_info(selected_devicenames=None):
             evlog_msg += (f"{CRLF_HDOT}Away Time Zone: HomeZone {plus_minus}{Device.away_time_zone_offset} hours")
 
         try:
-            device_status = Device.AADevData_icloud.device_data[ICLOUD_DEVICE_STATUS]
-            timestamp     = Device.AADevData_icloud.device_data[LOCATION][TIMESTAMP]
-            if device_status == '201' and mins_since(timestamp) > 5:
-                evlog_msg += (f"{CRLF_RED_ALERT}DEVICE IS OFFLINE > "
-                            f"Since-{format_time_age(timestamp)}")
-                Device.offline_secs = timestamp
+            if Device.AADevData_icloud is None:
+                evlog_msg += (f"{CRLF_RED_ALERT}DEVICE IS NOT CONFIGURED")
+            else:
+                device_status = Device.AADevData_icloud.device_data[ICLOUD_DEVICE_STATUS]
+                timestamp     = Device.AADevData_icloud.device_data[LOCATION][TIMESTAMP]
+                if device_status == '201' and mins_since(timestamp) > 5:
+                    evlog_msg += (f"{CRLF_RED_ALERT}DEVICE IS OFFLINE > "
+                                f"Since-{format_time_age(timestamp)}")
+                    Device.offline_secs = timestamp
 
         except Exception as err:
-            # log_exception(err)
+            log_exception(err)
             pass
 
         post_event(evlog_msg)

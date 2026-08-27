@@ -11,7 +11,7 @@ from .const     import (CONF_SENSORS_DEVICE, CONF_SENSORS_TRACKING_UPDATE, CONF_
                         FROM_ZONE, ZONE_INFO, NEAR_DEVICE_USED,
                         ZONE, ZONE_DNAME, ZONE_NAME, ZONE_FNAME, ZONE_DATETIME,
                         LAST_ZONE, LAST_ZONE_DNAME, LAST_ZONE_NAME, LAST_ZONE_FNAME, LAST_ZONE_DATETIME,
-                        INTERVAL, LOCATION_SOURCE,
+                        INTERVAL, INTERVAL_METHOD, LOCATION_SOURCE,
                         BATTERY_SOURCE, BATTERY, BATTERY_STATUS, BATTERY_UPDATE_TIME,
                         BATTERY_ICLOUD, BATTERY_MOBAPP, BATTERY_LATEST,
                         DISTANCE, ZONE_DISTANCE, ZONE_DISTANCE_M, ZONE_DISTANCE_M_EDGE, HOME_DISTANCE,
@@ -202,7 +202,7 @@ SENSOR_DEFINITION = {
                 'Interval',
                 'timer, secs',
                 'mdi:clock-start',
-                [LAST_LOCATED_DATETIME, LAST_UPDATE_DATETIME, NEXT_UPDATE_DATETIME],
+                [INTERVAL_METHOD, LAST_LOCATED_DATETIME, LAST_UPDATE_DATETIME, NEXT_UPDATE_DATETIME],
                 0],
         LAST_LOCATED: [
                 'LastLocated',

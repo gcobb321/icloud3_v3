@@ -55,7 +55,7 @@ class OptionsFlow_Sensors_Steps:
                                         data_schema=forms.form_sensors(self),
                                         errors=self.errors)
 
-        if action_item == 'goto_menu':
+        if action_item == 'menu':
             return await self.async_step_menu()
 
         self.set_default_sensors(user_input)
@@ -186,7 +186,6 @@ class OptionsFlow_Sensors_Steps:
             list_add(self.config_parms_update_control, ['restart'])
 
         if action_item == 'return_to_sensor_screen':
-            # return True
             return await self.async_step_sensors()
 
         if action_item == 'update_sensor_list':

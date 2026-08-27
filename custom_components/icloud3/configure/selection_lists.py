@@ -17,7 +17,8 @@ from ..const            import (RARROW, CRLF_DOT, DOT, HDOT, CIRCLE_STAR, RED_X,
                                 CONF_PICTURE, CONF_DEVICE_TYPE, CONF_INZONE_INTERVALS,
                                 CONF_IC3_DEVICENAME, CONF_FNAME, CONF_FAMSHR_DEVICENAME, CONF_MOBILE_APP_DEVICE,
                                 CONF_MODEL_DISPLAY_NAME,
-                                CONF_TRACKING_MODE, CONF_INZONE_INTERVAL, CONF_FIXED_INTERVAL,
+                                CONF_TRACKING_MODE, TRACKING_MODE_DN,
+                                CONF_INZONE_INTERVAL, CONF_FIXED_INTERVAL,
                                 )
 
 from ..utils.utils      import (instr, is_number, is_empty, isnot_empty, list_to_str, str_to_list,
@@ -60,7 +61,7 @@ def build_apple_accounts_list(self):
     '''
 
     self.apple_acct_items_by_username = {}
-    self.is_auth_code_needed = False
+    self.is_reauth_needed = False
 
     aa_idx = -1
     for conf_apple_acct in Gb.conf_apple_accounts:
@@ -86,8 +87,12 @@ def _build_aa_text_line(self, AppleAcct, username):
     valid_upw = Gb.valid_upw_by_username.get(username)
 
     aa_text = ''
-    if AppleAcct.is_auth_code_needed:
+    if AppleAcct.is_reauth_needed:
         aa_text += f"{RED_ALERT}AUTH NEEDED, "
+    elif AppleAcct.auth_failed_503:
+        aa_text += f"{RED_ALERT}APPLE REFUSED RQST-503, "
+    elif (tracked_cnt+untracked_cnt) == 0:
+        aa_text += f"{RED_ALERT}LOGIN FAILED, "
 
     aa_text += (f"{tracked_cnt} of "
                 f"{tracked_cnt+untracked_cnt} Devices Tracked "
@@ -117,7 +122,7 @@ def build_apple_accounts_auth_list(self):
     auth_needed_items_by_username = {}
     auth_not_needed_items_by_username = {}
     self.apple_acct_auth_items_by_username = {}
-    self.is_auth_code_needed = False
+    self.is_reauth_needed = False
 
     aa_idx = -1
     for conf_apple_acct in Gb.conf_apple_accounts:
@@ -131,7 +136,7 @@ def build_apple_accounts_auth_list(self):
             continue
 
         aa_text = _build_aa_auth_text_line(self, AppleAcct, conf_apple_acct)
-        if AppleAcct.is_auth_code_needed:
+        if AppleAcct.is_reauth_needed:
             auth_needed_items_by_username[aausername] = \
                 f"{username_base(aausername)}{RARROW}{aa_text}"
         else:
@@ -154,7 +159,7 @@ def _build_aa_auth_text_line(self, AppleAcct, conf_apple_acct):
 
     aa_text += f"{self.aa_auth_methods_by_auth_method[auth_method]}"
 
-    if AppleAcct.is_auth_code_needed:
+    if AppleAcct.is_reauth_needed:
         aa_text = aa_text.split('> ')[0]
         aa_text += f" {RED_ALERT}AUTH NEEDED"
 
@@ -263,7 +268,7 @@ def format_device_list_item(self, conf_device):
     if conf_device[CONF_TRACKING_MODE] == MONITOR:
         device_text += f"{MONITOR_SYMB} MONITOR, "
     elif conf_device[CONF_TRACKING_MODE] == INACTIVE:
-        device_text += f"{INACTIVE_SYMB} INACTIVE, "
+        device_text += f"{INACTIVE_SYMB}INACTIVE, "
 
     if conf_device[CONF_FAMSHR_DEVICENAME] != 'None':
         aadevice_dname_aausername, status_msg = \
@@ -726,7 +731,7 @@ async def build_picture_filename_selection_list(self):
         if Gb.picture_www_dirs:
             while www_dir_idx < len(Gb.picture_www_dirs):
                 self.picture_by_filename[f".www_dirs{www_dir_idx}"] = (
-                            f"Source Directories: "
+                            f"Picture Directories: "
                             f"{list_to_str(Gb.picture_www_dirs[www_dir_idx:www_dir_idx+3])}")
                 www_dir_idx += 3
 
@@ -734,8 +739,8 @@ async def build_picture_filename_selection_list(self):
             www_dir_idx += 1
             self.picture_by_filename[f".www_dirs{www_dir_idx}"] = over_25_warning_msg
 
-        self.picture_by_filename['setup_dir_filter'] = "️️▶️ SET IMAGE DIRECTORY FILTER > Select directories with the picture image files"
-        self.picture_by_filename['.available'] = f"⏬ ______ DEVICE PICTURE FILE NAMES {'_'*38}"
+        self.picture_by_filename['.available'] = f"🔻 ______ PICTURE FILE NAMES {'_'*38}"
+        self.picture_by_filename['setup_picture_dir_filter'] = "️️➤ SET PICTURE DIRECTORY FILTER → Select directories with the picture image files"
         self.picture_by_filename.update(self.picture_by_filename_base)
 
         for sorted_image_filename in sorted_image_filenames:
@@ -817,7 +822,8 @@ def build_log_level_devices_list(self):
 def devices_selection_list():
     return {conf_device[CONF_IC3_DEVICENAME]: (
                     f"{conf_device[CONF_FNAME]} "
-                    f"({DEVICE_TYPE_DN(conf_device[CONF_DEVICE_TYPE])})")
+                    f"({DEVICE_TYPE_DN(conf_device[CONF_DEVICE_TYPE])}), "
+                    f"{TRACKING_MODE_DN[conf_device[CONF_TRACKING_MODE]]}")
                 for conf_device in Gb.conf_devices
                 if conf_device[CONF_IC3_DEVICENAME] in Gb.Devices_by_devicename}
 
@@ -845,11 +851,10 @@ def build_import_apple_devices_selection_list(self):
         aadevice_dname = ic3_conf_device[CONF_FAMSHR_DEVICENAME]
         mobapp_dname   = ic3_conf_device.get(CONF_MOBILE_APP_DEVICE)
 
-        sel_line = (f"{ic3_conf_device[CONF_FNAME]} ({ic3_conf_device[CONF_IC3_DEVICENAME]}){RARROW}"
-                    f"AppleDevice–({aadevice_dname}{LINK}{username_id(aausername)}), ")
+        sel_line = f"{ic3_conf_device[CONF_FNAME]} ({ic3_conf_device[CONF_IC3_DEVICENAME]}){RARROW}"
+        sel_line += f"AppleDevice–({aadevice_dname}{LINK}{username_id(aausername)}), "
         if mobapp_dname != 'None':
             sel_line += f"MobApp–({Gb.device_info_by_mobapp_dname[mobapp_dname][0]}), "
-
-        sel_line += f"{ic3_conf_device[CONF_MODEL_DISPLAY_NAME]}, "
+        sel_line += f"{ic3_conf_device[CONF_MODEL_DISPLAY_NAME]}"
 
         self.imported_aadevices_sel_list[sort_key] = sel_line

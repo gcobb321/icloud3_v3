@@ -7,7 +7,7 @@ from ...const               import (RARROW, ICLOUD, MOBAPP,
                                     CONF_SERVER_LOCATION, CONF_SERVER_LOCATION_NEEDED,
                                     )
 
-from ...utils.utils         import (instr, list_add, is_empty, isnot_empty,
+from ...utils.utils         import (instr, list_add, list_del, is_empty, isnot_empty,
                                     decode_password, dict_value_to_list, )
 from ...utils.messaging     import (_log, log_info_msg, log_exception, log_debug_msg,
                                     post_event, post_alert, post_greenbar_msg, update_alert_sensor,)
@@ -40,11 +40,12 @@ import voluptuous as vol
 def form_apple_accounts(self):
     lists.build_apple_accounts_list(self)
 
-    self.actions_list = []
-    self.actions_list.extend(APPLE_ACCOUNT_ACTIONS)
-    self.actions_list.extend(ACTION_LIST_ITEMS_BASE)
+    self.actions_list = APPLE_ACCOUNT_ACTIONS.copy()
 
-    default_action = self.actions_list_default if self.actions_list_default else 'save'
+    if self.is_another_auth_code_needed() is False:
+        list_del(self.actions_list, ACTION_LIST_OPTIONS['authenticate_apple_acct'])
+
+    default_action = self.actions_list_default if self.actions_list_default else 'menu'
     self.actions_list_default = ''
 
     mobile_app_used_default = [MOBILE_APP_USED_HEADER] if instr(Gb.conf_tracking[CONF_DATA_SOURCE], MOBAPP) else []
@@ -73,9 +74,6 @@ def form_apple_accounts(self):
             mobapp_interface.get_mobile_app_integration_device_info()
 
     return vol.Schema({
-        vol.Optional('data_source_mobapp',
-                    default=mobile_app_used_default):
-                    cv.multi_select([MOBILE_APP_USED_HEADER]),
         vol.Optional('data_source_apple_acct',
                     default=apple_acct_used_default):
                     cv.multi_select([APPLE_ACCT_USED_HEADER]),
@@ -83,6 +81,9 @@ def form_apple_accounts(self):
                     default=default_item):
                     selector.SelectSelector(selector.SelectSelectorConfig(
                         options=self.apple_acct_items_displayed, mode='list')),
+        # vol.Optional('data_source_mobapp',
+        #             default=mobile_app_used_default):
+        #             cv.multi_select([MOBILE_APP_USED_HEADER]),
         vol.Required('action_items',
                     default=utils_cf.default_action_text(default_action)):
                     selector.SelectSelector(selector.SelectSelectorConfig(
@@ -113,16 +114,20 @@ def _build_apple_accts_displayed_over_5(self):
 
 
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-#            DATA SOURCE (APPLE) PARAMETERS UPDATE
+#            OTHER APPLE PARAMETERS
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 def form_other_apple_acct_parameters(self):
-    self.actions_list = ACTION_LIST_ITEMS_BASE.copy()
+    self.actions_list = APPLE_ACCOUNT_OTHER_PARMS_ACTIONS.copy()
 
     return vol.Schema({
         vol.Required(CONF_SERVER_LOCATION_NEEDED,
                     default=Gb.conf_tracking[CONF_SERVER_LOCATION_NEEDED]):
-                    # cv.boolean,
                     selector.BooleanSelector(),
+
+        vol.Optional(CONF_SERVER_LOCATION,
+                default=utils_cf.option_parm_to_text(self, CONF_SERVER_LOCATION, APPLE_SERVER_LOCATION_OPTIONS)):
+                selector.SelectSelector(selector.SelectSelectorConfig(
+                    options=dict_value_to_list(APPLE_SERVER_LOCATION_OPTIONS), mode='dropdown')),
 
         vol.Required('action_items',
                     default=utils_cf.default_action_text('save')):
@@ -143,7 +148,7 @@ def form_update_apple_acct(self):
         self.actions_list = [ACTION_LIST_OPTIONS['stop_login_retry']]
     else:
         self.actions_list = []
-    self.actions_list.extend(USERNAME_PASSWORD_ACTIONS)
+    self.actions_list.extend(APPLE_ACCOUNT_UPDATE_ACTIONS)
 
     if Gb.internet_error:
         default_action = 'cancel_goto_previous'
@@ -266,35 +271,37 @@ def form_delete_apple_acct(self):
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 def form_import_apple_devices(self, user_input=None, aa_username=None):
 
-    try:
-        self.actions_list = IMPORT_APPLE_DEVICES.copy()
+    self.actions_list = IMPORT_APPLE_DEVICES.copy()
 
-        lists.build_import_apple_devices_selection_list(self)
+    lists.build_import_apple_devices_selection_list(self)
 
-        imported_aadevices_track           = []
-        imported_aadevices_monitor         = []
-        imported_aadevices_inactive        = []
-        default_imported_aadevices_track   = []
-        default_imported_aadevices_monitor = []
+    imported_aadevices_track           = []
+    imported_aadevices_monitor         = []
+    imported_aadevices_inactive        = []
+    default_imported_aadevices_track   = []
+    default_imported_aadevices_monitor = []
 
-        for item_key, sel_line in self.imported_aadevices_sel_list.items():
-            tracking_mode = int(item_key[0])
-            option_item   = [{"label": sel_line, "value": item_key}]
+    for item_key, sel_line in self.imported_aadevices_sel_list.items():
+        tracking_mode = int(item_key[0])
+        option_item   = [{"label": sel_line, "value": item_key}]
 
-            match tracking_mode:
-                case 0:
-                    imported_aadevices_track.extend(option_item)
-                    default_imported_aadevices_track.append(item_key)
-                case 1:
-                    imported_aadevices_monitor.extend(option_item)
-                    default_imported_aadevices_monitor.append(item_key)
-                case 2:
-                    imported_aadevices_inactive.extend(option_item)
+        match tracking_mode:
+            case 0:
+                imported_aadevices_track.extend(option_item)
+                default_imported_aadevices_track.append(item_key)
+            case 1:
+                imported_aadevices_monitor.extend(option_item)
+                default_imported_aadevices_monitor.append(item_key)
+            case 2:
+                imported_aadevices_inactive.extend(option_item)
 
+    if (isnot_empty(imported_aadevices_track)
+            or isnot_empty(imported_aadevices_monitor)):
         default_action = 'add_imported_apple_devices'
-
-    except Exception as err:
-        log_exception(err)
+    elif self.menu_item in ['apple_accounts', 'device_list']:
+        default_action = 'rtn_device_list'
+    else:
+        default_action = 'menu'
 
     schema = {}
     if isnot_empty(imported_aadevices_track):
