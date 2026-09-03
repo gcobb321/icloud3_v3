@@ -8,7 +8,6 @@
 
 [![Buy Me a Coffee](https://img.shields.io/badge/Support%20My%20Work-Click%20here%20to%20Buy%20Me%20a%20Coffee-yellow?logo=buy-me-a-coffee&logoColor=white)](https://www.buymeacoffee.com/gcobb321)
 
-
 [release-shield]: https://img.shields.io/github/v/release/gcobb321/icloud3.svg?label=General%20Release%20Version&color=orange
 [release-downloads-shield]: https://img.shields.io/github/downloads/gcobb321/icloud3/latest/total.svg?label=Downloads
 [stars-shield]: https://img.shields.io/github/stars/gcobb321/icloud3?style=flat&label=Stars
@@ -24,7 +23,6 @@
 [integration-usage-shield]: https://img.shields.io/badge/dynamic/json?color=41BDF5&logo=home-assistant&label=World%20Wide%20Users&cacheSeconds=15600&url=https%3A%2F%2Fanalytics.home-assistant.io%2Fcustom_integrations.json&query=%24.icloud3.total
 
 #    
------
 iCloud3 is a device tracker custom component that tracks your iPhones, iPads and Apple Watches. Devices in the Family Sharing List and the HA Mobile App Integration are trackable. The device requests location data from from Apple's iCloud  Location Services and monitors various Mobile App sensors and triggers to determine the device's  battery level, location, distance, travel time and arrival to Home. 
 
 ### iCloud3 Components
