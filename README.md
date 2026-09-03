@@ -9,23 +9,22 @@
 ![HACS](https://img.shields.io/badge/HACS-Standard_Installation-darkorange.svg) ![Type](https://img.shields.io/badge/Type-Custom_Component-forestgreen.svg)  ![ProjectStage](https://img.shields.io/badge/Project_Stage-General_Availability-forestgreen.svg) 
 
 
-![][integration-usage-shield] ![](https://img.shields.io/badge/Released-September,_2026-orange.svg)  ![][xx-downloads-shield] 
+![][integration-usage-shield]  ![][xx-downloads-shield]  ![][xx-downloads-latest-shield] 
 
-![][xx-downloads-latest-shield] 
-
-[release-shield]: https://img.shields.io/github/v/release/gcobb321/icloud3.svg?label=Current_Version..&color=orange
+[release-shield]: https://img.shields.io/github/v/release/gcobb321/icloud3.svg?label=Current%20Version..&color=orange
 [release-downloads-shield]: https://img.shields.io/github/downloads/gcobb321/icloud3/latest/total.svg?label=Downloads
 [stars-shield]: https://img.shields.io/github/stars/gcobb321/icloud3?style=flat&label=Stars
 [stargazers]: https://github.com/gcobb321/icloud3/stargazers
 [total-downloads-shield]: https://img.shields.io/github/downloads/gcobb321/icloud3/total.svg?label=Total_Downloads
 
-[dev-release-shield]: https://img.shields.io/github/v/release/gcobb321/icloud3_v3.svg?label=BetaTest_Version&color=orange
+[dev-release-shield]: https://img.shields.io/github/v/release/gcobb321/icloud3_v3.svg?label=BetaTest%20Version&color=orange
 [dev-release-downloads-shield]: https://img.shields.io/github/downloads/gcobb321/icloud3_v3/latest/total.svg?label=Downloads
 [dev-stars-shield]: https://img.shields.io/github/stars/gcobb321/icloud3_v3?style=flat&label=Stars
 [dev-stargazers]: https://github.com/gcobb321/icloud3_v3/stargazers
 [dev-total-downloads-shield]: https://img.shields.io/github/downloads/gcobb321/icloud3_v3/total.svg?label=Total_Downloads
 
-[integration-usage-shield]: https://img.shields.io/badge/dynamic/json?color=41BDF5&logo=home-assistant&label=Integration%20usage&suffix= Installs&cacheSeconds=15600&url=https%3A%2F%2Fanalytics.home-assistant.io%2Fcustom_integrations.json&query=%24.icloud3.total
+[integration-usage-shield]: https://img.shields.io/badge/dynamic/json?color=41BDF5&logo=home-assistant&label=Integration%20usage&suffix=Installs&cacheSeconds=15600&url=https%3A%2F%2Fanalytics.home-assistant.io%2Fcustom_integrations.json&query=%24.icloud3.total
+
 [xx-downloads-shield]: https://img.shields.io/github/downloads/gcobb321/icloud3_v3/total?style=for-the-badge&label=total%20downloads
 [xxx-downloads-latest-shield]: https://img.shields.io/github/downloads/gcobb321/icloud3_v3/latest/total?style=for-the-badge
 the-badge&label=total%20downloads
