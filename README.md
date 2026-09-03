@@ -2,8 +2,7 @@
 
 
 -----
-![][integration-usage-shield] ![HACS](https://img.shields.io/badge/HACS-Standard_Installation-darkorange.svg) 
-
+![][integration-usage-shield] ![HACS](https://img.shields.io/badge/HACS-Standard_Installation-darkorange.svg)  ![Type](https://img.shields.io/badge/Type-Custom_Component-forestgreen.svg)  ![ProjectStage](https://img.shields.io/badge/Project_Stage-General_Availability-forestgreen.svg) 
 ![][dev-release-shield] ![](https://img.shields.io/badge/Released-September,_2026-orange.svg)  ![][dev-release-downloads-shield] ![][dev-total-downloads-shield] ![GitHub Stars][dev-stars-shield] 
 
 ![][release-shield] ![](https://img.shields.io/badge/Released-May,_2026..........-orange.svg)  ![][release-downloads-shield] ![][total-downloads-shield] ![GitHub Stars][stars-shield]
