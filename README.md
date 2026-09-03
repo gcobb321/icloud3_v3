@@ -14,7 +14,7 @@
 
 ![][integration-usage-shield] 
 
-[release-shield]: https://img.shields.io/github/v/release/gcobb321/icloud3.svg?label=Current%20Version..&color=orange
+[release-shield]: https://img.shields.io/github/v/release/gcobb321/icloud3.svg?label=Released%20Version..&color=orange
 [release-downloads-shield]: https://img.shields.io/github/downloads/gcobb321/icloud3/latest/total.svg?label=Downloads
 [stars-shield]: https://img.shields.io/github/stars/gcobb321/icloud3?style=flat&label=Stars
 [stargazers]: https://github.com/gcobb321/icloud3/stargazers
