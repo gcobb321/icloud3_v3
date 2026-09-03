@@ -16,7 +16,7 @@
 [stargazers]: https://github.com/gcobb321/icloud3/stargazers
 [total-downloads-shield]: https://img.shields.io/github/downloads/gcobb321/icloud3/total.svg?label=Total%20Downloads
 
-[dev-release-shield]: https://img.shields.io/github/v/release/gcobb321/icloud3_v3.svg?label=Prerelease%20Dev%20Version&color=orange
+[dev-release-shield]: https://img.shields.io/github/v/release/gcobb321/icloud3_v3.svg?label=Prerelease/Dev%20Version&color=orange
 [dev-release-downloads-shield]: https://img.shields.io/github/downloads/gcobb321/icloud3_v3/latest/total.svg?label=Downloads
 [dev-stars-shield]: https://img.shields.io/github/stars/gcobb321/icloud3_v3?style=flat&label=Stars
 [dev-stargazers]: https://github.com/gcobb321/icloud3_v3/stargazers
