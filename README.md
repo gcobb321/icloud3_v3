@@ -11,7 +11,7 @@
 
 ![][integration-usage-shield] ![](https://img.shields.io/badge/Released-September,_2026-orange.svg)  ![][xx-downloads-shield] 
 
-![][xx-downloads-latest_shield] 
+![][xx-downloads-latest-shield] 
 
 [release-shield]: https://img.shields.io/github/v/release/gcobb321/icloud3.svg?label=Current_Version..&color=orange
 [release-downloads-shield]: https://img.shields.io/github/downloads/gcobb321/icloud3/latest/total.svg?label=Downloads
