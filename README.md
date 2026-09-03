@@ -1,7 +1,7 @@
 # iCloud3 - Apple Device Tracker
 
 <picture>
-<img src="https://brands.home-assistant.io/icloud3/logo@2x.png">
+<img src="https://brands.home-assistant.io/icloud3/icon.png">
 </picture>
 
 -----
