@@ -54,6 +54,17 @@ There are 4 major parts to the iCloud3 custom component that are used to configu
 
 iCloud3 is available on HACS. Installation instructions are in the Users Guide  [here](https://gcobb321.github.io/icloud3_v3_docs/#/chapters/1_installing)
 
+
+### Installing iCloud3 using HACS
+
+1. Ensure that [HACS](https://hacs.xyz/) is installed
+2. <a href="https://my.home-assistant.io/redirect/hacs_repository/?owner=gcobb321&repository=icloud3" target="_blank" rel="noreferrer noopener"><img src="https://my.home-assistant.io/badges/hacs_repository.svg" alt="Open your Home Assistant instance to download the iCloud3 integration." /></a>
+3. Download the *iCloud3* integration
+4. Restart Home Assistant
+
+
+
+
 ### iCloud3 Highlights
 
 Although Home Assistant has it's own official iCloud component, iCloud3 goes far beyond it's capabilities. The following highlights the important features.
