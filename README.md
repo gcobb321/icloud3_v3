@@ -26,7 +26,7 @@
 [integration-usage-shield]: https://img.shields.io/badge/dynamic/json?color=41BDF5&logo=home-assistant&label=World%20Wide%20Users&cacheSeconds=15600&url=https%3A%2F%2Fanalytics.home-assistant.io%2Fcustom_integrations.json&query=%24.icloud3.total
 
 [xx-downloads-shield]: https://img.shields.io/github/downloads/gcobb321/icloud3_v3/total?style=for-the-badge&label=total%20downloads
-[xx-downloads-latest-shield]: https://img.shields.io/github/downloads/gcobb321/icloud3_v3/latest/total
+[xx-downloads-latest-shield]: https://img.shields.io/github/downloads/custom-components/places/latest/total
 the-badge&label=total%20downloads
 [p-downloads-latest-shield]: https://img.shields.io/github/downloads/custom-components/places/latest/total?style=for-the-badge
 the-badge&label=total%20downloads
