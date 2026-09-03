@@ -30,7 +30,7 @@
 the-badge&label=total%20downloads
 [p-downloads-latest-shield]: https://img.shields.io/github/downloads/custom-components/places/latest/total?style=for-the-badge
 the-badge&label=total%20downloads
-[p2-downloads-latest-shield]: https://img.shields.io/github/downloads-pre/custom-components/places/latest/total?style=for-the-badge
+[p2-downloads-latest-shield]: https://img.shields.io/github/downloads/custom-components/places/latest/total?style=for-the-badge
 
 iCloud3 is a device tracker custom component that tracks your iPhones, iPads and Apple Watches. Devices in the Family Sharing List and the HA Mobile App Integration are trackable. The device requests location data from from Apple's iCloud  Location Services and monitors various Mobile App sensors and triggers to determine the device's  battery level, location, distance, travel time and arrival to Home. 
 
