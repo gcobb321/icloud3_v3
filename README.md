@@ -25,7 +25,7 @@
 [dev-stargazers]: https://github.com/gcobb321/icloud3_v3/stargazers
 [dev-total-downloads-shield]: https://img.shields.io/github/downloads/gcobb321/icloud3_v3/total.svg?label=Total_Downloads
 
-[integration-usage-shield]: https://img.shields.io/badge/dynamic/json?color=41BDF5&logo=home-assistant&label=integration%20usage&suffix=%20installs&cacheSeconds=15600&url=https%3A%2F%2Fanalytics.home-assistant.io%2Fcustom_integrations.json&query=%24.icloud3.total&style=for-the-badge
+[integration-usage-shield]: https://img.shields.io/badge/dynamic/json?color=41BDF5&logo=home-assistant&label=Integration%20usage&suffix= Installs&cacheSeconds=15600&url=https%3A%2F%2Fanalytics.home-assistant.io%2Fcustom_integrations.json&query=%24.icloud3.total
 [xx-downloads-shield]: https://img.shields.io/github/downloads/gcobb321/icloud3_v3/total?style=for-the-badge&label=total%20downloads
 [xxx-downloads-latest-shield]: https://img.shields.io/github/downloads/gcobb321/icloud3_v3/latest/total?style=for-the-badge
 the-badge&label=total%20downloads
