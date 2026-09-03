@@ -10,13 +10,13 @@
 
  
 
-[release-shield]: https://img.shields.io/github/v/release/gcobb321/icloud3.svg?label=General%20Released%20Version&color=orange
+[release-shield]: https://img.shields.io/github/v/release/gcobb321/icloud3.svg?label=General%20Release%20Version&color=orange
 [release-downloads-shield]: https://img.shields.io/github/downloads/gcobb321/icloud3/latest/total.svg?label=Downloads
 [stars-shield]: https://img.shields.io/github/stars/gcobb321/icloud3?style=flat&label=Stars
 [stargazers]: https://github.com/gcobb321/icloud3/stargazers
 [total-downloads-shield]: https://img.shields.io/github/downloads/gcobb321/icloud3/total.svg?label=Total%20Downloads
 
-[dev-release-shield]: https://img.shields.io/github/v/release/gcobb321/icloud3_v3.svg?label=Early%20Release%20Dev%20Version&color=orange
+[dev-release-shield]: https://img.shields.io/github/v/release/gcobb321/icloud3_v3.svg?label=Prerelease%20Dev%20Version&color=orange
 [dev-release-downloads-shield]: https://img.shields.io/github/downloads/gcobb321/icloud3_v3/latest/total.svg?label=Downloads
 [dev-stars-shield]: https://img.shields.io/github/stars/gcobb321/icloud3_v3?style=flat&label=Stars
 [dev-stargazers]: https://github.com/gcobb321/icloud3_v3/stargazers
