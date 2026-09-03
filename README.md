@@ -1,7 +1,8 @@
 # iCloud3 - Apple Device Tracker
 
-
+<picture>
 <img src="(https://brands.home-assistant.io/[domain]/logo@2x.png)">
+</picture>
 
 -----
 ![][integration-usage-shield] ![HACS](https://img.shields.io/badge/HACS-Standard_Installation-darkorange.svg)  ![Type](https://img.shields.io/badge/Type-Custom_Component-forestgreen.svg)  ![ProjectStage](https://img.shields.io/badge/Project_Stage-General_Availability-forestgreen.svg) 
