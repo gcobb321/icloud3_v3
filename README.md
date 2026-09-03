@@ -9,7 +9,7 @@
 ![HACS](https://img.shields.io/badge/HACS-Standard_Installation-darkorange.svg) ![Type](https://img.shields.io/badge/Type-Custom_Component-forestgreen.svg)  ![ProjectStage](https://img.shields.io/badge/Project_Stage-General_Availability-forestgreen.svg) 
 
 
-![][integration-usage-shield]  ![][xx-downloads-shield]  ![][p2-downloads-latest-shield] 
+![][integration-usage-shield]  ![][xx-downloads-shield]  ![][xx-downloads-latest-shield] 
 
 [release-shield]: https://img.shields.io/github/v/release/gcobb321/icloud3.svg?label=Current%20Version..&color=orange
 [release-downloads-shield]: https://img.shields.io/github/downloads/gcobb321/icloud3/latest/total.svg?label=Downloads
@@ -26,7 +26,7 @@
 [integration-usage-shield]: https://img.shields.io/badge/dynamic/json?color=41BDF5&logo=home-assistant&label=World%20Wide%20Users&cacheSeconds=15600&url=https%3A%2F%2Fanalytics.home-assistant.io%2Fcustom_integrations.json&query=%24.icloud3.total
 
 [xx-downloads-shield]: https://img.shields.io/github/downloads/gcobb321/icloud3_v3/total?style=for-the-badge&label=total%20downloads
-[xx-downloads-latest-shield]: https://img.shields.io/github/downloads/gcobb321/icloud3_v3/latest/total?style=for-the-badge
+[xx-downloads-latest-shield]: https://img.shields.io/github/downloads/gcobb321/icloud3_v3/latest/total
 the-badge&label=total%20downloads
 [p-downloads-latest-shield]: https://img.shields.io/github/downloads/custom-components/places/latest/total?style=for-the-badge
 the-badge&label=total%20downloads
