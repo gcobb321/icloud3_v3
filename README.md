@@ -63,6 +63,12 @@ iCloud3 is available on HACS. Installation instructions are in the Users Guide  
 4. Restart Home Assistant
 
 
+## Configuration
+
+<a href="https://my.home-assistant.io/redirect/config_flow_start/?domain=icloud3" target="_blank" rel="noreferrer noopener"><img src="https://my.home-assistant.io/badges/config_flow_start.svg" alt="Open your Home Assistant instance to configure iCloud3" /></a>
+
+
+
 
 
 ### iCloud3 Highlights
