@@ -1,6 +1,6 @@
 # <img width="32" height="32" src="https://brands.home-assistant.io/icloud3/icon.png"> iCloud3 - Apple Device Tracker
 
-![][integration-usage-shield] ![](https://img.shields.io/badge/Lines_of_Code-46.8k-orange.svg) ![HACS](https://img.shields.io/badge/HACS-Standard_Installation-darkora nge.svg) ![Type](https://img.shields.io/badge/Type-Custom_Component-forestgreen.svg)  
+![][integration-usage-shield] ![](https://img.shields.io/badge/Lines_of_Code-46.8k-lighyskyblue.svg) ![HACS](https://img.shields.io/badge/HACS-Standard_Installation-darkorange.svg) ![Type](https://img.shields.io/badge/Type-Custom_Component-forestgreen.svg)  
 
 ![][dev-release-shield] ![](https://img.shields.io/badge/Released-September,_2026-orange.svg)  ![][dev-release-downloads-shield] ![GitHub Stars][dev-stars-shield] 
 
