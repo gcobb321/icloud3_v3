@@ -9,7 +9,7 @@
 [![Buy Me a Coffee](https://img.shields.io/badge/Support_My_Work-Click_here_to_Buy_Me_a_Coffee-sienna.svg?logo=buy-me-a-coffee&logoColor=white)](https://www.buymeacoffee.com/gcobb321)
 
 
-[release-shield]: https://img.shields.io/github/v/release/gcobb321/icloud3.svg?label=General%20Release%20Version&color=crimson
+[release-shield]: https://img.shields.io/github/v/release/gcobb321/icloud3.svg?label=General%20Release%20Version&color=darkochidon
 [release-downloads-shield]: https://img.shields.io/github/downloads/gcobb321/icloud3/latest/total.svg?label=Downloads&color=crimson
 
 [stars-shield]: https://img.shields.io/github/stars/gcobb321/icloud3?style=flat&label=Stars&color=crimson
