@@ -1,24 +1,26 @@
 # <img width="32" height="32" src="https://brands.home-assistant.io/icloud3/icon.png"> iCloud3 - Apple Device Tracker
 
-![][integration-usage-shield] ![](https://img.shields.io/badge/Lines_of_Code-46.8k-lightskyblue.svg) ![HACS](https://img.shields.io/badge/HACS-Standard_Installation-forestgreen.svg) ![Type](https://img.shields.io/badge/Type-Custom_Component-forestgreen.svg)  
+![][ha-installs-shield] ![](https://img.shields.io/badge/Lines_of_Code-46.8k-41BDF5.svg) ![HACS](https://img.shields.io/badge/HACS-Standard_Installation-forestgreen.svg) ![Type](https://img.shields.io/badge/Type-Custom_Component-forestgreen.svg)  
 
 ![][dev-release-shield] ![](https://img.shields.io/badge/Released-September,_2026-darkorange.svg)  ![][dev-release-downloads-shield] ![GitHub Stars][dev-stars-shield] 
 
 ![][release-shield] ![](https://img.shields.io/badge/Released-May,_2026-darkorange.svg) ![][release-downloads-shield] ![GitHub Stars][stars-shield]
 
-[![Buy Me a Coffee](https://img.shields.io/badge/Support_My%20Work-Click%20here%20to%20Buy%20Me%20a%20Coffee-sienna.svg?logo=buy-me-a-coffee&logoColor=white)](https://www.buymeacoffee.com/gcobb321)
+[![Buy Me a Coffee](https://img.shields.io/badge/Support_My_Work-Click_here_to_Buy_Me_a_Coffee-sienna.svg?logo=buy-me-a-coffee&logoColor=white)](https://www.buymeacoffee.com/gcobb321)
 
-[release-shield]: https://img.shields.io/github/v/release/gcobb321/icloud3.svg?label=General%20Release%20Version&color=orange
-[release-downloads-shield]: https://img.shields.io/github/downloads/gcobb321/icloud3/latest/total.svg?label=Downloads
-[stars-shield]: https://img.shields.io/github/stars/gcobb321/icloud3?style=flat&label=Stars
+[release-shield]: https://img.shields.io/github/v/release/gcobb321/icloud3.svg?label=General%20Release%20Version&color=darkorange
+[release-downloads-shield]: https://img.shields.io/github/downloads/gcobb321/icloud3/latest/total.svg?label=Downloads&color=darkorange
+[stars-shield]: https://img.shields.io/github/stars/gcobb321/icloud3?style=flat&label=Stars&color=darkorange
 [stargazers]: https://github.com/gcobb321/icloud3/stargazers
-[total-downloads-shield]: https://img.shields.io/github/downloads/gcobb321/icloud3/total.svg?label=Total%20Downloads
-[dev-release-shield]: https://img.shields.io/github/v/release/gcobb321/icloud3_v3.svg?label=Beta/Prerelease%20Version&color=orange
-[dev-release-downloads-shield]: https://img.shields.io/github/downloads/gcobb321/icloud3_v3/latest/total.svg?label=Downloads
+
+[total-downloads-shield]: https://img.shields.io/github/downloads/gcobb321/icloud3/total.svg?label=Total%20Downloads&color=darkorange
+[dev-release-shield]: https://img.shields.io/github/v/release/gcobb321/icloud3_v3.svg?label=Beta/Prerelease%20Version&color=darkorange
+[dev-release-downloads-shield]: https://img.shields.io/github/downloads/gcobb321/icloud3_v3/latest/total.svg?label=Downloads&color=darkorange
+
 [dev-stars-shield]: https://img.shields.io/github/stars/gcobb321/icloud3_v3?style=flat&label=Stars
 [dev-stargazers]: https://github.com/gcobb321/icloud3_v3/stargazers
 [dev-total-downloads-shield]: https://img.shields.io/github/downloads/gcobb321/icloud3_v3/total.svg?label=Total%20Downloads
-[integration-usage-shield]: https://img.shields.io/badge/dynamic/json?color=41BDF5&logo=home-assistant&label=World%20Wide%20Users&cacheSeconds=15600&url=https%3A%2F%2Fanalytics.home-assistant.io%2Fcustom_integrations.json&query=%24.icloud3.total
+[ha-installs-shield]: https://img.shields.io/badge/dynamic/json?color=41BDF5&logo=home-assistant&label=World%20Wide%20Users&cacheSeconds=15600&url=https%3A%2F%2Fanalytics.home-assistant.io%2Fcustom_integrations.json&query=%24.icloud3.total
 
 #    
 iCloud3 is a device tracker custom component that tracks your iPhones, iPads and Apple Watches. Devices in the Family Sharing List and the HA Mobile App Integration are trackable. The device requests location data from from Apple's iCloud  Location Services and monitors various Mobile App sensors and triggers to determine the device's  battery level, location, distance, travel time and arrival to Home. 
