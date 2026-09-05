@@ -50,6 +50,8 @@ There are 4 major parts to the iCloud3 custom component that are used to configu
 - Provides example screens, automations and scripts
 - The User Guide is quite extensive and can be found [here](https://gcobb321.github.io/icloud3_v3_docs/#/)
 
+
+-----
 ### Installing iCloud3 Beta/Prelease Version from HACS
 
 This Beta/Prelease version can be installed from HACS after it has been set up as a Custom Repository. Follow the instructions below:
@@ -77,9 +79,7 @@ iCloud3 is available on HACS. Installation instructions are in the Users Guide  
 
 The steps needed to get going have been automated to make it as simple as possible. You install the iC, Add Apple Account, Authenticate Apple Account Sign-in, Import Apple Devices, Build iCloud3 Dashboard, End Configure Sessions and start tracking your devices.
 
-
-
-	<img src="https://github.com/gcobb321/icloud3_v3_docs/blob/main/docs/screens/apple_acct/apple-acct-auth-import-devices-steps.png?raw=true">
+![](https://gcobb321.github.io/icloud3_v3_docs/screens/apple_acct/apple-acct-auth-import-devices-steps.png)
 
 1. Add the iCloud3 Integration on the *HA Devices & services > +Add Integration*, Select *iCloud3 Apple Device Tracker*
 2. Select the Configure Gear icon on the iCloud3 Integration screen.
@@ -90,12 +90,11 @@ The steps needed to get going have been automated to make it as simple as possib
 7. Exit the *iCloud3 Configure Session* and the *iCloud3 Dashboard* is built with your devices. It is added to the *HA Sidebar* and displayed as a cloud (<img src="https://github.com/gcobb321/icloud3_v3_docs/blob/main/docs/images2/cloud-icon-42x42.png?raw=true" width="20" height="16">). 
 8. Display the *iCloud3 Dashboard*. If all went well, you should see your devices and the Event Log.
 
-![](https://gcobb321.github.io/icloud3_v3_docs/screens//dashboard-allinfo-summary.png)
+![](https://gcobb321.github.io/icloud3_v3_docs/screens/dashboard-allinfo-summary.png)
 
-
+> Go [here](https://gcobb321.github.io/icloud3_v3_docs/#/chapters/1_installing?id=configure-icloud3-for-the-first-time) for a deep dive into this process in the iCloud documentation.
 
 -----
-
 ### iCloud3 Highlights
 
 Although Home Assistant has it's own official iCloud component, iCloud3 goes far beyond it's capabilities. The following highlights the important features.
@@ -145,14 +144,6 @@ Although Home Assistant has it's own official iCloud component, iCloud3 goes far
 - **Extensive Documentation** - The iCloud3 User Guide explains the three main components, hot to get started, how to migrate from v2, how to install the integration, each of the screens and special features, the service calls that can request updates, locate iPhones and send notification alerts, examples of how to automate opening your garage door when you arrive home, etc.
 - **And More** - Review the following documentation to see if it will help you track and monitor the locations of your iPhones, iPads and Apple Watches.
 
-  
-
-### Tracking Information Screens with Event Log
-
-The screens below are an example of how the many tracking sensors can be displayed. The screen on the left shows the current tracking formation for Gary while the Event Log on the right shows a history of important tracking events.
-
-
-
 
 
 ### Important Links
@@ -164,8 +155,6 @@ The screens below are an example of how the many tracking sensors can be display
 - **iCloud3 Development GitHub Repository** - The Development Repository is used for beta version changes that have not been released yet is [here](https://github.com/gcobb321/icloud3_v3)
 
   
-
-
 
 <a href="https://www.buymeacoffee.com/gcobb321" target="_blank"><img src="https://gcobb321.github.io/icloud3_v3_docs/images/buymeacoffee-docs-button.png"/></a>
 
