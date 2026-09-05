@@ -1,4 +1,4 @@
-name: Build and attach release zip
+name: Publish New iCloud3 Release
 
 on:
   release:
@@ -24,7 +24,7 @@ jobs:
         with:
           files: custom_components/icloud3.zip
 
-      - name: Set release notes from file
+      - name: Set release title and notes
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -32,7 +32,9 @@ jobs:
           VERSION="${TAG#v}"
           BASE_VERSION=$(echo "$VERSION" | awk -F. '{print $1"."$2"."$3}')
           NOTES_FILE="custom_components/icloud3/release_notes/release_notes_v${BASE_VERSION}.md"
+          TITLE_DATE=$(date +'%-m/%-d/%Y')
 
           gh release edit "$TAG" \
+            --title "iCloud3 ${TAG} (${TITLE_DATE})" \
             --notes-file "$NOTES_FILE" \
             --repo ${{ github.repository }}
