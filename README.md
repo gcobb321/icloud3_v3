@@ -18,7 +18,7 @@
 [total-downloads-shield]: https://img.shields.io/github/downloads/gcobb321/icloud3/total.svg?label=Total%20Downloads&color=darkorange
 [dev-total-downloads-shield]: https://img.shields.io/github/downloads/gcobb321/icloud3_v3/total.svg?label=Total%20Downloads
 
-[dev-release-shield]: https://img.shields.io/github/v/release/gcobb321/icloud3_v3.svg?label=Beta/Prerelease%20Version&color=mediumorchard
+[dev-release-shield]: https://img.shields.io/github/v/release/gcobb321/icloud3_v3.svg?label=Beta/Prerelease%20Version&color=mediumorchid
 [dev-release-downloads-shield]: https://img.shields.io/github/downloads/gcobb321/icloud3_v3/latest/total.svg?label=Downloads&color=tomato
 
 [dev-stars-shield]: https://img.shields.io/github/stars/gcobb321/icloud3_v3?style=flat&label=Stars&color=tomato
