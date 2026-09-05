@@ -6,11 +6,11 @@
 
 ![][ha-installs-shield] ![](https://img.shields.io/badge/Lines_of_Code-46.8k-41BDF5.svg) ![HACS](https://img.shields.io/badge/HACS-Custom_Installation-steelblue.svg) ![Type](https://img.shields.io/badge/Type-Custom_Component-steelblue.svg)  
 
-![][dev-release-shield] ![](https://img.shields.io/badge/Released-September,_2026-darkorange.svg)  ![][dev-release-downloads-shield] ![GitHub Stars][dev-stars-shield] 
+![][dev-release-shield] ![](https://img.shields.io/badge/Released-September,_2026-mediumseagreen.svg)  ![][dev-release-downloads-shield] ![GitHub Stars][dev-stars-shield] 
 
-![][release-shield] ![](https://img.shields.io/badge/Released-May,_2026-steelblue.svg) ![][release-downloads-shield] ![GitHub Stars][stars-shield]
+![][release-shield] ![](https://img.shields.io/badge/Released-May,_2026-mediumseagreen.svg) ![][release-downloads-shield] ![GitHub Stars][stars-shield]
 
-[![Buy Me a Coffee](https://img.shields.io/badge/Support_My_Work-Click_here_to_Buy_Me_a_Coffee-darkgoldenrod.svg?logo=buy-me-a-coffee&logoColor=white)](https://www.buymeacoffee.com/gcobb321)
+[![Buy Me a Coffee](https://img.shields.io/badge/Support_My_Work-Click_here_to_Buy_Me_a_Coffee-chocolate.svg?logo=buy-me-a-coffee&logoColor=white)](https://www.buymeacoffee.com/gcobb321)
 
 
 [release-shield]: https://img.shields.io/github/v/release/gcobb321/icloud3.svg?label=General%20Release%20Version&color=mediumseagreen
@@ -18,12 +18,12 @@
 [stars-shield]: https://img.shields.io/github/stars/gcobb321/icloud3?style=flat&label=Stars&color=mediumseagreen
 [stargazers]: https://github.com/gcobb321/icloud3/stargazers
 
-[total-downloads-shield]: https://img.shields.io/github/downloads/gcobb321/icloud3/total.svg?label=Total%20Downloads&color=coral
+[total-downloads-shield]: https://img.shields.io/github/downloads/gcobb321/icloud3/total.svg?label=Total%20Downloads&color=mediumseagreen
 [dev-total-downloads-shield]: https://img.shields.io/github/downloads/gcobb321/icloud3_v3/total.svg?label=Total%20Downloads
 
-[dev-release-shield]: https://img.shields.io/github/v/release/gcobb321/icloud3_v3.svg?label=Beta/Prerelease%20Version&color=coral
-[dev-release-downloads-shield]: https://img.shields.io/github/downloads/gcobb321/icloud3_v3/latest/total.svg?label=Downloads&color=coral
-[dev-stars-shield]: https://img.shields.io/github/stars/gcobb321/icloud3_v3?style=flat&label=Stars&color=coral
+[dev-release-shield]: https://img.shields.io/github/v/release/gcobb321/icloud3_v3.svg?label=Beta/Prerelease%20Version&color=mediumseagreen
+[dev-release-downloads-shield]: https://img.shields.io/github/downloads/gcobb321/icloud3_v3/latest/total.svg?label=Downloads&color=mediumseagreen
+[dev-stars-shield]: https://img.shields.io/github/stars/gcobb321/icloud3_v3?style=flat&label=Stars&color=mediumseagreen
 [dev-stargazers]: https://github.com/gcobb321/icloud3_v3/stargazers
 
 [ha-installs-shield]: https://img.shields.io/badge/dynamic/json?color=41BDF5&logo=home-assistant&label=World%20Wide%20Users&cacheSeconds=15600&url=https%3A%2F%2Fanalytics.home-assistant.io%2Fcustom_integrations.json&query=%24.icloud3.total
