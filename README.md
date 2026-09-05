@@ -92,7 +92,7 @@ The steps needed to get going have been automated to make it as simple as possib
 
 ![](https://gcobb321.github.io/icloud3_v3_docs/screens/dashboard-allinfo-summary.png)
 
-> Go [here](https://gcobb321.github.io/icloud3_v3_docs/#/chapters/1_installing?id=configure-icloud3-for-the-first-time) for a deep dive into this process in the iCloud documentation.
+> Go [here](https://gcobb321.github.io/icloud3_v3_docs/#/chapters/1_installing?id=configure-icloud3-for-the-first-time) for a deep dive into this process in the iCloud3 documentation.
 
 -----
 ### iCloud3 Highlights
