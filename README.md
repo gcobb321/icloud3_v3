@@ -2,6 +2,8 @@
 
 ***Beta/Prerelease Version** - This is an early release version of iCloud3 containing new and updated features. It is not the official release of iCloud3.  
 
+
+
 ![][ha-installs-shield] ![](https://img.shields.io/badge/Lines_of_Code-46.8k-steelblue.svg) ![HACS](https://img.shields.io/badge/HACS-Custom_Installation-steelblue.svg) ![Type](https://img.shields.io/badge/Type-Custom_Component-steelblue.svg)  
 
 ![][dev-release-shield] ![](https://img.shields.io/badge/Released-September,_2026-mediumseagreen.svg)  ![][dev-release-downloads-shield] ![GitHub Stars][dev-stars-shield] <br>
@@ -28,6 +30,8 @@
 
 
 iCloud3 is a device tracker custom component that tracks your iPhones, iPads and Apple Watches. Devices in the Family Sharing List and the HA Mobile App Integration are trackable. The device requests location data from from Apple's iCloud  Location Services and monitors various Mobile App sensors and triggers to determine the device's  battery level, location, distance, travel time and arrival to Home.  
+
+
 
 ---
 ### iCloud3 Components
