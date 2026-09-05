@@ -4,15 +4,15 @@
 
 ![][dev-release-shield] ![](https://img.shields.io/badge/Released-September,_2026-mediumorchid.svg)  ![][dev-release-downloads-shield] ![GitHub Stars][dev-stars-shield] 
 
-![][release-shield] ![](https://img.shields.io/badge/Released-May,_2026-crimson.svg) ![][release-downloads-shield] ![GitHub Stars][stars-shield]
+![][release-shield] ![](https://img.shields.io/badge/Released-May,_2026-darkorchid.svg) ![][release-downloads-shield] ![GitHub Stars][stars-shield]
 
 [![Buy Me a Coffee](https://img.shields.io/badge/Support_My_Work-Click_here_to_Buy_Me_a_Coffee-sienna.svg?logo=buy-me-a-coffee&logoColor=white)](https://www.buymeacoffee.com/gcobb321)
 
 
 [release-shield]: https://img.shields.io/github/v/release/gcobb321/icloud3.svg?label=General%20Release%20Version&color=darkorchid
-[release-downloads-shield]: https://img.shields.io/github/downloads/gcobb321/icloud3/latest/total.svg?label=Downloads&color=crimson
+[release-downloads-shield]: https://img.shields.io/github/downloads/gcobb321/icloud3/latest/total.svg?label=Downloads&color=darkorchid
 
-[stars-shield]: https://img.shields.io/github/stars/gcobb321/icloud3?style=flat&label=Stars&color=crimson
+[stars-shield]: https://img.shields.io/github/stars/gcobb321/icloud3?style=flat&label=Stars&color=darkorchid
 [stargazers]: https://github.com/gcobb321/icloud3/stargazers
 
 [total-downloads-shield]: https://img.shields.io/github/downloads/gcobb321/icloud3/total.svg?label=Total%20Downloads&color=darkorange
