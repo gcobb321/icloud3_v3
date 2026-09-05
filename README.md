@@ -4,7 +4,7 @@
 
 
 
-![][ha-installs-shield] ![](https://img.shields.io/badge/Lines_of_Code-46.8k-41BDF5.svg) ![HACS](https://img.shields.io/badge/HACS-Custom_Installation-steelblue.svg) ![Type](https://img.shields.io/badge/Type-Custom_Component-steelblue.svg)  
+![][ha-installs-shield] ![](https://img.shields.io/badge/Lines_of_Code-46.8k-steelblue.svg) ![HACS](https://img.shields.io/badge/HACS-Custom_Installation-steelblue.svg) ![Type](https://img.shields.io/badge/Type-Custom_Component-steelblue.svg)  
 
 ![][dev-release-shield] ![](https://img.shields.io/badge/Released-September,_2026-mediumseagreen.svg)  ![][dev-release-downloads-shield] ![GitHub Stars][dev-stars-shield] 
 
@@ -26,7 +26,7 @@
 [dev-stars-shield]: https://img.shields.io/github/stars/gcobb321/icloud3_v3?style=flat&label=Stars&color=mediumseagreen
 [dev-stargazers]: https://github.com/gcobb321/icloud3_v3/stargazers
 
-[ha-installs-shield]: https://img.shields.io/badge/dynamic/json?color=41BDF5&logo=home-assistant&label=World%20Wide%20Users&cacheSeconds=15600&url=https%3A%2F%2Fanalytics.home-assistant.io%2Fcustom_integrations.json&query=%24.icloud3.total
+[ha-installs-shield]: https://img.shields.io/badge/dynamic/json?color=steelblue&logo=home-assistant&label=World%20Wide%20Users&cacheSeconds=15600&url=https%3A%2F%2Fanalytics.home-assistant.io%2Fcustom_integrations.json&query=%24.icloud3.total
 
 
 
