@@ -1,4 +1,8 @@
-# <img width="32" height="32" src="https://brands.home-assistant.io/icloud3/icon.png"> iCloud3 - Apple Device Tracker - Beta/Prerelease Version
+#  <img width="32" height="32" src="https://brands.home-assistant.io/icloud3/icon.png"> iCloud3 Apple Device Tracker
+
+**Beta/Prerelease Version** - This is an early release version of iCloud3 containing new and updated features. It is not the official release of iCloud3. 
+
+
 
 ![][ha-installs-shield] ![](https://img.shields.io/badge/Lines_of_Code-46.8k-41BDF5.svg) ![HACS](https://img.shields.io/badge/HACS-Custom_Installation-forestgreen.svg) ![Type](https://img.shields.io/badge/Type-Custom_Component-forestgreen.svg)  
 
@@ -26,7 +30,8 @@
 
 [ha-installs-shield]: https://img.shields.io/badge/dynamic/json?color=41BDF5&logo=home-assistant&label=World%20Wide%20Users&cacheSeconds=15600&url=https%3A%2F%2Fanalytics.home-assistant.io%2Fcustom_integrations.json&query=%24.icloud3.total
 
-#    
+
+
 iCloud3 is a device tracker custom component that tracks your iPhones, iPads and Apple Watches. Devices in the Family Sharing List and the HA Mobile App Integration are trackable. The device requests location data from from Apple's iCloud  Location Services and monitors various Mobile App sensors and triggers to determine the device's  battery level, location, distance, travel time and arrival to Home. 
 
 ### iCloud3 Components
@@ -45,26 +50,51 @@ There are 4 major parts to the iCloud3 custom component that are used to configu
 - Provides example screens, automations and scripts
 - The User Guide is quite extensive and can be found [here](https://gcobb321.github.io/icloud3_v3_docs/#/)
 
-### Installing iCloud3
+### Installing iCloud3 Beta/Prelease Version from HACS
+
+This Beta/Prelease version can be installed from HACS after it has been set up as a Custom Repository. Follow the instructions below:
+
+#### Add the iCloud3 Beta/Prerelease Version Custom Repository to HACS
+
+1. Open HACS
+2. Select the 3-dots in the upper-right corner, then select *Custom Repositories*.
+3. Enter the following values in the fields displayed:
+   - Repository: `gcobb321/icloud3_v3`
+   - Category: `Integration`
+4. Select **Add**
+
+#### After the custom repository has been added to HACS:
+
+1. Search for and select the **iCloud3 Apple Device Tracker - Beta/Prerelease Version** item on the main HACS screen.
+2. Select **+Download** and follow the normal steps for installing an integration using HACS.
 
 iCloud3 is available on HACS. Installation instructions are in the Users Guide  [here](https://gcobb321.github.io/icloud3_v3_docs/#/chapters/1_installing)
 
 
-### Installing iCloud3 using HACS
 
-1. Ensure that [HACS](https://hacs.xyz/) is installed
-2. <a href="https://my.home-assistant.io/redirect/hacs_repository/?owner=gcobb321&repository=icloud3" target="_blank" rel="noreferrer noopener"><img src="https://my.home-assistant.io/badges/hacs_repository.svg" alt="Open your Home Assistant instance to download the iCloud3 integration." /></a>
-3. Download the *iCloud3* integration
-4. Restart Home Assistant
+-----
+### Setting up iCloud3 for the first time
 
-
-## Configuration
-
-<a href="https://my.home-assistant.io/redirect/config_flow_start/?domain=icloud3" target="_blank" rel="noreferrer noopener"><img src="https://my.home-assistant.io/badges/config_flow_start.svg" alt="Open your Home Assistant instance to configure iCloud3" /></a>
+The steps needed to get going have been automated to make it as simple as possible. You install the iC, Add Apple Account, Authenticate Apple Account Sign-in, Import Apple Devices, Build iCloud3 Dashboard, End Configure Sessions and start tracking your devices.
 
 
 
+	<img src="https://github.com/gcobb321/icloud3_v3_docs/blob/main/docs/screens/apple_acct/apple-acct-auth-import-devices-steps.png?raw=true">
 
+1. Add the iCloud3 Integration on the *HA Devices & services > +Add Integration*, Select *iCloud3 Apple Device Tracker*
+2. Select the Configure Gear icon on the iCloud3 Integration screen.
+3. On the  *Update Apple Accounts* screen, enter your username (email id) and password and log into your Apple Account. A sign-in notification is displayed on your trusted device.
+4. On the *Authenticate Apple Account Sign-in* screen, follow the instructions to enter the 6-digit authentication code or start the security key authentication process.
+5. On the *Import Apple Devices* screen, the device information downloaded in step 3 is used to create iCloud3 devices. 
+6. On *iCloud3 Devices* screen, review and update any device configuration information you want to change (Name, Picture, Mobile App assignment, etc.)
+7. Exit the *iCloud3 Configure Session* and the *iCloud3 Dashboard* is built with your devices. It is added to the *HA Sidebar* and displayed as a cloud (<img src="https://github.com/gcobb321/icloud3_v3_docs/blob/main/docs/images2/cloud-icon-42x42.png?raw=true" width="20" height="16">). 
+8. Display the *iCloud3 Dashboard*. If all went well, you should see your devices and the Event Log.
+
+![](https://gcobb321.github.io/icloud3_v3_docs/screens//dashboard-allinfo-summary.png)
+
+
+
+-----
 
 ### iCloud3 Highlights
 
@@ -78,15 +108,6 @@ Although Home Assistant has it's own official iCloud component, iCloud3 goes far
 - **Restore state values on restart** - The current device_tracker and sensor entity states are restored on a restart. The attributes are not restored but are reset on the first tracking Event. 
 - **Device_tracker and sensor entities** - iCloud3 devices and sensors are Home Assistant entities that are added, deleted and changed on the  *Update iCloud3 Devices* and *Sensors* configuration screens.
 - **Dashboard Builder** - iCloud3 Dashboards in various formats are added to Home Assistant when the iCloud3 Integration is first installed.
-- **Easy Setup** - Install, Add Apple Account, Authenticate Apple Account Sign-in, Import Apple Devices, Build iCloud3 Dashboard, End Configure Sessions and start tracking your devices.
-  - Install iCloud3 (*HA Devices & services > +Add Integration*)
-  - Configure iCloud3 (*HA Devices & settings > iCloud3 > Configure*)
-  - The *Add Apple Accounts* is displayed screen - Add your Apple account
-  - The *Authenticate Apple Account Sign-in* screen is displayed - Enter the authentication code
-  - The *Import Apple Devices* screen is displayed with the devices in the Apple account - create your iCloud3 devices
-  - The *iCloud3 Dashboard* is build with your devices and added to the HA Sidebar
-  - End the iCloud3 Configure Session and select the iCloud3 Dashboard and see where all of your devices are.
-  - Done, simple, easy
 
 #### Device Tracking
 
@@ -130,7 +151,7 @@ Although Home Assistant has it's own official iCloud component, iCloud3 goes far
 
 The screens below are an example of how the many tracking sensors can be displayed. The screen on the left shows the current tracking formation for Gary while the Event Log on the right shows a history of important tracking events.
 
-![](https://gcobb321.github.io/icloud3_v3_docs/screens//dashboard-allinfo-summary.png)
+
 
 
 
