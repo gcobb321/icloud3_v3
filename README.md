@@ -2,7 +2,7 @@
 
 ![][ha-installs-shield] ![](https://img.shields.io/badge/Lines_of_Code-46.8k-41BDF5.svg) ![HACS](https://img.shields.io/badge/HACS-Custom_Installation-forestgreen.svg) ![Type](https://img.shields.io/badge/Type-Custom_Component-forestgreen.svg)  
 
-![][dev-release-shield] ![](https://img.shields.io/badge/Released-September,_2026-tomato.svg)  ![][dev-release-downloads-shield] ![GitHub Stars][dev-stars-shield] 
+![][dev-release-shield] ![](https://img.shields.io/badge/Released-September,_2026-mediumorchid.svg)  ![][dev-release-downloads-shield] ![GitHub Stars][dev-stars-shield] 
 
 ![][release-shield] ![](https://img.shields.io/badge/Released-May,_2026-crimson.svg) ![][release-downloads-shield] ![GitHub Stars][stars-shield]
 
@@ -19,9 +19,9 @@
 [dev-total-downloads-shield]: https://img.shields.io/github/downloads/gcobb321/icloud3_v3/total.svg?label=Total%20Downloads
 
 [dev-release-shield]: https://img.shields.io/github/v/release/gcobb321/icloud3_v3.svg?label=Beta/Prerelease%20Version&color=mediumorchid
-[dev-release-downloads-shield]: https://img.shields.io/github/downloads/gcobb321/icloud3_v3/latest/total.svg?label=Downloads&color=tomato
+[dev-release-downloads-shield]: https://img.shields.io/github/downloads/gcobb321/icloud3_v3/latest/total.svg?label=Downloads&color=mediumorchid
 
-[dev-stars-shield]: https://img.shields.io/github/stars/gcobb321/icloud3_v3?style=flat&label=Stars&color=tomato
+[dev-stars-shield]: https://img.shields.io/github/stars/gcobb321/icloud3_v3?style=flat&label=Stars&color=mediumorchid
 [dev-stargazers]: https://github.com/gcobb321/icloud3_v3/stargazers
 
 [ha-installs-shield]: https://img.shields.io/badge/dynamic/json?color=41BDF5&logo=home-assistant&label=World%20Wide%20Users&cacheSeconds=15600&url=https%3A%2F%2Fanalytics.home-assistant.io%2Fcustom_integrations.json&query=%24.icloud3.total
