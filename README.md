@@ -10,7 +10,7 @@
 
 ![][release-shield] ![](https://img.shields.io/badge/Released-May,_2026-coral.svg) ![][release-downloads-shield] ![GitHub Stars][stars-shield]
 
-[![Buy Me a Coffee](https://img.shields.io/badge/Support_My_Work-Click_here_to_Buy_Me_a_Coffee-DarkGoldenRod.svg?logo=buy-me-a-coffee&logoColor=white)](https://www.buymeacoffee.com/gcobb321)
+[![Buy Me a Coffee](https://img.shields.io/badge/Support_My_Work-Click_here_to_Buy_Me_a_Coffee-darkgoldenrod.svg?logo=buy-me-a-coffee&logoColor=white)](https://www.buymeacoffee.com/gcobb321)
 
 
 [release-shield]: https://img.shields.io/github/v/release/gcobb321/icloud3.svg?label=General%20Release%20Version&color=coral
