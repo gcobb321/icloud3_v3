@@ -1,6 +1,6 @@
 #  <img width="32" height="32" src="https://brands.home-assistant.io/icloud3/icon.png"> iCloud3 Apple Device Tracker
 
-***Beta/Prerelease Version** - This is an early release version of iCloud3 containing new and updated features. It is not the official release of iCloud3.  
+#### *Beta/Prerelease Version* -- *This is an early release version of iCloud3 containing new and updated features. It is not the official release of iCloud3*
 
 ​	
 
