@@ -1,5 +1,8 @@
+***If you appreciate my work, could you get me a coffee?***
 <a href="https://www.buymeacoffee.com/gcobb321" target="_blank">
-<img src="https://gcobb321.github.io/icloud3_v3_docs/images/buymeacoffee-docs-button-icon.png" width="150" height="50"></a>
+<img src="https://gcobb321.github.io/icloud3_v3_docs/images/buymeacoffee-docs-button-icon.png" width="150" height="35"></a>
+***Thanks***,
+***Gary Cobb, aka geekstergary***
 
 
 -----
