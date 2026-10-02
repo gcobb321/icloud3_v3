@@ -87,18 +87,9 @@ async def _async_get_hacs_ic3_data(hacs_repository_file):
         - hacs_ic3_items={'icloud3': 'v3.1.4.1'}
         - hacs_ic3_items={}
     '''
-    # update_ic3_attrs    = entity_io.get_attributes(HACS_FNAME_ICLOUD3)
-    # update_ic3dev_attrs = entity_io.get_attributes(HACS_FNAME_ICLOUD3_DEV)
-
-    # if isnot_empty(update_ic3_attrs) or isnot_empty(update_ic3dev_attrs):
-    #     return {'icloud3': update_ic3_attrs.get('latest_version'),
-    #             'icloud3_v3': update_ic3dev_attrs.get('latest_version')}
 
     try:
         hacs_repository_file_data = await async_read_json_file(hacs_repository_file)
-        # hacs_repository_file_data = await Gb.hass.async_add_executor_job(
-        #                     read_json_file,
-        #                     hacs_repository_file)
 
         if hacs_repository_file_data != {}:
             hacs_ic3_items = {_component_name(hacs_item_data):
@@ -159,8 +150,8 @@ def _is_2nd_version_newer(version_1, version_2):
 def _get_version_value(version):
 
     version = version.replace('v', '')
-    if instr(version, 'b') is False: version += 'b0'
-    v_base, v_beta = version.split('b')
+    if instr(version, '-beta.') is False: version += '-beta.0'
+    v_base, v_beta = version.split('-beta.')
     v_parts = (f"{v_base}.0.0.0").split('.')
     v_value = 0
 

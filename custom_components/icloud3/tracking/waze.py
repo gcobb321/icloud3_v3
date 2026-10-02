@@ -39,6 +39,7 @@ class Waze(object):
                     waze_realtime, waze_region):
 
         self.waze_status                  = WAZE_USED
+        self.method                  = 'Waze'
         self.is_waze_dist_method_used     = is_waze_dist_method_used
         self.waze_realtime                = waze_realtime
         self.waze_region                  = waze_region.upper()
@@ -136,6 +137,7 @@ class Waze(object):
         '''
 
         try:
+            self.method = 'Calc'
             if not self.is_waze_dist_method_used:
                 return (WAZE_NOT_USED, 0, 0, 0)
             elif self.is_status_PAUSED:
@@ -161,13 +163,16 @@ class Waze(object):
                 results_msg       = ""
                 location_id       = 0
 
-                if self.is_historydb_USED:
+                if (self.is_historydb_USED
+                        and FromZone.distance_km <= Gb.WazeHist.max_distance):
+                    self.method = 'Waze Hist'
                     waze_status, route_time, route_dist_km, dist_moved_km, \
                             location_id, results_msg = \
                             self.get_history_time_distance(Device, FromZone, check_hist_db=True)
 
                 # Get data from Waze if not in history and not being reused or if history is not used
                 if location_id == 0:
+                    self.method = 'Waze'
                     waze_status, route_time, route_dist_km = \
                                     self.get_waze_distance(
                                                 Device,
