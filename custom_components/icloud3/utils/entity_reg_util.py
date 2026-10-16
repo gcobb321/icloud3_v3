@@ -8,7 +8,7 @@ from ..const_sensor     import (ICLOUD3_INTERNAL_SENSORS_ID, SENSOR_DEFINITION, 
 from .utils             import (instr, is_empty, isnot_empty, dict_del,
                                 list_add, list_del, list_to_str, set_to_list, )
 from .messaging         import (log_info_msg, log_debug_msg, log_exception,
-                                log_error_msg, log_data,
+                                log_error_msg,
                                 _run_in_event_loop,
                                 _evlog, _log, )
 from .time_util         import (secs_to_time, time_now_secs, secs_to_yymmdd_hhmm, )
@@ -102,7 +102,7 @@ def async_handle_update_device_registry(event: dr.EventDeviceRegistryUpdatedData
             return
 
         if (device_data is None
-                or device_data.primary_config_entry != Gb.config_entry_id):
+                or device_reg_config_entry_id(device_data) != Gb.config_entry_id):
             log_debug_msg('Update Device Reg Handler > Ignored, Not this iCloud3 config entry')
             return
 
@@ -267,9 +267,9 @@ def enable_disabled_device(device_id):
         device_data = device_reg.async_get(device_id)
         devicename = Gb.ha_device_id_x_devicename.get(device_id, device_id[:8])
 
+        # async_update_device is an HA @callback, it must run in the event loop
         if device_data.disabled_by is not None:
-            Gb.hass.async_add_executor_job(device_reg.async_update_device,
-                                                    device_id, disabled_by=None)
+            _run_in_event_loop(device_reg.async_update_device, device_id, disabled_by=None)
             log_info_msg(f"Device Tracker Entity ({devicename}), Enabled Device")
             return True
 
@@ -309,10 +309,9 @@ def enable_disabled_entity(entity_id):
     try:
         entity_reg  = er.async_get(Gb.hass)
         entity_data = entity_reg.async_get(entity_id)
+        # async_update_entity is an HA @callback, it must run in the event loop
         if entity_data.disabled_by is not None:
-
-            Gb.hass.async_add_executor_job(entity_reg.async_update_entity,
-                                                    entity_id, disabled_by=None)
+            _run_in_event_loop(entity_reg.async_update_entity, entity_id, disabled_by=None)
             return True
 
     except Exception as err:
@@ -646,6 +645,24 @@ def device_reg_devices(device_reg):
     return [device_data for device_data in devices if device_data]
 
 #............................................................................................
+def device_reg_config_entry_id(device_data):
+    '''
+    Return the config entry id the device registry item (DeviceEntry or DeletedDeviceEntry)
+    belongs to, or None if it does not belong to one.
+
+    HA now limits a device to a single config entry, available as `config_entry_id`.
+    Accessing the `config_entries` set is deprecated and it is removed in HA-2027.10. Older
+    HA versions do not have `config_entry_id` and only have the `config_entries` set.
+    '''
+    # Reading `config_entry_id` does not log the deprecation message, only `config_entries`
+    if hasattr(device_data, 'config_entry_id'):
+        return device_data.config_entry_id
+
+    config_entries = set_to_list(device_data.config_entries)
+
+    return config_entries[0] if config_entries else None
+
+#............................................................................................
 def device_reg_deleted_devices(device_reg):
     '''
     Return the deleted device registry container (device_id --> DeletedDeviceEntry), or None
@@ -846,7 +863,7 @@ def get_icloud3_device_registry_items():
 
             # An orphan left over from an earlier iCloud3 config entry. HA will create a
             # new device registry item for this device when it's device_tracker is added.
-            if Gb.config_entry_id not in device_data.config_entries:
+            if device_reg_config_entry_id(device_data) != Gb.config_entry_id:
                 continue
 
             domain, devicename = _get_domain_devicename(device_data)
@@ -1282,7 +1299,7 @@ def _set_device_reg_data(device_data):
     data_item['device_id']       = device_data.id
     data_item['area_id']         = device_data.area_id
     data_item['entity_key']      = None
-    data_item['config_entry_id'] = set_item(device_data.config_entries)
+    data_item['config_entry_id'] = device_reg_config_entry_id(device_data)
     data_item['disabled_by']     = disabled_by
     data_item['status']          = None
     data_item['domain']          = domain

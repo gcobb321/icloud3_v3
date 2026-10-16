@@ -1,4 +1,4 @@
-***So far 133 people (thanks again) out of the 15,000+ downloads have bought me a coffee. If you appreciate my work, could you get one?***
+***Total downloads for v3.7.5 - 18,145 (as of 10/16/2026). Number of coffee buyers - 133 (thanks again). If you appreciate my work and find iCloud3 usefull, one cup would be appreciated.***
 <a href="https://www.buymeacoffee.com/gcobb321" target="_blank">
 <img src="https://gcobb321.github.io/icloud3_v3_docs/images/buymeacoffee-docs-button-icon.png" width="150" height="35"></a>
 
@@ -6,7 +6,7 @@
 ***Gary Cobb, aka geekstergary***
 
 -----
-## 🍎 iCloud3 v3.7.6 Beta 3 (10/2/2026)
+## 🍎 iCloud3 v3.7.6(10/16/2026)
 ### 🎉 New and Improved Items
 1. **iCloud3 Analytics**: (Menu #2 - Parametes)
     -  The iCloud3 Analytics collects version, location (country/region), usage and various counts from the 15,000+ iCloud3 users. It's purpose is to report summary information showing where users are located, what version is being used and various counts (Apple Account, tracked devices, comments, etc.). The data you will send is shown below. Summary reports can be selected on *Reports* screen. Hopefully, you will Enable *Send iCloud3 Analytics Data* on the Configure *iCloud3 Analytics* screen and participate in this project.
@@ -25,13 +25,15 @@
     - Notifications are displayed as HA Repair issues, in the Event Log and as an iCloud3 Alert (sensor.icloud3_alert).
 3. **Default inZone Intervals** - (Menu #2 - Parametes)
     -   This screen is used to set the default inZone interval value assigned to a new device. The Device's value can be changed after it is added.
+4. **Waze** - The submission of Waze route requests now supports the changes Google recently made. Some of the changed include throttling request limits, http request submission requirements and url updates.
 
 ### 🐞 Bug Fixes
 1. **Email Filter** - Fixed a problem creating the filter for a password when it contains an '@' in the first 3-letters. (@jata1, @celsojunior75)
 2. **Disable/Delete Device** - Disabling/Deleting devices directly in HA was creating problems within iCloud3 and leading to device registry conflicts. This has been fixed. (@amiel-35)
 3. **device_entity_id_2 suffix** - Fixed several problems correcting this condition during the *device_entity_id_2 → device_entity_id* process. (@amiel-35)
 4. **Reload from HA Settings** - Fixed problems with reloading iCloud3 from the Devices & settings screen. (@amiel-35)
-4. **Waze** - Fixed a problem where Waze would not be used if the distance > HistoryDB Max distance when it should be the Waze Max distance. (@celsojunior75)
+5. **Waze** - Fixed a problem where Waze would not be used if the distance > HistoryDB Max distance when it should be the Waze Max distance. (@celsojunior75)
+6. **HA Warnings** - Changed iCloud3 to address HA depreciation warnings for Device/Entity Registry scanning
 
 ### 📢 Other Updates
 1. **Apple Terms of Use** - Improved the handling of Apple's Terms-of-Use Approval Needed request:

@@ -7,6 +7,7 @@ from ..const            import (
                                 CONF_PARAMETER_TIME_STR,
                                 CONF_PICTURE_WWW_DIRS, CONF_SENSORS_HASH,
                                 CONF_FIXED_INTERVAL, CONF_EXIT_ZONE_INTERVAL,
+                                CONF_INZONE_INTERVALS, DEVICE_TYPE_INZONE_INTERVALS, IPAD_CELL, WATCH_WIFI,
                                 CONF_IC3_VERSION, CONF_ANALYTICS_ENABLED,
                                 CONF_EVLOG_CARD_DIRECTORY, CONF_EVLOG_CARD_PROGRAM, CONF_TRAVEL_TIME_FACTOR,
                                 CONF_UPDATE_DATE, CONF_VERSION_INSTALL_DATE, CONF_FIRST_SEEN,
@@ -1047,6 +1048,18 @@ def _update_general_parameters():
     '''
     Gb.conf_general, del_items = _delete_items_from_conf_dict(Gb.conf_general, DEFAULT_GENERAL_CONF)
     Gb.conf_general, new_items = _insert_items_into_conf_dict(Gb.conf_general, DEFAULT_GENERAL_CONF)
+
+    inzone_intervals = {device_type: interval for device_type, interval in DEVICE_TYPE_INZONE_INTERVALS.items()
+                                        if device_type not in Gb.conf_general[CONF_INZONE_INTERVALS]}
+    if isnot_empty(inzone_intervals):
+        new_items = True
+        for device_type, interval in inzone_intervals.items():
+            Gb.conf_general[CONF_INZONE_INTERVALS][device_type] = interval
+
+        # if IPAD_CELL not in Gb.conf_general[CONF_INZONE_INTERVALS]:
+        # Gb.conf_general[CONF_INZONE_INTERVALS][IPAD_CELL] = DEVICE_TYPE_INZONE_INTERVALS[IPAD_CELL]
+        # Gb.conf_general[CONF_INZONE_INTERVALS][WATCH_WIFI] = DEVICE_TYPE_INZONE_INTERVALS[WATCH_WIFI]
+        # Gb.conf_general[CONF_INZONE_INTERVALS][MAC] = DEVICE_TYPE_INZONE_INTERVALS[MAC]
 
     if new_items or del_items:
         log_info_msg(   f"Updated Configuration File items (General), "

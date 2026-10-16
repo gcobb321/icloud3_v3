@@ -471,10 +471,21 @@ class AppleAcctManager(object):
         return self.iCloudSession.response_ok
 
 #---------------------------------------------------------------------------
+    # @property
+    # def response_code_desc(self, code=None):
+    #     if code is None:
+    #         code = self.response_code
+    #     return (f"{HTTP_RESPONSE_CODES.get(code, 'Other Error')}-"
+    #             f"{self.response_code}")
+
+#---------------------------------------------------------------------------
     @property
     def response_code_desc(self):
-        return (f"{HTTP_RESPONSE_CODES.get(self.response_code, 'Other Error')}-"
-                f"{self.response_code}")
+        return self.code_description(self.response_code)
+
+#----------------------------------------------------------------------------
+    def code_description(self, code):
+        return f"{HTTP_RESPONSE_CODES.get(code, 'Other Error')} ({code})"
 
 #---------------------------------------------------------------------------
     @property
@@ -901,13 +912,20 @@ class AppleAcctManager(object):
             self._set_srp_return_error_code()
             return False
 
+        # error_msg = ''
+        # if Gb.internet_error:
+        #     error_msg = HTTP_RESPONSE_CODES(-4)
+        # elif self.response_code in [403, 503]:
+        #     error_msg = HTTP_RESPONSE_CODES[self.response_code]
+        # elif 'salt' not in data:
+        #     error_msg = HTTP_RESPONSE_CODES(-3)
         error_msg = ''
         if Gb.internet_error:
-            error_msg = HTTP_RESPONSE_CODES(-4)
+            error_msg = self.code_description(-4)
         elif self.response_code in [403, 503]:
-            error_msg = HTTP_RESPONSE_CODES[self.response_code]
+            error_msg = self.code_description(self.response_code)
         elif 'salt' not in data:
-            error_msg = HTTP_RESPONSE_CODES(-3)
+            error_msg = self.code_description(-3)
 
         if error_msg:
             post_error_msg(f"Password SRP Error, {error_msg} ({self.response_code})")
@@ -1101,8 +1119,9 @@ class AppleAcctManager(object):
             self.error_retry_cnt = 0
             return
 
-        if reason is None:
-            reason = HTTP_RESPONSE_CODES.get(code, 'Other Error')
+        # if reason is None:
+            # reason = HTTP_RESPONSE_CODES.get(code, 'Other Error')
+        reason = self.code_description(code) if reason is None else f"{reason} ({code})"
 
         if self.username not in Gb.AppleAcct_error_by_username:
             # v7.3-Commented out so logging into apple accts with 503 errors will not be retried

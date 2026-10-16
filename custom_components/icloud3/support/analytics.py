@@ -291,13 +291,10 @@ def create_reports_from_results(self, query_results_json):
 
         display_rows = rows[:REPORT_MAX_ROWS]
 
-        # Right align the columns with numeric data, left align everything else
-        align = ['---:' if isinstance(rows[0].get(column), (int, float)) else ':---'
-                    for column in columns]
-
+        # Left align every column, numeric and text
         md  = [f"**{report_name}**", '']
         md.append(f"| {' | '.join(_column_heading(column) for column in columns)} |")
-        md.append(f"|{'|'.join(align)}|")
+        md.append(f"|{'|'.join(':---' for column in columns)}|")
         md.extend([f"| {' | '.join(_column_value(row.get(column)) for column in columns)} |"
                     for row in display_rows])
         md.append('')

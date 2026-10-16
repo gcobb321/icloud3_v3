@@ -9,13 +9,9 @@
 #                        This service will send a message to the selected device
 #
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-# "famshr_devicename": "Lillian-Watch",
-#           "famshr_device_id": "AR6i5tIuKAWLxmWuCkCTUmiZctPTY5ljtd94ipapCKXrrDjmmS6uWV3jVkP/AoCr+mtg/iVXwEOEBwojW91EQWSBqPH9PgjRt+SO4P8b9TUo2mwMMdz/QGcr8fiH9AJkTzbp84WiOvT2fGdN+NXyIfQGarAp7PJSBckogc4slb+RA20pUvFL",
-#           "raw_model": "Watch7,10",
-#           "model": "Watch",
-#           "model_display_name": "Watch S10",
+
 VERSION                         = '3.7.6'
-VERSION_BETA                    = '3'
+VERSION_BETA                    = ''
 #-----------------------------------------
 DOMAIN                          = 'icloud3'
 PLATFORMS                       = ['sensor', 'device_tracker']

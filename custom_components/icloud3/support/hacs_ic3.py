@@ -152,16 +152,22 @@ def _get_version_value(version):
     version = version.replace('v', '')
     if instr(version, '-beta.') is False: version += '-beta.0'
     v_base, v_beta = version.split('-beta.')
-    v_parts = (f"{v_base}.0.0.0").split('.')
-    v_value = 0
+    v_parts = (f"{v_base}.0.0.0.0").split('.')
+    b_parts = (f"{v_beta}.0.0.0.0").split('.')
+
+    r_version = 0
+    b_version = 0
 
     try:
-        v_beta   = int(v_beta)
-        v_value += int(v_parts[0])*100000
-        v_value += int(v_parts[1])*1000
-        v_value += int(v_parts[2])*10
-        v_value += int(v_parts[3])
+        b_version = int(b_parts[0])*100
+        b_version += int(b_parts[1])
+
+        r_version += int(v_parts[0])*1000000
+        r_version += int(v_parts[1])*10000
+        r_version += int(v_parts[2])*100
+        r_version += int(v_parts[3])*10
+        r_version += int(v_parts[4])
     except:
         pass
 
-    return v_value, v_beta
+    return r_version, v_beta

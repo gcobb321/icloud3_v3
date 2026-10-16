@@ -24,6 +24,7 @@ from ..utils.messaging  import (_log, log_exception, )
 from ..utils            import gps
 from .device_name_parser import owner_device_name_key
 
+import re
 import logging
 LOGGER = logging.getLogger(f"icloud3.pyicloud_ic3")
 
@@ -157,11 +158,13 @@ class iCloud_AppleAcctDeviceData():
     def raw_model_no(self):
         model_no = 0
         try:
-            if instr(self.raw_model, ','):
-                model_no = self.raw_model.replace(self.model, '').split(',')[0] # 17
-                model_no = int(model_no) if model_no != '' else 0
+            # Strip the leading letters, keep the first number
+            # (iPhone16,4 --> 16, MacBookPro6,3 --> 6, AirPods,8212 --> 8212)
+            match = re.match(r'[A-Za-z]+[_,]?(\d+)', self.raw_model)
+            if match:
+                model_no = int(match.group(1))
         except Exception as err:
-            #log_exception(err)pl
+            log_exception(err)
             pass
 
         return model_no
