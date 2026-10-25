@@ -1,28 +1,30 @@
 
 from ..global_variables import GlobalVariables as Gb
 from ..const            import (AIRPODS, AIRPODS_DN, NONE_FNAME,
-                                EVLOG_NOTICE, EVLOG_ALERT, LINK, RLINK, LLINK, DOTS,
-                                HHMMSS_ZERO, RARROW, DOT, CRLF, CRLF_DOT, CRLF_STAR, CRLF_CHK, CRLF_HDOT,
+                                EVLOG_NOTICE, EVLOG_ALERT,
+                                HHMMSS_ZERO,
                                 ICLOUD, NAME, ID,
                                 APPLE_SERVER_ENDPOINT,
                                 ICLOUD_HORIZONTAL_ACCURACY,
                                 LOCATION, TIMESTAMP, LOCATION_TIME, DATA_SOURCE, LATITUDE, LONGITUDE,
                                 ICLOUD_BATTERY_LEVEL, ICLOUD_BATTERY_STATUS, BATTERY_STATUS_CODES,
-                                BATTERY_LEVEL, BATTERY_STATUS, BATTERY_LEVEL_LOW,
+                                BATTERY_LEVEL, BATTERY_LEVEL_LOW,
                                 ICLOUD_DEVICE_STATUS, DEVICE_STATUS_CODES,
-                                CONF_USERNAME, CONF_APPLE_ACCOUNT,
-                                CONF_PASSWORD, CONF_MODEL_DISPLAY_NAME, CONF_RAW_MODEL,
-                                CONF_IC3_DEVICENAME, CONF_FNAME, CONF_AADEV_NAME,
-                                CONF_AADEV_DEVICE_ID, CONF_LOG_LEVEL_DEVICES,
-                                DEVICE_DISPLAY_NAMES_FILTERS
-                                )
+                                DEVICE_DISPLAY_NAMES_FILTERS, REPLACED_DEVICE_OFFLINE_SECS, )
+from ..const_config     import (BATTERY_STATUS, CONF_APPLE_ACCT, CONF_APPLE_ACCT, CONF_PASSWORD,
+                                CONF_MODEL_DISPLAY_NAME, CONF_RAW_MODEL, CONF_IC3_DEVICENAME,
+                                CONF_FNAME, CONF_AADEV_NAME, CONF_AADEV_DEVICE_ID,
+                                CONF_LOG_LEVEL_DEVICES, )
+from ..const_char       import (LINK, RLINK, LLINK, DOTS, RARROW, DOT, CRLF, CRLF_DOT, CRLF_STAR,
+                                CRLF_CHK, CRLF_HDOT, )
 from ..utils.utils      import (instr, is_empty, isnot_empty, list_add, list_del,
-                                encode_password, decode_password, username_id, )
+                                encode_password, decode_password,
+                                apple_user, apple_id_dev, apple_user_dev, )
 from ..utils.time_util  import (time_now, time_now_secs, secs_to_time, s2t, apple_server_time,
                                 secs_since, format_secs_since, format_age, format_time_age )
 from ..utils.messaging  import (_log, log_exception, )
-from ..utils            import gps
-from .device_name_parser import owner_device_name_key
+from ..utils            import (gps, )
+from .device_name_parser import name_device_type_key
 
 import re
 import logging
@@ -40,26 +42,20 @@ DEVICE_DATA_FILTER_OUT = [
     'LCK', 'REM', 'MCS', 'REP', 'KEY', 'KPD', 'WIP',
 ]
 
-# A tracked device that is offline this long can be replaced by a newer device
-# with the same Apple default name
-REPLACED_DEVICE_OFFLINE_SECS = 3600
-
-
-
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 #
-#   AADevData Object - Store all of the data related to the device. It is created
+#   AADev Object - Store all of the data related to the device. It is created
 #   and updated in the FindMyPhoneSvcMgr.refresh_client module and is based on the
-#   device_id. The Global Variable AppleAcct.AADevData_by_device_id contains the object
+#   device_id. The Global Variable AppleAcct.AADev_by_device_id contains the object
 #   pointer for each device_id.
 #
 #       - content = all of the data for this device_id
 #
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-class iCloud_AppleAcctDeviceData():
+class iCloud_AppleAcctDevice():
     '''
-    AADevData stores all the device data for each Apple Acct
+    AADev stores all the device data for each Apple Acct
 
     Parameters:
         - device_id = iCloud device id of the device
@@ -68,7 +64,7 @@ class iCloud_AppleAcctDeviceData():
         - params = ?
         - data_source = 'iCloud'
         - timestamp_field = name of the location timestamp field in device_data
-        - AADevices = AADevices object that created this AADevData object
+        - AADevices = AADevices object that created this AADev object
         - device_data_name = name of the device in device_data (Gary-iPhone)
     '''
 
@@ -81,33 +77,32 @@ class iCloud_AppleAcctDeviceData():
                         AADevices):
 
         self.setup_time      = time_now()
-        self.AppleAcct       = AADevices.AppleAcct # AppleAcct object (Apple Acct) with the device data
-        self.iCloudSession   = iCloudSession
-        self.device_data     = device_data
-
         self.device_id       = device_id
+        self.device_data     = device_data
         self.params          = params
         self.data_source     = data_source
         self.timestamp_field = timestamp_field
-        self.AADevices       = AADevices           # iCloud object creating this AADevData object
 
-        self.name            = device_data[NAME] = self._remove_special_chars(device_data[NAME])
+        self.AADevices       = AADevices           # iCloud object creating this AADev object
+        self.AppleAcct       = AADevices.AppleAcct # AppleAcct object (Apple Acct) with the device data
+        self.iCloudSession   = iCloudSession
+
+        self.apple_id        = self.AppleAcct.apple_id
+        self.name            = self._remove_special_chars(device_data[NAME])
+        self.dname           = self.name
+        self.apple_id_dev    = apple_id_dev(self.apple_id, self.dname)
+        self.apple_user_dev  = apple_user_dev(self.apple_id, self.name)
+
+        self.device_data['name']  = self.name
 
         self.model_display_name = self.filtered_model_display_name()
-
         self.raw_model       = device_data['rawDeviceModel'].replace('_', ',')        # "iPhone17,2"
-        if self.raw_model.startswith(AIRPODS_DN):
-            self.model       = AIRPODS_DN
-            self.device_type = AIRPODS
-        elif self.raw_model.startswith('AirTags'):
-            self.model       = 'AirTags'
-            self.device_type = 'airtags'
-        else:
-            self.model       = device_data['deviceClass']
-            self.device_type = device_data['deviceClass'].lower()
+        self.model           = device_data['deviceClass']
+        self.device_type     = device_data['deviceClass'].lower()
         self.model_no        = self.raw_model_no
-        self.status_code     = 0
+        self.reset_accessories_model_info()
 
+        self.status_code     = 0
         self.update_secs     = time_now_secs()
         self.location_secs   = 0
         self.location_time   = HHMMSS_ZERO
@@ -118,6 +113,7 @@ class iCloud_AppleAcctDeviceData():
         self.last_requested_loc_time_gps = ''           # location_time_gps_acc from last time requested
 
         self.battery_level = 0
+        self.missing_since_secs = 0     # Time the device was first not in the Apple acct's device list
 
         self.save_device_retired_fields(device_data)
         self.device_data[DATA_SOURCE] = self.data_source
@@ -132,7 +128,9 @@ class iCloud_AppleAcctDeviceData():
 
         self.dname                = self.name
         self.device_data['dname'] = self.dname
+        self.apple_id_dev         = apple_id_dev(self.apple_id, self.dname)
         self.is_duplicate_dname   = False
+
         self.Device               = None
         self.ic3_devicename       = ''
         self.device_data[CONF_IC3_DEVICENAME] = self.ic3_devicename
@@ -142,32 +140,14 @@ class iCloud_AppleAcctDeviceData():
         self.startup_msg          = ''
 
 #----------------------------------------------------------------------
-    def filtered_model_display_name(self):
-        display_name = self.device_data['deviceDisplayName']
-        for from_str, to_str in DEVICE_DISPLAY_NAMES_FILTERS.items():
-            display_name = display_name.replace(from_str, to_str)
+    def reset_accessories_model_info(self):
+        if self.raw_model.startswith(AIRPODS_DN):
+            self.model       = AIRPODS_DN
+            self.device_type = AIRPODS
 
-        idx = display_name.find('-inch')
-        if idx > 0:
-            display_name = display_name[:idx-3] + display_name[idx+5:]
-
-        return display_name
-
-#----------------------------------------------------------------------
-    @property
-    def raw_model_no(self):
-        model_no = 0
-        try:
-            # Strip the leading letters, keep the first number
-            # (iPhone16,4 --> 16, MacBookPro6,3 --> 6, AirPods,8212 --> 8212)
-            match = re.match(r'[A-Za-z]+[_,]?(\d+)', self.raw_model)
-            if match:
-                model_no = int(match.group(1))
-        except Exception as err:
-            log_exception(err)
-            pass
-
-        return model_no
+        elif self.raw_model.startswith('AirTags'):
+            self.model       = 'AirTags'
+            self.device_type = 'airtags'
 
 #----------------------------------------------------------------------
     @property
@@ -204,7 +184,7 @@ class iCloud_AppleAcctDeviceData():
         idx = -1
         for conf_device in Gb.conf_devices:
             idx += 1
-            if (conf_device[CONF_APPLE_ACCOUNT] == self.AppleAcct.username
+            if (conf_device[CONF_APPLE_ACCT] == self.AppleAcct.apple_id
                     and conf_device[field] == field_value):
                 return conf_device[CONF_IC3_DEVICENAME], idx
 
@@ -278,11 +258,11 @@ class iCloud_AppleAcctDeviceData():
         '''
         return (self.prs_id,
                 self.device_class,
-                owner_device_name_key(self.name, self.device_class, self.owner_first_name))
+                name_device_type_key(self.name, self.device_class, self.owner_first_name))
 
 #----------------------------------------------------------------------
     @property
-    def aa_device_info(self):
+    def device_info(self):
         return f"{self.dname} ({self.device_identifier})"
 
 #----------------------------------------------------------------------
@@ -327,11 +307,39 @@ class iCloud_AppleAcctDeviceData():
             return self.device_data.get('deviceClass', '')
 
 #----------------------------------------------------------------------
+    def filtered_model_display_name(self):
+        display_name = self.device_data['deviceDisplayName']
+        for from_str, to_str in DEVICE_DISPLAY_NAMES_FILTERS.items():
+            display_name = display_name.replace(from_str, to_str)
+
+        idx = display_name.find('-inch')
+        if idx > 0:
+            display_name = display_name[:idx-3] + display_name[idx+5:]
+
+        return display_name
+
+#----------------------------------------------------------------------
+    @property
+    def raw_model_no(self):
+        model_no = 0
+        try:
+            # Strip the leading letters, keep the first number
+            # (iPhone16,4 --> 16, MacBookPro6,3 --> 6, AirPods,8212 --> 8212)
+            match = re.match(r'[A-Za-z]+[_,]?(\d+)', self.raw_model)
+            if match:
+                model_no = int(match.group(1))
+        except Exception as err:
+            log_exception(err)
+            pass
+
+        return model_no
+
+#----------------------------------------------------------------------
     @property
     def aadevice_model_info(self):
-        return [self.device_data['rawDeviceModel'].replace("_", ""),    # iPhone15,2
-                self.device_data['modelDisplayName'],                   # iPhone
-                self.model_display_name]                        # iPhone 14 Pro
+        return [self.raw_model,                         # iPhone15,2
+                self.device_data['modelDisplayName'],   # iPhone
+                self.model_display_name]                # iPhone 14 Pro
 
 #----------------------------------------------------------------------
     @property
@@ -525,4 +533,4 @@ class iCloud_AppleAcctDeviceData():
         try:
             return f"{self.name} ({self.model_display_name})"
         except:
-            return f"<AADevData: Undefined>"
+            return f"<AADev: Undefined>"
