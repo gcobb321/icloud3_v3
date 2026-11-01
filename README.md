@@ -2,12 +2,12 @@
 
 #### *Beta/Prerelease Version* -- *This is an early release version of iCloud3 containing new and updated features. It is not the official release of iCloud3*
 
-![][release-shield] ![](https://img.shields.io/badge/Released-October,_2026-mediumseagreen.svg) ![][release-downloads-shield] ![GitHub Stars][stars-shield]<br>
-![][dev-release-shield] ![](https://img.shields.io/badge/Released-October,_2026-mediumseagreen.svg)  ![][dev-release-downloads-shield] ![GitHub Stars][dev-stars-shield] <br>
+![][release-shield] ![](https://img.shields.io/badge/Released-November,_2026-mediumseagreen.svg) ![][release-downloads-shield] ![GitHub Stars][stars-shield]<br>
+![][dev-release-shield] ![](https://img.shields.io/badge/Released-Nobember,_2026-mediumseagreen.svg)  ![][dev-release-downloads-shield] ![GitHub Stars][dev-stars-shield] <br>
 
 ![HACS](https://img.shields.io/badge/HACS-Custom_Installation-steelblue.svg) ![Type](https://img.shields.io/badge/Type-Custom_Component-steelblue.svg)  
 
-[![Buy Me a Coffee](https://img.shields.io/badge/Support_My_Work-Click_here_to_Buy_Me_a_Coffee-chocolate.svg?logo=buy-me-a-coffee&logoColor=white)](https://www.buymeacoffee.com/gcobb321)  ![](https://img.shields.io/badge/Lines_of_Code-47.2k-chocolate.svg)
+[![Buy Me a Coffee](https://img.shields.io/badge/Support_My_Work-Click_here_to_Buy_Me_a_Coffee-chocolate.svg?logo=buy-me-a-coffee&logoColor=white)](https://www.buymeacoffee.com/gcobb321)  ![](https://img.shields.io/badge/Lines_of_Code-52.1k-chocolate.svg)
 
 
 [release-shield]: https://img.shields.io/github/v/release/gcobb321/icloud3.svg?label=General%20Release%20Version&color=mediumseagreen
@@ -24,6 +24,18 @@
 [dev-stargazers]: https://github.com/gcobb321/icloud3_v3/stargazers
 
 
+
+## This Beta/Development Repo is being retired. Beta versions are available as prerelease versions in the main iCloud3 repo
+
+#### Maketplace HA v2026.11 Support
+
+Future iCloud3 beta versions will only be published as ***\*pre-releases in the main iCloud3 repository\**** (`gcobb321/icloud3`). This beta/development repository (`gcobb321/icloud3_v3`) is being retired. This beta release is the last one that will be released there.
+
+This prepares for Home Assistant 2026.11, where the built-in ***\*Marketplace\**** integration replaces HACS.  HACS supported multiple repos that with the same HA Domain (`iCloud3`), that is the main and beta repo  (`gcobb321/icloud3 and icloud3_v3`) could both provide the code for iCloud3. With Marketplace, that changed. The `iCloud3` domain can only be tied to one GitHub Repo (`gcobb321/icloud3`).
+
+After installing and restarting HA, a Repair issue ***\*iCloud3: Beta Versions are moving to the iCloud3 Repo\****. Open that Repair Issue, read the notes and click ***\*Submit\****. A complete description of this is found at the end of these Release Notes.
+
+-----
 
 iCloud3 is a device tracker custom component that tracks your iPhones, iPads and Apple Watches. Devices in the Family Sharing List and the HA Mobile App Integration are trackable. The device requests location data from from Apple's iCloud  Location Services and monitors various Mobile App sensors and triggers to determine the device's  battery level, location, distance, travel time and arrival to Home.  
 
